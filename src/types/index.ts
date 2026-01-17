@@ -1,3 +1,5 @@
+import { BudgetPeriod } from "../database/entities/Budget"
+
 export type Currency = "USD" | "EUR" | "GEL" | "RUB" | "UAH" | "PLN"
 
 export enum TransactionType {
@@ -21,10 +23,10 @@ export enum IncomeCategory {
 
 // Категории расходов
 export enum ExpenseCategory {
-  FOOD = "Food 🍔",
+  FOOD_DINING = "Food & dining 🍔",
   COFFEE = "Coffee ☕",
   GROCERIES = "Groceries 🛍️",
-  TRANSPORT = "Transport 🚕",
+  TRANSPORTATION = "Transport 🚕",
   HOUSING = "Housing 🏠",
   UTILITIES = "Utilities 💡",
   ENTERTAINMENT = "Entertainment 🎬",
@@ -66,15 +68,15 @@ export interface Goal {
 
 export interface Debt {
   id: string
-  name: string // Added: Display name/Identifier used in Wizard
-  counterparty: string // Who owes whom
+  name: string
+  counterparty: string
   amount: number
   currency: Currency
   type: "I_OWE" | "OWES_ME"
   dueDate?: string | Date
   description?: string
-  paidAmount: number // Added: Track partial payments
-  isPaid: boolean // Added: Status flag
+  paidAmount: number
+  isPaid: boolean
 }
 
 export interface Transaction {
@@ -98,15 +100,44 @@ export interface IncomeSource {
   frequency?: "MONTHLY" | "ONE_TIME"
 }
 
+export interface Budget {
+  id: string
+  category: string
+  amount: number
+  period: BudgetPeriod
+  currency: Currency
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TransactionTemplate {
+  id: string
+  name: string
+  category: string
+  amount: number
+  currency: Currency
+  type: TransactionType
+  accountId?: string
+}
+
+
 export interface UserData {
   balances: Balance[]
   debts: Debt[]
   goals: Goal[]
   transactions: Transaction[]
   incomeSources: IncomeSource[]
-  defaultCurrency: Currency // Дефолтная валюта пользователя
+  defaultCurrency: Currency
+  budgets: Budget[]
+  templates: TransactionTemplate[]
 }
 
 export interface DatabaseSchema {
   users: Record<string, UserData>
+}
+
+export interface CategoryBudget {
+  limit: number
+  spent: number
+  currency?: Currency
 }

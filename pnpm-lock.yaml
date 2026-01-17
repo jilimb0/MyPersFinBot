@@ -23,6 +23,9 @@ importers:
       sqlite3:
         specifier: ^5.1.7
         version: 5.1.7
+      telegram-inline-calendar:
+        specifier: ^1.10.0
+        version: 1.10.0
       typeorm:
         specifier: ^0.3.28
         version: 0.3.28(sqlite3@5.1.7)(ts-node@10.9.2(@types/node@20.19.27)(typescript@5.9.3))
@@ -1591,6 +1594,10 @@ packages:
   tar@6.2.1:
     resolution: {integrity: sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==}
     engines: {node: '>=10'}
+
+  telegram-inline-calendar@1.10.0:
+    resolution: {integrity: sha512-DX/NmtwONPkAZG7/fwpRw2hSHVyLhYVblBPRFEJoRPxpv+Qvp/LCxLK0F94ep54gKgAZpRXxYucSSBkVE8lwTw==}
+    engines: {node: '>=0.12'}
 
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
@@ -3687,6 +3694,10 @@ snapshots:
       minizlib: 2.1.2
       mkdirp: 1.0.4
       yallist: 4.0.0
+
+  telegram-inline-calendar@1.10.0:
+    dependencies:
+      dayjs: 1.11.19
 
   tinyglobby@0.2.15:
     dependencies:

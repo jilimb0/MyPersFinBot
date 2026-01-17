@@ -7,10 +7,10 @@ import {
   Index,
 } from "typeorm"
 import { User } from "./User"
-import { Currency } from "../types"
+import { Currency, TransactionCategory, TransactionType } from "../../types"
 
-@Entity("debts")
-export class Debt {
+@Entity("transactions")
+export class Transaction {
   @PrimaryColumn()
   id!: string
 
@@ -18,8 +18,9 @@ export class Debt {
   @Index()
   userId!: string
 
-  @Column()
-  name!: string
+  @Column("datetime")
+  @Index()
+  date!: Date
 
   @Column("real")
   amount!: number
@@ -27,23 +28,23 @@ export class Debt {
   @Column({ type: "text" })
   currency: Currency
 
-  @Column()
-  counterparty!: string
-
   @Column({ type: "text" })
-  type: "OWES_ME" | "I_OWE"
+  type: TransactionType
 
-  @Column("real", { default: 0 })
-  paidAmount!: number
-
-  @Column("boolean", { default: false })
-  isPaid!: boolean
+  @Column({ type: "text", nullable: true })
+  category: TransactionCategory
 
   @Column({ nullable: true })
   description?: string
 
+  @Column({ nullable: true })
+  fromAccountId?: string
+
+  @Column({ nullable: true })
+  toAccountId?: string
+
   // Relations
-  @ManyToOne(() => User, (user) => user.debts)
+  @ManyToOne(() => User, (user) => user.transactions)
   @JoinColumn({ name: "userId" })
   user!: User
 }

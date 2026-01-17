@@ -7,7 +7,7 @@ import {
   Index,
 } from "typeorm"
 import { User } from "./User"
-import { Currency } from "../types"
+import { Currency } from "../../types"
 
 @Entity("goals")
 export class Goal {
