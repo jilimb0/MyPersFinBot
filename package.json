@@ -1,6 +1,6 @@
 {
   "name": "my-pers-fin-bot",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Personal Finance Telegram Bot",
   "main": "dist/index.js",
   "scripts": {
@@ -23,6 +23,7 @@
     "node-telegram-bot-api": "^0.67.0",
     "reflect-metadata": "^0.2.2",
     "sqlite3": "^5.1.7",
+    "telegram-inline-calendar": "^1.10.0",
     "typeorm": "^0.3.28",
     "undici": "^7.18.2"
   },

@@ -10,7 +10,7 @@ import { Transaction } from "./Transaction"
 import { Debt } from "./Debt"
 import { Goal } from "./Goal"
 import { IncomeSource } from "./IncomeSource"
-import { Currency } from "../types"
+import { Currency, TransactionTemplate } from "../../types"
 
 @Entity("users")
 export class User {
@@ -22,6 +22,9 @@ export class User {
 
   @CreateDateColumn()
   createdAt!: Date
+
+  @Column({ type: "simple-json", nullable: true })
+  templates?: TransactionTemplate[]
 
   // Relations
   @OneToMany(() => Balance, (balance) => balance.user)

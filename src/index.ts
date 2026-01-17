@@ -3,13 +3,18 @@ import TelegramBot from "node-telegram-bot-api"
 import fs from "fs"
 import path from "path"
 import { TransactionType, Debt, Goal, Currency } from "./types"
-import { dbStorage as db } from "./storage-db"
+import { dbStorage as db } from "./database/storage-db"
 import { initializeDatabase, closeDatabase } from "./database/data-source"
-import { formatMonthlyStats, generateCSV, formatNetWorth } from "./reports"
-import { WizardManager } from "./wizards"
+import {
+  formatMonthlyStats,
+} from "./reports"
+import { WizardManager } from "./wizards/wizards"
 import { preloadRates, stopAutoRefresh } from "./fx"
 import { MAIN_MENU_KEYBOARD, SETTINGS_KEYBOARD } from "./constants"
 import * as menus from "./menus"
+import { formatAmount, formatMoney, safeAnswerCallback } from "./utils"
+import { registerCommands } from "./commands"
+import * as templateHandlers from "./handlers"
 
 // TODO: try to fix warning in future
 process.env.NTBA_FIX_350 = "1"
@@ -43,6 +48,8 @@ async function startBot() {
 
     const bot = new TelegramBot(token, { polling: true })
     const wizardManager = new WizardManager(bot)
+
+    registerCommands(bot)
 
     console.log("🚀 Bot is running...")
 
@@ -80,7 +87,6 @@ async function startBot() {
       // Keyboard Menu Handlers
       switch (text) {
         case "/start": {
-          // Проверяем есть ли у пользователя данные
           const userData = await db.getUserData(userId)
           const hasData =
             userData.balances.length > 0 ||
@@ -89,24 +95,22 @@ async function startBot() {
             userData.goals.length > 0
 
           if (hasData) {
-            // Пользователь уже использует бот
             bot.sendMessage(
               chatId,
               "👋 Welcome back! Select an option:",
               MAIN_MENU_KEYBOARD
             )
           } else {
-            // Новый пользователь
             bot.sendMessage(
               chatId,
               "👋 *Welcome to Personal Finance Bot!*\n\n" +
-                "📊 Track your money with ease:\n" +
-                "• 💸 Record expenses and income\n" +
-                "• 💰 Manage multiple accounts\n" +
-                "• 📉 Track debts\n" +
-                "• 🎯 Set financial goals\n" +
-                "• 📈 View statistics\n\n" +
-                "Ready to take control of your finances?",
+              "📊 Track your money with ease:\n" +
+              "• 💸 Record expenses and income\n" +
+              "• 💰 Manage multiple accounts\n" +
+              "• 📉 Track debts\n" +
+              "• 🎯 Set financial goals\n" +
+              "• 📈 View statistics\n\n" +
+              "Ready to take control of your finances?",
               {
                 parse_mode: "Markdown",
                 reply_markup: {
@@ -120,15 +124,14 @@ async function startBot() {
         }
 
         case "💰 Start tracking": {
-          // Одноразовая кнопка для новых пользователей
           bot.sendMessage(
             chatId,
             "🎉 *Great! Let's get started!*\n\n" +
-              "📄 *Quick Start Guide:*\n" +
-              "1️⃣ Add your first account in 💰 *Balances*\n" +
-              "2️⃣ Record transactions via 💸 *Expense* and 💰 *Income*\n" +
-              "3️⃣ View your stats in 📈 *Stats*\n\n" +
-              "You can start by adding a balance account!",
+            "📄 *Quick Start Guide:*\n" +
+            "1️⃣ Add your first account in 💰 *Balances*\n" +
+            "2️⃣ Record transactions via 💸 *Expense* and 💰 *Income*\n" +
+            "3️⃣ View your stats in 📈 *Stats*\n\n" +
+            "You can start by adding a balance account!",
             {
               parse_mode: "Markdown",
               ...MAIN_MENU_KEYBOARD,
@@ -139,6 +142,7 @@ async function startBot() {
 
         // MAIN MENU
         // TRANSACTIONS
+        case "✨ Add Another Expense":
         case "💸 Expense": {
           const balanceCount = (await db.getBalancesList(userId)).length
 
@@ -146,16 +150,16 @@ async function startBot() {
             bot.sendMessage(
               chatId,
               "⚠️ *No Balances Found*\n\n" +
-                "Before adding transactions, you need at least one balance account.\n\n" +
-                "💡 *Quick Start:*\n" +
-                "1️⃣ Go to 💰 *Balances*\n" +
-                "2️⃣ Tap ➕ *Add Balance*\n" +
-                "3️⃣ Enter account name and amount",
+              "Before adding transactions, you need at least one balance account.\n\n" +
+              "💡 *Quick Start:*\n" +
+              "1️⃣ Go to 💰 *Balances*\n" +
+              "2️⃣ Tap ✨ *Add Balance*\n" +
+              "3️⃣ Enter account name and amount",
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    [{ text: "💰 Go to Balances" }],
+                    [{ text: "💳 Go to Balances" }],
                     [{ text: "🏠 Main Menu" }],
                   ],
                   resize_keyboard: true,
@@ -168,18 +172,48 @@ async function startBot() {
           wizardManager.setState(userId, {
             step: "TX_AMOUNT",
             txType: TransactionType.EXPENSE,
-            data: { isQuickMode: true },
+            data: {},
             returnTo: "main",
           })
 
           const currency = await db.getDefaultCurrency(userId)
+
+          // Get top transaction amounts
+          const topAmounts = await db.getTopTransactionAmounts(
+            userId,
+            TransactionType.EXPENSE,
+            5
+          )
+
+          const denominations = db.getCurrencyDenominations(currency)
+
+          const topValues = topAmounts.map(a => a.amount)
+          const standardValues = denominations.filter(d => !topValues.includes(d))
+
+          const allAmounts = [
+            ...topAmounts.map(({ amount }) => amount),
+            ...standardValues
+          ].slice(0, 5)
+
+          const buttons: TelegramBot.KeyboardButton[][] = []
+
+          for (let i = 0; i < allAmounts.length; i += 3) {
+            const row = allAmounts
+              .slice(i, i + 3)
+              .map((amount) => ({
+                text: `${formatMoney(amount, currency, true)}`
+              }))
+            buttons.push(row)
+          }
+          buttons.push([{ text: "🏠 Main Menu" }])
+
           bot.sendMessage(
             chatId,
-            `💸 *Expense*\n\nEnter amount (e.g., 50 or 50 ${currency}):`,
+            `💸 *Expense*\n\nSelect amount or enter custom:\n\nCurrency: ${currency}`,
             {
               parse_mode: "Markdown",
               reply_markup: {
-                keyboard: [[{ text: "🏠 Main Menu" }]],
+                keyboard: buttons,
                 resize_keyboard: true,
               },
             }
@@ -187,6 +221,7 @@ async function startBot() {
           break
         }
 
+        case "✨ Add Another Income":
         case "💰 Income": {
           const balanceCount = (await db.getBalancesList(userId)).length
 
@@ -194,16 +229,16 @@ async function startBot() {
             bot.sendMessage(
               chatId,
               "⚠️ *No Balances Found*\n\n" +
-                "Before adding transactions, you need at least one balance account.\n\n" +
-                "💡 *Quick Start:*\n" +
-                "1️⃣ Go to 💰 *Balances*\n" +
-                "2️⃣ Tap ➕ *Add Balance*\n" +
-                "3️⃣ Enter account name and amount",
+              "Before adding transactions, you need at least one balance account.\n\n" +
+              "💡 *Quick Start:*\n" +
+              "1️⃣ Go to 💰 *Balances*\n" +
+              "2️⃣ Tap ✨ *Add Balance*\n" +
+              "3️⃣ Enter account name and amount",
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    [{ text: "💰 Go to Balances" }],
+                    [{ text: "💳 Go to Balances" }],
                     [{ text: "🏠 Main Menu" }],
                   ],
                   resize_keyboard: true,
@@ -216,18 +251,50 @@ async function startBot() {
           wizardManager.setState(userId, {
             step: "TX_AMOUNT",
             txType: TransactionType.INCOME,
-            data: { isQuickMode: true },
+            data: {},
             returnTo: "main",
           })
 
           const currency = await db.getDefaultCurrency(userId)
+
+
+          // Get top transaction amounts
+          const topAmounts = await db.getTopTransactionAmounts(
+            userId,
+            TransactionType.INCOME,
+            5
+          )
+
+          const denominations = db.getCurrencyDenominations(currency)
+
+          // Combine top amounts with standard denominations to always show 5 buttons
+          const topValues = topAmounts.map(a => a.amount)
+          const standardValues = denominations.filter(d => !topValues.includes(d))
+
+          const allAmounts = [
+            ...topAmounts.map(({ amount }) => amount),
+            ...standardValues
+          ].slice(0, 5)
+
+          const buttons: TelegramBot.KeyboardButton[][] = []
+
+          for (let i = 0; i < allAmounts.length; i += 3) {
+            const row = allAmounts
+              .slice(i, i + 3)
+              .map((amount) => ({
+                text: `${formatMoney(amount, currency, true)}`
+              }))
+            buttons.push(row)
+          }
+          buttons.push([{ text: "🏠 Main Menu" }])
+
           bot.sendMessage(
             chatId,
-            `💰 *Quick Income*\n\nEnter amount (e.g., 1500 or 1500 ${currency}):`,
+            `💰 *Income*\n\nSelect amount or enter custom:\n\nCurrency: ${currency}`,
             {
               parse_mode: "Markdown",
               reply_markup: {
-                keyboard: [[{ text: "🏠 Main Menu" }]],
+                keyboard: buttons,
                 resize_keyboard: true,
               },
             }
@@ -236,59 +303,33 @@ async function startBot() {
         }
 
         // BALANCES
-        case "💰 Go to Balances":
-        case "💰 Balances":
-          await menus.showBalancesMenu(bot, chatId, userId)
-          break
-
-        case "➕ Add Balance": {
+        case "💳 Balances":
+        case "💳 Go to Balances":
           wizardManager.setState(userId, {
-            step: "BALANCE_NAME",
+            step: "BALANCE_LIST",
             data: {},
             returnTo: "balances",
           })
-          bot.sendMessage(
-            chatId,
-            "Enter account name (e.g., 'Cash' or 'Bank Card'):",
-            wizardManager.getBackButton()
-          )
+          await menus.showBalancesMenu(wizardManager, chatId, userId)
           break
-        }
 
-        case "✏️ Edit Balances": {
-          const editBalances = await db.getBalancesList(userId)
+        case "↔️ Transfer": {
+          const isInWizard = wizardManager.isInWizard(userId)
 
-          const editBalanceRows = [[{ text: "➕ Add Balance" }]]
+          if (isInWizard) {
+            await wizardManager.goToStep(userId, "TX_AMOUNT", {
+              txType: TransactionType.TRANSFER,
+              returnTo: "balances",
+            })
+          } else {
+            wizardManager.setState(userId, {
+              step: "TX_AMOUNT",
+              txType: TransactionType.TRANSFER,
+              data: {},
+              returnTo: "balances",
+            })
+          }
 
-          editBalances.forEach((b) => {
-            editBalanceRows.push([{ text: `${b.accountId} (${b.currency})` }])
-          })
-
-          editBalanceRows.push([{ text: "🔙 Back" }, { text: "🏠 Main Menu" }])
-
-          wizardManager.setState(userId, {
-            step: "BALANCE_EDIT_SELECT",
-            data: {},
-            returnTo: "balances",
-          })
-
-          bot.sendMessage(chatId, "✏️ Edit Balances - select an action:", {
-            reply_markup: {
-              keyboard: editBalanceRows,
-              resize_keyboard: true,
-              one_time_keyboard: true,
-            },
-          })
-          break
-        }
-
-        case "↔ Transfer": {
-          wizardManager.setState(userId, {
-            step: "TX_AMOUNT",
-            txType: TransactionType.TRANSFER,
-            data: {},
-            returnTo: "balances",
-          })
           const transferCurrency = await db.getDefaultCurrency(userId)
           bot.sendMessage(
             chatId,
@@ -303,7 +344,8 @@ async function startBot() {
           await menus.showDebtsMenu(bot, chatId, userId)
           break
 
-        case "➕ Add Debt":
+        case "✨ Add Debt":
+          // TODO?
           wizardManager.setState(userId, {
             step: "DEBT_TYPE",
             data: {},
@@ -313,89 +355,40 @@ async function startBot() {
             reply_markup: {
               keyboard: [
                 [{ text: "🔴 I Owe" }, { text: "🟢 They Owe Me" }],
-                [{ text: "🔙 Back" }, { text: "🏠 Main Menu" }],
+                [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
               ],
               resize_keyboard: true,
             },
           })
           break
 
-        case "✏️ Edit Debts": {
-          const userData = await db.getUserData(userId)
-          const activeDebts = userData.debts.filter((d: Debt) => !d.isPaid)
-
-          const debtRows = [[{ text: "➕ Add Debt" }]]
-
-          activeDebts.forEach((d: Debt) => {
-            const prefix = d.type === "I_OWE" ? "💸 Pay to" : "💰 Receive from"
-            debtRows.push([{ text: `${prefix}: ${d.name}` }])
-          })
-          debtRows.push([{ text: "🔙 Back" }, { text: "🏠 Main Menu" }])
-
-          wizardManager.setState(userId, {
-            step: "DEBT_EDIT_SELECT",
-            data: {},
-            returnTo: "debts",
-          })
-          bot.sendMessage(chatId, "✏️ Edit Debts - select an action:", {
-            reply_markup: {
-              keyboard: debtRows,
-              resize_keyboard: true,
-            },
-          })
-          break
-        }
-
         // GOALS
         case "🎯 Goals":
           await menus.showGoalsMenu(bot, chatId, userId)
           break
 
-        case "➕ Add Goal":
+        case "✨ Add Goal": {
+          // TODO?
           wizardManager.setState(userId, {
-            step: "GOAL_NAME",
+            step: "GOAL_INPUT",
             data: {},
             returnTo: "goals",
           })
+          const defaultCurrency = await db.getDefaultCurrency(userId)
           bot.sendMessage(
             chatId,
-            "Enter goal name (e.g. Car):",
-            wizardManager.getBackButton()
+            `🎯 *Add Goal*\n\n` +
+            `Enter goal in format:\n` +
+            `\`GoalName amount CURRENCY\`\n\n` +
+            `*Examples:*\n` +
+            `• \`Laptop 2000 ${defaultCurrency}\`\n` +
+            `• \`Vacation 5000 USD\`\n` +
+            `• \`Emergency Fund 10000\` (uses ${defaultCurrency})`,
+            {
+              parse_mode: "Markdown",
+              ...wizardManager.getBackButton(),
+            }
           )
-          break
-
-        case "✏️ Edit Goals": {
-          const userData = await db.getUserData(userId)
-          const activeGoals = userData.goals.filter(
-            (g: Goal) => g.status === "ACTIVE"
-          )
-          const completedGoals = userData.goals.filter(
-            (g: Goal) => g.status === "COMPLETED"
-          )
-
-          const goalRows = [[{ text: "➕ Add Goal" }]]
-
-          activeGoals.forEach((g: Goal) => {
-            goalRows.push([{ text: `Goal: ${g.name}` }])
-          })
-
-          if (completedGoals.length > 0) {
-            goalRows.push([{ text: `✅ Completed Goals` }])
-          }
-
-          goalRows.push([{ text: "🔙 Back" }, { text: "🏠 Main Menu" }])
-
-          wizardManager.setState(userId, {
-            step: "GOAL_EDIT_SELECT",
-            data: {},
-            returnTo: "goals",
-          })
-          bot.sendMessage(chatId, "✏️ Edit Goals - select an action:", {
-            reply_markup: {
-              keyboard: goalRows,
-              resize_keyboard: true,
-            },
-          })
           break
         }
 
@@ -420,8 +413,9 @@ async function startBot() {
           completedGoals.forEach((g: Goal) => {
             goalRows.push([{ text: `✅ Goal: ${g.name}` }])
           })
-          goalRows.push([{ text: "🔙 Back" }, { text: "🏠 Main Menu" }])
+          goalRows.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
 
+          // TODO?
           wizardManager.setState(userId, {
             step: "GOAL_COMPLETED_SELECT",
             data: {},
@@ -443,98 +437,86 @@ async function startBot() {
           await menus.showStatsMenu(bot, chatId)
           break
 
-        case "📈 Monthly Stats": {
-          const statsMsg = await formatMonthlyStats(userId)
-
+        case "📈 Reports": {
+          // TODO?
           wizardManager.setState(userId, {
-            step: "STATS_VIEW",
+            step: "ANALYTICS_REPORTS_MENU",
             data: {},
             returnTo: "analytics",
           })
+
+          const statsMsg = await formatMonthlyStats(userId)
 
           bot.sendMessage(chatId, statsMsg, {
             parse_mode: "Markdown",
             reply_markup: {
               keyboard: [
                 [{ text: "📅 Export CSV" }],
-                [{ text: "🔙 Back" }, { text: "🏠 Main Menu" }],
+                [{ text: "🔍 Filters" }],
+                [{ text: "📈 Trends" }],
+                [{ text: "📉 Top Categories" }],
+                [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
               ],
               resize_keyboard: true,
             },
           })
           break
         }
-
-        case "🔄 Net Worth": {
-          const netWorthMsg = await formatNetWorth(userId)
-
+        case "💎 Net Worth": {
+          //TODO?
           wizardManager.setState(userId, {
-            step: "NETWORTH_VIEW",
-            data: {},
+            step: "NET_WORTH_VIEW",
+            data: { view: 'summary' },
             returnTo: "analytics",
           })
-
-          bot.sendMessage(chatId, netWorthMsg, {
-            parse_mode: "Markdown",
-            reply_markup: {
-              keyboard: [[{ text: "🔙 Back" }, { text: "🏠 Main Menu" }]],
-              resize_keyboard: true,
-            },
-          })
+          await menus.showNetWorthMenu(bot, chatId, userId, 'summary')
           break
         }
 
-        case "📅 Export CSV": {
-          const csvData = await generateCSV(userId)
-
-          wizardManager.setState(userId, {
-            step: "EXPORT_VIEW",
-            data: {},
-            returnTo: "analytics",
-          })
-
-          if (csvData) {
-            const buffer = Buffer.from(csvData, "utf-8")
-            bot.sendDocument(
-              chatId,
-              buffer,
-              {},
-              {
-                filename: `finance_export_${new Date().toISOString().split("T")[0]}.csv`,
-                contentType: "text/csv",
-              }
-            )
-            bot.sendMessage(chatId, "✅ CSV exported successfully!", {
-              reply_markup: {
-                keyboard: [
-                  [{ text: "📈 Monthly Stats" }],
-                  [{ text: "🔄 Net Worth" }],
-                  [{ text: "📅 Export CSV" }],
-                  [{ text: "🔙 Back" }, { text: "🏠 Main Menu" }],
-                ],
-                resize_keyboard: true,
-              },
-            })
-          } else {
-            bot.sendMessage(chatId, "❌ No transactions to export.", {
-              reply_markup: {
-                keyboard: [[{ text: "🔙 Back" }, { text: "🏠 Main Menu" }]],
-                resize_keyboard: true,
-              },
-            })
+        // Обработчики для табов Net Worth
+        case "💳 Assets": {
+          const state = wizardManager.getState(userId)
+          if (state?.step === "NET_WORTH_VIEW") {
+            await menus.showNetWorthMenu(bot, chatId, userId, 'assets')
           }
           break
         }
+
+        case "💰 Debts": {
+          const state = wizardManager.getState(userId)
+          if (state?.step === "NET_WORTH_VIEW") {
+            await menus.showNetWorthMenu(bot, chatId, userId, 'debts')
+          }
+          break
+        }
+
+        case "📋 Full Report":
+        case "📋 Full": {
+          const state = wizardManager.getState(userId)
+          if (state?.step === "NET_WORTH_VIEW") {
+            await menus.showNetWorthMenu(bot, chatId, userId, 'full')
+          }
+          break
+        }
+
+        case "📊 Summary": {
+          const state = wizardManager.getState(userId)
+          if (state?.step === "NET_WORTH_VIEW") {
+            await menus.showNetWorthMenu(bot, chatId, userId, 'summary')
+          }
+          break
+        }
+
 
         // SETTINGS
         case "⚙️ Settings":
           await menus.showSettingsMenu(bot, chatId, userId)
           break
 
-        case "💱 Change Currency": {
+        case "🌐 Change currency": {
           const currentCurr = await db.getDefaultCurrency(userId)
 
-          // Устанавливаем контекст для Back
+          //TODO?
           wizardManager.setState(userId, {
             step: "CURRENCY_SELECT",
             data: {},
@@ -551,7 +533,7 @@ async function startBot() {
                   [{ text: "USD 🇺🇸" }, { text: "EUR 🇪🇺" }],
                   [{ text: "GEL 🇬🇪" }, { text: "RUB 🇷🇺" }],
                   [{ text: "UAH 🇺🇦" }, { text: "PLN 🇵🇱" }],
-                  [{ text: "🔙 Back" }, { text: "🏠 Main Menu" }],
+                  [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
                 ],
                 resize_keyboard: true,
               },
@@ -561,6 +543,7 @@ async function startBot() {
         }
 
         case "❓ Help & Info":
+          //TODO?
           wizardManager.setState(userId, {
             step: "HELP_VIEW",
             data: {},
@@ -570,21 +553,21 @@ async function startBot() {
           bot.sendMessage(
             chatId,
             "❓ *Help & Info*\n\n" +
-              "*How to use:*\n" +
-              "• 💸 *Expense* and 💰 *Income* - Add expenses, income, or transfers\n" +
-              "• 💰 *Balances* - View and manage your accounts\n" +
-              "• 📊 *History* - Browse transaction history\n" +
-              "• 📉 *Debts* - Track money you owe or are owed\n" +
-              "• 🎯 *Goals* - Set and track savings goals\n" +
-              "• 📊 *Analytics* - View stats and reports\n\n" +
-              "*About this bot:*\n" +
-              "Personal Finance Bot helps you track expenses, manage budgets, and achieve financial goals.\n\n" +
-              "Version: 2.0\n" +
-              "Multi-currency support with automatic conversion.",
+            "*How to use:*\n" +
+            "• 💸 *Expense* and 💰 *Income* - Add expenses, income, or transfers\n" +
+            "• 💰 *Balances* - View and manage your accounts\n" +
+            "• 📋 *History* - Browse transaction history\n" +
+            "• 📉 *Debts* - Track money you owe or are owed\n" +
+            "• 🎯 *Goals* - Set and track savings goals\n" +
+            "• 📊 *Analytics* - View stats and reports\n\n" +
+            "*About this bot:*\n" +
+            "Personal Finance Bot helps you track expenses, manage budgets, and achieve financial goals.\n\n" +
+            "Version: 2.0\n" +
+            "Multi-currency support with automatic conversion.",
             {
               parse_mode: "Markdown",
               reply_markup: {
-                keyboard: [[{ text: "🔙 Back" }, { text: "🏠 Main Menu" }]],
+                keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
                 resize_keyboard: true,
               },
             }
@@ -592,44 +575,28 @@ async function startBot() {
           break
 
         case "💵 Income Sources":
+          //TODO?
           wizardManager.setState(userId, {
             step: "INCOME_VIEW",
             data: {},
             returnTo: "settings",
           })
-          await menus.showIncomeMenu(bot, chatId, userId)
+          await menus.showIncomeSourcesMenu(bot, chatId, userId)
           break
 
-        case "➕ Add Income Source":
+        // HISTORY
+        case "📋 History":
+          //TODO?
           wizardManager.setState(userId, {
-            step: "INCOME_NAME",
+            step: "HISTORY_LIST",
             data: {},
-            returnTo: "income",
+            returnTo: "main",
           })
-          bot.sendMessage(
-            chatId,
-            "Enter income source name (e.g. Salary, Freelance):",
-            wizardManager.getBackButton()
-          )
-          break
-
-        case "📊 History":
           await menus.showHistoryMenu(bot, chatId, userId)
           break
 
-        case "✏️ Edit Transactions": {
-          wizardManager.setState(userId, {
-            step: "TX_EDIT_SELECT",
-            data: {},
-            returnTo: "history",
-          })
-
-          await menus.showEditTransactionsMenu(bot, chatId, userId)
-
-          break
-        }
-
-        case "🔍 View More":
+        case "🔍 Filters":
+          //TODO?
           wizardManager.setState(userId, {
             step: "TX_VIEW_PERIOD",
             data: {},
@@ -638,15 +605,18 @@ async function startBot() {
 
           bot.sendMessage(
             chatId,
-            "📊 *Transaction History*\n\nSelect filter:",
+            "📋 *Transaction History*\n\nSelect filter:",
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
                   [{ text: "📅 Last 7 days" }, { text: "📅 Last 30 days" }],
                   [{ text: "💸 Expenses only" }, { text: "💰 Income only" }],
-                  [{ text: "🔍 All transactions" }],
-                  [{ text: "🔙 Back" }, { text: "🏠 Main Menu" }],
+                  [
+                    { text: "📅 Custom Period" },
+                    { text: "🔍 All transactions" },
+                  ],
+                  [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
                 ],
                 resize_keyboard: true,
               },
@@ -658,14 +628,14 @@ async function startBot() {
           bot.sendMessage(
             chatId,
             "⚠️ *WARNING*\n\nThis will permanently delete:\n" +
-              "• All transactions\n" +
-              "• All balances\n" +
-              "• All debts\n" +
-              "• All goals\n" +
-              "• All income sources\n" +
-              "• All settings\n\n" +
-              "❗ This action CANNOT be undone!\n\n" +
-              "Are you sure you want to continue?",
+            "• All transactions\n" +
+            "• All balances\n" +
+            "• All debts\n" +
+            "• All goals\n" +
+            "• All income sources\n" +
+            "• All settings\n\n" +
+            "❗ This action CANNOT be undone!\n\n" +
+            "Are you sure you want to continue?",
             {
               parse_mode: "Markdown",
               reply_markup: {
@@ -686,13 +656,13 @@ async function startBot() {
             bot.sendMessage(
               chatId,
               "👋 *Welcome to Personal Finance Bot!*\n\n" +
-                "📊 Track your money with ease:\n" +
-                "• 💸 Record expenses and income\n" +
-                "• 💰 Manage multiple accounts\n" +
-                "• 📉 Track debts\n" +
-                "• 🎯 Set financial goals\n" +
-                "• 📈 View statistics\n\n" +
-                "Ready to take control of your finances?",
+              "📊 Track your money with ease:\n" +
+              "• 💸 Record expenses and income\n" +
+              "• 💰 Manage multiple accounts\n" +
+              "• 📉 Track debts\n" +
+              "• 🎯 Set financial goals\n" +
+              "• 📈 View statistics\n\n" +
+              "Ready to take control of your finances?",
               {
                 parse_mode: "Markdown",
                 reply_markup: {
@@ -753,22 +723,33 @@ async function startBot() {
           break
         }
 
-        // MAIN MENU & BACK
+        // BUDGET PLANNER
+        case "🔮 Budget Planner": {
+          wizardManager.setState(userId, {
+            step: "BUDGET_MENU",
+            data: {},
+            returnTo: "settings",
+          })
+          await menus.showBudgetMenu(wizardManager, chatId, userId)
+          break
+        }
+
+        // MAIN MENU
         case "🏠 Main Menu":
           wizardManager.clearState(userId)
           await menus.showMainMenu(bot, chatId)
           break
 
-        default:
+        default: {
           // CHANGE CURRENCY
           if (text.match(/^(USD|EUR|GEL|RUB|UAH|PLN) /)) {
             const currency = text.split(" ")[0] as Currency
             const oldCurrency = await db.getDefaultCurrency(userId)
 
             if (oldCurrency !== currency) {
-              // ✅ Баг #7: Добавить шаг подтверждения
               const balancesCount = (await db.getBalancesList(userId)).length
 
+              //TODO?
               wizardManager.setState(userId, {
                 step: "SETTINGS_CURRENCY_CONFIRM",
                 data: { newCurrency: currency, balancesCount },
@@ -778,13 +759,13 @@ async function startBot() {
               bot.sendMessage(
                 chatId,
                 `⚠️ *Currency Change Confirmation*\n\n` +
-                  `Change from *${oldCurrency}* to *${currency}*?\n\n` +
-                  `This will affect:\n` +
-                  (balancesCount > 0
-                    ? `• ${balancesCount} balance(s) will be converted to ${currency}\n`
-                    : "") +
-                  `• Statistics display\n\n` +
-                  `Are you sure?`,
+                `Change from *${oldCurrency}* to *${currency}*?\n\n` +
+                `This will affect:\n` +
+                (balancesCount > 0
+                  ? `• ${balancesCount} balance(s) will be converted to ${currency}\n`
+                  : "") +
+                `• Statistics display\n\n` +
+                `Are you sure?`,
                 {
                   parse_mode: "Markdown",
                   reply_markup: {
@@ -797,7 +778,6 @@ async function startBot() {
                 }
               )
             } else {
-              // ✅ Баг #6: Уведомление при выборе текущей валюты
               bot.sendMessage(
                 chatId,
                 `ℹ️ ${currency} is already your current currency.`,
@@ -809,69 +789,201 @@ async function startBot() {
             return
           }
 
-          // DELETE INCOME
-          if (text.startsWith("🗑 Delete Income: ")) {
-            const name = text.replace("🗑 Delete Income: ", "").trim()
+          const userData = await db.getUserData(userId)
+
+          const goal = userData.goals.find(
+            (g: Goal) => g.name === text && g.status === "ACTIVE"
+          )
+          if (goal) {
+            //TODO?
             wizardManager.setState(userId, {
-              step: "INCOME_DELETE_CONFIRM",
-              data: { name },
-              returnTo: "income",
+              step: "GOAL_MENU",
+              data: { goal, goalId: goal.id },
+              returnTo: "goals",
             })
-            bot.sendMessage(chatId, `🗑 Delete income source "${name}"?`, {
-              reply_markup: {
-                keyboard: [
-                  [{ text: "✅ Confirm delete" }],
-                  [{ text: "🔙 Back" }, { text: "🏠 Main Menu" }],
-                ],
-                resize_keyboard: true,
-              },
-            })
+            const remaining = goal.targetAmount - goal.currentAmount
+            const progress = formatAmount(
+              (goal.currentAmount / goal.targetAmount) * 100
+            )
+
+            bot.sendMessage(
+              chatId,
+              `🎯 *${goal.name}*\n\n` +
+              `Target: ${formatMoney(goal.targetAmount, goal.currency)}\n` +
+              `Current: ${formatMoney(goal.currentAmount, goal.currency)}\n` +
+              `Remaining: ${formatMoney(remaining, goal.currency)}\n` +
+              `Progress: ${progress}%\n\n` +
+              `💡 Enter amount to deposit`,
+              {
+                parse_mode: "Markdown",
+                reply_markup: {
+                  keyboard: [
+                    [{ text: "✏️ Edit Target" }],
+                    [{ text: "🗑 Delete Goal" }],
+                    [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+                  ],
+                  resize_keyboard: true,
+                },
+              }
+            )
             return
           }
 
-          // PAY DEBTS
-          if (
-            text.startsWith("💸 Pay to: ") ||
-            text.startsWith("💰 Receive from: ")
-          ) {
-            const debtName = text.replace(/^(💸 Pay to|💰 Receive from): /, "")
-            const userData = await db.getUserData(userId)
-            const debt = userData.debts.find(
-              (d: Debt) => d.name === debtName && !d.isPaid
+          const debt = userData.debts.find(
+            (d: Debt) => d.name === text && !d.isPaid
+          )
+          if (debt) {
+            //TODO?
+            wizardManager.setState(userId, {
+              step: "DEBT_MENU",
+              data: { debt, debtId: debt.id },
+              returnTo: "debts",
+            })
+            const remaining = debt.amount - debt.paidAmount
+            const emoji =
+              debt.type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
+            const action = debt.type === "I_OWE" ? "pay" : "receive"
+
+            bot.sendMessage(
+              chatId,
+              `${emoji} *${debt.name}*\n\n` +
+              `Total: ${formatMoney(debt.amount, debt.currency)}\n` +
+              `Paid: ${formatMoney(debt.paidAmount, debt.currency)}\n` +
+              `Remaining: ${formatMoney(remaining, debt.currency)}\n\n` +
+              `💡 Enter amount to ${action}`,
+              {
+                parse_mode: "Markdown",
+                reply_markup: {
+                  keyboard: [
+                    [{ text: "✏️ Edit Amount" }],
+                    [{ text: "🗑 Delete Debt" }],
+                    [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+                  ],
+                  resize_keyboard: true,
+                },
+              }
             )
-            if (debt) {
-              wizardManager.setState(userId, {
-                step: "DEBT_PARTIAL_AMOUNT",
-                data: { debt, debtId: debt.id },
-                returnTo: "debts",
-              })
-              bot.sendMessage(
-                chatId,
-                `📉 Paying "${debt.name}"\nRemaining: ${
-                  debt.amount - debt.paidAmount
-                }\n\nEnter amount to pay:`,
-                wizardManager.getBackButton()
-              )
-            } else {
-              bot.sendMessage(chatId, "❌ Debt not found or already paid.")
-            }
             return
           }
 
           break
+        }
       }
     })
 
-    // Inline Handler (Only for Delete now)
     bot.on("callback_query", async (query) => {
       const chatId = query.message?.chat.id
       if (!chatId) return
       const userId = chatId.toString()
       const data = query.data || ""
 
+      // Сохранение шаблона
+      if (data.startsWith("tmpl_save|")) {
+        await templateHandlers.handleTemplateSave(bot, query, userId, data)
+        return
+      }
+
+      // Использование шаблона
+      if (data.startsWith("tmpl_use|")) {
+        await templateHandlers.handleTemplateUse(bot, query, userId, chatId, data)
+        return
+      }
+
+      // Управление шаблоном
+      if (data.startsWith("tmpl_manage|")) {
+        await templateHandlers.handleTemplateManage(bot, query, userId, chatId, data)
+        return
+      }
+
+      // Удаление шаблона
+      if (data.startsWith("tmpl_del|")) {
+        await templateHandlers.handleTemplateDelete(bot, query, userId, chatId, data)
+        return
+      }
+
+      // Редактирование суммы
+      if (data.startsWith("tmpl_edit_amt|")) {
+        await templateHandlers.handleTemplateEditAmount(bot, query, userId, chatId, data, wizardManager)
+        return
+      }
+
+      // Редактирование счёта
+      if (data.startsWith("tmpl_edit_acc|")) {
+        await templateHandlers.handleTemplateEditAccount(bot, query, userId, chatId, data)
+        return
+      }
+
+      // Установка счёта
+      if (data.startsWith("tmpl_set_acc|")) {
+        await templateHandlers.handleTemplateSetAccount(bot, query, userId, chatId, data)
+        return
+      }
+
+      // Отмена редактирования
+      if (data.startsWith("tmpl_cancel|")) {
+        await templateHandlers.handleTemplateCancelEdit(bot, query, userId, chatId, data, wizardManager)
+        return
+      }
+
+      // Показать список шаблонов
+      if (data === "tmpl_list") {
+        wizardManager.clearState(userId)
+        await safeAnswerCallback(bot, { callback_query_id: query.id })
+        await templateHandlers.showTemplatesList(bot, chatId, userId)
+        return
+      }
+
+      // Смена счёта для транзакции
+      if (data.startsWith("acc_change|")) {
+        const txId = data.replace("acc_change|", "")
+        const balances = await db.getBalancesList(userId)
+
+        if (balances.length === 0) {
+          await safeAnswerCallback(bot, { callback_query_id: query.id, text: "⚠️ No balances found", show_alert: true })
+          return
+        }
+
+        const buttons: TelegramBot.InlineKeyboardButton[][] = balances.map((bal) => [
+          {
+            text: `💳 ${bal.accountId} — ${formatMoney(bal.amount, bal.currency)}`,
+            callback_data: `acc_set|${txId}|${bal.accountId}`,
+          },
+        ])
+
+        await safeAnswerCallback(bot, { callback_query_id: query.id })
+        await bot.sendMessage(chatId, "💳 *Select account:*", {
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: buttons,
+          },
+        })
+        return
+      }
+
+      // Установка нового счёта для транзакции
+      if (data.startsWith("acc_set|")) {
+        const parts = data.split("|")
+        const txId = parts[1]
+        const newAccountId = parts[2]
+
+        const result = await db.changeTransactionAccount(userId, txId, newAccountId)
+
+        if (result.success) {
+          await safeAnswerCallback(bot, { callback_query_id: query.id, text: "✅ Account updated", show_alert: false })
+          await bot.sendMessage(
+            chatId,
+            `✅ Transaction account changed to *${newAccountId}*`,
+            { parse_mode: "Markdown" }
+          )
+        } else {
+          await safeAnswerCallback(bot, { callback_query_id: query.id, text: `❌ ${result.message || "Failed to update"}`, show_alert: true })
+        }
+        return
+      }
+
       if (data.startsWith("tx_del_")) {
         const txId = data.replace("tx_del_", "")
-        const success = await await db.deleteTransaction(userId, txId)
+        const success = await db.deleteTransaction(userId, txId)
         if (success) {
           bot.sendMessage(
             chatId,
@@ -888,5 +1000,4 @@ async function startBot() {
   }
 }
 
-// 🚀 Запуск бота
 startBot()

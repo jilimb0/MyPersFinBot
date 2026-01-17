@@ -1,60 +1,48 @@
-import { Currency } from "./types"
+import {
+  Currency,
+  ExpenseCategory,
+  IncomeCategory,
+  TransactionCategory,
+} from "./types"
 
-/**
- * Валидаторы для пользовательского ввода
- */
+const VALID_CURRENCIES = ["USD", "EUR", "GEL", "RUB", "UAH", "PLN"]
 
-// Поддерживаемые валюты
-const VALID_CURRENCIES = ["USD", "EUR", "GEL", "RUB", "UAH"]
-
-/**
- * Парсит ввод суммы и валюты
- * Примеры: "100 USD", "50.5 EUR", "1000 gel", "100" (использует defaultCurrency)
- * Поддерживает отрицательные значения для возвратов: "-50 USD"
- */
 export function parseAmountWithCurrency(
   text: string,
   defaultCurrency: Currency = "USD"
 ): { amount: number; currency: Currency } | null {
-  // Нормализуем запятую на точку для поддержки 0,5 формата
-  const normalizedText = text.replace(',', '.')
-  
-  // Regex 1: число (целое или с точкой, может быть отрицательным) + опционально пробел + валюта
-  const fullRegex = /^(-?[0-9]+(?:\.[0-9]{1,2})?)\s+([A-Za-z]{3})$/
-  const matchFull = normalizedText.trim().match(fullRegex)
+  const normalizedText = text.replace(",", ".").trim().toUpperCase()
 
-  if (matchFull) {
-    const amount = parseFloat(matchFull[1])
-    const currency = matchFull[2].toUpperCase()
-    if (!isNaN(amount) && amount !== 0 && VALID_CURRENCIES.includes(currency)) {
-      return { amount, currency: currency as Currency }
+  const pureNumberRegex = /^(-?[0-9]+(?:\.[0-9]*)?)$/
+  if (pureNumberRegex.test(normalizedText)) {
+    const amount = parseFloat(normalizedText)
+    if (!isNaN(amount) && amount !== 0) {
+      return { amount, currency: defaultCurrency }
     }
   }
 
-  // Regex 2: просто число (используем defaultCurrency)
-  const numberRegex = /^(-?[0-9]+(?:\.[0-9]{1,2})?)$/
-  const matchNum = normalizedText.trim().match(numberRegex)
+  const currencyRegex = /^(-?[0-9]+(?:\.[0-9]*)?)\s*([A-Z]{3}|\$)$/
+  const currencyMatch = normalizedText.match(currencyRegex)
 
-  if (matchNum) {
-    const amount = parseFloat(matchNum[1])
-    if (!isNaN(amount) && amount !== 0) {
-      return { amount, currency: defaultCurrency }
+  if (currencyMatch) {
+    const amount = parseFloat(currencyMatch[1])
+    let currency = currencyMatch[2]
+
+    if (currency === "$") currency = "USD"
+
+    if (!isNaN(amount) && amount !== 0 && VALID_CURRENCIES.includes(currency)) {
+      return { amount, currency: currency as Currency }
     }
   }
 
   return null
 }
 
-/**
- * Парсит строку баланса: "AccountName 100 USD"
- */
 export function parseBalanceInput(
   text: string
 ): { accountId: string; amount: number; currency: Currency } | null {
-  // Нормализуем запятую на точку
-  const normalizedText = text.replace(',', '.')
-  
-  // Regex: название счёта (одно или несколько слов) + число + валюта
+  const normalizedText = text.replace(",", ".")
+
   const regex = /^(.+?)\s+([0-9]+(?:\.[0-9]{1,2})?)\s+([A-Za-z]{3})$/
   const match = normalizedText.trim().match(regex)
 
@@ -77,21 +65,14 @@ export function parseBalanceInput(
   return { accountId, amount, currency: currency as Currency }
 }
 
-/**
- * Парсит строку долга: "Name 100 USD owe" или "Name 100 USD me"
- */
-export function parseDebtInput(
-  text: string
-): {
+export function parseDebtInput(text: string): {
   counterparty: string
   amount: number
   currency: Currency
   type: "OWES_ME" | "I_OWE"
 } | null {
-  // Нормализуем запятую на точку
-  const normalizedText = text.replace(',', '.')
-  
-  // Regex: имя + число + валюта + тип (owe или me)
+  const normalizedText = text.replace(",", ".")
+
   const regex =
     /^(.+?)\s+([0-9]+(?:\.[0-9]{1,2})?)\s+([A-Za-z]{3})\s+(owe|me)$/i
   const match = normalizedText.trim().match(regex)
@@ -118,18 +99,14 @@ export function parseDebtInput(
   return { counterparty, amount, currency: currency as Currency, type }
 }
 
-/**
- * Парсит строку цели: "Goal Name 5000 USD" или "Goal Name 5000" (без валюты)
- */
 export function parseGoalInput(
   text: string,
   defaultCurrency: Currency = "USD"
 ): { name: string; targetAmount: number; currency: Currency } | null {
-  // Нормализуем запятую на точку
-  const normalizedText = text.replace(',', '.')
-  
-  // Regex 1: название цели + число + валюта
-  const regexWithCurrency = /^(.+?)\s+([0-9]+(?:\.[0-9]{1,2})?)\s+([A-Za-z]{3})$/
+  const normalizedText = text.replace(",", ".")
+
+  const regexWithCurrency =
+    /^(.+?)\s+([0-9]+(?:\.[0-9]{1,2})?)\s+([A-Za-z]{3})$/
   const matchWithCurrency = normalizedText.trim().match(regexWithCurrency)
 
   if (matchWithCurrency) {
@@ -148,7 +125,6 @@ export function parseGoalInput(
     return { name, targetAmount, currency: currency as Currency }
   }
 
-  // Regex 2: название цели + число (без валюты - используем defaultCurrency)
   const regexWithoutCurrency = /^(.+?)\s+([0-9]+(?:\.[0-9]{1,2})?)$/
   const matchWithoutCurrency = normalizedText.trim().match(regexWithoutCurrency)
 
@@ -166,9 +142,6 @@ export function parseGoalInput(
   return null
 }
 
-/**
- * Генерирует сообщение об ошибке в зависимости от типа ввода
- */
 export function getValidationErrorMessage(
   inputType: "amount" | "balance" | "debt" | "goal"
 ): string {
@@ -192,10 +165,33 @@ export function getValidationErrorMessage(
   }
 }
 
-/**
- * Проверяет, является ли строка числом
- */
 export function isValidAmount(text: string): boolean {
   const amount = parseFloat(text)
   return !isNaN(amount) && amount > 0
+}
+
+export function validateExpenseCategory(
+  text: string
+): TransactionCategory | null {
+  const categories = Object.values(ExpenseCategory)
+  const normalized = text.trim()
+
+  if (categories.includes(normalized as ExpenseCategory)) {
+    return normalized as ExpenseCategory
+  }
+
+  return null
+}
+
+export function validateIncomeCategory(
+  text: string
+): TransactionCategory | null {
+  const categories = Object.values(IncomeCategory)
+  const normalized = text.trim()
+
+  if (categories.includes(normalized as IncomeCategory)) {
+    return normalized as IncomeCategory
+  }
+
+  return null
 }
