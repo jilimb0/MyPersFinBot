@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   Column,
   OneToMany,
   CreateDateColumn,
@@ -10,11 +10,11 @@ import { Transaction } from "./Transaction"
 import { Debt } from "./Debt"
 import { Goal } from "./Goal"
 import { IncomeSource } from "./IncomeSource"
-import { Currency, TransactionTemplate } from "../../types"
+import { Currency, TransactionTemplate, ReminderSettings } from "../../types"
 
 @Entity("users")
 export class User {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn("uuid")
   id!: string
 
   @Column({ type: "text", default: "USD" })
@@ -25,6 +25,9 @@ export class User {
 
   @Column({ type: "simple-json", nullable: true })
   templates?: TransactionTemplate[]
+
+  @Column({ type: "simple-json", nullable: true })
+  reminderSettings?: ReminderSettings
 
   // Relations
   @OneToMany(() => Balance, (balance) => balance.user)

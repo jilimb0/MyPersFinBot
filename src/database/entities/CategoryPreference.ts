@@ -5,17 +5,17 @@ import {
   JoinColumn,
   UpdateDateColumn,
   Index,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
 } from "typeorm"
 import { User } from "./User"
 
 @Entity("category_preferences")
 @Index(["userId", "category"], { unique: true })
 export class CategoryPreference {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn("uuid")
   userId!: string
 
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn("uuid")
   category!: string
 
   @Column()

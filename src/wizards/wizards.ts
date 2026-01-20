@@ -14,7 +14,9 @@ import {
 import { dbStorage as db } from "../database/storage-db"
 import * as validators from "../validators"
 import {
+  showAdvancedMenu,
   showAnalyticsReportsMenu,
+  showAutomationMenu,
   showBalancesMenu,
   showBudgetMenu,
   showDebtsMenu,
@@ -29,7 +31,9 @@ import { createListButtons, formatAmount, formatMoney } from "../utils"
 
 import * as handlers from "../handlers"
 import * as helpers from "./helpers"
-import { formatTopExpenses, formatTrends, generateCSV } from "../reports"
+import { createProgressBar, formatTopExpenses, formatTrends, generateAnalyticsReport, generateCSV, getProgressEmoji } from "../reports"
+import { randomUUID } from "crypto"
+import { reminderManager } from "../services/reminder-manager"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WizardData = Record<string, any>
@@ -90,8 +94,21 @@ export class WizardManager {
   }
 
   async goToStep(userId: string, nextStep: string, data?: WizardData) {
-    const state = this.getState(userId)
-    if (!state) return
+    let state = this.getState(userId)
+
+    // ✅ Save returnTo from current state BEFORE any modifications
+    const savedReturnTo = state?.returnTo
+
+    // ✅ If no state exists, create a new one
+    if (!state) {
+      state = {
+        step: nextStep,
+        data: data || {},
+        history: [],
+      }
+      this.setState(userId, state)
+      return
+    }
 
     if (state.step !== nextStep) {
       if (!state.history) {
@@ -116,6 +133,12 @@ export class WizardManager {
     if (data) {
       state.data = { ...state.data, ...data }
     }
+
+    // ✅ Restore returnTo if it was lost during step transition
+    if (savedReturnTo && !state.returnTo) {
+      state.returnTo = savedReturnTo
+    }
+
     this.setState(userId, state)
   }
 
@@ -141,7 +164,7 @@ export class WizardManager {
         await showSettingsMenu(this.bot, chatId, userId)
         break
       case "history":
-        await showHistoryMenu(this.bot, chatId, userId)
+        await showHistoryMenu(this, chatId, userId)
         break
       case "analytics":
         await showStatsMenu(this.bot, chatId)
@@ -152,7 +175,15 @@ export class WizardManager {
       case "reports":
         await showAnalyticsReportsMenu(this, chatId, userId)
         break
-
+      case "automation":
+        await showAutomationMenu(this, chatId, userId)
+        break
+      case "advanced":
+        await showAdvancedMenu(this, chatId, userId)
+        break
+      case "recurring":
+        await handlers.handleRecurringMenu(this, chatId, userId)
+        break
       default:
         await showMainMenu(this.bot, chatId)
     }
@@ -164,8 +195,6 @@ export class WizardManager {
     text: string
   ): Promise<boolean> {
     const state = this.getState(userId)
-
-    console.log({ 1: state.history });
 
     if (text === "🏠 Main Menu") {
       this.clearState(userId)
@@ -199,23 +228,46 @@ export class WizardManager {
         return true
       }
 
-      if (!state.history || state.history.length === 0) {
+      // ✅ Special handling for DEBT_MENU and GOAL_MENU - return to their lists
+      if (state.step === "DEBT_MENU" || state.step === "GOAL_MENU" || state.step === "RECURRING_MENU") {
         this.clearState(userId)
-        
         await this.returnToContext(chatId, userId, state.returnTo)
         return true
       }
 
-      console.log({ 2: state.history });
+      if (!state.history || state.history.length === 0) {
+        this.clearState(userId)
+
+        await this.returnToContext(chatId, userId, state.returnTo)
+        return true
+      }
+
+      if (state.step === "TX_CATEGORY" && state.data?.showedAllCategories) {
+        delete state.data.topCategoriesShown
+        delete state.data.showedAllCategories
+        this.setState(userId, state)
+        await helpers.resendCurrentStepPrompt(this, chatId, userId, state)
+        return true
+      }
+
       const prevStep = state.history.pop()
-      console.log({ 3: state.history });
       state.step = prevStep
+
+      if (state.step === "TX_ACCOUNT" && state.data?.accountsShown) {
+        delete state.data.accountsShown
+      }
+      if (state.step === "TX_TO_ACCOUNT" && state.data?.toAccountsShown) {
+        delete state.data.toAccountsShown
+      }
+
       this.setState(userId, state)
       await helpers.resendCurrentStepPrompt(this, chatId, userId, state)
       return true
     }
 
-    if (!state) return false
+    if (!state) {
+      return false
+    }
 
     try {
       switch (state.step) {
@@ -343,7 +395,7 @@ export class WizardManager {
             )
           } else if (text === "📅 Custom Period") {
             await this.goToStep(userId, "CUSTOM_PERIOD_SINGLE")
-            await this.sendMessage(
+            await this.bot.sendMessage(
               chatId,
               `📅 *Period*\n\n1️⃣ DD.MM.YYYY-DD.MM.YYYY\n` +
               `Example: \`01.01.2026-13.01.2026\``,
@@ -689,7 +741,7 @@ export class WizardManager {
                 chatId,
                 "❌ Error deleting transaction"
               )
-              await showHistoryMenu(this.bot, chatId, userId)
+              await showHistoryMenu(this, chatId, userId)
               return true
             }
 
@@ -706,7 +758,7 @@ export class WizardManager {
                   },
                 }
               )
-              await showHistoryMenu(this.bot, chatId, userId)
+              await showHistoryMenu(this, chatId, userId)
               return true
             }
 
@@ -768,7 +820,7 @@ export class WizardManager {
             await this.bot.sendMessage(chatId, "❌ Error updating transaction.")
           }
 
-          await showHistoryMenu(this.bot, chatId, userId)
+          await showHistoryMenu(this, chatId, userId)
           return true
         }
         case "TX_EDIT_CATEGORY": {
@@ -809,7 +861,7 @@ export class WizardManager {
             await this.bot.sendMessage(chatId, "❌ Error updating transaction.")
           }
 
-          await showHistoryMenu(this.bot, chatId, userId)
+          await showHistoryMenu(this, chatId, userId)
           return true
         }
         case "TX_EDIT_ACCOUNT": {
@@ -854,7 +906,7 @@ export class WizardManager {
             await this.bot.sendMessage(chatId, "❌ Error updating transaction.")
           }
 
-          await showHistoryMenu(this.bot, chatId, userId)
+          await showHistoryMenu(this, chatId, userId)
           return true
         }
 
@@ -919,6 +971,7 @@ export class WizardManager {
             return true
           }
 
+
           const userData = await db.getUserData(userId)
           const debts = userData.debts.filter((d: Debt) => !d.isPaid)
 
@@ -937,20 +990,52 @@ export class WizardManager {
 
           await this.goToStep(userId, "DEBT_MENU", { debt: selected })
 
+          const { amount, paidAmount, type, dueDate, name, currency, autoPayment } = selected
+          let msg = ""
+          const remaining = amount - paidAmount
+          const progress = createProgressBar(paidAmount, amount)
+          const emoji =
+            type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
+          const action = type === "I_OWE" ? "pay" : "receive"
+
+          msg += `${emoji} *${name}*\n`
+          msg += `${progress}\n`
+
+          if (paidAmount === 0) {
+            msg += `Total: ${formatMoney(amount, currency)}\n`
+          } else if (remaining > 0) {
+            msg += `Remaining: ${formatMoney(remaining, currency)}\n`
+          } else {
+            msg += `🎉 Goal achieved!\n`
+          }
+
+          if (dueDate) {
+            const deadlineDate = new Date(dueDate)
+            msg += `Due: ${deadlineDate.toLocaleDateString('en-GB')}\n`
+          }
+
+          msg += `\n💡 Enter amount to ${action}`
+
+          const deadlineButtons = dueDate ?
+            [
+              [{ text: "📅 Change Deadline" }],
+              [{ text: "🔕 Disable Reminders" }],
+              [{ text: autoPayment?.enabled ? "❌ Disable Auto-Payment" : "✅ Enable Auto-Payment" }]
+            ]
+            : [[{ text: "📅 Set Deadline" }]]
+
           await this.bot.sendMessage(
             chatId,
-            `💰 Debt: "${selected.name}"\n\n` +
-            `Total: ${formatMoney(selected.amount, selected.currency)}\n` +
-            `Paid: ${formatMoney(selected.paidAmount, selected.currency)}\n` +
-            `Remaining: ${formatMoney(selected.amount - selected.paidAmount, selected.currency)}\n\n` +
-            `What would you like to do?`,
+            msg,
             {
+              parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
                   [{ text: "✏️ Edit Amount" }],
-                  [{ text: "🗑️ Delete Debt" }],
+                  ...deadlineButtons,
+                  [{ text: "🗑 Delete Debt" }],
                   [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-                ],
+                ].filter(row => row.length > 0),
                 resize_keyboard: true,
               },
             }
@@ -964,6 +1049,10 @@ export class WizardManager {
             this.clearState(userId)
             await showDebtsMenu(this.bot, chatId, userId)
             return true
+          }
+
+          if (text === "✅ Enable Auto-Payment" || text === "❌ Disable Auto-Payment") {
+            return await handlers.handleAutoPaymentToggle(this, chatId, userId, text)
           }
 
           const defaultCurrency = await db.getDefaultCurrency(userId)
@@ -1035,35 +1124,104 @@ export class WizardManager {
             debtId: debt.id,
           })
 
-          const remaining = updatedDebt.amount - updatedDebt.paidAmount
+          const { amount, paidAmount, type, dueDate, name, currency, autoPayment } = debt
+          let msg = ""
+          const remaining = amount - paidAmount
+          const progress = createProgressBar(paidAmount, amount)
           const emoji =
-            updatedDebt.type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
-          const action = updatedDebt.type === "I_OWE" ? "pay" : "receive"
+            type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
+          const action = type === "I_OWE" ? "pay" : "receive"
+
+          msg += `${emoji} *${name}*\n`
+          msg += `${progress}\n`
+
+          if (paidAmount === 0) {
+            msg += `Total: ${formatMoney(amount, currency)}\n`
+          } else if (remaining > 0) {
+            msg += `Remaining: ${formatMoney(remaining, currency)}\n`
+          } else {
+            msg += `🎉 Goal achieved!\n`
+          }
+
+          if (dueDate) {
+            const deadlineDate = new Date(dueDate)
+            msg += `Due: ${deadlineDate.toLocaleDateString('en-GB')}\n`
+          }
+
+          msg += `\n💡 Enter amount to ${action}`
 
           await this.bot.sendMessage(
             chatId,
-            `${emoji} *${updatedDebt.name}*\n\n` +
-            `Total: ${formatMoney(updatedDebt.amount, updatedDebt.currency)}\n` +
-            `Paid: ${formatMoney(updatedDebt.paidAmount, updatedDebt.currency)}\n` +
-            `Remaining: ${formatMoney(remaining, updatedDebt.currency)}\n\n` +
-            `💡 Enter amount to ${action}`,
+            msg,
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
                   [{ text: "✏️ Edit Amount" }],
+                  [{ text: dueDate ? "📅 Change Due Date" : "📅 Set Due Date" }],
+                  dueDate ? [{ text: "🔕 Disable Reminders" }] : [],
+                  type === "I_OWE"
+                    ? [{ text: autoPayment?.enabled ? "❌ Disable Auto-Payment" : "✅ Enable Auto-Payment" }]
+                    : [],
                   [{ text: "🗑 Delete Debt" }],
                   [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-                ],
+                ].filter(row => row.length > 0),
                 resize_keyboard: true,
               },
             }
           )
           return true
         }
+        case "DEBT_ADVANCED_MENU":
+          return await handlers.handleDebtAdvancedMenu(this, chatId, userId, text)
+
         case "DEBT_MENU": {
           const debt = state.data?.debt
-          if (!debt) return true
+
+          if (!debt) {
+            return true
+          }
+
+          if (text === "✅ Enable Auto-Payment" || text === "❌ Disable Auto-Payment") {
+            return await handlers.handleAutoPaymentToggle(this, chatId, userId, text)
+          }
+
+          if (text === "📅 Set Due Date" || text === "📅 Change Due Date" || text === "📅 Set Deadline" || text === "📅 Change Deadline") {
+            await this.goToStep(userId, "DEBT_EDIT_DUE_DATE", { debt })
+            await this.bot.sendMessage(
+              chatId,
+              `📅 ${text.includes("Set") ? "Set Due Date" : "Change Due Date"}\n\n` +
+              `Enter new due date (DD.MM.YYYY)\n` +
+              `Example: 31.12.2026\n\n` +
+              `${text.includes("Change") ? "Or tap Remove to delete due date.\n" : ""}` +
+              `Or tap Skip to cancel.`,
+              {
+                parse_mode: "Markdown",
+                reply_markup: {
+                  keyboard: [
+                    text.includes("Change") ? [{ text: "🗑 Remove Date" }] : [],
+                    [{ text: "⏩ Skip" }],
+                    [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+                  ].filter(row => row.length > 0),
+                  resize_keyboard: true,
+                },
+              }
+            )
+            return true
+          }
+
+          if (text === "🔕 Disable Reminders") {
+            await db.updateDebtDueDate(userId, debt.id, null)
+            await reminderManager.deleteRemindersForEntity(userId, debt.id)
+            await this.bot.sendMessage(chatId, "✅ Reminders disabled and due date removed.")
+            await showDebtsMenu(this.bot, chatId, userId)
+            this.clearState(userId)
+            return true
+          }
+
+          if (text === "⚙️ Advanced") {
+            return await handlers.handleDebtAdvancedMenu(this, chatId, userId, text)
+          }
 
           if (text === "✏️ Edit Amount") {
             await this.goToStep(userId, "DEBT_EDIT_AMOUNT", { debt })
@@ -1080,31 +1238,21 @@ export class WizardManager {
               }
             )
             return true
-          } else if (text === "🗑 Delete Debt") {
+          }
+
+          // Delete Debt
+          if (text === "🗑 Delete Debt") {
             await db.deleteDebt(userId, debt.id)
-            await this.bot.sendMessage(
-              chatId,
-              `✅ Debt "${debt.name}" deleted.`
-            )
+            await this.bot.sendMessage(chatId, `✅ Debt "${debt.name}" deleted.`)
             this.clearState(userId)
             await showDebtsMenu(this.bot, chatId, userId)
             return true
-          } else {
-            const defaultCurrency = await db.getDefaultCurrency(userId)
-            const parsed = validators.parseAmountWithCurrency(
-              text,
-              defaultCurrency
-            )
+          }
 
-            if (!parsed || parsed.amount < 0) {
-              await this.bot.sendMessage(
-                chatId,
-                `❌ Invalid amount. Try: 100 or 100 ${defaultCurrency}`,
-                this.getBackButton()
-              )
-              return true
-            }
+          const defaultCurrency = await db.getDefaultCurrency(userId)
+          const parsed = validators.parseAmountWithCurrency(text, defaultCurrency)
 
+          if (parsed && parsed.amount > 0) {
             const remaining = debt.amount - debt.paidAmount
 
             if (parsed.amount > remaining) {
@@ -1123,9 +1271,12 @@ export class WizardManager {
             })
 
             await handlers.handleDebtPartialAmount(this, chatId, userId, text)
+            return true
           }
+
           return true
         }
+
 
         // --- Goal Flow ---
         case "GOAL_INPUT":
@@ -1201,10 +1352,49 @@ export class WizardManager {
           }
           return true
         }
+        case "GOAL_ADVANCED_MENU":
+          return await handlers.handleGoalAdvancedMenu(this, chatId, userId, text)
+
         case "GOAL_MENU": {
           const goal = state.data?.goal
           if (!goal) return true
 
+          // Auto-Deposit Toggle
+          if (text === "✅ Enable Auto-Deposit" || text === "❌ Disable Auto-Deposit") {
+            return await handlers.handleAutoDepositToggle(this, chatId, userId, text)
+          }
+
+          // Set/Change Deadline
+          if (text === "📅 Set Deadline" || text === "📅 Change Deadline") {
+            await this.goToStep(userId, "GOAL_EDIT_DEADLINE", { goal })
+            await this.bot.sendMessage(
+              chatId,
+              `📅 ${text === "📅 Set Deadline" ? "Set Deadline" : "Change Deadline"}\n\n` +
+              `Enter new deadline (DD.MM.YYYY)\n` +
+              `Example: 31.12.2026\n\n` +
+              `${text === "📅 Change Deadline" ? "Or tap Remove to delete deadline.\n" : ""}` +
+              `Or tap Skip to cancel.`,
+              {
+                parse_mode: "Markdown",
+                reply_markup: {
+                  keyboard: [
+                    text === "📅 Change Deadline" ? [{ text: "🗑 Remove Date" }] : [],
+                    [{ text: "⏩ Skip" }],
+                    [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+                  ].filter(row => row.length > 0),
+                  resize_keyboard: true,
+                },
+              }
+            )
+            return true
+          }
+
+          // Advanced Menu
+          if (text === "⚙️ Advanced") {
+            return await handlers.handleGoalAdvancedMenu(this, chatId, userId, text)
+          }
+
+          // Edit Target
           if (text === "✏️ Edit Target") {
             await this.goToStep(userId, "GOAL_EDIT_AMOUNT", { goal })
             await this.bot.sendMessage(
@@ -1212,68 +1402,75 @@ export class WizardManager {
               `✏️ *Edit Goal Target*\n\nCurrent: ${formatMoney(goal.targetAmount, goal.currency)}\n\nEnter new target amount:`,
               { parse_mode: "Markdown", ...this.getBackButton() }
             )
-          } else if (text === "🗑 Delete Goal") {
+            return true
+          }
+
+          // Delete Goal
+          if (text === "🗑 Delete Goal") {
             await db.deleteGoal(userId, goal.id)
             await this.bot.sendMessage(chatId, "✅ Goal deleted.")
             this.clearState(userId)
             await showGoalsMenu(this.bot, chatId, userId)
-          } else {
-            const parsed = validators.parseAmountWithCurrency(
-              text,
-              goal.currency
-            )
-            if (parsed && parsed.amount > 0) {
-              const remaining = goal.targetAmount - goal.currentAmount
-
-              if (parsed.amount > remaining) {
-                await this.bot.sendMessage(
-                  chatId,
-                  `❌ Error: Amount (${formatAmount(parsed.amount)}) exceeds remaining goal target (${formatMoney(remaining, goal.currency)}).`,
-                  this.getBackButton()
-                )
-                return true
-              }
-
-              const balanceCount = (await db.getBalancesList(userId)).length
-
-              if (balanceCount === 0) {
-                await this.bot.sendMessage(
-                  chatId,
-                  "⚠️ *No Balances Found*\n\n" +
-                  "Before depositing to goals, you need at least one balance account.\n\n" +
-                  "💡 *Quick Start:*\n" +
-                  "1️⃣ Go to 💰 *Balances*\n" +
-                  "2️⃣ Tap ✨ *Add Balance*\n" +
-                  "3️⃣ Enter account name and amount",
-                  {
-                    parse_mode: "Markdown",
-                    reply_markup: {
-                      keyboard: [
-                        [{ text: "💳 Go to Balances" }],
-                        [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-                      ],
-                      resize_keyboard: true,
-                    },
-                  }
-                )
-                return true
-              }
-
-              await this.goToStep(userId, "GOAL_DEPOSIT_ACCOUNT", {
-                payAmount: parsed.amount,
-                goal,
-                goalId: goal.id,
-              })
-              await handlers.handleTxAccount(
-                this,
-                chatId,
-                userId,
-                "💳 Select account to deposit from:"
-              )
-            }
+            return true
           }
+
+          // Amount input - deposit
+          const parsed = validators.parseAmountWithCurrency(text, goal.currency)
+
+          if (parsed && parsed.amount > 0) {
+            const remaining = goal.targetAmount - goal.currentAmount
+
+            if (parsed.amount > remaining) {
+              await this.bot.sendMessage(
+                chatId,
+                `❌ Error: Amount (${formatAmount(parsed.amount)}) exceeds remaining goal target (${formatMoney(remaining, goal.currency)}).`,
+                this.getBackButton()
+              )
+              return true
+            }
+
+            const balanceCount = (await db.getBalancesList(userId)).length
+
+            if (balanceCount === 0) {
+              await this.bot.sendMessage(
+                chatId,
+                "⚠️ *No Balances Found*\n\n" +
+                "Before depositing to goals, you need at least one balance account.\n\n" +
+                "💡 *Quick Start:*\n" +
+                "1️⃣ Go to 💰 *Balances*\n" +
+                "2️⃣ Tap ✨ *Add Balance*\n" +
+                "3️⃣ Enter account name and amount",
+                {
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    keyboard: [
+                      [{ text: "💳 Go to Balances" }],
+                      [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+                    ],
+                    resize_keyboard: true,
+                  },
+                }
+              )
+              return true
+            }
+
+            await this.goToStep(userId, "GOAL_DEPOSIT_ACCOUNT", {
+              payAmount: parsed.amount,
+              goal,
+              goalId: goal.id,
+            })
+
+            await handlers.handleTxAccount(
+              this,
+              chatId,
+              userId,
+              "💳 Select account to deposit from:"
+            )
+          }
+
           return true
         }
+
         case "GOAL_EDIT_AMOUNT": {
           const goal = state.data?.goal
           if (!goal) {
@@ -1354,27 +1551,52 @@ export class WizardManager {
 
           await this.goToStep(userId, "GOAL_MENU", { goal: updatedGoal, goalId: goal.id })
 
-          const remaining = updatedGoal.targetAmount - updatedGoal.currentAmount
-          const progress = formatAmount(
-            (updatedGoal.currentAmount / updatedGoal.targetAmount) * 100
-          )
+          const { name, targetAmount, currentAmount, deadline, currency, autoDeposit } = goal
+          let msg = ""
+
+          const remaining = targetAmount - currentAmount
+          const progress = createProgressBar(currentAmount, targetAmount)
+          const statusEmoji = getProgressEmoji(currentAmount, targetAmount)
+
+          msg += `${statusEmoji} *${name}*\n`
+          msg += `${progress}\n`
+
+          if (currentAmount === 0) {
+            msg += `Target: ${formatMoney(targetAmount, currency)}\n`
+          } else if (remaining > 0) {
+            msg += `📈 Remaining: ${formatMoney(remaining, currency)}\n`
+          } else {
+            msg += `🎉 Goal achieved!\n`
+          }
+
+          if (deadline) {
+            const deadlineDate = new Date(deadline)
+            msg += `Deadline: ${deadlineDate.toLocaleDateString('en-GB')}\n`
+          }
+
+          msg += `\n💡 Enter amount to deposit:`
+
+
+          const deadlineButtons = deadline ?
+            [
+              [{ text: "📅 Change Deadline" }],
+              [{ text: "🔕 Disable Reminders" }],
+              [{ text: autoDeposit?.enabled ? "❌ Disable Auto-Deposit" : "✅ Enable Auto-Deposit" }]
+            ]
+            : [[{ text: "📅 Set Deadline" }]]
 
           await this.bot.sendMessage(
             chatId,
-            `🎯 *${updatedGoal.name}*\n\n` +
-            `Target: ${formatMoney(updatedGoal.targetAmount, updatedGoal.currency)}\n` +
-            `Current: ${formatMoney(updatedGoal.currentAmount, updatedGoal.currency)}\n` +
-            `Remaining: ${formatMoney(remaining, updatedGoal.currency)}\n` +
-            `Progress: ${progress}%\n\n` +
-            `💡 Enter amount to deposit`,
+            msg,
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
                   [{ text: "✏️ Edit Target" }],
+                  ...deadlineButtons,
                   [{ text: "🗑 Delete Goal" }],
                   [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-                ],
+                ].filter(row => row.length > 0),
                 resize_keyboard: true,
               },
             }
@@ -1482,23 +1704,47 @@ export class WizardManager {
 
         // --- Balance Flow ---
         case "BALANCE_LIST": {
-          const handled = await handlers.handleBalanceSelection(
-            this,
-            chatId,
-            userId,
-            text
-          )
-          return handled
+          if (text === "✨ Add Balance") {
+            await this.goToStep(userId, "BALANCE_CREATE", {})
+            const defaultCurrency = await db.getDefaultCurrency(userId)
+            await this.sendMessage(
+              chatId,
+              `✨ *Add New Balance*\n\n` +
+              `Enter account details in one step:\n\n` +
+              `*Format:* AccountName Amount [Currency]\n\n` +
+              `*Examples:*\n` +
+              `• Cash 1000\n` +
+              `• Bank Card 500 ${defaultCurrency}\n` +
+              `• Savings 2500 USD`,
+              {
+                parse_mode: "Markdown",
+                ...this.getBackButton(),
+              }
+            )
+            return true
+          }
+
+          return await handlers.handleBalanceSelection(this, chatId, userId, text)
         }
-        case "BALANCE_EDIT_MENU": {
+
+        case "BALANCE_CREATE":
+          return await handlers.handleBalanceCreate(this, chatId, userId, text)
+
+        case "BALANCE_EDIT_MENU":
           return await handlers.handleBalanceEditMenu(this, chatId, userId, text)
-        }
-        case "BALANCE_CONFIRM_AMOUNT": {
+        case "BALANCE_CONFIRM_AMOUNT":
           return await handlers.handleBalanceConfirmAmount(this, chatId, userId, text)
-        }
-        case "BALANCE_CONFIRM_RENAME": {
+        case "BALANCE_CONFIRM_RENAME":
           return await handlers.handleBalanceConfirmRename(this, chatId, userId, text)
-        }
+        case "BALANCE_SET_ZERO_CONFIRM":
+          return await handlers.handleBalanceSetToZero(this, chatId, userId, text)
+        case "BALANCE_DELETE_CONFIRM":
+          return await handlers.handleBalanceDelete(this, chatId, userId, text)
+        case "BALANCE_DELETE_SELECT_TARGET":
+          return await handlers.handleBalanceDeleteSelectTarget(this, chatId, userId, text)
+        case "BALANCE_ZERO_SELECT_TARGET":
+          return await handlers.handleBalanceZeroSelectTarget(this, chatId, userId, text)
+
         case "BALANCE_NAME": {
           const accountIdRaw = text.trim()
           if (!accountIdRaw) {
@@ -1597,10 +1843,6 @@ export class WizardManager {
             lastUpdated: new Date().toISOString(),
           })
 
-          await this.bot.sendMessage(
-            chatId,
-            `✅ Balance "${accountId}" saved with ${amount} ${currency}!`
-          )
           this.clearState(userId)
           await showBalancesMenu(this, chatId, userId)
           return true
@@ -1655,52 +1897,6 @@ export class WizardManager {
           )
           return true
         }
-        case "BALANCE_DELETE_SELECT_TARGET": {
-          const m = text.match(/^(.+?)\s+\(([A-Z]{3})\)$/)
-          if (!m) {
-            await this.bot.sendMessage(
-              chatId,
-              "❌ Select a balance from buttons.",
-              this.getBackButton()
-            )
-            return true
-          }
-          const targetAccountId = m[1].trim()
-          const targetCurrency = m[2] as Currency
-
-          const { accountId, currency, amount } = state.data
-
-          const transaction: Transaction = {
-            id: Date.now().toString(),
-            date: new Date(),
-            amount: amount,
-            currency: currency,
-            type: TransactionType.TRANSFER,
-            category: InternalCategory.TRANSFER,
-            description: `Transfer before deleting "${accountId}"`,
-            fromAccountId: accountId,
-            toAccountId: targetAccountId,
-          }
-          await db.addTransaction(userId, transaction)
-
-          await db.safeUpdateBalance(userId, accountId, -amount, currency)
-          await db.safeUpdateBalance(
-            userId,
-            targetAccountId,
-            amount,
-            targetCurrency
-          )
-
-          await db.deleteBalance(userId, accountId, currency)
-
-          await this.bot.sendMessage(
-            chatId,
-            `✅ Transferred ${formatMoney(amount, currency)} to "${targetAccountId}" and deleted "${accountId}".`
-          )
-          this.clearState(userId)
-          await showBalancesMenu(this, chatId, userId)
-          return true
-        }
         case "BALANCE_EDIT_CURRENCY_CHOICE": {
           const accountId = state.data?.accountId
           const currentCurrency = state.data?.currency
@@ -1735,175 +1931,6 @@ export class WizardManager {
             this.clearState(userId)
             await showBalancesMenu(this, chatId, userId)
           }
-          return true
-        }
-        case "BALANCE_SET_ZERO_CONFIRM": {
-          const { accountId, currency, amount, hasOtherBalances } = state.data
-
-          if (text === "✅ Yes, Set to Zero") {
-            await db.convertBalanceAmount(userId, accountId, currency, 0)
-            await this.bot.sendMessage(
-              chatId,
-              `✅ Balance "${accountId}" set to 0 ${currency}!`
-            )
-            this.clearState(userId)
-            await showBalancesMenu(this, chatId, userId)
-            return true
-          }
-
-          if (text === "↔️ Transfer to another account" && hasOtherBalances) {
-            await this.goToStep(userId, "BALANCE_ZERO_SELECT_TARGET", {
-              accountId,
-              currency,
-              amount,
-            })
-
-            const balanceList = await db.getBalancesList(userId)
-            const otherBalances = balanceList.filter(
-              (b) => !(b.accountId === accountId && b.currency === currency)
-            )
-
-            const rows = otherBalances.map((b) => [
-              { text: `${b.accountId} (${b.currency})` },
-            ])
-            rows.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
-
-            await this.bot.sendMessage(
-              chatId,
-              `↔️ Transfer ${formatMoney(amount, currency)} to:`,
-              {
-                reply_markup: {
-                  keyboard: rows,
-                  resize_keyboard: true,
-                  one_time_keyboard: true,
-                },
-              }
-            )
-            return true
-          }
-
-          if (text === "❌ No, Cancel") {
-            await this.goToStep(userId, "BALANCE_EDIT_MENU", {
-              accountId,
-              currency,
-              currentAmount: amount,
-            })
-
-            await handlers.handleBalanceEditMenu(this, chatId, userId, text)
-            return true
-          }
-
-          return false
-        }
-        case "BALANCE_DELETE_CONFIRM": {
-          const { accountId, currency, amount, hasOtherBalances } = state.data
-
-          if (text === "✅ Yes, Delete Balance") {
-            await db.deleteBalance(userId, accountId, currency)
-            const msg =
-              amount > 0
-                ? `✅ Balance "${accountId}" deleted and ${formatMoney(amount, currency)} cleared.`
-                : `✅ Balance "${accountId}" deleted.`
-
-            await this.bot.sendMessage(chatId, msg)
-            this.clearState(userId)
-            await showBalancesMenu(this, chatId, userId)
-            return true
-          }
-
-          if (
-            text === "↔️ Transfer to another account" &&
-            amount > 0 &&
-            hasOtherBalances
-          ) {
-            await this.goToStep(userId, "BALANCE_DELETE_SELECT_TARGET", {
-              accountId,
-              currency,
-              amount,
-            })
-
-            const balanceList = await db.getBalancesList(userId)
-            const otherBalances = balanceList.filter(
-              (b) => !(b.accountId === accountId && b.currency === currency)
-            )
-
-            const rows = otherBalances.map((b) => [
-              { text: `${b.accountId} (${b.currency})` },
-            ])
-            rows.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
-
-            await this.bot.sendMessage(
-              chatId,
-              `↔️ Transfer ${formatMoney(amount, currency)} to:`,
-              {
-                reply_markup: {
-                  keyboard: rows,
-                  resize_keyboard: true,
-                  one_time_keyboard: true,
-                },
-              }
-            )
-            return true
-          }
-
-          if (text === "❌ No, Cancel") {
-            await this.goToStep(userId, "BALANCE_EDIT_MENU", {
-              accountId,
-              currency,
-              currentAmount: amount,
-            })
-
-            await handlers.handleBalanceEditMenu(this, chatId, userId, text)
-            return true
-          }
-
-          return false
-        }
-        case "BALANCE_ZERO_SELECT_TARGET": {
-          const m = text.match(/^(.+?)\s+\(([A-Z]{3})\)$/)
-          if (!m) {
-            await this.bot.sendMessage(
-              chatId,
-              "❌ Select a balance from buttons.",
-              this.getBackButton()
-            )
-            return true
-          }
-
-          const targetAccountId = m[1].trim()
-          const targetCurrency = m[2] as Currency
-
-          const { accountId, currency, amount } = state.data
-
-          const transaction: Transaction = {
-            id: Date.now().toString(),
-            date: new Date(),
-            amount: amount,
-            currency: currency,
-            type: TransactionType.TRANSFER,
-            category: InternalCategory.TRANSFER,
-            description: `Transfer before zeroing "${accountId}"`,
-            fromAccountId: accountId,
-            toAccountId: targetAccountId,
-          }
-          await db.addTransaction(userId, transaction)
-          await db.convertBalanceAmount(userId, accountId, currency, amount)
-          await db.safeUpdateBalance(userId, accountId, -amount, currency)
-          await db.safeUpdateBalance(
-            userId,
-            targetAccountId,
-            amount,
-            targetCurrency
-          )
-
-          await this.bot.sendMessage(
-            chatId,
-            `✅ Transferred ${formatMoney(amount, currency)} to "${targetAccountId}"!\n\n` +
-            `Balance "${accountId}" set to 0 ${currency}.`
-          )
-
-          this.clearState(userId)
-          await showBalancesMenu(this, chatId, userId)
           return true
         }
 
@@ -1953,6 +1980,7 @@ export class WizardManager {
               reply_markup: {
                 keyboard: [
                   [{ text: "✏️ Edit Name" }],
+                  [{ text: source.autoCreate?.enabled ? "❌ Disable Auto-Income" : "✅ Enable Auto-Income" }],
                   [{ text: "🗑️ Delete Income" }],
                   [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
                 ],
@@ -2021,7 +2049,7 @@ export class WizardManager {
           }
 
           await db.addIncomeSource(userId, {
-            id: Date.now().toString(),
+            id: randomUUID(),
             name,
             expectedAmount: parsed.amount,
             currency: parsed.currency,
@@ -2078,6 +2106,11 @@ export class WizardManager {
             await this.bot.sendMessage(chatId, "❌ Income source not found.")
             await showIncomeSourcesMenu(this.bot, chatId, userId)
             return true
+          }
+
+          // Auto-Income Toggle
+          if (text === "✅ Enable Auto-Income" || text === "❌ Disable Auto-Income") {
+            return await handlers.handleAutoIncomeToggle(this, chatId, userId, text)
           }
 
           // 1) Edit Name
@@ -2266,26 +2299,42 @@ export class WizardManager {
         }
         case "ANALYTICS_FILTERS": {
           if (text === "📅 Last 7 days") {
-            await this.goToStep(userId, "ANALYTICS_SHOW_REPORT", {
-              preset: "LAST_7_DAYS",
-            })
-            await this.bot.sendMessage(
-              chatId,
-              "📊 Generating report for last 7 days..."
-            )
-            // TODO: вызвать отчёт по последним 7 дням
+            try {
+              const report = await generateAnalyticsReport(userId, {
+                preset: "LAST_7_DAYS",
+              })
+
+              await this.bot.sendMessage(chatId, report, {
+                parse_mode: "Markdown",
+                ...this.getBackButton(),
+              })
+            } catch (error) {
+              await this.bot.sendMessage(
+                chatId,
+                "❌ Error generating report. Please try again.",
+                this.getBackButton()
+              )
+            }
             return true
           }
 
           if (text === "📅 Last 30 days") {
-            await this.goToStep(userId, "ANALYTICS_SHOW_REPORT", {
-              preset: "LAST_30_DAYS",
-            })
-            await this.bot.sendMessage(
-              chatId,
-              "📊 Generating report for last 30 days..."
-            )
-            // TODO: отчёт за 30 дней
+            try {
+              const report = await generateAnalyticsReport(userId, {
+                preset: "LAST_30_DAYS",
+              })
+
+              await this.bot.sendMessage(chatId, report, {
+                parse_mode: "Markdown",
+                ...this.getBackButton(),
+              })
+            } catch (error) {
+              await this.bot.sendMessage(
+                chatId,
+                "❌ Error generating report. Please try again.",
+                this.getBackButton()
+              )
+            }
             return true
           }
 
@@ -2383,17 +2432,40 @@ export class WizardManager {
           return true
         }
         case "ANALYTICS_SHOW_REPORT": {
-          // const { preset, startDate, endDate } = state.data || {}
+          if (text === "📊 Show Report") {
+            const { preset, startDate, endDate } = state.data || {}
 
-          // Здесь вызываешь свой отчёт по транзакциям
-          // Например: await db.getAnalyticsReport(userId, { preset, startDate, endDate })
+            try {
+              const report = await generateAnalyticsReport(userId, {
+                preset,
+                startDate,
+                endDate,
+              })
+
+              await this.bot.sendMessage(chatId, report, {
+                parse_mode: "Markdown",
+                ...this.getBackButton(),
+              })
+            } catch (error) {
+              await this.bot.sendMessage(
+                chatId,
+                "❌ Error generating report. Please try again.",
+                this.getBackButton()
+              )
+            }
+
+            return true
+          }
+
+          // If user didn't press button, show error
           await this.bot.sendMessage(
             chatId,
-            "📊 Report generation logic TODO (hook db.getAnalyticsReport)",
+            "❌ Please tap '📊 Show Report' button.",
             this.getBackButton()
           )
           return true
         }
+
 
         // BUDGET PLANNER
         case "BUDGET_MENU": {
@@ -2414,7 +2486,6 @@ export class WizardManager {
             return true
           }
 
-          // Выбор категории прямо из списка budgets
           const cat = text.trim() as ExpenseCategory
           if (Object.values(ExpenseCategory).includes(cat)) {
             await this.goToStep(userId, "BUDGET_CATEGORY_MENU", {
@@ -2443,7 +2514,6 @@ export class WizardManager {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    [{ text: "✏️ Edit Limit" }],
                     [{ text: "🧹 Clear Limit" }],
                     [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
                   ],
@@ -2497,7 +2567,6 @@ export class WizardManager {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
-                  [{ text: "✏️ Edit Limit" }],
                   [{ text: "🧹 Clear Limit" }],
                   [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
                 ],
@@ -2516,30 +2585,13 @@ export class WizardManager {
             return true
           }
 
-          // Кнопка Edit Limit просто говорит, что можно ввести число
-          if (text === "✏️ Edit Limit") {
-            const defaultCurrency = await db.getDefaultCurrency(userId)
-            await this.bot.sendMessage(
-              chatId,
-              `✏️ Enter new limit for ${category} (e.g. 500 or 500 ${defaultCurrency}):`,
-              this.getBackButton()
-            )
-            return true
-          }
-
-          // Clear Limit
           if (text === "🧹 Clear Limit") {
             await db.clearCategoryBudget(userId, category)
-            await this.bot.sendMessage(
-              chatId,
-              `✅ Budget limit for ${category} cleared.`,
-              this.getBackButton()
-            )
+            await this.goToStep(userId, "BUDGET_MENU", {})
             await showBudgetMenu(this, chatId, userId)
             return true
           }
 
-          // Любой валидный amount → новый лимит
           const defaultCurrency = await db.getDefaultCurrency(userId)
           const parsed = validators.parseAmountWithCurrency(
             text,
@@ -2552,10 +2604,7 @@ export class WizardManager {
               parsed.amount,
               parsed.currency
             )
-            await this.bot.sendMessage(
-              chatId,
-              `✅ Budget for ${category} set to ${parsed.amount} ${parsed.currency}.`
-            )
+            await this.goToStep(userId, "BUDGET_MENU", {})
             await showBudgetMenu(this, chatId, userId)
             return true
           }
@@ -2622,6 +2671,185 @@ export class WizardManager {
           return true
         }
 
+        // --- Date Handlers ---
+        case "DEBT_ASK_DUE_DATE":
+          return await handlers.handleDebtDueDate(this, chatId, userId, text)
+
+        case "GOAL_ASK_DEADLINE":
+          return await handlers.handleGoalDeadline(this, chatId, userId, text)
+
+        case "INCOME_ASK_EXPECTED_DATE":
+          return await handlers.handleIncomeExpectedDate(this, chatId, userId, text)
+
+        case "DEBT_EDIT_DUE_DATE": {
+          if (text === "🗑 Remove Date") {
+            const debt = state.data.debt
+            await db.updateDebtDueDate(userId, debt.id, null)
+            await reminderManager.deleteRemindersForEntity(userId, debt.id)
+            await this.bot.sendMessage(chatId, "✅ Due date and reminders removed.")
+            await showDebtsMenu(this.bot, chatId, userId)
+            this.clearState(userId)
+            return true
+          }
+
+          if (text === "⏩ Skip") {
+            await showDebtsMenu(this.bot, chatId, userId)
+            this.clearState(userId)
+            return true
+          }
+
+          return await handlers.handleDebtDueDateEdit(this, chatId, userId, text)
+        }
+
+        case "GOAL_EDIT_DEADLINE": {
+          if (text === "🗑 Remove Date") {
+            const goal = state.data.goal
+            await db.updateGoalDeadline(userId, goal.id, null)
+            await reminderManager.deleteRemindersForEntity(userId, goal.id)
+            await this.bot.sendMessage(chatId, "✅ Deadline and reminders removed.")
+            await showGoalsMenu(this.bot, chatId, userId)
+            this.clearState(userId)
+            return true
+          }
+
+          if (text === "⏩ Skip") {
+            await showGoalsMenu(this.bot, chatId, userId)
+            this.clearState(userId)
+            return true
+          }
+
+          return await handlers.handleGoalDeadlineEdit(this, chatId, userId, text)
+        }
+
+        // --- Auto-Deposit Handlers ---
+        case "AUTO_DEPOSIT_SELECT_ACCOUNT":
+          return await handlers.handleAutoDepositAccountSelect(this, chatId, userId, text)
+
+        case "AUTO_DEPOSIT_ENTER_AMOUNT":
+          return await handlers.handleAutoDepositAmountInput(this, chatId, userId, text)
+
+        case "AUTO_DEPOSIT_SELECT_FREQUENCY":
+          return await handlers.handleAutoDepositFrequencySelect(this, chatId, userId, text)
+
+        case "AUTO_DEPOSIT_SELECT_DAY_WEEKLY":
+          return await handlers.handleAutoDepositDayWeeklySelect(this, chatId, userId, text)
+
+        case "AUTO_DEPOSIT_SELECT_DAY_MONTHLY":
+          return await handlers.handleAutoDepositDayMonthlySelect(this, chatId, userId, text)
+
+        // --- Auto-Income Handlers ---
+        case "AUTO_INCOME_SELECT_ACCOUNT":
+          return await handlers.handleAutoIncomeAccountSelect(this, chatId, userId, text)
+
+        case "AUTO_INCOME_ENTER_AMOUNT":
+          return await handlers.handleAutoIncomeAmountInput(this, chatId, userId, text)
+
+        case "AUTO_INCOME_SELECT_DAY":
+          return await handlers.handleAutoIncomeDaySelect(this, chatId, userId, text)
+
+        // --- Auto-Debt-Payment Handlers ---
+        case "AUTO_PAYMENT_SELECT_ACCOUNT":
+          return await handlers.handleAutoPaymentAccountSelect(this, chatId, userId, text)
+
+        case "AUTO_PAYMENT_ENTER_AMOUNT":
+          return await handlers.handleAutoPaymentAmountInput(this, chatId, userId, text)
+
+        case "AUTO_PAYMENT_SELECT_DAY":
+          return await handlers.handleAutoPaymentDaySelect(this, chatId, userId, text)
+
+        // --- Reminder Settings Handlers ---
+        case "NOTIFICATIONS_MENU": {
+          // Handle button clicks within notifications menu
+          if (text === "✅ Enable Notifications" || text === "❌ Disable Notifications") {
+            return await handlers.handleNotificationsToggle(this, chatId, userId, text)
+          }
+
+          if (text === "⏰ Change Time") {
+            return await handlers.handleReminderTimeSelect(this, chatId, userId)
+          }
+
+          if (text === "🌍 Change Timezone") {
+            return await handlers.handleTimezoneSelect(this, chatId, userId)
+          }
+
+          // Default: show menu again
+          return await handlers.handleNotificationsMenu(this, chatId, userId)
+        }
+
+        case "REMINDER_TIME_SELECT":
+          return await handlers.handleReminderTimeSave(this, chatId, userId, text)
+
+        case "REMINDER_TIMEZONE_SELECT":
+          return await handlers.handleTimezoneSave(this, chatId, userId, text)
+
+        // --- Automation Menu ---
+        case "AUTOMATION_MENU": {
+          if (text === "🔁 Recurring Payments") {
+            await this.goToStep(userId, "RECURRING_MENU", {})
+            return await handlers.handleRecurringMenu(this, chatId, userId)
+          }
+
+          if (text === "🔔 Notifications") {
+            await this.goToStep(userId, "NOTIFICATIONS_MENU", {})
+            return await handlers.handleNotificationsMenu(this, chatId, userId)
+          }
+
+          // Default: show automation menu again
+          await showAutomationMenu(this, chatId, userId)
+          return true
+        }
+
+        // --- Recurring Transactions Handlers ---
+        case "RECURRING_MENU": {
+          // Handle button clicks
+          if (text === "✨ Add Recurring") {
+            return await handlers.handleRecurringCreateStart(this, chatId, userId)
+          }
+
+          // Check if selecting existing recurring
+          const recurring = text.match(/^(💸|💰) /)
+          if (recurring) {
+            return await handlers.handleRecurringSelect(this, chatId, userId, text)
+          }
+
+          // Default: show menu
+          return await handlers.handleRecurringMenu(this, chatId, userId)
+        }
+
+        case "RECURRING_ITEM_MENU":
+          return await handlers.handleRecurringItemAction(this, chatId, userId, text)
+
+        case "RECURRING_DELETE_CONFIRM":
+          return await handlers.handleRecurringDeleteConfirm(this, chatId, userId, text)
+
+        case "RECURRING_CREATE_DESCRIPTION":
+          return await handlers.handleRecurringDescription(this, chatId, userId, text)
+
+        case "RECURRING_CREATE_TYPE":
+          return await handlers.handleRecurringType(this, chatId, userId, text)
+
+        case "RECURRING_CREATE_AMOUNT":
+          return await handlers.handleRecurringAmount(this, chatId, userId, text)
+
+        case "RECURRING_CREATE_ACCOUNT":
+          return await handlers.handleRecurringAccount(this, chatId, userId, text)
+
+        case "RECURRING_CREATE_CATEGORY":
+          return await handlers.handleRecurringCategory(this, chatId, userId, text)
+
+        case "RECURRING_CREATE_DAY":
+          return await handlers.handleRecurringDay(this, chatId, userId, text)
+
+        // --- Custom Message Handlers ---
+        case "CUSTOM_MESSAGES_MENU":
+          return await handlers.handleCustomMessagesAction(this, chatId, userId, text)
+
+        case "CUSTOM_MESSAGE_EDIT":
+          return await handlers.handleCustomMessageSave(this, chatId, userId, text)
+
+        // --- Bank Statement Upload Handlers ---
+        case "STATEMENT_PREVIEW":
+          return await handlers.handleStatementPreviewAction(this, chatId, userId, text)
       }
     } catch (error) {
       console.error("Wizard Error:", error)

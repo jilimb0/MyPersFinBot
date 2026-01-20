@@ -13,9 +13,9 @@ export const MAIN_MENU_KEYBOARD = {
 export const SETTINGS_KEYBOARD = {
   keyboard: [
     [{ text: "🌐 Change currency" }],
-    [{ text: "💵 Income Sources" }, { text: "❓ Help & Info" }],
-    [{ text: "🗑️ Clear All Data" }],
-    [{ text: "🏠 Main Menu" }],
+    [{ text: "💵 Income Sources" }],
+    [{ text: "🤖 Automation" }, { text: "🛠️ Advanced" }],
+    [{ text: "❓ Help & Info" }, { text: "🏠 Main Menu" }],
   ],
   resize_keyboard: true,
 }

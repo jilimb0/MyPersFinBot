@@ -186,10 +186,6 @@ async function fetchWithAxios(url: string): Promise<FXAPIResponse> {
 async function fetchRates(): Promise<FXRates> {
   const useHTTP2 = !!undici
 
-  if (useHTTP2) {
-    console.log("🚀 Using HTTP/2 for FX API")
-  }
-
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     metrics.apiCalls++
 
@@ -293,8 +289,7 @@ export async function getRates(): Promise<FXRates> {
   // Check if we should retry API (exponential backoff)
   if (!shouldRetryAPI()) {
     console.log(
-      `⏳ API retry delayed. Using fallback rates. Next retry in ${
-        getRetryDelay(cache?.errorCount || 0) / 1000
+      `⏳ API retry delayed. Using fallback rates. Next retry in ${getRetryDelay(cache?.errorCount || 0) / 1000
       }s`
     )
     return cache?.rates || FALLBACK_RATES
@@ -446,7 +441,6 @@ function startAutoRefresh() {
 
   autoRefreshTimer = setInterval(async () => {
     try {
-      console.log("🔄 Auto-refreshing FX rates...")
       await getRates()
       console.log("✅ FX rates refreshed")
     } catch (error) {
@@ -490,7 +484,6 @@ export function getCacheHitRate(): number {
  */
 export async function preloadRates(): Promise<void> {
   try {
-    console.log("🔄 Preloading FX rates...")
     await getRates()
     console.log("✅ FX rates preloaded successfully")
   } catch (error) {

@@ -4,6 +4,7 @@ import * as validators from "../validators"
 import * as handlers from "./index"
 import { showGoalsMenu } from "../menus"
 import { formatAmount, formatMoney, handleInsufficientFunds } from "../utils"
+import { randomUUID } from "crypto"
 
 export async function handleGoalInput(
   wizard: WizardManager,
@@ -22,8 +23,28 @@ export async function handleGoalInput(
     return true
   }
 
+  // ✅ Check for duplicate goal name
+  const userData = await db.getUserData(userId)
+  const existingGoal = userData.goals.find(
+    (g) => g.name === parsed.name && g.status === "ACTIVE"
+  )
+
+  if (existingGoal) {
+    await wizard.sendMessage(
+      chatId,
+      `❌ *Goal "${parsed.name}" already exists!*\n\n` +
+      `Please choose a different name or manage existing goal in the Goals menu.`,
+      {
+        parse_mode: "Markdown",
+        ...wizard.getBackButton(),
+      }
+    )
+    return true
+  }
+
+  const goalId = randomUUID()
   await db.addGoal(userId, {
-    id: Date.now().toString(),
+    id: goalId,
     name: parsed.name,
     targetAmount: parsed.targetAmount,
     currentAmount: 0,
@@ -31,9 +52,31 @@ export async function handleGoalInput(
     status: "ACTIVE",
   })
 
-  await wizard.sendMessage(chatId, "✅ Goal added!")
-  wizard.clearState(userId)
-  await showGoalsMenu(wizard.getBot(), chatId, userId)
+  // Ask about deadline
+  await wizard.goToStep(userId, "GOAL_ASK_DEADLINE", {
+    goalId,
+    name: parsed.name,
+    targetAmount: parsed.targetAmount,
+    currency: parsed.currency,
+  })
+
+  await wizard.sendMessage(
+    chatId,
+    `🎯 Goal created: *${parsed.name}*\n\n` +
+    `📅 Set a deadline for this goal?\n\n` +
+    `Enter date (DD.MM.YYYY) or tap Skip to create without reminder.`,
+    {
+      parse_mode: "Markdown",
+      reply_markup: {
+        keyboard: [
+          [{ text: "⏩ Skip" }],
+          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+        ],
+        resize_keyboard: true,
+      },
+    }
+  )
+
   return true
 }
 

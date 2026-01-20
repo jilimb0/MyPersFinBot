@@ -11,8 +11,8 @@ import { Currency } from "../../types"
 
 @Entity("income_sources")
 export class IncomeSource {
-  @PrimaryGeneratedColumn()
-  id!: number
+  @PrimaryGeneratedColumn("uuid")
+  id!: string
 
   @Column()
   @Index()
@@ -26,8 +26,27 @@ export class IncomeSource {
 
   @Column({ type: "text", nullable: true })
   currency?: Currency
+
   @Column({ type: "text", nullable: true })
   frequency?: "MONTHLY" | "ONE_TIME"
+
+  @Column({ type: "integer", nullable: true })
+  expectedDate?: number
+
+  @Column({ nullable: true })
+  accountId?: string
+
+  @Column({ type: "json", nullable: true })
+  autoCreate?: {
+    enabled: boolean
+    amount: number
+    accountId: string
+    frequency: "MONTHLY"
+    dayOfMonth: number
+  }
+
+  @Column({ type: "boolean", default: false })
+  reminderEnabled?: boolean
 
   // Relations
   @ManyToOne(() => User, (user) => user.incomeSources)

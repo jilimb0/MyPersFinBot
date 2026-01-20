@@ -6,6 +6,7 @@ import {
   IncomeCategory,
 } from "./types"
 import { formatMoney } from "./utils"
+import { randomUUID } from "crypto"
 
 function resolveExpenseCategory(input: string): ExpenseCategory {
   const normalized = input.toLowerCase()
@@ -41,7 +42,6 @@ function parseAmountAndCategory(text: string): { amount: number; category: strin
   const parts = text.trim().split(/\s+/)
   if (parts.length < 2) return null
 
-  // Пробуем вариант 1: сумма спереди (100 coffee)
   const firstAsAmount = parseFloat(parts[0].replace(",", "."))
   if (!isNaN(firstAsAmount) && firstAsAmount > 0) {
     return {
@@ -50,7 +50,6 @@ function parseAmountAndCategory(text: string): { amount: number; category: strin
     }
   }
 
-  // Пробуем вариант 2: сумма в конце (coffee 100)
   const lastAsAmount = parseFloat(parts[parts.length - 1].replace(",", "."))
   if (!isNaN(lastAsAmount) && lastAsAmount > 0) {
     return {
@@ -63,7 +62,6 @@ function parseAmountAndCategory(text: string): { amount: number; category: strin
 }
 
 export function registerCommands(bot: TelegramBot) {
-  // /balance — показать все балансы
   bot.onText(/^\/balance(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
@@ -74,7 +72,6 @@ export function registerCommands(bot: TelegramBot) {
     })
   })
 
-  // /templates — показать все шаблоны
   bot.onText(/^\/templates(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
@@ -90,7 +87,6 @@ export function registerCommands(bot: TelegramBot) {
       return
     }
 
-    // Каждый шаблон - одна строка с двумя кнопками
     const buttons: TelegramBot.InlineKeyboardButton[][] = templates.map((tpl) => {
       const amountWithCurrency = formatMoney(tpl.amount, tpl.currency)
       return [
@@ -117,7 +113,6 @@ export function registerCommands(bot: TelegramBot) {
     )
   })
 
-  // /expense <sum> <category|text> OR /expense <category> <sum>
   bot.onText(
     /^\/expense(?:@\w+)?\s+(.+)$/i,
     async (msg, match) => {
@@ -154,7 +149,7 @@ export function registerCommands(bot: TelegramBot) {
         balances[0].accountId
 
       const txId = await db.addTransaction(userId, {
-        id: Date.now().toString(),
+        id: randomUUID(),
         date: new Date(),
         amount,
         currency,
@@ -177,7 +172,6 @@ export function registerCommands(bot: TelegramBot) {
         ],
       ]
 
-      // Добавить кнопку смены счёта, если счетов несколько
       if (balances.length > 1) {
         buttons.push([
           {
@@ -196,7 +190,6 @@ export function registerCommands(bot: TelegramBot) {
     }
   )
 
-  // /income <sum> <category|text> OR /income <category> <sum>
   bot.onText(
     /^\/income(?:@\w+)?\s+(.+)$/i,
     async (msg, match) => {
@@ -233,7 +226,7 @@ export function registerCommands(bot: TelegramBot) {
         balances[0].accountId
 
       const txId = await db.addTransaction(userId, {
-        id: Date.now().toString(),
+        id: randomUUID(),
         date: new Date(),
         amount,
         currency,
@@ -256,7 +249,6 @@ export function registerCommands(bot: TelegramBot) {
         ],
       ]
 
-      // Добавить кнопку смены счёта, если счетов несколько
       if (balances.length > 1) {
         buttons.push([
           {

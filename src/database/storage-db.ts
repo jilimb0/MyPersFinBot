@@ -20,10 +20,12 @@ import {
   ExpenseCategory,
   Budget,
   CategoryBudget,
-  TransactionTemplate
+  TransactionTemplate,
+  ReminderSettings
 } from "../types"
 import { convertSync } from "../fx"
 import { formatMoney, handleInsufficientFunds } from "../utils"
+import { randomUUID } from "crypto"
 
 export class DatabaseStorage {
   private userDataCache = new Map<
@@ -51,6 +53,13 @@ export class DatabaseStorage {
       user = userRepo.create({
         id: userId,
         defaultCurrency: "USD",
+        reminderSettings: {
+          enabled: true,
+          time: '09:00',
+          timezone: 'Asia/Tbilisi',
+          channels: { telegram: true },
+          notifyBefore: { debts: 1, goals: 3, income: 0 }
+        }
       })
       await userRepo.save(user)
     }
@@ -106,6 +115,8 @@ export class DatabaseStorage {
         paidAmount: d.paidAmount,
         isPaid: d.isPaid,
         description: d.description,
+        dueDate: d.dueDate,
+        autoPayment: d.autoPayment
       })),
       goals: goals.map((g) => ({
         id: g.id,
@@ -114,6 +125,8 @@ export class DatabaseStorage {
         currentAmount: g.currentAmount,
         currency: g.currency,
         status: g.status,
+        deadline: g.deadline,
+        autoDeposit: g.autoDeposit
       })),
       incomeSources: incomeSources.map((s) => ({
         id: s.id.toString(),
@@ -121,6 +134,7 @@ export class DatabaseStorage {
         expectedAmount: s.expectedAmount,
         currency: s.currency,
         frequency: s.frequency,
+        autoCreate: s.autoCreate
       })),
       defaultCurrency: user?.defaultCurrency || "USD",
       budgets: budgets.map((b) => ({
@@ -912,7 +926,7 @@ export class DatabaseStorage {
     await debtRepo.save(debt)
 
     const transaction: Transaction = {
-      id: Date.now().toString(),
+      id: randomUUID(),
       date: new Date(),
       currency: currency,
       description: `Debt Payment ${debt.name}`,
@@ -1095,7 +1109,7 @@ export class DatabaseStorage {
       }
     }
     const transaction: Transaction = {
-      id: Date.now().toString(),
+      id: randomUUID(),
       date: new Date(),
       amount: amount,
       currency: currency,
@@ -1577,7 +1591,7 @@ export class DatabaseStorage {
     const existing = user.templates ?? []
     const newTemplate: TransactionTemplate = {
       ...template,
-      id: Date.now().toString(),
+      id: randomUUID(),
     }
 
     user.templates = [...existing, newTemplate]
@@ -1758,6 +1772,34 @@ export class DatabaseStorage {
     await txRepo.save(transaction)
     this.clearCache(userId)
     return { success: true }
+  }
+
+  // --- Reminder Settings Methods ---
+  async getReminderSettings(userId: string): Promise<ReminderSettings | undefined> {
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await this.ensureUser(userId)
+    return user.reminderSettings
+  }
+
+  async updateReminderSettings(userId: string, settings: ReminderSettings): Promise<void> {
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await this.ensureUser(userId)
+    user.reminderSettings = settings
+    await userRepo.save(user)
+    this.clearCache(userId)
+  }
+
+  // --- Debt/Goal Date Management Methods ---
+  async updateDebtDueDate(userId: string, debtId: string, dueDate: Date | null): Promise<void> {
+    const debtRepo = AppDataSource.getRepository(DebtEntity)
+    await debtRepo.update({ id: debtId, userId }, { dueDate })
+    this.clearCache(userId)
+  }
+
+  async updateGoalDeadline(userId: string, goalId: string, deadline: Date | null): Promise<void> {
+    const goalRepo = AppDataSource.getRepository(GoalEntity)
+    await goalRepo.update({ id: goalId, userId }, { deadline })
+    this.clearCache(userId)
   }
 
 }

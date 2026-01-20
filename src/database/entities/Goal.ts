@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   JoinColumn,
@@ -11,7 +11,7 @@ import { Currency } from "../../types"
 
 @Entity("goals")
 export class Goal {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn("uuid")
   id!: string
 
   @Column()
@@ -32,6 +32,19 @@ export class Goal {
 
   @Column({ type: "text", default: "ACTIVE" })
   status: "ACTIVE" | "COMPLETED" | "PAUSED"
+
+  @Column({ type: "datetime", nullable: true })
+  deadline?: Date
+
+  @Column({ type: "simple-json", nullable: true })
+  autoDeposit?: {
+    enabled: boolean
+    amount: number
+    accountId: string
+    frequency: "WEEKLY" | "MONTHLY"
+    dayOfMonth?: number
+    dayOfWeek?: number
+  }
 
   // Relations
   @ManyToOne(() => User, (user) => user.goals)

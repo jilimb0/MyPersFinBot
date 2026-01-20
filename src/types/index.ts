@@ -64,6 +64,14 @@ export interface Goal {
   currency: Currency
   deadline?: string | Date
   status: "ACTIVE" | "COMPLETED" | "PAUSED"
+  autoDeposit?: {
+    enabled: boolean
+    amount: number
+    accountId: string
+    frequency: "WEEKLY" | "MONTHLY"
+    dayOfMonth?: number // 1-31 для MONTHLY
+    dayOfWeek?: number // 0-6 для WEEKLY
+  }
 }
 
 export interface Debt {
@@ -77,6 +85,16 @@ export interface Debt {
   description?: string
   paidAmount: number
   isPaid: boolean
+  reminderDaysBefore?: number // За сколько дней напомнить
+  isRecurring?: boolean
+  recurringFrequency?: "MONTHLY" | "WEEKLY"
+  autoPayment?: {
+    enabled: boolean
+    amount: number
+    accountId: string // FROM account
+    frequency: "MONTHLY"
+    dayOfMonth: number // 1-31
+  }
 }
 
 export interface Transaction {
@@ -98,6 +116,16 @@ export interface IncomeSource {
   expectedAmount?: number
   currency?: Currency
   frequency?: "MONTHLY" | "ONE_TIME"
+  expectedDate?: number // День месяца (1-31)
+  accountId?: string // Куда добавлять доход
+  autoCreate?: {
+    enabled: boolean
+    amount: number
+    accountId: string // TO account
+    frequency: "MONTHLY"
+    dayOfMonth: number // 1-31
+  }
+  reminderEnabled?: boolean
 }
 
 export interface Budget {
@@ -120,6 +148,18 @@ export interface TransactionTemplate {
   accountId?: string
 }
 
+export interface UploadedStatement {
+  id: string
+  userId: string
+  fileName: string
+  bankType: BankType
+  uploadedAt: Date
+  processedAt?: Date
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
+  parsedData?: BankParserResult
+  importedCount?: number
+}
+
 
 export interface UserData {
   balances: Balance[]
@@ -140,4 +180,93 @@ export interface CategoryBudget {
   limit: number
   spent: number
   currency?: Currency
+}
+
+// Automation & Reminders
+export interface ReminderSettings {
+  enabled: boolean
+  time: string // "09:00" - время напоминаний
+  timezone: string // "Asia/Tbilisi"
+  channels: {
+    telegram: boolean
+    email?: boolean
+  }
+  notifyBefore: {
+    debts: number // За сколько дней до долга
+    goals: number // За сколько дней до дедлайна цели
+    income: number // За сколько дней до дохода
+  }
+  customMessages?: {
+    debt?: string // Шаблон для напоминаний о долгах
+    goal?: string // Шаблон для напоминаний о целях
+    income?: string // Шаблон для напоминаний о доходах
+  }
+}
+
+export interface RecurringTransaction {
+  id: string
+  userId: string
+  type: TransactionType
+  amount: number
+  currency: Currency
+  category: TransactionCategory
+  accountId: string
+  frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+  startDate: string | Date
+  endDate?: string | Date
+  nextExecutionDate: string | Date
+  isActive: boolean
+  autoExecute: boolean // Автоматически создавать или только напоминать
+  description?: string
+  dayOfMonth?: number // Для MONTHLY (1-31)
+  dayOfWeek?: number // Для WEEKLY (0-6)
+}
+
+export interface ScheduledReminder {
+  id: string
+  userId: string
+  type: "DEBT" | "GOAL" | "INCOME" | "RECURRING_TX"
+  entityId: string // ID долга/цели/дохода
+  reminderDate: string | Date
+  message: string
+  isProcessed: boolean
+  createdAt: string | Date
+}
+
+// Notification Template Placeholders
+export type NotificationPlaceholder =
+  | "{name}"
+  | "{amount}"
+  | "{currency}"
+  | "{dueDate}"
+  | "{remaining}"
+  | "{target}"
+  | "{monthlyAmount}"
+  | "{monthsLeft}"
+
+// Bank Statement Parser Types
+export type BankType = "TINKOFF" | "MONOBANK" | "REVOLUT" | "WISE" | "UNKNOWN"
+
+export interface ParsedTransaction {
+  date: string // ISO format
+  amount: number
+  currency: Currency
+  type: TransactionType
+  category?: TransactionCategory
+  description: string
+  accountId?: string
+  confidence?: number // 0-1 для ML категоризации
+}
+
+export interface BankParserResult {
+  bankType: BankType
+  transactions: ParsedTransaction[]
+  errors: string[]
+  warnings: string[]
+}
+
+export interface BankParserOptions {
+  defaultCurrency?: Currency
+  defaultAccount?: string
+  autoCategorie?: boolean
 }

@@ -10,9 +10,10 @@ import {
 import { dbStorage as db } from "../database/storage-db"
 import * as validators from "../validators"
 import { formatMoney, handleInsufficientFunds } from "../utils"
-import { showMainMenu } from "../menus"
+import { showMainMenu, showBalancesMenu } from "../menus"
 import { QuickActionsHandlers } from "./quick-actions-handlers"
 import * as helpers from "../wizards/helpers"
+import { randomUUID } from "crypto"
 
 export async function handleTxCategory(
   wizard: WizardManager,
@@ -22,6 +23,8 @@ export async function handleTxCategory(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
+
+  const txType = (state.data?.txType || state.txType) as TransactionType
 
   const quickResult = await QuickActionsHandlers.handleQuickCategory(
     wizard.getBot(),
@@ -35,17 +38,17 @@ export async function handleTxCategory(
     await QuickActionsHandlers.showAllCategories(
       wizard.getBot(),
       chatId,
-      state.txType || TransactionType.EXPENSE
+      txType
     )
-    return true
-  }
-
-  if (quickResult.handled) {
+    state.data.showedAllCategories = true
     wizard.setState(userId, state)
     return true
   }
 
-  const txType = state.txType || TransactionType.EXPENSE
+  if (quickResult.handled) {
+    return true
+  }
+
   let validCategory: TransactionCategory | null = null
 
   if (txType === TransactionType.EXPENSE) {
@@ -60,10 +63,18 @@ export async function handleTxCategory(
       "❌ Invalid category. Please select from the list.",
       wizard.getBackButton()
     )
+    state.data.showedAllCategories = true
+    wizard.setState(userId, state)
     return true
   }
 
   await wizard.goToStep(userId, "TX_ACCOUNT", { category: validCategory })
+
+  const stateAfterGoTo = wizard.getState(userId)
+  if (stateAfterGoTo?.data?.showedAllCategories) {
+    delete stateAfterGoTo.data.showedAllCategories
+    wizard.setState(userId, stateAfterGoTo)
+  }
 
   const updatedState = wizard.getState(userId)
 
@@ -79,7 +90,7 @@ export async function handleTxCategory(
       wizard,
       chatId,
       userId,
-      state.txType === TransactionType.EXPENSE
+      txType === TransactionType.EXPENSE
         ? "💸 Select account to deduct from:"
         : "💰 Select account to add to:"
     )
@@ -94,7 +105,7 @@ export async function handleTxAmount(
   text: string
 ): Promise<boolean> {
   const cleanText = text.replace(/^[^\d\s]+\s*/, '').trim()
-  
+
   const defaultCurrency = await db.getDefaultCurrency(userId)
   const parsed = validators.parseAmountWithCurrency(cleanText.trim(), defaultCurrency)
   if (!parsed) {
@@ -108,8 +119,10 @@ export async function handleTxAmount(
   const state = wizard.getState(userId)
   if (!state) return false
 
+  const txType = (state.data?.txType || state.txType) as TransactionType
+
   if (parsed.amount < 0) {
-    if (state.txType === TransactionType.EXPENSE) {
+    if (txType === TransactionType.EXPENSE) {
       await wizard.sendMessage(
         chatId,
         `⚠️ Negative amount detected: ${parsed.amount} ${parsed.currency}\n\n` +
@@ -131,14 +144,14 @@ export async function handleTxAmount(
         currency: parsed.currency,
       })
       return true
-    } else if (state.txType === TransactionType.INCOME) {
+    } else if (txType === TransactionType.INCOME) {
       await wizard.sendMessage(
         chatId,
         `❌ Negative income doesn't make sense. Please enter a positive amount.`,
         wizard.getBackButton()
       )
       return true
-    } else if (state.txType === TransactionType.TRANSFER) {
+    } else if (txType === TransactionType.TRANSFER) {
       await wizard.sendMessage(
         chatId,
         `❌ Transfer amount must be positive.`,
@@ -153,8 +166,14 @@ export async function handleTxAmount(
     amount: parsed.amount,
     currency: parsed.currency,
   }
+  delete state.data.topCategoriesShown
+  delete state.data.accountsShown
+  delete state.data.toAccountsShown
+  delete state.data.showedAllCategories
 
-  if (state.txType === TransactionType.TRANSFER) {
+  wizard.setState(userId, state)
+
+  if (txType === TransactionType.TRANSFER) {
     await wizard.goToStep(userId, "TX_ACCOUNT", {
       amount: parsed.amount,
       currency: parsed.currency,
@@ -192,36 +211,65 @@ export async function handleTxAccount(
   const state = wizard.getState(userId)
   if (!state) return false
 
-  if (state.txType !== TransactionType.TRANSFER) {
-    if (!state.data.accountsShown) {
-      state.data.accountsShown = true
-      wizard.setState(userId, state)
+  const txType = (state.data?.txType || state.txType) as TransactionType
 
-      const lastUsed = await QuickActionsHandlers.getLastUsedAccount(
+  if (!state.data.accountsShown) {
+    state.data.accountsShown = true
+    wizard.setState(userId, state)
+
+    const balances = await db.getBalancesList(userId)
+
+    let filteredBalances = balances
+    if (txType === TransactionType.TRANSFER) {
+      filteredBalances = balances.filter((b) => b.amount > 0)
+
+      if (filteredBalances.length === 0) {
+        await wizard.sendMessage(
+          chatId,
+          "❌ No accounts with positive balance available for transfer.",
+          {
+            reply_markup: {
+              keyboard: [
+                [{ text: "💳 Balances" }],
+                [{ text: "🏠 Main Menu" }],
+              ],
+              resize_keyboard: true,
+            },
+          }
+        )
+        wizard.clearState(userId)
+        return true
+      }
+    }
+
+    // For non-transfer transactions, show last used account
+    let lastUsed: string | null = null
+    if (txType !== TransactionType.TRANSFER && state.data.category) {
+      lastUsed = await QuickActionsHandlers.getLastUsedAccount(
         userId,
         state.data.category
       )
-
-      const balances = await db.getBalancesList(userId)
-      const buttons = balances.map((b) => {
-        const isLastUsed = lastUsed && b.accountId === lastUsed
-        const prefix = isLastUsed ? "⭐ " : ""
-        return [
-          {
-            text: `${prefix}${b.accountId} (${formatMoney(b.amount, b.currency)})`,
-          },
-        ]
-      })
-      buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
-
-      await wizard.sendMessage(chatId, text, {
-        reply_markup: { keyboard: buttons, resize_keyboard: true },
-      })
-
-      return true
     }
+
+    const buttons = filteredBalances.map((b) => {
+      const isLastUsed = lastUsed && b.accountId === lastUsed
+      const prefix = isLastUsed ? "⭐ " : ""
+      return [
+        {
+          text: `${prefix}${b.accountId} (${formatMoney(b.amount, b.currency)})`,
+        },
+      ]
+    })
+    buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+
+    await wizard.sendMessage(chatId, text, {
+      reply_markup: { keyboard: buttons, resize_keyboard: true },
+    })
+
+    return true
   }
 
+  // Process selected account
   let cleanText = text
   if (text.startsWith("⭐ ")) {
     cleanText = text.substring(2)
@@ -242,7 +290,7 @@ export async function handleTxAccount(
 
   const { amount: balanceAmount, currency: balanceCurrency } = balanceInfo
 
-  if (state.txType === TransactionType.EXPENSE) {
+  if (txType === TransactionType.EXPENSE) {
     if (balanceCurrency !== state.data.currency) {
       await wizard.sendMessage(
         chatId,
@@ -278,7 +326,7 @@ export async function handleTxAccount(
 
   if (state.data.isRefund || state.data.category === IncomeCategory.REFUND) {
     const transaction: Transaction = {
-      id: Date.now().toString(),
+      id: randomUUID(),
       date: new Date(),
       amount: state.data.amount,
       currency: state.data.currency,
@@ -299,7 +347,7 @@ export async function handleTxAccount(
     return true
   }
 
-  if (state.txType === TransactionType.TRANSFER) {
+  if (txType === TransactionType.TRANSFER) {
     await wizard.goToStep(userId, "TX_TO_ACCOUNT", {
       fromAccountId: accountName,
     })
@@ -312,7 +360,7 @@ export async function handleTxAccount(
     return true
   }
 
-  if (state.txType === TransactionType.EXPENSE && state.data.category) {
+  if (txType === TransactionType.EXPENSE && state.data.category) {
     const res = await db.applyExpenseToBudgets(
       userId,
       state.data.category as ExpenseCategory,
@@ -336,16 +384,16 @@ export async function handleTxAccount(
   }
 
   const transaction: Transaction = {
-    id: Date.now().toString(),
+    id: randomUUID(),
     date: new Date(),
     amount: state.data.amount,
     currency: state.data.currency,
-    type: state.txType!,
+    type: txType!,
     category: state.data.category,
     fromAccountId:
-      state.txType === TransactionType.EXPENSE ? accountName : undefined,
+      txType === TransactionType.EXPENSE ? accountName : undefined,
     toAccountId:
-      state.txType === TransactionType.INCOME ? accountName : undefined,
+      txType === TransactionType.INCOME ? accountName : undefined,
     description: state.data.category,
   }
 
@@ -359,7 +407,7 @@ export async function handleTxAccount(
     )
   }
 
-  const emoji = state.txType === TransactionType.EXPENSE ? "💸" : "💰"
+  const emoji = txType === TransactionType.EXPENSE ? "💸" : "💰"
   await wizard.sendMessage(
     chatId,
     `✅ ${emoji} Added: ${formatMoney(state.data.amount, state.data.currency)}\n` +
@@ -370,7 +418,7 @@ export async function handleTxAccount(
         keyboard: [
           [
             {
-              text: `✨ Add Another${state.txType === TransactionType.EXPENSE ? " Expense" : " Income"}`,
+              text: `✨ Add Another${txType === TransactionType.EXPENSE ? " Expense" : " Income"}`,
             },
           ],
           [{ text: "🏠 Main Menu" }],
@@ -393,6 +441,34 @@ export async function handleTxToAccount(
   const state = wizard.getState(userId)
   if (!state) return false
 
+  // Show accounts list if not shown yet
+  if (!state.data.toAccountsShown) {
+    state.data.toAccountsShown = true
+    wizard.setState(userId, state)
+
+    const balances = await db.getBalancesList(userId)
+
+    // Filter out the source account
+    const filteredBalances = balances.filter(
+      (b) => b.accountId !== state.data.fromAccountId
+    )
+
+    const buttons = filteredBalances.map((b) => {
+      return [
+        {
+          text: `${b.accountId} (${formatMoney(b.amount, b.currency)})`,
+        },
+      ]
+    })
+    buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+
+    await wizard.sendMessage(chatId, text, {
+      reply_markup: { keyboard: buttons, resize_keyboard: true },
+    })
+
+    return true
+  }
+
   const accountName = text.split(" (")[0].trim()
 
   if (accountName === state.data.fromAccountId) {
@@ -405,7 +481,7 @@ export async function handleTxToAccount(
   }
 
   const transaction: Transaction = {
-    id: Date.now().toString(),
+    id: randomUUID(),
     date: new Date(),
     amount: state.data.amount,
     currency: state.data.currency,
@@ -417,9 +493,8 @@ export async function handleTxToAccount(
   }
 
   await db.addTransaction(userId, transaction)
-  await wizard.sendMessage(chatId, text || "✅ Transfer completed!")
   wizard.clearState(userId)
-  await showMainMenu(wizard.getBot(), chatId)
+  await showBalancesMenu(wizard, chatId, userId)
 
   return true
 }

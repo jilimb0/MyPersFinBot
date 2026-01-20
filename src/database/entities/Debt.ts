@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   JoinColumn,
@@ -11,7 +11,7 @@ import { Currency } from "../../types"
 
 @Entity("debts")
 export class Debt {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn("uuid")
   id!: string
 
   @Column()
@@ -41,6 +41,27 @@ export class Debt {
 
   @Column({ nullable: true })
   description?: string
+
+  @Column({ type: "datetime", nullable: true })
+  dueDate?: Date
+
+  @Column({ type: "integer", nullable: true })
+  reminderDaysBefore?: number
+
+  @Column({ type: "boolean", default: false })
+  isRecurring?: boolean
+
+  @Column({ type: "text", nullable: true })
+  recurringFrequency?: "MONTHLY" | "WEEKLY"
+
+  @Column({ type: "json", nullable: true })
+  autoPayment?: {
+    enabled: boolean
+    amount: number
+    accountId: string
+    frequency: "MONTHLY"
+    dayOfMonth: number
+  }
 
   // Relations
   @ManyToOne(() => User, (user) => user.debts)

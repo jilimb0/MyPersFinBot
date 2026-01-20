@@ -3,6 +3,7 @@ import { TransactionType, ExpenseCategory, IncomeCategory } from "../types"
 import { dbStorage as db } from "../database/storage-db"
 import type { WizardState } from "../wizards/wizards"
 import { createListButtons, formatMoney, handleInsufficientFunds } from "../utils"
+import { randomUUID } from "crypto"
 
 export class QuickActionsHandlers {
   static async handleQuickCategory(
@@ -133,7 +134,7 @@ export class QuickActionsHandlers {
         }
 
         await db.addTransaction(userId, {
-          id: Date.now().toString(),
+          id: randomUUID(),
           type: state.txType,
           amount: state.data.amount,
           category: state.data.category,
@@ -293,7 +294,7 @@ export class QuickActionsHandlers {
       }
 
       await db.addTransaction(userId, {
-        id: Date.now().toString(),
+        id: randomUUID(),
         type: state.txType,
         amount: state.data.amount,
         category: state.data.category,

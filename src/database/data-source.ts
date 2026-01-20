@@ -9,14 +9,16 @@ import { Goal } from "../database/entities/Goal"
 import { IncomeSource } from "../database/entities/IncomeSource"
 import { CategoryPreference } from "../database/entities/CategoryPreference"
 import { Budget } from "../database/entities/Budget"
+import { RecurringTransaction } from "../database/entities/RecurringTransaction"
+import { Reminder } from "../database/entities/Reminder"
 
 const DB_PATH = path.resolve(__dirname, "../../data/database.sqlite")
 
 export const AppDataSource = new DataSource({
   type: "sqlite",
   database: DB_PATH,
-  synchronize: true, // Автоматическое создание таблиц
-  logging: false, // Включите для отладки: ["query", "error"]
+  synchronize: true,
+  logging: false,
   entities: [
     User,
     Balance,
@@ -26,27 +28,23 @@ export const AppDataSource = new DataSource({
     IncomeSource,
     CategoryPreference,
     Budget,
+    RecurringTransaction,
+    Reminder,
   ],
   migrations: [],
   subscribers: [],
 
-  // ⚡ SQLite оптимизация
   extra: {
-    // WAL mode для лучшей производительности при конкурентных операциях
-    flags: 6, // SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
+    flags: 6,
   },
-
-  // ⚡ Connection pooling (для SQLite не критично, но включим для будущего)
-  maxQueryExecutionTime: 1000, // Предупреждение о медленных запросах
+  maxQueryExecutionTime: 1000,
 })
 
-// Инициализация БД
 export async function initializeDatabase() {
   try {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize()
 
-      // ⚡ Включаем WAL mode для лучшей производительности
       await AppDataSource.query("PRAGMA journal_mode = WAL;")
       await AppDataSource.query("PRAGMA synchronous = NORMAL;")
       await AppDataSource.query("PRAGMA cache_size = 10000;")
@@ -61,7 +59,6 @@ export async function initializeDatabase() {
   }
 }
 
-// Закрытие соединения
 export async function closeDatabase() {
   if (AppDataSource.isInitialized) {
     await AppDataSource.destroy()
