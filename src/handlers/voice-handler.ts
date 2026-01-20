@@ -4,18 +4,17 @@ import { assemblyAIService } from "../services/assemblyai-service"
 import { dbStorage as db } from "../database/storage-db"
 import { TransactionCategory, TransactionType } from "../types"
 import { formatMoney } from "../utils"
-import { MAIN_MENU_KEYBOARD } from "../constants"
 import axios from "axios"
-import { createReadStream, unlinkSync, writeFileSync, existsSync } from "fs"
+import { unlinkSync, writeFileSync, existsSync } from "fs"
 import { tmpdir } from "os"
 import { join } from "path"
 import { randomUUID } from "crypto"
 import { exec } from "child_process"
 import { promisify } from "util"
+import fs from "fs"
 
 const execAsync = promisify(exec)
 
-// Handle voice message
 export async function handleVoiceMessage(
   bot: TelegramBot,
   msg: TelegramBot.Message
@@ -29,42 +28,37 @@ export async function handleVoiceMessage(
   try {
     await bot.sendMessage(chatId, "🎤 Processing voice message...")
 
-    // Download voice file from Telegram
     const fileLink = await bot.getFileLink(voice.file_id)
     const response = await axios.get(fileLink, { responseType: "arraybuffer" })
 
-    // Save as .oga (Telegram format)
     const ogaPath = join(tmpdir(), `voice_${Date.now()}.oga`)
     writeFileSync(ogaPath, response.data)
 
-    // Convert OGA to WAV for AssemblyAI
     const wavPath = join(tmpdir(), `voice_${Date.now()}.wav`)
-    
+
     try {
       await convertOgaToWav(ogaPath, wavPath)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (conversionError: any) {
-      // Cleanup OGA on error
       if (existsSync(ogaPath)) {
         unlinkSync(ogaPath)
       }
-      
-      // Show user-friendly error
+
       const errorMsg = conversionError.message.includes("FFmpeg")
         ? "❌ **FFmpeg is not installed** ⚠️\n\n" +
-          "**Admin needs to install FFmpeg:**\n" +
-          "• macOS: `brew install ffmpeg`\n" +
-          "• Linux: `apt-get install ffmpeg`\n\n" +
-          "**Meanwhile, you can type:**\n" +
-          "• `50 coffee` ☕\n" +
-          "• `100 taxi` 🚕\n" +
-          "• `потратил 200 на еду` 🍔"
+        "**Admin needs to install FFmpeg:**\n" +
+        "• macOS: `brew install ffmpeg`\n" +
+        "• Linux: `apt-get install ffmpeg`\n\n" +
+        "**Meanwhile, you can type:**\n" +
+        "• `50 coffee` ☕\n" +
+        "• `100 taxi` 🚕\n" +
+        "• `потратил 200 на еду` 🍔"
         : "❌ Audio conversion failed. Please try text input."
-      
+
       await bot.sendMessage(chatId, errorMsg, { parse_mode: "Markdown" })
       return
     }
 
-    // Verify WAV was created
     if (!existsSync(wavPath)) {
       unlinkSync(ogaPath)
       await bot.sendMessage(
@@ -76,13 +70,10 @@ export async function handleVoiceMessage(
       return
     }
 
-    // Clean up original OGA
     unlinkSync(ogaPath)
 
-    // Transcribe the WAV file
     const text = await convertVoiceToText(wavPath)
 
-    // Clean up WAV file
     if (existsSync(wavPath)) {
       unlinkSync(wavPath)
     }
@@ -111,7 +102,6 @@ export async function handleVoiceMessage(
 
     await bot.sendMessage(chatId, `📝 Recognized: "${text}"`)
 
-    // Parse with NLP
     await handleNLPInput(bot, chatId, userId, text)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -119,7 +109,6 @@ export async function handleVoiceMessage(
 
     let errorMsg = "❌ Failed to process voice message."
 
-    // Check for FFmpeg error
     if (error.message && error.message.includes("FFmpeg")) {
       errorMsg = "❌ FFmpeg is not installed.⚠️" +
         "**Admin: Install FFmpeg**" +
@@ -136,7 +125,6 @@ export async function handleVoiceMessage(
   }
 }
 
-// Handle text input with NLP
 export async function handleNLPInput(
   bot: TelegramBot,
   chatId: number,
@@ -144,10 +132,8 @@ export async function handleNLPInput(
   text: string
 ): Promise<void> {
   try {
-    // Get user's default currency
     const defaultCurrency = await db.getDefaultCurrency(userId)
 
-    // Parse with NLP
     const result = nlpParser.parse(text, defaultCurrency)
 
     if (!result || !result.amount) {
@@ -162,7 +148,6 @@ export async function handleNLPInput(
       return
     }
 
-    // Show confirmation
     const emoji = result.type === TransactionType.INCOME ? "💰" : "💸"
     const sign = result.type === TransactionType.INCOME ? "+" : "-"
     const typeLabel = result.type === TransactionType.INCOME ? "Income" : "Expense"
@@ -209,7 +194,6 @@ export async function handleNLPInput(
   }
 }
 
-// Handle NLP confirmation callback
 export async function handleNLPCallback(
   bot: TelegramBot,
   query: TelegramBot.CallbackQuery
@@ -234,7 +218,6 @@ export async function handleNLPCallback(
       const [, amountStr, type, category, description] = data.split("|")
       const amount = parseFloat(amountStr)
 
-      // Get default account
       const balances = await db.getBalancesList(userId)
       if (balances.length === 0) {
         await bot.editMessageText(
@@ -251,7 +234,6 @@ export async function handleNLPCallback(
       const defaultAccount = balances[0].accountId
       const currency = await db.getDefaultCurrency(userId)
 
-      // Save transaction
       await db.addTransaction(userId, {
         id: randomUUID(),
         date: new Date(),
@@ -318,13 +300,11 @@ export async function handleNLPCallback(
     }
 
     if (data.startsWith("nlp_set_cat|")) {
-      // Redirect to confirm with new category
       const [, amountStr, type, category, description] = data.split("|")
       const confirmData = `nlp_confirm|${amountStr}|${type}|${category}|${description}`
 
       await bot.answerCallbackQuery(query.id)
 
-      // Simulate clicking confirm button
       const newQuery = { ...query, confirmData }
       await handleNLPCallback(bot, newQuery)
       return
@@ -337,67 +317,54 @@ export async function handleNLPCallback(
   }
 }
 
-// Convert OGA (Telegram voice) to WAV using FFmpeg
 async function convertOgaToWav(ogaPath: string, wavPath: string): Promise<void> {
   console.log(`🔄 Converting: ${ogaPath} → ${wavPath}`)
-  
+
   try {
-    // Check if source file exists
     if (!existsSync(ogaPath)) {
       throw new Error(`Source file not found: ${ogaPath}`)
     }
-    
-    // Use FFmpeg to convert OGA to WAV (16kHz mono PCM for AssemblyAI)
-    // -acodec pcm_s16le = PCM signed 16-bit little-endian (standard WAV)
-    // -ar 16000 = 16kHz sample rate
-    // -ac 1 = mono (1 channel)
-    // -f wav = force WAV format
+
     const command = `ffmpeg -i "${ogaPath}" -acodec pcm_s16le -ar 16000 -ac 1 -f wav -y "${wavPath}" 2>&1`
-    
+
     console.log(`📞 Running FFmpeg...`)
     const { stdout, stderr } = await execAsync(command)
-    
-    // Check if output file was created
+
     if (!existsSync(wavPath)) {
       console.error("❌ FFmpeg did not create output file")
       console.error("FFmpeg output:", stderr || stdout)
       throw new Error("FFmpeg failed to create WAV file")
     }
-    
-    // Check file size
-    const fs = require('fs')
+
     const stats = fs.statSync(wavPath)
     const fileSizeKB = (stats.size / 1024).toFixed(2)
-    
+
     if (stats.size === 0) {
       console.error("❌ WAV file is empty (0 bytes)")
       throw new Error("WAV file is empty")
     }
-    
+
     console.log(`✅ Converted successfully: ${ogaPath} → ${wavPath} (${fileSizeKB} KB)`)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("❌ FFmpeg conversion error:", error.message)
-    
-    // Check if FFmpeg is installed
-    if (error.message.includes("command not found") || 
-        error.message.includes("not recognized") ||
-        error.code === "ENOENT") {
+
+    if (error.message.includes("command not found") ||
+      error.message.includes("not recognized") ||
+      error.code === "ENOENT") {
       console.error("💡 FFmpeg is not installed!")
       console.error("📦 Install: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)")
       throw new Error(
         "FFmpeg is not installed. Install it with: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)"
       )
     }
-    
+
     throw new Error(`Failed to convert audio: ${error.message}`)
   }
 }
 
-// Convert voice to text using AssemblyAI
 async function convertVoiceToText(filePath: string): Promise<string | null> {
   try {
-    // Check if AssemblyAI is available
     if (!assemblyAIService.isAvailable()) {
       console.log("⚠️ AssemblyAI not configured. Voice file:", filePath)
       console.log("💡 Set ASSEMBLYAI_API_KEY to enable voice transcription")
@@ -405,7 +372,6 @@ async function convertVoiceToText(filePath: string): Promise<string | null> {
       return null
     }
 
-    // Transcribe using AssemblyAI
     const text = await assemblyAIService.transcribeFile(filePath)
     return text
   } catch (error) {

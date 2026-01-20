@@ -276,6 +276,7 @@ export async function showBudgetMenu(
     items.push(cat)
   }
 
+
   const summaryLine =
     totalLimit > 0
       ? `\n📊 ${formatMoney(totalSpent, defaultCurrency)} of ${formatMoney(totalLimit, defaultCurrency)} budget spent (${Math.round((totalSpent / totalLimit) * 100)}%)`
@@ -291,6 +292,11 @@ export async function showBudgetMenu(
     "💳 *Budget Setup*\n\n" +
     (lines.length ? lines.join("\n") : "No budgets set for categories yet.") +
     summaryLine
+
+  wizard.setState(userId, {
+    step: "BUDGET_MENU",
+    data: {},
+  })
 
   await wizard.sendMessage(chatId, text, {
     parse_mode: "Markdown",
@@ -432,43 +438,7 @@ export async function showNetWorthMenu(
   })
 }
 
-export async function showNotificationsMenu(
-  wizard: WizardManager,
-  chatId: number,
-  userId: string
-): Promise<void> {
-  const settings = await db.getReminderSettings(userId)
-  const current = settings || {
-    enabled: true,
-    time: '09:00',
-    timezone: 'Asia/Tbilisi',
-    channels: { telegram: true },
-    notifyBefore: { debts: 1, goals: 3, income: 0 }
-  }
 
-  const msg =
-    `🔔 *Notification Settings*\n\n` +
-    `Status: ${current.enabled ? '✅ Enabled' : '❌ Disabled'}\n` +
-    `Time: ${current.time}\n` +
-    `Timezone: ${current.timezone}\n\n` +
-    `📅 *Notify Before:*\n` +
-    `• Debts: ${current.notifyBefore.debts} day(s)\n` +
-    `• Goals: ${current.notifyBefore.goals} day(s)\n` +
-    `• Income: ${current.notifyBefore.income} day(s)\n\n` +
-    `Use buttons below to manage settings.`
-
-  await wizard.sendMessage(chatId, msg, {
-    parse_mode: 'Markdown',
-    reply_markup: {
-      keyboard: [
-        [{ text: current.enabled ? '❌ Disable' : '✅ Enable' }],
-        [{ text: '📝 Manage Reminders' }],
-        [{ text: '⬅️ Back' }, { text: '🏠 Main Menu' }],
-      ],
-      resize_keyboard: true,
-    }
-  })
-}
 
 export async function showActiveRemindersMenu(
   wizard: WizardManager,
@@ -524,10 +494,17 @@ export async function showActiveRemindersMenu(
 }
 
 export async function showAutomationMenu(
-  bot: TelegramBot,
-  chatId: number
+  wizard: WizardManager,
+  chatId: number,
+  userId: string
 ): Promise<void> {
-  await bot.sendMessage(
+  wizard.setState(userId, {
+    step: "AUTOMATION_MENU",
+    data: {},
+    returnTo: "settings",
+  })
+
+  await wizard.sendMessage(
     chatId,
     '🤖 *Automation*\n\nManage automated features:',
     {
@@ -545,10 +522,17 @@ export async function showAutomationMenu(
 }
 
 export async function showAdvancedMenu(
-  bot: TelegramBot,
-  chatId: number
+  wizard: WizardManager,
+  chatId: number,
+  userId: string
 ): Promise<void> {
-  await bot.sendMessage(
+  wizard.setState(userId, {
+    step: "ADVANCED_MENU",
+    data: {},
+    returnTo: "settings",
+  })
+
+  await wizard.sendMessage(
     chatId,
     '🛠️ *Advanced Settings*\n\nAdvanced features and data management:',
     {

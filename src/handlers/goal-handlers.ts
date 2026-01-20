@@ -23,6 +23,25 @@ export async function handleGoalInput(
     return true
   }
 
+  // ✅ Check for duplicate goal name
+  const userData = await db.getUserData(userId)
+  const existingGoal = userData.goals.find(
+    (g) => g.name === parsed.name && g.status === "ACTIVE"
+  )
+
+  if (existingGoal) {
+    await wizard.sendMessage(
+      chatId,
+      `❌ *Goal "${parsed.name}" already exists!*\n\n` +
+      `Please choose a different name or manage existing goal in the Goals menu.`,
+      {
+        parse_mode: "Markdown",
+        ...wizard.getBackButton(),
+      }
+    )
+    return true
+  }
+
   const goalId = randomUUID()
   await db.addGoal(userId, {
     id: goalId,
@@ -34,14 +53,11 @@ export async function handleGoalInput(
   })
 
   // Ask about deadline
-  wizard.setState(userId, {
-    step: "GOAL_ASK_DEADLINE",
-    data: {
-      goalId,
-      name: parsed.name,
-      targetAmount: parsed.targetAmount,
-      currency: parsed.currency,
-    },
+  await wizard.goToStep(userId, "GOAL_ASK_DEADLINE", {
+    goalId,
+    name: parsed.name,
+    targetAmount: parsed.targetAmount,
+    currency: parsed.currency,
   })
 
   await wizard.sendMessage(

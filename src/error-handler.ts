@@ -1,22 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/**
- * Error Handler
- * 
- * Centralized error handling for:
- * - Telegram API errors
- * - Database errors
- * - AssemblyAI errors
- * - FX API errors
- * - Validation errors
- * - Unknown errors
- */
-
 import TelegramBot from 'node-telegram-bot-api'
 import { log } from './logger'
-
-// ==========================================
-// ERROR TYPES
-// ==========================================
 
 export enum ErrorType {
   TELEGRAM_API = 'TELEGRAM_API',
@@ -38,10 +22,6 @@ export interface AppError extends Error {
   userMessage?: string
 }
 
-// ==========================================
-// ERROR FACTORY
-// ==========================================
-
 export function createError(
   type: ErrorType,
   message: string,
@@ -55,13 +35,6 @@ export function createError(
   return error
 }
 
-// ==========================================
-// ERROR HANDLERS
-// ==========================================
-
-/**
- * Handle Telegram API errors
- */
 export function handleTelegramError(error: any): AppError {
   const code = error.response?.body?.error_code
   const description = error.response?.body?.description
@@ -72,7 +45,6 @@ export function handleTelegramError(error: any): AppError {
     stack: error.stack,
   })
 
-  // Common Telegram errors
   if (code === 403) {
     return createError(
       ErrorType.TELEGRAM_API,
@@ -108,9 +80,6 @@ export function handleTelegramError(error: any): AppError {
   )
 }
 
-/**
- * Handle database errors
- */
 export function handleDatabaseError(error: any): AppError {
   log.error('Database error', {
     message: error.message,
@@ -118,7 +87,6 @@ export function handleDatabaseError(error: any): AppError {
     stack: error.stack,
   })
 
-  // SQLite errors
   if (error.code === 'SQLITE_BUSY') {
     return createError(
       ErrorType.DATABASE,
@@ -154,9 +122,6 @@ export function handleDatabaseError(error: any): AppError {
   )
 }
 
-/**
- * Handle AssemblyAI errors
- */
 export function handleAssemblyAIError(error: any): AppError {
   const status = error.response?.status
 
@@ -201,9 +166,6 @@ export function handleAssemblyAIError(error: any): AppError {
   )
 }
 
-/**
- * Handle FX API errors
- */
 export function handleFXError(error: any): AppError {
   log.warn('FX API error (using fallback)', {
     message: error.message,
@@ -218,9 +180,6 @@ export function handleFXError(error: any): AppError {
   )
 }
 
-/**
- * Handle validation errors
- */
 export function handleValidationError(message: string): AppError {
   return createError(
     ErrorType.VALIDATION,
@@ -230,9 +189,6 @@ export function handleValidationError(message: string): AppError {
   )
 }
 
-/**
- * Handle unknown errors
- */
 export function handleUnknownError(error: any): AppError {
   log.error('Unknown error', {
     message: error.message,
@@ -248,30 +204,19 @@ export function handleUnknownError(error: any): AppError {
   )
 }
 
-// ==========================================
-// MAIN ERROR HANDLER
-// ==========================================
-
-/**
- * Handle any error and return user-friendly message
- */
 export function handleError(error: any): AppError {
-  // Already an AppError
   if ((error as AppError).type) {
     return error as AppError
   }
 
-  // Telegram errors
   if (error.response?.body?.error_code) {
     return handleTelegramError(error)
   }
 
-  // Database errors
   if (error.code?.startsWith('SQLITE_')) {
     return handleDatabaseError(error)
   }
 
-  // Network errors
   if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
     return createError(
       ErrorType.NETWORK,
@@ -281,17 +226,9 @@ export function handleError(error: any): AppError {
     )
   }
 
-  // Unknown
   return handleUnknownError(error)
 }
 
-// ==========================================
-// SEND ERROR TO USER
-// ==========================================
-
-/**
- * Send error message to user
- */
 export async function sendErrorToUser(
   bot: TelegramBot,
   chatId: number,
@@ -301,13 +238,11 @@ export async function sendErrorToUser(
     action?: string
   }
 ) {
-  // Log error with context
   log.logError(error, {
     chatId,
     ...context,
   })
 
-  // Send user-friendly message
   try {
     await bot.sendMessage(
       chatId,
@@ -322,7 +257,6 @@ export async function sendErrorToUser(
       }
     )
   } catch (sendError) {
-    // Failed to send error message
     log.error('Failed to send error message to user', {
       chatId,
       originalError: error.message,
@@ -331,15 +265,7 @@ export async function sendErrorToUser(
   }
 }
 
-// ==========================================
-// GLOBAL ERROR HANDLERS
-// ==========================================
-
-/**
- * Setup global error handlers
- */
 export function setupGlobalErrorHandlers() {
-  // Unhandled promise rejections
   process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
     log.error('Unhandled Promise Rejection', {
       reason: reason?.message || reason,
@@ -348,20 +274,17 @@ export function setupGlobalErrorHandlers() {
     })
   })
 
-  // Uncaught exceptions
   process.on('uncaughtException', (error: Error) => {
     log.error('Uncaught Exception', {
       message: error.message,
       stack: error.stack,
     })
 
-    // Give logger time to write, then exit
     setTimeout(() => {
       process.exit(1)
     }, 1000)
   })
 
-  // Graceful shutdown
   process.on('SIGTERM', () => {
     log.info('SIGTERM received, shutting down gracefully...')
     process.exit(0)
@@ -372,10 +295,6 @@ export function setupGlobalErrorHandlers() {
     process.exit(0)
   })
 }
-
-// ==========================================
-// EXPORTS
-// ==========================================
 
 export default {
   handleError,

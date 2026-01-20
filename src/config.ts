@@ -1,29 +1,10 @@
-/**
- * Centralized Configuration System
- * 
- * Features:
- * - Environment variable validation
- * - Type-safe config access
- * - Default values
- * - Runtime config dump
- * - Config validation on startup
- */
-
 import { z } from 'zod'
 
-// ==========================================
-// CONFIG SCHEMA (Zod validation)
-// ==========================================
-
 const ConfigSchema = z.object({
-  // Telegram
   TELEGRAM_BOT_TOKEN: z.string().min(20).describe("Telegram bot token from @BotFather"),
-
-  // External APIs
   ASSEMBLYAI_API_KEY: z.string().optional(),
   FX_API_KEY: z.string().optional(),
 
-  // Security
   ALLOWED_USERS: z.string().transform((val) => val ? val.split(',') : []).describe("Comma-separated Telegram user IDs"),
   BLOCKED_USERS: z.string().transform((val) => val ? val.split(',') : []).describe("Comma-separated Telegram user IDs"),
   RATE_LIMIT_ENABLED: z.string().transform((val) => val === 'true').pipe(z.boolean()).default(false)
@@ -33,72 +14,51 @@ const ConfigSchema = z.object({
   LOG_UNAUTHORIZED_ACCESS: z.string().transform((val) => val === 'true').pipe(z.boolean()).default(true)
   ,
 
-  // Database
   DB_PATH: z.string().default('./data/database.db'),
   DB_WAL_ENABLED: z.string().transform((val) => val === 'true').pipe(z.boolean()).default(true)
   ,
 
-  // Scheduler (cron schedules)
-  SCHEDULER_MINUTE: z.string().default('* * * * *'), // Every minute
-  RECURRING_CHECK_INTERVAL: z.coerce.number().min(1).max(60).default(1), // Minutes
+  SCHEDULER_MINUTE: z.string().default('* * * * *'),
+  RECURRING_CHECK_INTERVAL: z.coerce.number().min(1).max(60).default(1),
 
-  // Voice processing
   VOICE_TRANSCRIPTION_TIMEOUT: z.coerce.number().min(1000).max(60000).default(30000),
-  VOICE_MAX_DURATION: z.coerce.number().min(1).max(300).default(60), // Seconds
+  VOICE_MAX_DURATION: z.coerce.number().min(1).max(300).default(60),
 
-  // Rate limits & timeouts
   ASSEMBLYAI_POLL_INTERVAL: z.coerce.number().min(100).max(5000).default(1000),
   FX_REFRESH_INTERVAL_HOURS: z.coerce.number().min(1).max(24).default(24),
 
-  // Analytics
   ANALYTICS_DAYS_DEFAULT: z.coerce.number().min(1).max(365).default(30),
 
-  // Reminders
-  REMINDER_CHECK_INTERVAL: z.coerce.number().min(1).max(60).default(5), // Minutes
+  REMINDER_CHECK_INTERVAL: z.coerce.number().min(1).max(60).default(5),
 
-  // File uploads
   MAX_FILE_SIZE_MB: z.coerce.number().min(1).max(50).default(20),
 
-  // Development
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
 })
 
-// ==========================================
-// CONFIG INTERFACE (TypeScript types)
-// ==========================================
 export type AppConfig = z.infer<typeof ConfigSchema>
 
-// ==========================================
-// CONFIG INSTANCE
-// ==========================================
 export const config = ConfigSchema.parse(process.env) as AppConfig
 
-// ==========================================
-// CONFIG UTILITIES
-// ==========================================
-
-/**
- * Log current configuration on startup (security filtered)
- */
 export function logConfig() {
   console.log('\n⚙️  Configuration Loaded:')
   console.log(`  NODE_ENV: ${config.NODE_ENV}`)
-  console.log(`  DB_PATH: ${config.DB_PATH}`)
   console.log(`  FX_REFRESH_INTERVAL_HOURS: ${config.FX_REFRESH_INTERVAL_HOURS}h`)
   console.log(`  VOICE_TRANSCRIPTION_TIMEOUT: ${config.VOICE_TRANSCRIPTION_TIMEOUT}ms`)
+  console.log(`  RATE_LIMIT_ENABLED: ${config.RATE_LIMIT_ENABLED}`)
   console.log(`  LOG_LEVEL: ${config.LOG_LEVEL}`)
 
   if (config.ALLOWED_USERS.length > 0) {
     console.log(`  ALLOWED_USERS: ${config.ALLOWED_USERS.length} user(s)`)
   }
+  if (config.BLOCKED_USERS.length > 0) {
+    console.log(`  BLOCKED_USERS: ${config.BLOCKED_USERS.length} user(s)`)
+  }
 
   console.log('')
 }
 
-/**
- * Validate config at runtime (useful for debugging)
- */
 export function validateConfig() {
   try {
     ConfigSchema.parse(process.env)
@@ -109,9 +69,6 @@ export function validateConfig() {
   }
 }
 
-/**
- * Get full config dump (for debugging)
- */
 export function getConfigDump() {
   return {
     ...config,
@@ -120,10 +77,6 @@ export function getConfigDump() {
     FX_API_KEY: config.FX_API_KEY ? '[REDACTED]' : undefined,
   }
 }
-
-// ==========================================
-// CONFIG HELPERS (convenience functions)
-// ==========================================
 
 export function isDevelopment() {
   return config.NODE_ENV === 'development'
@@ -134,7 +87,7 @@ export function isProduction() {
 }
 
 export function getFxRefreshInterval() {
-  return config.FX_REFRESH_INTERVAL_HOURS * 60 * 60 * 1000 // ms
+  return config.FX_REFRESH_INTERVAL_HOURS * 60 * 60 * 1000
 }
 
 export function getVoiceTimeout() {
@@ -148,10 +101,6 @@ export function getRateLimitMax() {
 export function getRateLimitWindow() {
   return config.RATE_LIMIT_WINDOW_MS
 }
-
-// ==========================================
-// CONFIG DOCUMENTATION (generated)
-// ==========================================
 
 export function printConfigHelp() {
   const help = `
@@ -174,5 +123,4 @@ Full list in .env.example
   console.log(help)
 }
 
-// Auto-validate on import
 validateConfig()

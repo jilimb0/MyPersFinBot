@@ -171,19 +171,14 @@ export async function handleTxAmount(
   delete state.data.toAccountsShown
   delete state.data.showedAllCategories
 
-  console.log("[TX_AMOUNT] after delete flags:", JSON.stringify({ txType, step: state.step, data: state.data }, null, 2))
-
   wizard.setState(userId, state)
 
   if (txType === TransactionType.TRANSFER) {
-    console.log("[TX_AMOUNT] ✅ Transfer detected, going to TX_ACCOUNT")
     await wizard.goToStep(userId, "TX_ACCOUNT", {
       amount: parsed.amount,
       currency: parsed.currency,
       category: InternalCategory.TRANSFER,
     })
-    const stateAfterGoTo = wizard.getState(userId)
-    console.log("[TX_AMOUNT] After goToStep:", JSON.stringify({ step: stateAfterGoTo?.step, txType: stateAfterGoTo?.txType, dataTxType: stateAfterGoTo?.data?.txType, data: stateAfterGoTo?.data }, null, 2))
     await helpers.resendCurrentStepPrompt(
       wizard,
       chatId,
@@ -191,7 +186,6 @@ export async function handleTxAmount(
       wizard.getState(userId)!
     )
   } else {
-    console.log("[TX_AMOUNT] Not transfer, going to TX_CATEGORY")
     await wizard.goToStep(userId, "TX_CATEGORY", {
       amount: parsed.amount,
       currency: parsed.currency,
@@ -218,17 +212,13 @@ export async function handleTxAccount(
   if (!state) return false
 
   const txType = (state.data?.txType || state.txType) as TransactionType
-  console.log("[TX_ACCOUNT] entered:", JSON.stringify({ txType, step: state.step, data: state.data, text }, null, 2))
 
-  // Show accounts list if not shown yet
   if (!state.data.accountsShown) {
-    console.log("[TX_ACCOUNT] Showing accounts list")
     state.data.accountsShown = true
     wizard.setState(userId, state)
 
     const balances = await db.getBalancesList(userId)
 
-    // For Transfer: only show accounts with positive balance
     let filteredBalances = balances
     if (txType === TransactionType.TRANSFER) {
       filteredBalances = balances.filter((b) => b.amount > 0)

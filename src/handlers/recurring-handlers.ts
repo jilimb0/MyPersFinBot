@@ -50,6 +50,12 @@ export async function handleRecurringMenu(
   buttons.push([{ text: "✨ Add Recurring" }])
   buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
 
+  wizardManager.setState(userId, {
+    step: "RECURRING_MENU",
+    data: {},
+    returnTo: "automation",
+  })
+
   await wizardManager.sendMessage(chatId, msg, {
     parse_mode: "Markdown",
     reply_markup: {
@@ -78,7 +84,7 @@ export async function handleRecurringSelect(
   wizardManager.setState(userId, {
     step: "RECURRING_ITEM_MENU",
     data: { recurringId: selected.id, recurring: selected },
-    returnTo: "settings",
+    returnTo: "recurring",
   })
 
   const typeEmoji = selected.type === TransactionType.EXPENSE ? "💸" : "💰"
@@ -143,7 +149,7 @@ export async function handleRecurringItemAction(
     wizardManager.setState(userId, {
       step: "RECURRING_DELETE_CONFIRM",
       data: { recurringId, recurring },
-      returnTo: "settings",
+      returnTo: "recurring",
     })
 
     await wizardManager.sendMessage(
@@ -219,7 +225,7 @@ export async function handleRecurringCreateStart(
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_DESCRIPTION",
     data: {},
-    returnTo: "settings",
+    returnTo: "recurring",
   })
 
   await wizardManager.sendMessage(
@@ -253,7 +259,7 @@ export async function handleRecurringDescription(
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_TYPE",
     data: { ...state.data, description: text },
-    returnTo: "settings",
+    returnTo: "recurring",
   })
 
   await wizardManager.sendMessage(
@@ -295,7 +301,7 @@ export async function handleRecurringType(
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_AMOUNT",
     data: { ...state.data, type },
-    returnTo: "settings",
+    returnTo: "recurring",
   })
 
   const currency = await db.getDefaultCurrency(userId)
@@ -338,7 +344,7 @@ export async function handleRecurringAmount(
       amount: parsed.amount,
       currency: parsed.currency,
     },
-    returnTo: "settings",
+    returnTo: "recurring",
   })
 
   const balances = await db.getBalancesList(userId)
@@ -393,7 +399,7 @@ export async function handleRecurringAccount(
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_CATEGORY",
     data: { ...state.data, accountId },
-    returnTo: "settings",
+    returnTo: "recurring",
   })
 
   const categories = await db.getTopCategories(userId, state.data.type)
@@ -438,7 +444,7 @@ export async function handleRecurringCategory(
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_DAY",
     data: { ...state.data, category: text as TransactionCategory },
-    returnTo: "settings",
+    returnTo: "recurring",
   })
 
   await wizardManager.sendMessage(

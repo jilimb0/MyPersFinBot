@@ -9,13 +9,11 @@ module.exports = tseslint.config(
   {
     files: ["**/*.ts"],
     rules: {
-      // Общие правила
       "no-console": "off",
       "no-unused-vars": "off",
       "prefer-const": "warn",
       "no-var": "error",
 
-      // TypeScript правила - СМЯГЧЁННЫЕ ДЛЯ СУЩЕСТВУЮЩЕГО КОДА
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {
@@ -24,48 +22,31 @@ module.exports = tseslint.config(
           caughtErrors: "none",
         },
       ],
-      // "@typescript-eslint/no-explicit-any": "off", // Выключено для существующего кода
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
     },
   },
-  // Специальные правила для конфиг файла
   {
     files: ["eslint.config.js"],
     rules: {
       "@typescript-eslint/no-require-imports": "off",
-      "no-undef": "off", // module и require глобальные в Node.js
+      "no-undef": "off",
     },
   },
   {
     ignores: [
-      // Build output
       "dist/**",
       "build/**",
-
-      // Dependencies
       "node_modules/**",
-
-      // Database
       "data/**",
       "**/*.sqlite",
-
-      // Environment
       ".env",
       ".env.local",
-
-      // Logs
       "logs/**",
       "**/*.log",
-
-      // OS
       "**/.DS_Store",
-
-      // IDE
       ".vscode/**",
       ".idea/**",
-
-      // Allow eslint.config.js
       "!eslint.config.js",
     ],
   }

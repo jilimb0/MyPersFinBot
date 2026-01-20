@@ -10,7 +10,7 @@ import {
   TransactionType,
 } from "../types"
 import { createListButtons, formatMoney } from "../utils"
-import { showActiveRemindersMenu, showAnalyticsReportsMenu, showBalancesMenu, showBudgetMenu, showHistoryMenu, showIncomeSourcesMenu, showMainMenu, showNotificationsMenu } from "../menus"
+import { showActiveRemindersMenu, showAnalyticsReportsMenu, showBalancesMenu, showBudgetMenu, showHistoryMenu, showIncomeSourcesMenu, showMainMenu } from "../menus"
 
 import * as handlers from "../handlers"
 import { createProgressBar, getProgressEmoji } from "../reports"
@@ -23,8 +23,6 @@ export async function resendCurrentStepPrompt(
 ): Promise<void> {
   const { step, data, txType } = state
   const defaultCurrency = await db.getDefaultCurrency(userId)
-
-  console.log("[resendCurrentStepPrompt]", JSON.stringify({ step, txType, data }, null, 2))
 
   switch (step) {
     // --- Transaction Flow ---
@@ -153,27 +151,6 @@ export async function resendCurrentStepPrompt(
       )
       break
     }
-    // case "HISTORY_LIST": {
-    //   const recentTxs = await db.getRecentTransactions(userId, 5)
-    //   const items = recentTxs.map((tx) => {
-    //     const emoji =
-    //       tx.type === "EXPENSE" ? "📉" : tx.type === "INCOME" ? "📈" : "↔️"
-    //     return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
-    //   })
-    //   const keyboard = createListButtons({
-    //     items,
-    //     afterItemsButtons: ["🔍 Filters"],
-    //   })
-    //   await wizard.sendMessage(
-    //     chatId,
-    //     "📋 *Recent Transactions*\n\nSelect transaction to edit:",
-    //     {
-    //       parse_mode: "Markdown",
-    //       reply_markup: { keyboard, resize_keyboard: true },
-    //     }
-    //   )
-    //   break
-    // }
     case "TX_EDIT_MENU": {
       const tx = state.data?.transaction
       if (!tx) break
@@ -757,7 +734,7 @@ export async function resendCurrentStepPrompt(
 
     // --- Notifications ---
     case "NOTIFICATIONS_MENU": {
-      await showNotificationsMenu(wizard, chatId, userId)
+      await handlers.handleNotificationsMenu(wizard, chatId, userId)
       break
     }
     case "NOTIFICATIONS_MANAGE_REMINDERS": {
@@ -918,6 +895,59 @@ export async function resendCurrentStepPrompt(
       }
       break
     }
+
+    // --- Recurring Transactions Handlers ---
+    case "RECURRING_MENU": {
+      // Handle button clicks
+      if (state.data.text === "✨ Add Recurring") {
+        await handlers.handleRecurringCreateStart(wizard, chatId, userId)
+        break
+      }
+
+      // Check if selecting existing recurring
+      const recurring = state.data.text.match(/^(💸|💰) /)
+      if (recurring) {
+        await handlers.handleRecurringSelect(wizard, chatId, userId, state.data.text)
+        break
+      }
+
+      // Default: show menu
+      await handlers.handleRecurringMenu(wizard, chatId, userId)
+      break
+    }
+
+    case "RECURRING_ITEM_MENU":
+      await handlers.handleRecurringItemAction(wizard, chatId, userId, state.data.text)
+      break
+
+    case "RECURRING_DELETE_CONFIRM":
+      await handlers.handleRecurringDeleteConfirm(wizard, chatId, userId, state.data.text)
+      break
+
+    case "RECURRING_CREATE_DESCRIPTION":
+      await handlers.handleRecurringDescription(wizard, chatId, userId, state.data.text)
+      break
+
+    case "RECURRING_CREATE_TYPE":
+      await handlers.handleRecurringType(wizard, chatId, userId, state.data.text)
+      break
+
+    case "RECURRING_CREATE_AMOUNT":
+      await handlers.handleRecurringAmount(wizard, chatId, userId, state.data.text)
+      break
+
+    case "RECURRING_CREATE_ACCOUNT":
+      await handlers.handleRecurringAccount(wizard, chatId, userId, state.data.text)
+      break
+
+    case "RECURRING_CREATE_CATEGORY":
+      await handlers.handleRecurringCategory(wizard, chatId, userId, state.data.text)
+      break
+
+    case "RECURRING_CREATE_DAY":
+      await handlers.handleRecurringDay(wizard, chatId, userId, state.data.text)
+      break
+
 
     default:
       wizard.clearState(userId)

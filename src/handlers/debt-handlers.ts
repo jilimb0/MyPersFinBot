@@ -44,8 +44,9 @@ export async function handleDebtCreateDetails(
     return true
   }
 
-  const name = parts[0]
-  const amountText = parts.slice(1).join(" ")
+  // ✅ Parse: all words except last are name, last word(s) are amount
+  const name = parts.slice(0, -1).join(" ").trim()
+  const amountText = parts[parts.length - 1]
   const defaultCurrency = await db.getDefaultCurrency(userId)
   const parsed = validators.parseAmountWithCurrency(amountText, defaultCurrency)
 
@@ -54,6 +55,25 @@ export async function handleDebtCreateDetails(
       chatId,
       `❌ Invalid format. Try: ${name} 100 or ${name} 100 ${defaultCurrency}`,
       wizard.getBackButton()
+    )
+    return true
+  }
+
+  // ✅ Check for duplicate debt name
+  const userData = await db.getUserData(userId)
+  const existingDebt = userData.debts.find(
+    (d) => d.name === name && !d.isPaid
+  )
+
+  if (existingDebt) {
+    await wizard.sendMessage(
+      chatId,
+      `❌ *Debt "${name}" already exists!*\n\n` +
+      `Please choose a different name or manage existing debt in the Debts menu.`,
+      {
+        parse_mode: "Markdown",
+        ...wizard.getBackButton(),
+      }
     )
     return true
   }

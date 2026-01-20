@@ -39,7 +39,7 @@ export async function handleCustomMessagesMenu(
   wizardManager.setState(userId, {
     step: "CUSTOM_MESSAGES_MENU",
     data: {},
-    returnTo: "settings",
+    returnTo: "advanced",
   })
 
   await wizardManager.sendMessage(chatId, msg, {

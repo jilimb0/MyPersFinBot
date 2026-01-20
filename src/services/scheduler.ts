@@ -19,15 +19,12 @@ export class Scheduler {
   }
 
   start(): void {
-    console.log("🚀 Starting scheduler...")
-
-    // Проверка напоминаний каждый час (будет учитывать timezone пользователей)
     this.reminderTask = cron.schedule('0 * * * *', async () => {
       console.log('⏰ Checking reminders...')
       try {
         const reminders = await reminderManager.getPendingReminders()
         console.log(`Found ${reminders.length} pending reminders`)
-        
+
         for (const reminder of reminders) {
           await reminderManager.sendReminder(this.bot, reminder)
         }
@@ -42,7 +39,7 @@ export class Scheduler {
       try {
         const transactions = await recurringManager.getDueRecurring()
         console.log(`Found ${transactions.length} due recurring transactions`)
-        
+
         for (const tx of transactions) {
           if (tx.autoExecute) {
             await recurringManager.executeRecurring(tx)
@@ -68,7 +65,7 @@ export class Scheduler {
       try {
         const dueGoals = await autoDepositManager.getDueAutoDeposits()
         console.log(`Found ${dueGoals.length} goals with due auto-deposits`)
-        
+
         for (const goal of dueGoals) {
           const success = await autoDepositManager.executeAutoDeposit(goal, this.bot)
           if (success) {

@@ -7,6 +7,141 @@ import { WizardManager } from "../wizards/wizards"
 import { showBalancesMenu } from "../menus"
 import { TransactionType, InternalCategory } from "../types"
 import { randomUUID } from "crypto"
+import { Balance } from "../database/entities/Balance"
+
+/**
+ * Handle one-step balance creation like goals and debts
+ * Format: "AccountName amount CURRENCY" or "AccountName amount"
+ * Examples: "Cash 1000 USD", "Bank Card 500"
+ */
+export async function handleBalanceCreate(
+  wizard: WizardManager,
+  chatId: number,
+  userId: string,
+  text: string
+): Promise<boolean> {
+  const defaultCurrency = await db.getDefaultCurrency(userId)
+  const parsed = validators.parseBalanceInput(text)
+
+  if (!parsed) {
+    // Try without explicit currency
+    const match = text.match(/^(.+?)\s+([0-9]+(?:\.[0-9]{1,2})?)$/)
+    if (match) {
+      const accountId = match[1].trim()
+      const amount = parseFloat(match[2])
+
+      if (accountId && !isNaN(amount) && amount >= 0) {
+        // Valid input without currency
+        const existing = await db.getBalance(userId, accountId, defaultCurrency)
+
+        if (existing) {
+          await wizard.sendMessage(
+            chatId,
+            `❌ *Balance "${accountId}" (${defaultCurrency}) already exists!*\n\n` +
+            `Current amount: ${formatMoney(existing.amount, defaultCurrency)}\n\n` +
+            `Please choose a different account name or edit the existing balance.`,
+            {
+              parse_mode: "Markdown",
+              ...wizard.getBackButton(),
+            }
+          )
+          return true
+        }
+
+        await db.addBalance(userId, {
+          accountId,
+          amount,
+          currency: defaultCurrency,
+          lastUpdated: new Date().toISOString(),
+        })
+
+        await wizard.sendMessage(
+          chatId,
+          `✅ Balance created: *${accountId}* - ${formatMoney(amount, defaultCurrency)}`,
+          { parse_mode: "Markdown" }
+        )
+
+        wizard.clearState(userId)
+        await showBalancesMenu(wizard, chatId, userId)
+        return true
+      }
+    }
+
+    // ✅ Check if user entered just account name (no amount)
+    const justName = text.trim()
+    if (justName && !justName.match(/[0-9]/)) {
+      // Valid account name without numbers
+      const existing = await db.getBalance(userId, justName, defaultCurrency)
+
+      if (existing) {
+        await wizard.sendMessage(
+          chatId,
+          `❌ *Balance "${justName}" (${defaultCurrency}) already exists!*\n\n` +
+          `Current amount: ${formatMoney(existing.amount, defaultCurrency)}\n\n` +
+          `Please choose a different account name or edit the existing balance.`,
+          {
+            parse_mode: "Markdown",
+            ...wizard.getBackButton(),
+          }
+        )
+        return true
+      }
+
+      await db.addBalance(userId, {
+        accountId: justName,
+        amount: 0,
+        currency: defaultCurrency,
+        lastUpdated: new Date().toISOString(),
+      })
+
+      await wizard.sendMessage(
+        chatId,
+        `✅ Balance created: *${justName}* - ${formatMoney(0, defaultCurrency)}`,
+        { parse_mode: "Markdown" }
+      )
+
+      wizard.clearState(userId)
+      await showBalancesMenu(wizard, chatId, userId)
+      return true
+    }
+
+    await wizard.sendMessage(
+      chatId,
+      validators.getValidationErrorMessage("balance"),
+      wizard.getBackButton()
+    )
+    return true
+  }
+
+  // Check for duplicate
+  const existing = await db.getBalance(userId, parsed.accountId, parsed.currency)
+
+  if (existing) {
+    await wizard.sendMessage(
+      chatId,
+      `❌ *Balance "${parsed.accountId}" (${parsed.currency}) already exists!*\n\n` +
+      `Current amount: ${formatMoney(existing.amount, parsed.currency)}\n\n` +
+      `Please choose a different account name or edit the existing balance.`,
+      {
+        parse_mode: "Markdown",
+        ...wizard.getBackButton(),
+      }
+    )
+    return true
+  }
+
+  await db.addBalance(userId, parsed as Balance)
+
+  await wizard.sendMessage(
+    chatId,
+    `✅ Balance created: *${parsed.accountId}* - ${formatMoney(parsed.amount, parsed.currency)}`,
+    { parse_mode: "Markdown" }
+  )
+
+  wizard.clearState(userId)
+  await showBalancesMenu(wizard, chatId, userId)
+  return true
+}
 
 /**
  * Обработка выбора баланса из списка

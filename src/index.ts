@@ -15,8 +15,8 @@ import * as handlers from "./handlers"
 import { handleAutoDepositToggle } from "./handlers/auto-deposit-handlers"
 import { Scheduler } from "./services/scheduler"
 import { reminderManager } from "./services/reminder-manager"
-import { config, logConfig } from './config'
-import { logSecurityConfig, securityCheck } from './security'
+import { logConfig } from './config'
+import { securityCheck } from './security'
 import { setupGlobalErrorHandlers } from './error-handler'
 import { log } from './logger'
 
@@ -34,14 +34,10 @@ if (!token) {
   process.exit(1)
 }
 
-// ⚡ Инициализация БД
 async function startBot() {
   try {
-    // Подключаемся к SQLite
     await initializeDatabase()
-    log.info("✅ Database connected")
 
-    // Предзагрузка курсов валют
     await preloadRates()
 
     const bot = new TelegramBot(token, { polling: true })
@@ -49,15 +45,10 @@ async function startBot() {
 
     registerCommands(bot)
 
-    // Запустить scheduler
     const scheduler = new Scheduler(bot)
     scheduler.start()
 
-    // Log full configuration
     logConfig()
-
-    // Log security configuration (legacy)
-    logSecurityConfig()
 
     log.info("🚀 Bot is running...")
 
@@ -94,32 +85,6 @@ async function startBot() {
       )) {
         await handlers.handleNLPInput(bot, chatId, userId, text)
         return
-      }
-
-      // System buttons that should be processed BEFORE wizard
-      const systemButtons = [
-        "⚙️ Advanced",
-        "📅 Set Deadline",
-        "📅 Change Deadline",
-        "📅 Set Due Date",
-        "📅 Change Due Date",
-        "🔕 Disable Reminders",
-        "✅ Enable Auto-Deposit",
-        "❌ Disable Auto-Deposit",
-        "✅ Enable Auto-Payment",
-        "❌ Disable Auto-Payment",
-        "⬅️ Back",
-        "🏠 Main Menu",
-      ]
-
-      // Check Wizard State First (but skip system buttons)
-      if (wizardManager.isInWizard(userId) && !systemButtons.includes(text)) {
-        const handled = await wizardManager.handleWizardInput(
-          chatId,
-          userId,
-          text
-        )
-        if (handled) return
       }
 
       // Keyboard Menu Handlers
@@ -371,21 +336,9 @@ async function startBot() {
 
 
         case "↔️ Transfer": {
-          const isInWizard = wizardManager.isInWizard(userId)
-
-          if (isInWizard) {
-            await wizardManager.goToStep(userId, "TX_AMOUNT", {
-              txType: TransactionType.TRANSFER,
-              returnTo: "balances",
-            })
-          } else {
-            wizardManager.setState(userId, {
-              step: "TX_AMOUNT",
-              txType: TransactionType.TRANSFER,
-              data: {},
-              returnTo: "balances",
-            })
-          }
+          await wizardManager.goToStep(userId, "TX_AMOUNT", {
+            txType: TransactionType.TRANSFER,
+          })
 
           const currency = await db.getDefaultCurrency(userId)
           const denominations = db.getCurrencyDenominations(currency)
@@ -395,7 +348,6 @@ async function startBot() {
 
           const listButtons = createListButtons({
             items,
-            withoutBack: true,
             itemsPerRowCustom: 3,
           })
 
@@ -421,6 +373,11 @@ async function startBot() {
 
         // DEBTS
         case "📉 Debts":
+          wizardManager.setState(userId, {
+            step: "NONE",
+            data: {},
+            returnTo: "debts",
+          })
           await menus.showDebtsMenu(bot, chatId, userId)
           break
 
@@ -444,6 +401,11 @@ async function startBot() {
 
         // GOALS
         case "🎯 Goals":
+          wizardManager.setState(userId, {
+            step: "NONE",
+            data: {},
+            returnTo: "goals",
+          })
           await menus.showGoalsMenu(bot, chatId, userId)
           break
 
@@ -594,11 +556,11 @@ async function startBot() {
           break
 
         case "🤖 Automation":
-          await menus.showAutomationMenu(bot, chatId)
+          await menus.showAutomationMenu(wizardManager, chatId, userId)
           break
 
         case "🛠️ Advanced":
-          await menus.showAdvancedMenu(bot, chatId)
+          await menus.showAdvancedMenu(wizardManager, chatId, userId)
           break
 
         case "🌐 Change currency": {
@@ -630,8 +592,7 @@ async function startBot() {
           break
         }
 
-        case "❓ Help & Info":
-          //TODO?
+        case "❓ Help & Info": {
           wizardManager.setState(userId, {
             step: "HELP_VIEW",
             data: {},
@@ -640,27 +601,93 @@ async function startBot() {
 
           bot.sendMessage(
             chatId,
-            "❓ *Help & Info*\n\n" +
-            "*How to use:*\n" +
-            "• 💸 *Expense* and 💰 *Income* - Add expenses, income, or transfers\n" +
-            "• 💰 *Balances* - View and manage your accounts\n" +
-            "• 📋 *History* - Browse transaction history\n" +
-            "• 📉 *Debts* - Track money you owe or are owed\n" +
-            "• 🎯 *Goals* - Set and track savings goals\n" +
-            "• 📊 *Analytics* - View stats and reports\n\n" +
-            "*About this bot:*\n" +
-            "Personal Finance Bot helps you track expenses, manage budgets, and achieve financial goals.\n\n" +
-            "Version: 2.0\n" +
-            "Multi-currency support with automatic conversion.",
+            "❓ *Personal Finance Bot - User Guide*\n\n" +
+            "===================\n\n" +
+            "📊 *Core Features*\n\n" +
+            "💸 *Expense & Income*\n" +
+            "• Track expenses and income\n" +
+            "• Quick entry with amount buttons\n" +
+            "• Categorize transactions\n" +
+            "• Multi-currency support\n" +
+            "• Natural language: \"50 coffee\"\n\n" +
+            "💳 *Balances*\n" +
+            "• Manage multiple accounts\n" +
+            "• Format: \"Cash 1000 USD\" or just \"Cash\"\n" +
+            "• Edit and transfer between accounts\n" +
+            "• Auto currency conversion\n\n" +
+            "📉 *Debts*\n" +
+            "• Track money you owe or are owed\n" +
+            "• Format: \"John 500 USD\"\n" +
+            "• Set due dates and reminders\n" +
+            "• Partial payments supported\n\n" +
+            "🎯 *Goals*\n" +
+            "• Set savings targets\n" +
+            "• Format: \"Laptop 2000 USD\"\n" +
+            "• Track progress with visual bars\n" +
+            "• Auto-deposit automation\n\n" +
+            "📊 *Analytics*\n" +
+            "• Monthly/weekly stats\n" +
+            "• Trends and top categories\n" +
+            "• Custom period reports\n" +
+            "• CSV export\n" +
+            "• Net worth tracking\n\n" +
+            "===================\n\n" +
+            "🤖 *Automation Features*\n\n" +
+            "🔁 *Recurring Payments*\n" +
+            "• Set up auto transactions\n" +
+            "• Daily/weekly/monthly schedules\n" +
+            "• Auto-categorization\n\n" +
+            "🔔 *Notifications*\n" +
+            "• Debt/goal reminders\n" +
+            "• Custom timezone\n" +
+            "• Snooze and mark as done\n\n" +
+            "===================\n\n" +
+            "👥 *Advanced*\n\n" +
+            "📅 *History & Filters*\n" +
+            "• Browse all transactions\n" +
+            "• Filter by date/category/type\n" +
+            "• Edit or delete past entries\n\n" +
+            "📊 *Budget Planner*\n" +
+            "• Set category limits\n" +
+            "• Visual spending progress\n" +
+            "• Budget alerts\n\n" +
+            "💱 *Multi-Currency*\n" +
+            "• USD, EUR, GEL, RUB, UAH, PLN\n" +
+            "• Auto conversion\n" +
+            "• Live exchange rates\n\n" +
+            "📝 *Custom Messages*\n" +
+            "• Personalize transaction confirmations\n" +
+            "• Motivational messages for goals\n\n" +
+            "📥 *Upload Bank Statements*\n" +
+            "• Tinkoff, Monobank, Revolut, Wise\n" +
+            "• Auto-import transactions\n\n" +
+            "===================\n\n" +
+            "💡 *Quick Tips*\n\n" +
+            "• Use templates to save common transactions\n" +
+            "• Set reminders for bills and payments\n" +
+            "• Enable auto-deposit for consistent savings\n" +
+            "• Check Analytics weekly for insights\n" +
+            "• Export CSV for external analysis\n\n" +
+            "===================\n\n" +
+            "🆘 *Format Examples*\n\n" +
+            "*Balances:* Cash 1000 | Wallet 500 USD\n" +
+            "*Debts:* John 500 | Maria 200 EUR\n" +
+            "*Goals:* Laptop 2000 | Vacation 5000 USD\n" +
+            "*Natural:* 50 coffee | spent 100 lunch\n\n" +
+            "Version: 0.2 | Multi-currency support\n" +
+            "Built with ❤️ for personal finance management",
             {
               parse_mode: "Markdown",
               reply_markup: {
-                keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
+                keyboard: [[
+                  { text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
                 resize_keyboard: true,
               },
             }
           )
           break
+        }
+
 
         case "💵 Income Sources":
           //TODO?
@@ -713,6 +740,12 @@ async function startBot() {
           break
 
         case "🗑️ Clear All Data": {
+          wizardManager.setState(userId, {
+            step: "CONFIRM_CLEAR_DATA",
+            data: {},
+            returnTo: "advanced"
+          })
+
           bot.sendMessage(
             chatId,
             "⚠️ *WARNING*\n\nThis will permanently delete:\n" +
@@ -772,13 +805,19 @@ async function startBot() {
           break
         }
 
-        case "❌ No, cancel":
         case "❌ Cancel": {
           bot.sendMessage(chatId, "✅ Cancelled.", {
             reply_markup: SETTINGS_KEYBOARD,
           })
           break
         }
+
+        case "❌ No, cancel": {
+          bot.sendMessage(chatId, "✅ Cancelled.")
+          await menus.showAdvancedMenu(wizardManager, chatId, userId)
+          break
+        }
+
 
         case "✅ Yes, change": {
           const state = wizardManager.getState(userId)
@@ -812,21 +851,11 @@ async function startBot() {
         }
 
         case "🔁 Recurring Payments": {
-          wizardManager.setState(userId, {
-            step: "RECURRING_MENU",
-            data: {},
-            returnTo: "settings",
-          })
           await handlers.handleRecurringMenu(wizardManager, chatId, userId)
           break
         }
 
         case "📝 Custom Messages": {
-          wizardManager.setState(userId, {
-            step: "CUSTOM_MESSAGES_MENU",
-            data: {},
-            returnTo: "settings",
-          })
           await handlers.handleCustomMessagesMenu(wizardManager, chatId, userId)
           break
         }
@@ -836,7 +865,7 @@ async function startBot() {
           wizardManager.setState(userId, {
             step: "UPLOAD_STATEMENT",
             data: {},
-            returnTo: "settings",
+            returnTo: "advanced",
           })
 
           await bot.sendMessage(
@@ -865,11 +894,6 @@ async function startBot() {
 
         // BUDGET PLANNER
         case "🔮 Budget Planner": {
-          wizardManager.setState(userId, {
-            step: "BUDGET_MENU",
-            data: {},
-            returnTo: "settings",
-          })
           await menus.showBudgetMenu(wizardManager, chatId, userId)
           break
         }
@@ -885,7 +909,7 @@ async function startBot() {
           wizardManager.setState(userId, {
             step: "NOTIFICATIONS_MENU",
             data: {},
-            returnTo: "settings",
+            returnTo: "automation",
           })
           await handlers.handleNotificationsMenu(wizardManager, chatId, userId)
           break
@@ -1064,11 +1088,9 @@ async function startBot() {
             if (oldCurrency !== currency) {
               const balancesCount = (await db.getBalancesList(userId)).length
 
-              //TODO?
-              wizardManager.setState(userId, {
-                step: "SETTINGS_CURRENCY_CONFIRM",
-                data: { newCurrency: currency, balancesCount },
-                returnTo: "settings",
+              await wizardManager.goToStep(userId, "SETTINGS_CURRENCY_CONFIRM", {
+                newCurrency: currency,
+                balancesCount,
               })
 
               bot.sendMessage(
@@ -1105,18 +1127,80 @@ async function startBot() {
           }
 
           const userData = await db.getUserData(userId)
+          const currentState = wizardManager.getState(userId)
+          const returnTo = currentState?.returnTo
+
+          if (returnTo === "debts") {
+            const debt = userData.debts.find(
+              (d: Debt) => d.name === text && !d.isPaid
+            )
+            if (debt) {
+              await wizardManager.goToStep(userId, "DEBT_MENU", {
+                debt,
+                debtId: debt.id,
+              })
+
+              const { amount, paidAmount, type, dueDate, name, currency } = debt
+              let msg = ""
+              const remaining = amount - paidAmount
+              const progress = createProgressBar(paidAmount, amount)
+              const emoji =
+                type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
+              const action = type === "I_OWE" ? "pay" : "receive"
+
+              msg += `${emoji} *${name}*\n`
+              msg += `${progress}\n`
+
+              if (paidAmount === 0) {
+                msg += `Total: ${formatMoney(amount, currency)}\n`
+              } else if (remaining > 0) {
+                msg += `Remaining: ${formatMoney(remaining, currency)}\n`
+              } else {
+                msg += `🎉 Debt paid!\n`
+              }
+
+              if (dueDate) {
+                const deadlineDate = new Date(dueDate)
+                msg += `Due: ${deadlineDate.toLocaleDateString('en-GB')}\n`
+              }
+
+              msg += `\n💡 Enter amount to ${action}`
+
+              const deadlineButtons = dueDate ?
+                [
+                  [{ text: "⚙️ Advanced" }]
+                ]
+                : [[{ text: "📅 Set Deadline" }]]
+
+              bot.sendMessage(
+                chatId,
+                msg,
+                {
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    keyboard: [
+                      [{ text: "✏️ Edit Amount" }],
+                      ...deadlineButtons,
+                      [{ text: "🗑 Delete Debt" }],
+                      [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+                    ],
+                    resize_keyboard: true,
+                  },
+                }
+              )
+              return
+            }
+          }
 
           const goal = userData.goals.find(
             (g: Goal) => g.name === text && g.status === "ACTIVE"
           )
           if (goal) {
-            //TODO?
-            wizardManager.setState(userId, {
-              step: "GOAL_MENU",
-              data: { goal, goalId: goal.id },
-              returnTo: "goals",
-              history: [],
+            await wizardManager.goToStep(userId, "GOAL_MENU", {
+              goal,
+              goalId: goal.id,
             })
+
             const { name, targetAmount, currentAmount, deadline, currency, autoDeposit } = goal
             let msg = ""
 
@@ -1173,66 +1257,67 @@ async function startBot() {
             return
           }
 
-          const debt = userData.debts.find(
-            (d: Debt) => d.name === text && !d.isPaid
-          )
-          if (debt) {
-            //TODO?
-            wizardManager.setState(userId, {
-              step: "DEBT_MENU",
-              data: { debt, debtId: debt.id },
-              returnTo: "debts",
-              history: [],
-            })
-            const { amount, paidAmount, type, dueDate, name, currency } = debt
-            let msg = ""
-            const remaining = amount - paidAmount
-            const progress = createProgressBar(paidAmount, amount)
-            const emoji =
-              type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
-            const action = type === "I_OWE" ? "pay" : "receive"
-
-            msg += `${emoji} *${name}*\n`
-            msg += `${progress}\n`
-
-            if (paidAmount === 0) {
-              msg += `Total: ${formatMoney(amount, currency)}\n`
-            } else if (remaining > 0) {
-              msg += `Remaining: ${formatMoney(remaining, currency)}\n`
-            } else {
-              msg += `🎉 Debt paid!\n`
-            }
-
-            if (dueDate) {
-              const deadlineDate = new Date(dueDate)
-              msg += `Due: ${deadlineDate.toLocaleDateString('en-GB')}\n`
-            }
-
-            msg += `\n💡 Enter amount to ${action}`
-
-            const deadlineButtons = dueDate ?
-              [
-                [{ text: "⚙️ Advanced" }]
-              ]
-              : [[{ text: "📅 Set Deadline" }]]
-
-            bot.sendMessage(
-              chatId,
-              msg,
-              {
-                parse_mode: "Markdown",
-                reply_markup: {
-                  keyboard: [
-                    [{ text: "✏️ Edit Amount" }],
-                    ...deadlineButtons,
-                    [{ text: "🗑 Delete Debt" }],
-                    [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-                  ],
-                  resize_keyboard: true,
-                },
-              }
+          // ✅ Check DEBTS as fallback if not from goals menu
+          if (returnTo !== "goals") {
+            const debt = userData.debts.find(
+              (d: Debt) => d.name === text && !d.isPaid
             )
-            return
+            if (debt) {
+              await wizardManager.goToStep(userId, "DEBT_MENU", {
+                debt,
+                debtId: debt.id,
+              })
+
+              const { amount, paidAmount, type, dueDate, name, currency } = debt
+              let msg = ""
+              const remaining = amount - paidAmount
+              const progress = createProgressBar(paidAmount, amount)
+              const emoji =
+                type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
+              const action = type === "I_OWE" ? "pay" : "receive"
+
+              msg += `${emoji} *${name}*\n`
+              msg += `${progress}\n`
+
+              if (paidAmount === 0) {
+                msg += `Total: ${formatMoney(amount, currency)}\n`
+              } else if (remaining > 0) {
+                msg += `Remaining: ${formatMoney(remaining, currency)}\n`
+              } else {
+                msg += `🎉 Debt paid!\n`
+              }
+
+              if (dueDate) {
+                const deadlineDate = new Date(dueDate)
+                msg += `Due: ${deadlineDate.toLocaleDateString('en-GB')}\n`
+              }
+
+              msg += `\n💡 Enter amount to ${action}`
+
+              const deadlineButtons = dueDate ?
+                [
+                  [{ text: "⚙️ Advanced" }]
+                ]
+                : [[{ text: "📅 Set Deadline" }]]
+
+              bot.sendMessage(
+                chatId,
+                msg,
+                {
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    keyboard: [
+                      [{ text: "✏️ Edit Amount" }],
+                      ...deadlineButtons,
+                      [{ text: "🗑 Delete Debt" }],
+                      [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+                    ],
+                    resize_keyboard: true,
+                  },
+                }
+              )
+              return
+            }
           }
 
           break

@@ -163,10 +163,6 @@ if (SECURITY_CONFIG.RATE_LIMIT.enabled) {
   setInterval(cleanupRateLimits, 5 * 60 * 1000)
 }
 
-// ==========================================
-// SECURITY MIDDLEWARE
-// ==========================================
-
 /**
  * Security middleware for message handling
  * 
@@ -192,48 +188,4 @@ export function securityCheck(
   }
 
   return true
-}
-
-// ==========================================
-// ADMIN FUNCTIONS
-// ==========================================
-
-/**
- * Get security stats
- */
-export function getSecurityStats() {
-  return {
-    whitelist: SECURITY_CONFIG.ALLOWED_USERS.length,
-    blacklist: SECURITY_CONFIG.BLOCKED_USERS.length,
-    rateLimitEnabled: SECURITY_CONFIG.RATE_LIMIT.enabled,
-    activeRateLimits: rateLimitStore.size,
-  }
-}
-
-/**
- * Log security config on startup
- */
-export function logSecurityConfig() {
-  console.log('\n🔒 Security Configuration:')
-  
-  if (SECURITY_CONFIG.ALLOWED_USERS.length > 0) {
-    console.log(`  ✅ Whitelist: ${SECURITY_CONFIG.ALLOWED_USERS.length} user(s)`)
-    console.log(`     Users: ${SECURITY_CONFIG.ALLOWED_USERS.join(', ')}`)
-  } else {
-    console.log('  ⚠️  Whitelist: DISABLED (anyone can use bot)')
-  }
-
-  if (SECURITY_CONFIG.BLOCKED_USERS.length > 0) {
-    console.log(`  🚫 Blacklist: ${SECURITY_CONFIG.BLOCKED_USERS.length} user(s)`)
-  } else {
-    console.log('  🚫 Blacklist: 0 user(s)')
-  }
-
-  if (SECURITY_CONFIG.RATE_LIMIT.enabled) {
-    console.log(`  ⏱  Rate Limit: ${SECURITY_CONFIG.RATE_LIMIT.maxMessages} msgs/${SECURITY_CONFIG.RATE_LIMIT.windowMs}ms`)
-  } else {
-    console.log('  ⏱  Rate Limit: DISABLED')
-  }
-
-  console.log('')
 }
