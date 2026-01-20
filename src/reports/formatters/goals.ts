@@ -28,14 +28,21 @@ export async function formatGoals(userId: string): Promise<string> {
 
     msg += `${statusEmoji} *${g.name}*\n`
     msg += `${progress}\n`
-    msg += `💰 Saved: ${formatMoney(g.currentAmount, g.currency)}\n`
-    msg += `🎯 Target: ${formatMoney(g.targetAmount, g.currency)}\n`
 
-    if (remaining > 0) {
+    if (g.currentAmount === 0) {
+      msg += `Target: ${formatMoney(g.targetAmount, g.currency)}\n`
+    } else if (remaining > 0) {
       msg += `📈 Remaining: ${formatMoney(remaining, g.currency)}\n`
     } else {
       msg += `🎉 Goal achieved!\n`
     }
+
+    // Add deadline if exists
+    if (g.deadline) {
+      const deadlineDate = new Date(g.deadline)
+      msg += `Deadline: ${deadlineDate.toLocaleDateString('en-GB')}\n`
+    }
+
     msg += "\n"
   })
 

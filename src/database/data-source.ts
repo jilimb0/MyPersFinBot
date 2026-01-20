@@ -9,6 +9,8 @@ import { Goal } from "../database/entities/Goal"
 import { IncomeSource } from "../database/entities/IncomeSource"
 import { CategoryPreference } from "../database/entities/CategoryPreference"
 import { Budget } from "../database/entities/Budget"
+import { RecurringTransaction } from "../database/entities/RecurringTransaction"
+import { Reminder } from "../database/entities/Reminder"
 
 const DB_PATH = path.resolve(__dirname, "../../data/database.sqlite")
 
@@ -26,6 +28,8 @@ export const AppDataSource = new DataSource({
     IncomeSource,
     CategoryPreference,
     Budget,
+    RecurringTransaction,
+    Reminder,
   ],
   migrations: [],
   subscribers: [],

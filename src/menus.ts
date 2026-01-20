@@ -38,7 +38,11 @@ export async function showBalancesMenu(
         : [[{ text: "✨ Add Balance" }]],
   })
 
-  await wizard.goToStep(userId, "BALANCE_LIST", {})
+  wizard.setState(userId, {
+    step: "BALANCE_LIST",
+    data: {},
+    returnTo: "balances",
+  })
 
   await wizard.sendMessage(chatId, balancesMsg, {
     parse_mode: "Markdown",
@@ -54,7 +58,6 @@ export async function showDebtsMenu(
   const userData = await db.getUserData(userId)
   const activeDebts = userData.debts.filter((d: Debt) => !d.isPaid)
 
-  // Разделяем на два типа: YOU_OWE и OWES_ME
   const youOwe = activeDebts.filter((d) => d.type === "I_OWE")
   const theyOwe = activeDebts.filter((d) => d.type === "OWES_ME")
 
@@ -67,7 +70,8 @@ export async function showDebtsMenu(
     msg += `💸 *YOU OWE:* ${formatMoney(-youOweTotal, userData.defaultCurrency)}\n`
     youOwe.forEach((d) => {
       const remaining = d.amount - d.paidAmount
-      msg += `└─ ${d.name}: ${formatMoney(remaining, d.currency)}\n`
+      const dueDateStr = d.dueDate ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString('en-GB')}` : ''
+      msg += `└─ ${d.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
     })
     msg += "\n"
   }
@@ -77,7 +81,8 @@ export async function showDebtsMenu(
     theyOwe.forEach((d, index) => {
       const remaining = d.amount - d.paidAmount
       const prefix = index === theyOwe.length - 1 ? "└─" : "┣─"
-      msg += `${prefix} ${d.name}: ${formatMoney(remaining, d.currency)}\n`
+      const dueDateStr = d.dueDate ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString('en-GB')}` : ''
+      msg += `${prefix} ${d.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
     })
     msg += "\n"
   }
@@ -182,14 +187,14 @@ export async function showStatsMenu(
 }
 
 export async function showHistoryMenu(
-  bot: TelegramBot,
+  wizard: WizardManager,
   chatId: number,
   userId: string
 ): Promise<void> {
   const recentTransactions = await db.getRecentTransactions(userId, 4)
 
   if (recentTransactions.length === 0) {
-    await bot.sendMessage(
+    await wizard.sendMessage(
       chatId,
       "📖 *Transaction History*\n\n💭 No transactions yet.",
       {
@@ -198,6 +203,14 @@ export async function showHistoryMenu(
       }
     )
     return
+  }
+
+  if (wizard) {
+    wizard.setState(userId, {
+      step: "HISTORY_LIST",
+      data: {},
+      returnTo: "analytics",
+    })
   }
 
   let msg = `📖 *Recent Transactions* (last ${recentTransactions.length})\n\n`
@@ -219,7 +232,7 @@ export async function showHistoryMenu(
     afterItemsButtons: ["🔍 Filters"],
   })
 
-  await bot.sendMessage(chatId, msg, {
+  await wizard.sendMessage(chatId, msg, {
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: listButtons,
@@ -292,6 +305,12 @@ export async function showAnalyticsReportsMenu(
 ) {
   const statsMsg = await formatMonthlyStats(userId)
 
+  wizard.setState(userId, {
+    step: "ANALYTICS_REPORTS_MENU",
+    data: {},
+    returnTo: "reports",
+  })
+
   wizard.sendMessage(chatId, statsMsg, {
     parse_mode: "Markdown",
     reply_markup: ANALYTICS_KEYBOARD,
@@ -342,7 +361,8 @@ export async function showNetWorthMenu(
       msg += `💸 *YOU OWE:* ${formatMoney(-youOweTotal, defaultCurrency)}\n`
       youOwe.forEach((d) => {
         const remaining = d.amount - d.paidAmount
-        msg += `└─ ${d.name}: ${formatMoney(remaining, d.currency)}\n`
+        const dueDateStr = d.dueDate ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString('en-GB')}` : ''
+        msg += `└─ ${d.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
       })
       msg += "\n"
     }
@@ -352,7 +372,8 @@ export async function showNetWorthMenu(
       theyOwe.forEach((d, index) => {
         const remaining = d.amount - d.paidAmount
         const prefix = index === theyOwe.length - 1 ? "└─" : "┣─"
-        msg += `${prefix} ${d.name}: ${formatMoney(remaining, d.currency)}\n`
+        const dueDateStr = d.dueDate ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString('en-GB')}` : ''
+        msg += `${prefix} ${d.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
       })
     }
 
@@ -387,14 +408,14 @@ export async function showNetWorthMenu(
   if (view === 'summary') {
     keyboard.push([
       { text: "💳 Assets" },
-      { text: "💰 Debts" }
+      { text: "💰 Debts" },
+      { text: "📋 Full Report" }
     ])
-    keyboard.push([{ text: "📋 Full Report" }])
   } else {
     const row: TelegramBot.KeyboardButton[] = []
     if (view !== 'assets') row.push({ text: "💳 Assets" })
     if (view !== 'debts') row.push({ text: "💰 Debts" })
-    if (view !== 'full') row.push({ text: "📋 Full" })
+    if (view !== 'full') row.push({ text: "📋 Full Report" })
     row.push({ text: "📊 Summary" })
 
     if (row.length > 0) keyboard.push(row)
@@ -409,4 +430,138 @@ export async function showNetWorthMenu(
       resize_keyboard: true,
     },
   })
+}
+
+export async function showNotificationsMenu(
+  wizard: WizardManager,
+  chatId: number,
+  userId: string
+): Promise<void> {
+  const settings = await db.getReminderSettings(userId)
+  const current = settings || {
+    enabled: true,
+    time: '09:00',
+    timezone: 'Asia/Tbilisi',
+    channels: { telegram: true },
+    notifyBefore: { debts: 1, goals: 3, income: 0 }
+  }
+
+  const msg =
+    `🔔 *Notification Settings*\n\n` +
+    `Status: ${current.enabled ? '✅ Enabled' : '❌ Disabled'}\n` +
+    `Time: ${current.time}\n` +
+    `Timezone: ${current.timezone}\n\n` +
+    `📅 *Notify Before:*\n` +
+    `• Debts: ${current.notifyBefore.debts} day(s)\n` +
+    `• Goals: ${current.notifyBefore.goals} day(s)\n` +
+    `• Income: ${current.notifyBefore.income} day(s)\n\n` +
+    `Use buttons below to manage settings.`
+
+  await wizard.sendMessage(chatId, msg, {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      keyboard: [
+        [{ text: current.enabled ? '❌ Disable' : '✅ Enable' }],
+        [{ text: '📝 Manage Reminders' }],
+        [{ text: '⬅️ Back' }, { text: '🏠 Main Menu' }],
+      ],
+      resize_keyboard: true,
+    }
+  })
+}
+
+export async function showActiveRemindersMenu(
+  wizard: WizardManager,
+  chatId: number,
+  userId: string
+): Promise<void> {
+  const { reminderManager } = await import('./services/reminder-manager')
+  const data = await reminderManager.getUserReminders(userId)
+
+  let msg = '📝 *Active Reminders*\n\n'
+
+  // Debts
+  if (data.debts.length > 0) {
+    msg += '💸 *Debts:*\n'
+    for (const { debt, reminders } of data.debts) {
+      msg += `• ${debt.name} (${reminders.length} reminder(s))\n`
+    }
+    msg += '\n'
+  }
+
+  // Goals
+  if (data.goals.length > 0) {
+    msg += '🎯 *Goals:*\n'
+    for (const { goal, reminders } of data.goals) {
+      msg += `• ${goal.name} (${reminders.length} reminder(s))\n`
+    }
+    msg += '\n'
+  }
+
+  // Income
+  if (data.income.length > 0) {
+    msg += '💵 *Income Sources:*\n'
+    for (const { income, reminders } of data.income) {
+      msg += `• ${income.name} (${reminders.length} reminder(s))\n`
+    }
+    msg += '\n'
+  }
+
+  if (data.debts.length === 0 && data.goals.length === 0 && data.income.length === 0) {
+    msg += '💭 No active reminders\n\n'
+    msg += 'Create debts, goals, or income sources with due dates to see reminders here.'
+  }
+
+  await wizard.sendMessage(chatId, msg, {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      keyboard: [
+        [{ text: '⬅️ Back' }, { text: '🏠 Main Menu' }],
+      ],
+      resize_keyboard: true,
+    }
+  })
+}
+
+export async function showAutomationMenu(
+  bot: TelegramBot,
+  chatId: number
+): Promise<void> {
+  await bot.sendMessage(
+    chatId,
+    '🤖 *Automation*\n\nManage automated features:',
+    {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        keyboard: [
+          [{ text: '🔔 Notifications' }],
+          [{ text: '🔁 Recurring Payments' }],
+          [{ text: '⬅️ Back' }, { text: '🏠 Main Menu' }],
+        ],
+        resize_keyboard: true,
+      },
+    }
+  )
+}
+
+export async function showAdvancedMenu(
+  bot: TelegramBot,
+  chatId: number
+): Promise<void> {
+  await bot.sendMessage(
+    chatId,
+    '🛠️ *Advanced Settings*\n\nAdvanced features and data management:',
+    {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        keyboard: [
+          [{ text: '📝 Custom Messages' }],
+          [{ text: '📥 Upload Statement' }],
+          [{ text: '🗑️ Clear All Data' }],
+          [{ text: '⬅️ Back' }, { text: '🏠 Main Menu' }],
+        ],
+        resize_keyboard: true,
+      },
+    }
+  )
 }

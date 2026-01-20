@@ -4,6 +4,10 @@ import * as validators from "../validators"
 import { formatAmount, formatMoney, handleInsufficientFunds } from "../utils"
 import { showDebtsMenu } from "../menus"
 import * as handlers from "./index"
+import { reminderManager } from "../services/reminder-manager"
+import { AppDataSource } from "../database/data-source"
+import { Debt as DebtEntity } from "../database/entities/Debt"
+import { randomUUID } from "crypto"
 
 export async function handleDebtCreateDetails(
   wizard: WizardManager,
@@ -54,31 +58,35 @@ export async function handleDebtCreateDetails(
     return true
   }
 
-  await db.addDebt(userId, {
-    id: Date.now().toString(),
-    name: name,
+  // Store debt details and ask about due date
+  await wizard.goToStep(userId, "DEBT_ASK_DUE_DATE", {
+    name,
     amount: parsed.amount,
     currency: parsed.currency,
-    counterparty: name,
     type: debtType,
-    paidAmount: 0,
-    isPaid: false,
   })
-
-  const emoji = debtType === "I_OWE" ? "🔴" : "🟢"
-  const action = debtType === "I_OWE" ? "owe to" : "are owed by"
 
   await wizard.sendMessage(
     chatId,
-    `✅ ${emoji} Debt added!\n\n` +
-    `You ${action} *${name}*: ${formatMoney(parsed.amount, parsed.currency)}`,
+    `📅 Set a due date for this debt?
+
+` +
+    `Debt: *${name}* - ${formatMoney(parsed.amount, parsed.currency)}
+
+` +
+    `Enter date (DD.MM.YYYY) or tap Skip to create without reminder.`,
     {
       parse_mode: "Markdown",
+      reply_markup: {
+        keyboard: [
+          [{ text: "⏩ Skip" }],
+          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+        ],
+        resize_keyboard: true,
+      },
     }
   )
 
-  wizard.clearState(userId)
-  await showDebtsMenu(wizard.getBot(), chatId, userId)
   return true
 }
 

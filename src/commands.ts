@@ -6,6 +6,7 @@ import {
   IncomeCategory,
 } from "./types"
 import { formatMoney } from "./utils"
+import { randomUUID } from "crypto"
 
 function resolveExpenseCategory(input: string): ExpenseCategory {
   const normalized = input.toLowerCase()
@@ -154,7 +155,7 @@ export function registerCommands(bot: TelegramBot) {
         balances[0].accountId
 
       const txId = await db.addTransaction(userId, {
-        id: Date.now().toString(),
+        id: randomUUID(),
         date: new Date(),
         amount,
         currency,
@@ -233,7 +234,7 @@ export function registerCommands(bot: TelegramBot) {
         balances[0].accountId
 
       const txId = await db.addTransaction(userId, {
-        id: Date.now().toString(),
+        id: randomUUID(),
         date: new Date(),
         amount,
         currency,

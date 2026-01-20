@@ -13,8 +13,8 @@ import { Currency } from "../../types"
 @Entity("balances")
 @Index(["userId", "accountId", "currency"], { unique: true })
 export class Balance {
-  @PrimaryGeneratedColumn()
-  id!: number
+  @PrimaryGeneratedColumn("uuid")
+  id!: string
 
   @Column()
   @Index()

@@ -29,7 +29,26 @@ pnpm-debug.log*
 # Testing
 coverage/
 
-# DB
+# Database
 db.json.backup
 *.sqlite
 *.sqlite-*
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Logs
+logs/
+*.log
+
+# Backups
+backups/
+*.backup
+*.tar.gz
+
+# PM2
+.pm2/
+
+# Temp files
+tmp/
+temp/

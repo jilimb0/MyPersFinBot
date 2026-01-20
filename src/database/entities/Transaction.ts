@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   JoinColumn,
@@ -11,7 +11,7 @@ import { Currency, TransactionCategory, TransactionType } from "../../types"
 
 @Entity("transactions")
 export class Transaction {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn("uuid")
   id!: string
 
   @Column()

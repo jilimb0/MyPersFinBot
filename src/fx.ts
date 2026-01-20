@@ -293,8 +293,7 @@ export async function getRates(): Promise<FXRates> {
   // Check if we should retry API (exponential backoff)
   if (!shouldRetryAPI()) {
     console.log(
-      `⏳ API retry delayed. Using fallback rates. Next retry in ${
-        getRetryDelay(cache?.errorCount || 0) / 1000
+      `⏳ API retry delayed. Using fallback rates. Next retry in ${getRetryDelay(cache?.errorCount || 0) / 1000
       }s`
     )
     return cache?.rates || FALLBACK_RATES

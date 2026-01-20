@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: finance-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persist database
+      - .//app/data
+      # Persist logs
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=production
+    # Memory limit (optional)
+    mem_limit: 512m
+    # CPU limit (optional)
+    # cpus: 0.5
