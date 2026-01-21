@@ -48,16 +48,14 @@ export async function generateAnalyticsReport(
     throw new Error("Invalid period configuration")
   }
 
-  // Get all transactions
-  const allTransactions = await db.getAllTransactions(userId)
+  // Get transactions for date range (SQL-filtered - fast!)
+  const transactions = await db.getTransactionsByDateRange(
+    userId,
+    startDate,
+    endDate
+  )
   const userData = await db.getUserData(userId)
   const defaultCurrency = userData.defaultCurrency
-
-  // Filter transactions by date range
-  const transactions = allTransactions.filter((tx: Transaction) => {
-    const txDate = new Date(tx.date)
-    return txDate >= startDate && txDate <= endDate
-  })
 
   if (transactions.length === 0) {
     return `📊 *Analytics Report*\n\n📅 Period: ${periodLabel}\n\n📭 No transactions found for this period.`

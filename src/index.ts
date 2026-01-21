@@ -6,7 +6,7 @@ import { dbStorage as db } from "./database/storage-db"
 import { initializeDatabase, closeDatabase } from "./database/data-source"
 import { createProgressBar, formatMonthlyStats, getProgressEmoji } from "./reports"
 import { WizardManager } from "./wizards/wizards"
-import { preloadRates, stopAutoRefresh } from "./fx"
+import { getCacheHitRate, getCacheStatus, preloadRates, stopAutoRefresh } from "./fx"
 import { MAIN_MENU_KEYBOARD, SETTINGS_KEYBOARD } from "./constants"
 import * as menus from "./menus"
 import { createListButtons, formatMoney, safeAnswerCallback } from "./utils"
@@ -40,10 +40,21 @@ async function startBot() {
 
     await preloadRates()
 
+    const status = getCacheStatus()
+    if (status.isPersisted && status.cacheValid) {
+      console.log('✅ Using persisted FX cache (no API call)')
+    } else {
+      console.log('🌐 Fetched fresh FX rates from API')
+    }
+
+    const hitRate = getCacheHitRate()
+    console.log(`📊 FX Cache hit rate: ${hitRate}%`)
+
     const bot = new TelegramBot(token, { polling: true })
     const wizardManager = new WizardManager(bot)
 
     registerCommands(bot)
+    handlers.registerPeriodReportHandlers(bot)
 
     const scheduler = new Scheduler(bot)
     scheduler.start()
@@ -123,7 +134,7 @@ async function startBot() {
               }
             )
           }
-          break
+          return
         }
 
         case "💰 Start tracking": {
@@ -140,7 +151,7 @@ async function startBot() {
               ...MAIN_MENU_KEYBOARD,
             }
           )
-          break
+          return
         }
 
         // MAIN MENU
@@ -169,7 +180,7 @@ async function startBot() {
                 },
               }
             )
-            break
+            return
           }
 
           wizardManager.setState(userId, {
@@ -221,7 +232,7 @@ async function startBot() {
               },
             }
           )
-          break
+          return
         }
 
         case "✨ Add Another Income":
@@ -248,7 +259,7 @@ async function startBot() {
                 },
               }
             )
-            break
+            return
           }
 
           wizardManager.setState(userId, {
@@ -302,7 +313,7 @@ async function startBot() {
               },
             }
           )
-          break
+          return
         }
 
         // BALANCES
@@ -314,7 +325,7 @@ async function startBot() {
             returnTo: "balances",
           })
           await menus.showBalancesMenu(wizardManager, chatId, userId)
-          break
+          return
 
         case "✨ Add Balance": {
           wizardManager.setState(userId, {
@@ -331,7 +342,7 @@ async function startBot() {
               ...wizardManager.getBackButton(),
             }
           )
-          break
+          return
         }
 
 
@@ -368,7 +379,7 @@ async function startBot() {
               },
             }
           )
-          break
+          return
         }
 
         // DEBTS
@@ -379,7 +390,7 @@ async function startBot() {
             returnTo: "debts",
           })
           await menus.showDebtsMenu(bot, chatId, userId)
-          break
+          return
 
         case "✨ Add Debt":
           // TODO?
@@ -397,7 +408,7 @@ async function startBot() {
               resize_keyboard: true,
             },
           })
-          break
+          return
 
         // GOALS
         case "🎯 Goals":
@@ -407,7 +418,7 @@ async function startBot() {
             returnTo: "goals",
           })
           await menus.showGoalsMenu(bot, chatId, userId)
-          break
+          return
 
         case "✨ Add Goal": {
           // TODO?
@@ -431,7 +442,7 @@ async function startBot() {
               ...wizardManager.getBackButton(),
             }
           )
-          break
+          return
         }
 
         case "✅ Completed Goals": {
@@ -477,7 +488,7 @@ async function startBot() {
         // ANALYTICS
         case "📊 Analytics":
           await menus.showStatsMenu(bot, chatId)
-          break
+          return
 
         case "📈 Reports": {
           // TODO?
@@ -494,7 +505,7 @@ async function startBot() {
             reply_markup: {
               keyboard: [
                 [{ text: "📅 Export CSV" }],
-                [{ text: "🔍 Filters" }],
+                [{ text: "🔎 Filters" }],
                 [{ text: "📈 Trends" }],
                 [{ text: "📉 Top Categories" }],
                 [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
@@ -502,7 +513,7 @@ async function startBot() {
               resize_keyboard: true,
             },
           })
-          break
+          return
         }
         case "💎 Net Worth": {
           //TODO?
@@ -512,7 +523,7 @@ async function startBot() {
             returnTo: "analytics",
           })
           await menus.showNetWorthMenu(bot, chatId, userId, 'summary')
-          break
+          return
         }
 
         // Обработчики для табов Net Worth
@@ -521,7 +532,7 @@ async function startBot() {
           if (state?.step === "NET_WORTH_VIEW") {
             await menus.showNetWorthMenu(bot, chatId, userId, 'assets')
           }
-          break
+          return
         }
 
         case "💰 Debts": {
@@ -529,7 +540,7 @@ async function startBot() {
           if (state?.step === "NET_WORTH_VIEW") {
             await menus.showNetWorthMenu(bot, chatId, userId, 'debts')
           }
-          break
+          return
         }
 
         case "📋 Full Report":
@@ -538,7 +549,7 @@ async function startBot() {
           if (state?.step === "NET_WORTH_VIEW") {
             await menus.showNetWorthMenu(bot, chatId, userId, 'full')
           }
-          break
+          return
         }
 
         case "📊 Summary": {
@@ -546,22 +557,22 @@ async function startBot() {
           if (state?.step === "NET_WORTH_VIEW") {
             await menus.showNetWorthMenu(bot, chatId, userId, 'summary')
           }
-          break
+          return
         }
 
 
         // SETTINGS
         case "⚙️ Settings":
           await menus.showSettingsMenu(bot, chatId, userId)
-          break
+          return
 
         case "🤖 Automation":
           await menus.showAutomationMenu(wizardManager, chatId, userId)
-          break
+          return
 
         case "🛠️ Advanced":
           await menus.showAdvancedMenu(wizardManager, chatId, userId)
-          break
+          return
 
         case "🌐 Change currency": {
           const currentCurr = await db.getDefaultCurrency(userId)
@@ -589,7 +600,7 @@ async function startBot() {
               },
             }
           )
-          break
+          return
         }
 
         case "❓ Help & Info": {
@@ -685,7 +696,7 @@ async function startBot() {
               },
             }
           )
-          break
+          return
         }
 
 
@@ -697,7 +708,7 @@ async function startBot() {
             returnTo: "settings",
           })
           await menus.showIncomeSourcesMenu(bot, chatId, userId)
-          break
+          return
 
         // HISTORY
         case "📋 History":
@@ -708,7 +719,7 @@ async function startBot() {
             returnTo: "main",
           })
           await menus.showHistoryMenu(wizardManager, chatId, userId)
-          break
+          return
 
         case "🔍 Filters":
           //TODO?
@@ -737,7 +748,25 @@ async function startBot() {
               },
             }
           )
-          break
+          return
+
+        case "◀️ Previous": {
+          const state = wizardManager.getState(userId)
+          if (state?.step === "HISTORY_LIST" && state.data?.page) {
+            const prevPage = Math.max(1, state.data.page - 1)
+            await menus.showHistoryMenu(wizardManager, chatId, userId, prevPage)
+          }
+          return
+        }
+
+        case "Next ▶️": {
+          const state = wizardManager.getState(userId)
+          if (state?.step === "HISTORY_LIST" && state.data?.page) {
+            const nextPage = state.data.page + 1
+            await menus.showHistoryMenu(wizardManager, chatId, userId, nextPage)
+          }
+          return
+        }
 
         case "🗑️ Clear All Data": {
           wizardManager.setState(userId, {
@@ -768,7 +797,7 @@ async function startBot() {
               },
             }
           )
-          break
+          return
         }
 
         case "✅ Yes, delete everything": {
@@ -802,20 +831,20 @@ async function startBot() {
               }
             )
           }
-          break
+          return
         }
 
         case "❌ Cancel": {
           bot.sendMessage(chatId, "✅ Cancelled.", {
             reply_markup: SETTINGS_KEYBOARD,
           })
-          break
+          return
         }
 
         case "❌ No, cancel": {
           bot.sendMessage(chatId, "✅ Cancelled.")
           await menus.showAdvancedMenu(wizardManager, chatId, userId)
-          break
+          return
         }
 
 
@@ -847,17 +876,17 @@ async function startBot() {
 
             wizardManager.clearState(userId)
           }
-          break
+          return
         }
 
         case "🔁 Recurring Payments": {
           await handlers.handleRecurringMenu(wizardManager, chatId, userId)
-          break
+          return
         }
 
         case "📝 Custom Messages": {
           await handlers.handleCustomMessagesMenu(wizardManager, chatId, userId)
-          break
+          return
         }
 
         // UPLOAD STATEMENT
@@ -887,7 +916,7 @@ async function startBot() {
               },
             }
           )
-          break
+          return
         }
 
 
@@ -895,14 +924,14 @@ async function startBot() {
         // BUDGET PLANNER
         case "🔮 Budget Planner": {
           await menus.showBudgetMenu(wizardManager, chatId, userId)
-          break
+          return
         }
 
         // MAIN MENU
         case "🏠 Main Menu":
           wizardManager.clearState(userId)
           await menus.showMainMenu(bot, chatId)
-          break
+          return
 
         // NOTIFICATIONS
         case "🔔 Notifications": {
@@ -912,7 +941,7 @@ async function startBot() {
             returnTo: "automation",
           })
           await handlers.handleNotificationsMenu(wizardManager, chatId, userId)
-          break
+          return
         }
 
 
@@ -940,7 +969,7 @@ async function startBot() {
               }
             )
           }
-          break
+          return
         }
 
         case "📅 Set Deadline":
@@ -966,7 +995,7 @@ async function startBot() {
               }
             )
           }
-          break
+          return
         }
 
         case "🔕 Disable Reminders": {
@@ -994,7 +1023,7 @@ async function startBot() {
             await menus.showGoalsMenu(bot, chatId, userId)
             wizardManager.clearState(userId)
           }
-          break
+          return
         }
 
         case "✅ Enable Auto-Deposit":
@@ -1003,7 +1032,7 @@ async function startBot() {
           if ((state?.step === "GOAL_MENU" || state?.step === "GOAL_ADVANCED_MENU") && state.data?.goal) {
             await handleAutoDepositToggle(wizardManager, chatId, userId, text)
           }
-          break
+          return
         }
 
         case "✅ Enable Auto-Payment":
@@ -1017,7 +1046,7 @@ async function startBot() {
               wizardManager.getBackButton()
             )
           }
-          break
+          return
         }
 
         case "⚙️ Advanced": {
@@ -1076,7 +1105,7 @@ async function startBot() {
               }
             )
           }
-          break
+          return
         }
 
         default: {
@@ -1322,6 +1351,13 @@ async function startBot() {
 
           break
         }
+      }
+
+      // Check if user is in a wizard flow
+      const userState = wizardManager.getState(userId)
+      if (userState && userState.step !== "NONE") {
+        await wizardManager.handleWizardInput(chatId, userId, text)
+        return
       }
     })
 

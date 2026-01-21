@@ -1,17 +1,7 @@
-/**
- * Foreign Exchange (FX) rates service using Frankfurter API
- * Base currency: USD
- *
- * ⚡ Features:
- * - 1 hour cache with auto-refresh
- * - Exponential backoff on API errors
- * - Batch conversion for arrays
- * - Metrics for monitoring
- * - Fallback rates on failure
- */
-
 import axios from "axios"
 import undici from "undici"
+import { promises as fs } from 'fs'
+import path from 'path'
 import { Currency } from "./types"
 
 interface FXRates {
@@ -48,6 +38,8 @@ const BASE_RETRY_DELAY = 30 * 1000 // 30 seconds
 const MAX_RETRIES = 3 // Maximum retry attempts
 const RETRY_DELAY_MS = 1000 // 1 second between retries
 
+const FX_CACHE_PATH = path.resolve(__dirname, '../data/fx-cache.json')
+
 let cache: FXCache | null = null
 let metrics: FXMetrics = {
   cacheHits: 0,
@@ -60,21 +52,62 @@ let metrics: FXMetrics = {
 }
 let autoRefreshTimer: NodeJS.Timeout | null = null
 
-/**
- * Fallback rates (updated manually, Jan 2026)
- */
 const FALLBACK_RATES: FXRates = {
   USD: 1,
-  EUR: 0.92, // Euro
-  GEL: 2.7, // Georgian Lari
-  RUB: 95.0, // Russian Ruble
-  UAH: 41.0, // Ukrainian Hryvnia
-  PLN: 4.0, // Polish Zloty
+  EUR: 0.92,
+  GEL: 2.7,
+  RUB: 95.0,
+  UAH: 41.0,
+  PLN: 4.0,
 }
 
-/**
- * Calculate retry delay with exponential backoff
- */
+async function persistRates(cache: FXCache): Promise<void> {
+  try {
+    const dataDir = path.dirname(FX_CACHE_PATH)
+
+    // Создаем папку data если не существует
+    await fs.mkdir(dataDir, { recursive: true })
+
+    const data = JSON.stringify({
+      rates: cache.rates,
+      timestamp: cache.timestamp,
+      errorCount: cache.errorCount,
+      version: '1.0', // Для будущей миграции
+    }, null, 2)
+
+    await fs.writeFile(FX_CACHE_PATH, data, 'utf-8')
+  } catch (error) {
+    console.error('❌ Failed to persist FX cache:', error)
+    // Не пробрасываем ошибку - это не критично
+  }
+}
+
+async function loadPersistedRates(): Promise<FXCache | null> {
+  try {
+    const data = await fs.readFile(FX_CACHE_PATH, 'utf-8')
+    const parsed = JSON.parse(data)
+
+    // Проверяем TTL
+    if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+      console.log(`✅ Loaded persisted FX rates (age: ${Math.round((Date.now() - parsed.timestamp) / 1000)}s)`)
+      return {
+        rates: parsed.rates,
+        timestamp: parsed.timestamp,
+        errorCount: parsed.errorCount || 0,
+      }
+    } else {
+      console.log('⚠️ Persisted FX cache expired')
+      return null
+    }
+  } catch (error: unknown) {
+    const err = error as { code?: string }
+    if (err.code !== 'ENOENT') {
+      console.error('❌ Failed to load persisted FX cache:', error)
+    }
+    return null
+  }
+}
+
 function getRetryDelay(errorCount: number): number {
   const delay = Math.min(
     BASE_RETRY_DELAY * Math.pow(2, errorCount),
@@ -83,9 +116,6 @@ function getRetryDelay(errorCount: number): number {
   return delay
 }
 
-/**
- * Check if we should retry API call based on error count and time
- */
 function shouldRetryAPI(): boolean {
   if (!cache) return true
   if (cache.errorCount === 0) return true
@@ -96,9 +126,6 @@ function shouldRetryAPI(): boolean {
   return timeSinceError >= retryDelay
 }
 
-/**
- * Check if error is retryable
- */
 function isRetryableError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false
 
@@ -127,16 +154,10 @@ function isRetryableError(error: unknown): boolean {
   return false
 }
 
-/**
- * Sleep for specified milliseconds
- */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/**
- * Fetch using undici (HTTP/2) if available
- */
 async function fetchWithUndici(url: string): Promise<FXAPIResponse> {
   if (!undici) throw new Error("undici not available")
 
@@ -165,9 +186,6 @@ async function fetchWithUndici(url: string): Promise<FXAPIResponse> {
   return { data }
 }
 
-/**
- * Fetch using axios (HTTP/1.1) as fallback
- */
 async function fetchWithAxios(url: string): Promise<FXAPIResponse> {
   return axios.get(url, {
     timeout: 5000,
@@ -178,11 +196,6 @@ async function fetchWithAxios(url: string): Promise<FXAPIResponse> {
   })
 }
 
-/**
- * Fetch latest exchange rates from ExchangeRate-API with retry logic
- * Base: USD, Symbols: EUR, GEL, RUB, UAH, PLN
- * Uses HTTP/2 (undici) if available, falls back to HTTP/1.1 (axios)
- */
 async function fetchRates(): Promise<FXRates> {
   const useHTTP2 = !!undici
 
@@ -272,9 +285,6 @@ async function fetchRates(): Promise<FXRates> {
   return FALLBACK_RATES
 }
 
-/**
- * Get cached rates or fetch new ones
- */
 export async function getRates(): Promise<FXRates> {
   const now = Date.now()
 
@@ -289,8 +299,7 @@ export async function getRates(): Promise<FXRates> {
   // Check if we should retry API (exponential backoff)
   if (!shouldRetryAPI()) {
     console.log(
-      `⏳ API retry delayed. Using fallback rates. Next retry in ${getRetryDelay(cache?.errorCount || 0) / 1000
-      }s`
+      `⏳ API retry delayed. Using fallback rates. Next retry in ${getRetryDelay(cache?.errorCount || 0) / 1000}s`
     )
     return cache?.rates || FALLBACK_RATES
   }
@@ -299,8 +308,11 @@ export async function getRates(): Promise<FXRates> {
   cache = {
     rates,
     timestamp: now,
-    errorCount: 0, // Reset on success
+    errorCount: 0,
   }
+
+  // ✨ NEW: Сохраняем в файл
+  await persistRates(cache)
 
   // Start auto-refresh if not running
   if (!autoRefreshTimer) {
@@ -310,9 +322,6 @@ export async function getRates(): Promise<FXRates> {
   return rates
 }
 
-/**
- * Get rates synchronously (uses cache or fallback)
- */
 export function getRatesSync(): FXRates {
   if (cache) {
     metrics.cacheHits++
@@ -323,32 +332,6 @@ export function getRatesSync(): FXRates {
   return FALLBACK_RATES
 }
 
-/**
- * Convert amount from one currency to another
- * @param amount - Amount to convert
- * @param from - Source currency
- * @param to - Target currency (default: USD)
- * @returns Converted amount
- */
-export async function convert(
-  amount: number,
-  from: Currency,
-  to: Currency = "USD"
-): Promise<number> {
-  if (from === to) return amount
-
-  const rates = await getRates()
-
-  // Convert to USD first (since our base is USD)
-  const usdAmount = from === "USD" ? amount : amount / rates[from]
-
-  // Convert from USD to target
-  return to === "USD" ? usdAmount : usdAmount * rates[to]
-}
-
-/**
- * Convert amount synchronously
- */
 export function convertSync(
   amount: number,
   from: Currency,
@@ -357,15 +340,12 @@ export function convertSync(
   if (from === to) return amount
   let rates = getRatesSync()
 
-  // 🔧 Валидация: проверяем что курсы существуют
   if (!rates[from] || !rates[to]) {
     console.error(`❌ Missing currency rate: from=${from}, to=${to}`)
     console.log(`⚠️ Using fallback rates...`)
 
-    // Используем fallback
     rates = FALLBACK_RATES
 
-    // Если и в fallback нет - возвращаем исходную сумму
     if (!rates[from] || !rates[to]) {
       console.error(
         `❌ Currency not supported even in fallback: from=${from}, to=${to}`
@@ -374,15 +354,10 @@ export function convertSync(
     }
   }
 
-  // Convert to USD first
   const usdAmount = from === "USD" ? amount : amount / rates[from]
-  // Convert from USD to target
   return to === "USD" ? usdAmount : usdAmount * rates[to]
 }
 
-/**
- * ⚡ Batch convert multiple amounts (optimized)
- */
 export function convertBatchSync(
   amounts: Array<{
     amount: number
@@ -395,7 +370,6 @@ export function convertBatchSync(
   return amounts.map(({ amount, from, to }) => {
     if (from === to) return amount
 
-    // 🔧 Валидация
     let currentRates = rates
     if (!currentRates[from] || !currentRates[to]) {
       console.error(`❌ Missing currency rate in batch: from=${from}, to=${to}`)
@@ -412,32 +386,10 @@ export function convertBatchSync(
   })
 }
 
-/**
- * ⚡ Batch convert multiple amounts async
- */
-export async function convertBatch(
-  amounts: Array<{
-    amount: number
-    from: Currency
-    to: Currency
-  }>
-): Promise<number[]> {
-  const rates = await getRates()
-
-  return amounts.map(({ amount, from, to }) => {
-    if (from === to) return amount
-    const usdAmount = from === "USD" ? amount : amount / rates[from]
-    return to === "USD" ? usdAmount : usdAmount * rates[to]
-  })
-}
-
-/**
- * ⏰ Start auto-refresh timer (refreshes 5 min before expiry)
- */
 function startAutoRefresh() {
   if (autoRefreshTimer) return
 
-  const refreshInterval = CACHE_TTL_MS - 5 * 60 * 1000 // 5 min before expiry
+  const refreshInterval = CACHE_TTL_MS - 5 * 60 * 1000
 
   autoRefreshTimer = setInterval(async () => {
     try {
@@ -449,16 +401,38 @@ function startAutoRefresh() {
   }, refreshInterval)
 }
 
-/**
- * 📏 Get metrics for monitoring
- */
+
+export async function preloadRates(): Promise<void> {
+  try {
+    const persisted = await loadPersistedRates()
+
+    if (persisted) {
+      cache = persisted
+      console.log('✅ Using persisted FX rates (no API call needed)')
+
+      startAutoRefresh()
+      return
+    }
+
+    await getRates()
+    console.log('✅ FX rates preloaded successfully')
+  } catch (error) {
+    console.error('❌ Failed to preload FX rates:', error)
+  }
+}
+
+export function stopAutoRefresh() {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+    console.log("⏸️ FX auto-refresh stopped")
+  }
+}
+
 export function getMetrics(): FXMetrics {
   return { ...metrics }
 }
 
-/**
- * 🔄 Reset metrics
- */
 export function resetMetrics() {
   metrics = {
     cacheHits: 0,
@@ -471,35 +445,18 @@ export function resetMetrics() {
   }
 }
 
-/**
- * 📊 Get cache hit rate percentage
- */
 export function getCacheHitRate(): number {
   const total = metrics.cacheHits + metrics.cacheMisses
   return total > 0 ? Math.round((metrics.cacheHits / total) * 100) : 0
 }
 
-/**
- * 🚀 Preload exchange rates (call at bot startup)
- */
-export async function preloadRates(): Promise<void> {
-  try {
-    await getRates()
-    console.log("✅ FX rates preloaded successfully")
-  } catch (error) {
-    console.error("❌ Failed to preload FX rates:", error)
-  }
-}
-
-/**
- * 📊 Get cache status
- */
 export function getCacheStatus(): {
   hasCacheData: boolean
   cacheAge: number
   cacheValid: boolean
   errorCount: number
   nextUpdate: number
+  isPersisted: boolean
 } {
   if (!cache) {
     return {
@@ -508,6 +465,7 @@ export function getCacheStatus(): {
       cacheValid: false,
       errorCount: 0,
       nextUpdate: 0,
+      isPersisted: false,
     }
   }
 
@@ -517,20 +475,22 @@ export function getCacheStatus(): {
 
   return {
     hasCacheData: true,
-    cacheAge: Math.round(age / 1000), // seconds
+    cacheAge: Math.round(age / 1000),
     cacheValid: valid,
     errorCount: cache.errorCount,
-    nextUpdate: Math.round(nextUpdate / 1000), // seconds
+    nextUpdate: Math.round(nextUpdate / 1000),
+    isPersisted: true, // ✨ NEW
   }
 }
 
-/**
- * 🛠️ Stop auto-refresh (call on shutdown)
- */
-export function stopAutoRefresh() {
-  if (autoRefreshTimer) {
-    clearInterval(autoRefreshTimer)
-    autoRefreshTimer = null
-    console.log("⏸️ FX auto-refresh stopped")
+export async function clearPersistedCache(): Promise<void> {
+  try {
+    await fs.unlink(FX_CACHE_PATH)
+    console.log('✅ Persisted FX cache cleared')
+  } catch (error: unknown) {
+    const err = error as { code?: string }
+    if (err.code !== 'ENOENT') {
+      console.error('❌ Failed to clear persisted cache:', error)
+    }
   }
 }

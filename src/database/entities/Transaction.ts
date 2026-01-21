@@ -10,6 +10,9 @@ import { User } from "./User"
 import { Currency, TransactionCategory, TransactionType } from "../../types"
 
 @Entity("transactions")
+@Index(['userId', 'date'])
+@Index(['userId', 'type', 'date'])
+@Index(['userId', 'category'])
 export class Transaction {
   @PrimaryGeneratedColumn("uuid")
   id!: string

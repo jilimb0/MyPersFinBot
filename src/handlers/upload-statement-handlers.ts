@@ -221,34 +221,36 @@ async function importAllTransactions(
     }
 
     const defaultAccount = balances[0].accountId
-    let imported = 0
-    let failed = 0
 
-    for (const tx of transactions) {
-      try {
-        await db.addTransaction(userId, {
-          id: randomUUID(),
-          date: new Date(tx.date),
-          amount: tx.amount,
-          currency: tx.currency,
-          type: tx.type,
-          category: tx.category as TransactionCategory,
-          description: tx.description,
-          fromAccountId: tx.type === "EXPENSE" ? (tx.accountId || defaultAccount) : undefined,
-          toAccountId: tx.type === "INCOME" ? (tx.accountId || defaultAccount) : undefined,
-        })
-        imported++
-      } catch (error) {
-        console.error("Failed to import transaction:", error)
-        failed++
-      }
+    const txsToImport = transactions.map(tx => ({
+      id: randomUUID(),
+      date: new Date(tx.date),
+      amount: tx.amount,
+      currency: tx.currency,
+      type: tx.type,
+      category: tx.category as TransactionCategory,
+      description: tx.description,
+      fromAccountId: tx.type === "EXPENSE" ? (tx.accountId || defaultAccount) : undefined,
+      toAccountId: tx.type === "INCOME" ? (tx.accountId || defaultAccount) : undefined,
+    }))
+
+    const { valid, invalid } = db.validateTransactionsBatch(txsToImport)
+
+    if (invalid.length > 0) {
+      console.warn(`⚠️ ${invalid.length} invalid transactions will be skipped`)
     }
+
+    const startTime = Date.now()
+    const result = await db.addTransactionsBatch(userId, valid)
+    const duration = Date.now() - startTime
 
     await wizardManager.sendMessage(
       chatId,
       `✅ *Import completed!*\n\n` +
-      `Imported: ${imported}\n` +
-      (failed > 0 ? `Failed: ${failed}\n` : ""),
+      `Imported: ${result.added}\n` +
+      (invalid.length > 0 ? `Skipped (invalid): ${invalid.length}\n` : "") +
+      (result.errors.length > 0 ? `Errors: ${result.errors.length}\n` : "") +
+      `\n⚡ Time: ${duration}ms`,
       {
         parse_mode: "Markdown",
         reply_markup: SETTINGS_KEYBOARD,

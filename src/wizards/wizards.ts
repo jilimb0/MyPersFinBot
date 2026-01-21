@@ -2212,7 +2212,7 @@ export class WizardManager {
           return true
         }
         case "ANALYTICS_REPORTS_MENU": {
-          if (text === "🔍 Filters") {
+          if (text === "🔎 Filters") {
             await this.goToStep(userId, "ANALYTICS_FILTERS", {})
             await this.bot.sendMessage(
               chatId,

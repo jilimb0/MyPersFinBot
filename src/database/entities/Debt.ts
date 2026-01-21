@@ -10,6 +10,7 @@ import { User } from "./User"
 import { Currency } from "../../types"
 
 @Entity("debts")
+@Index(['userId', 'isPaid'])
 export class Debt {
   @PrimaryGeneratedColumn("uuid")
   id!: string

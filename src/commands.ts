@@ -7,6 +7,8 @@ import {
 } from "./types"
 import { formatMoney } from "./utils"
 import { randomUUID } from "crypto"
+import { queryMonitor } from "./monitoring"
+import { clearPersistedCache, getCacheHitRate, getCacheStatus, getMetrics, resetMetrics } from "./fx"
 
 function resolveExpenseCategory(input: string): ExpenseCategory {
   const normalized = input.toLowerCase()
@@ -266,4 +268,144 @@ export function registerCommands(bot: TelegramBot) {
       })
     }
   )
+
+  bot.onText(/\/querystats/, async (msg) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+
+    const ADMIN_IDS = process.env.ADMIN_USERS?.split(',') || []
+    if (!ADMIN_IDS.includes(userId)) {
+      await bot.sendMessage(chatId, '❌ Access denied')
+      return
+    }
+
+    const report = queryMonitor.formatReport()
+
+    await bot.sendMessage(chatId, report, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        keyboard: [
+          [{ text: '/resetquerystats' }],
+          [{ text: '🏠 Main Menu' }],
+        ],
+        resize_keyboard: true,
+      },
+    })
+  })
+
+  bot.onText(/\/resetquerystats/, async (msg) => {
+    const chatId = msg.chat.id
+
+    queryMonitor.reset()
+
+    await bot.sendMessage(
+      chatId,
+      '✅ Query statistics reset!\n\nAll query counters have been reset to zero.',
+      {
+        reply_markup: {
+          keyboard: [
+            [{ text: '/querystats' }],
+            [{ text: '🏠 Main Menu' }],
+          ],
+          resize_keyboard: true,
+        },
+      }
+    )
+  })
+
+  bot.onText(/\/fxstats/, async (msg) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+
+    const ADMIN_IDS = process.env.ADMIN_USERS?.split(',') || []
+    if (!ADMIN_IDS.includes(userId)) {
+      await bot.sendMessage(chatId, '❌ Access denied')
+      return
+    }
+
+    const metrics = getMetrics()
+    const hitRate = getCacheHitRate()
+    const status = getCacheStatus()
+
+    let report = '📊 *FX Cache Statistics*\n\n'
+
+    // 💾 Cache Status
+    report += '💾 *Cache Status:*\n'
+    report += `• Valid: ${status.cacheValid ? '✅ Yes' : '❌ No'}\n`
+    report += `• Age: ${status.cacheAge}s\n`
+    report += `• Next update: ${status.nextUpdate}s\n`
+    report += `• Persisted: ${status.isPersisted ? '✅' : '❌'}\n`
+    report += `• Errors: ${status.errorCount}\n\n`
+
+    // 📈 Performance Metrics
+    report += '📈 *Performance:*\n'
+    report += `• Cache hits: ${metrics.cacheHits}\n`
+    report += `• Cache misses: ${metrics.cacheMisses}\n`
+    report += `• Hit rate: ${hitRate}%\n\n`
+
+    // 🌐 API Metrics
+    report += '🌐 *API Usage:*\n'
+    report += `• Total calls: ${metrics.apiCalls}\n`
+    report += `• Errors: ${metrics.apiErrors}\n`
+    report += `• Retries: ${metrics.retries}\n`
+    report += `• HTTP/2: ${metrics.http2Used ? '✅' : '❌'}\n\n`
+
+    // ⏰ Last Update
+    if (metrics.lastUpdate > 0) {
+      const lastUpdateDate = new Date(metrics.lastUpdate)
+      const timeAgo = Math.round((Date.now() - metrics.lastUpdate) / 1000)
+      report += `⏰ Last update: ${lastUpdateDate.toLocaleTimeString()} (${timeAgo}s ago)\n`
+    }
+
+    await bot.sendMessage(chatId, report, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        keyboard: [
+          [{ text: '/fxreset' }, { text: '/fxclear' }],
+          [{ text: '🏠 Main Menu' }],
+        ],
+        resize_keyboard: true,
+      },
+    })
+  })
+
+  bot.onText(/\/fxreset/, async (msg) => {
+    const chatId = msg.chat.id
+
+    resetMetrics()
+
+    await bot.sendMessage(
+      chatId,
+      '✅ FX metrics reset!\n\nAll counters have been reset to zero.',
+      {
+        reply_markup: {
+          keyboard: [
+            [{ text: '/fxstats' }],
+            [{ text: '🏠 Main Menu' }],
+          ],
+          resize_keyboard: true,
+        },
+      }
+    )
+  })
+
+  bot.onText(/\/fxclear/, async (msg) => {
+    const chatId = msg.chat.id
+
+    await clearPersistedCache()
+
+    await bot.sendMessage(
+      chatId,
+      '✅ Persisted FX cache cleared!\n\nThe cache file has been deleted. Next restart will fetch fresh rates from API.',
+      {
+        reply_markup: {
+          keyboard: [
+            [{ text: '/fxstats' }],
+            [{ text: '🏠 Main Menu' }],
+          ],
+          resize_keyboard: true,
+        },
+      }
+    )
+  })
 }

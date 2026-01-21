@@ -11,6 +11,7 @@ import { CategoryPreference } from "../database/entities/CategoryPreference"
 import { Budget } from "../database/entities/Budget"
 import { RecurringTransaction } from "../database/entities/RecurringTransaction"
 import { Reminder } from "../database/entities/Reminder"
+import { CustomQueryLogger } from "../monitoring"
 
 const DB_PATH = path.resolve(__dirname, "../../data/database.sqlite")
 
@@ -18,7 +19,8 @@ export const AppDataSource = new DataSource({
   type: "sqlite",
   database: DB_PATH,
   synchronize: true,
-  logging: false,
+  logging: ["error", "warn", "schema"],
+  logger: new CustomQueryLogger(),
   entities: [
     User,
     Balance,

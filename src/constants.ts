@@ -38,7 +38,7 @@ export const BACK_N_MAIN_KEYBOARD = {
 export const ANALYTICS_KEYBOARD = {
   keyboard: [
     [{ text: "📅 Export CSV" }],
-    [{ text: "🔍 Filters" }],
+    [{ text: "🔎 Filters" }],
     [{ text: "📈 Trends" }],
     [{ text: "📉 Top Categories" }],
     [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],

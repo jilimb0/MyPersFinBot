@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "./database/storage-db"
 import { formatGoals, formatMonthlyStats } from "./reports"
-import { Debt, Goal, IncomeSource, ExpenseCategory } from "./types"
+import { Debt, Goal, IncomeSource, ExpenseCategory, Transaction } from "./types"
 import {
   ANALYTICS_KEYBOARD,
   BACK_N_MAIN_KEYBOARD,
@@ -189,14 +189,36 @@ export async function showStatsMenu(
 export async function showHistoryMenu(
   wizard: WizardManager,
   chatId: number,
-  userId: string
+  userId: string,
+  page: number = 1
 ): Promise<void> {
-  const recentTransactions = await db.getRecentTransactions(userId, 4)
+  const limit = 8
 
-  if (recentTransactions.length === 0) {
+  const state = wizard.getState(userId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filters: any = {}
+
+  if (state?.step === "HISTORY_FILTERED" && state.data) {
+    if (state.data.startDate) filters.startDate = new Date(state.data.startDate)
+    if (state.data.endDate) filters.endDate = new Date(state.data.endDate)
+    if (state.data.type) filters.type = state.data.type as Transaction
+  }
+
+  const { transactions, total, hasMore } = await db.getTransactionsPaginated(
+    userId,
+    page,
+    limit,
+    Object.keys(filters).length > 0 ? filters : undefined
+  )
+
+  if (total === 0) {
+    const msg = Object.keys(filters).length > 0
+      ? "📖 *Transaction History*\n\n🔍 No transactions found with these filters."
+      : "📖 *Transaction History*\n\n💭 No transactions yet."
+
     await wizard.sendMessage(
       chatId,
-      "📖 *Transaction History*\n\n💭 No transactions yet.",
+      msg,
       {
         parse_mode: "Markdown",
         reply_markup: BACK_N_MAIN_KEYBOARD,
@@ -205,31 +227,52 @@ export async function showHistoryMenu(
     return
   }
 
-  if (wizard) {
-    wizard.setState(userId, {
-      step: "HISTORY_LIST",
-      data: {},
-      returnTo: "analytics",
-    })
+  wizard.setState(userId, {
+    step: state?.step === "HISTORY_FILTERED" ? "HISTORY_FILTERED" : "HISTORY_LIST",
+    data: {
+      page,
+      totalPages: Math.ceil(total / limit),
+      ...state?.data, // Сохраняем фильтры
+    },
+    returnTo: "analytics",
+  })
+
+  const startIdx = (page - 1) * limit + 1
+  const endIdx = Math.min(page * limit, total)
+
+  // Добавляем информацию о фильтрах
+  let filterInfo = ""
+  if (state?.step === "HISTORY_FILTERED" && state.data?.filterType) {
+    const filterLabels: Record<string, string> = {
+      last7days: "📅 Last 7 Days",
+      last30days: "📅 Last 30 Days",
+      expenses: "📉 Expenses Only",
+      income: "📈 Income Only",
+    }
+    filterInfo = `\n🔍 Filter: ${filterLabels[state.data.filterType] || state.data.filterType}`
   }
 
-  let msg = `📖 *Recent Transactions* (last ${recentTransactions.length})\n\n`
+  let msg = `📖 *Transaction History* (${startIdx}-${endIdx} of ${total})${filterInfo}\n\n`
 
-  const items = recentTransactions.map((tx, i) => {
+  const items = transactions.map((tx, i) => {
     const emoji =
       tx.type === "EXPENSE" ? "📉" : tx.type === "INCOME" ? "📈" : "↔️"
     const date = new Date(tx.date).toLocaleDateString("en-GB")
     const account = tx.fromAccountId || tx.toAccountId || "N/A"
     msg += `${emoji} *${tx.category}* - ${formatMoney(tx.amount, tx.currency)}\n`
     msg += `   💳 ${account} | 📅 ${date}\n`
-    if (i < recentTransactions.length - 1) msg += "\n"
+    if (i < transactions.length - 1) msg += "\n"
 
     return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
   })
 
+  const navButtons = []
+  if (page > 1) navButtons.push("◀️ Previous")
+  if (hasMore) navButtons.push("Next ▶️")
+
   const listButtons = createListButtons({
     items,
-    afterItemsButtons: ["🔍 Filters"],
+    afterItemsButtons: navButtons.length > 0 ? navButtons : ["🔍 Filters"],
   })
 
   await wizard.sendMessage(chatId, msg, {
@@ -240,6 +283,7 @@ export async function showHistoryMenu(
     },
   })
 }
+
 
 export async function showBudgetMenu(
   wizard: WizardManager,
