@@ -10,7 +10,7 @@ import {
   TransactionType,
 } from "../types"
 import { createListButtons, formatMoney } from "../utils"
-import { showActiveRemindersMenu, showAnalyticsReportsMenu, showBalancesMenu, showBudgetMenu, showHistoryMenu, showIncomeSourcesMenu, showMainMenu } from "../menus"
+import { showActiveRemindersMenu, showAnalyticsReportsMenu, showBalancesMenu, showBudgetMenu, showHistoryMenu, showIncomeSourcesMenu, showMainMenu } from "../menus-i18n"
 
 import * as handlers from "../handlers"
 import { createProgressBar, getProgressEmoji } from "../reports"
@@ -183,7 +183,7 @@ export async function resendCurrentStepPrompt(
         `✏️ *Edit Amount*\n\nCurrent: \n${formatMoney(tx.amount, tx.currency)}\n\nEnter new amount (e.g. 100 or 100 ${defaultCurrency}):`,
         {
           parse_mode: "Markdown",
-          ...wizard.getBackButton(),
+          ...wizard.getBackButton(state.lang),
         }
       )
       break
@@ -235,7 +235,7 @@ export async function resendCurrentStepPrompt(
       await wizard.sendMessage(
         chatId,
         `💰 Enter amount (e.g. 100 or 100 ${defaultCurrency}):`,
-        wizard.getBackButton()
+        wizard.getBackButton(state.lang)
       )
       break
 
@@ -245,7 +245,7 @@ export async function resendCurrentStepPrompt(
         await wizard.sendMessage(
           chatId,
           `📉 Paying "${data.debt.name}"\nRemaining: ${remaining}\n\nEnter amount to pay:`,
-          wizard.getBackButton()
+          wizard.getBackButton(state.lang)
         )
       }
       break
@@ -282,7 +282,7 @@ export async function resendCurrentStepPrompt(
       await wizard.sendMessage(
         chatId,
         `💰 Current: ${formatMoney(debt.amount, debt.currency)}\nPaid: ${formatMoney(debt.paidAmount, debt.currency)}\n\n✏️ Enter new total amount:`,
-        wizard.getBackButton()
+        wizard.getBackButton(state.lang)
       )
       break
     }
@@ -353,7 +353,7 @@ export async function resendCurrentStepPrompt(
         `${emoji} Enter person's name and amount you ${action}:\n\n💡 *Format:* Name Amount [Currency]\n\n*Examples:*\n• John 1000\n• Maria 5000 USD\n• Alex 50000 ${defaultCurrency}`,
         {
           parse_mode: "Markdown",
-          ...wizard.getBackButton(),
+          ...wizard.getBackButton(state.lang),
         }
       )
       break
@@ -370,7 +370,7 @@ export async function resendCurrentStepPrompt(
         `• \`Laptop 2000 ${defaultCurrency}\`\n` +
         `• \`Vacation 5000 USD\`\n` +
         `• \`Emergency Fund 10000\` (uses ${defaultCurrency})`,
-        wizard.getBackButton()
+        wizard.getBackButton(state.lang)
       )
       break
 
@@ -379,7 +379,7 @@ export async function resendCurrentStepPrompt(
         await wizard.sendMessage(
           chatId,
           `🎯 "${data.goal.name}"\nTarget: ${data.goal.targetAmount}\nCurrent: ${data.goal.currentAmount}\n\nEnter deposit amount:`,
-          wizard.getBackButton()
+          wizard.getBackButton(state.lang)
         )
       }
       break
@@ -486,7 +486,7 @@ export async function resendCurrentStepPrompt(
         `✏️ *Edit Goal Target*\n\nCurrent: ${formatMoney(goal.targetAmount, goal.currency)}\n\nEnter new target amount:`,
         {
           parse_mode: "Markdown",
-          ...wizard.getBackButton(),
+          ...wizard.getBackButton(state.lang),
         }
       )
       break
@@ -518,19 +518,19 @@ export async function resendCurrentStepPrompt(
       await wizard.sendMessage(
         chatId,
         `💰 Enter expected monthly amount for "${data.name}":\n\nExample: 1000 or 1000 ${defaultCurrency}`,
-        wizard.getBackButton()
+        wizard.getBackButton(state.lang)
       )
       break
     }
     case "INCOME_VIEW":
-      await showIncomeSourcesMenu(wizard.getBot(), chatId, userId)
+      await showIncomeSourcesMenu(wizard.getBot(), chatId, userId, state.lang)
       break
 
     case "INCOME_NAME":
       wizard.sendMessage(
         chatId,
         "💼 Enter income source name:\n\nExample:  Salary, Freelance",
-        wizard.getBackButton()
+        wizard.getBackButton(state.lang)
       )
       break
 
@@ -564,7 +564,7 @@ export async function resendCurrentStepPrompt(
       await wizard.sendMessage(
         chatId,
         "Enter account name (e.g., 'Cash' or 'Bank Card'):",
-        wizard.getBackButton()
+        wizard.getBackButton(state.lang)
       )
       break
 
@@ -572,7 +572,7 @@ export async function resendCurrentStepPrompt(
       await wizard.sendMessage(
         chatId,
         `Enter amount (e.g. 100 or 100 ${defaultCurrency}):`,
-        wizard.getBackButton()
+        wizard.getBackButton(state.lang)
       )
       break
 
@@ -663,7 +663,7 @@ export async function resendCurrentStepPrompt(
       break
 
     case "BALANCE_LIST": {
-      await showBalancesMenu(wizard, chatId, userId)
+      await showBalancesMenu(wizard, chatId, userId, state.lang)
       break
     }
     case "BALANCE_EDIT_MENU": {
@@ -706,11 +706,11 @@ export async function resendCurrentStepPrompt(
 
     // --- History & Reports ---
     case "HISTORY_LIST": {
-      await showHistoryMenu(wizard, chatId, userId)
+      await showHistoryMenu(wizard, chatId, userId, state.lang)
       break
     }
     case "ANALYTICS_REPORTS_MENU": {
-      await showAnalyticsReportsMenu(wizard, chatId, userId)
+      await showAnalyticsReportsMenu(wizard, chatId, userId, state.lang)
       break
     }
     case "ANALYTICS_FILTERS": {
@@ -738,7 +738,7 @@ export async function resendCurrentStepPrompt(
       break
     }
     case "NOTIFICATIONS_MANAGE_REMINDERS": {
-      await showActiveRemindersMenu(wizard, chatId, userId)
+      await showActiveRemindersMenu(wizard, chatId, userId, state.lang)
       break
     }
 
@@ -841,7 +841,7 @@ export async function resendCurrentStepPrompt(
 
     // --- Budget Planner ---
     case "BUDGET_MENU": {
-      await showBudgetMenu(wizard, chatId, userId)
+      await showBudgetMenu(wizard, chatId, userId, state.lang)
       break
     }
     case "BUDGET_SELECT_CATEGORY": {
@@ -912,7 +912,7 @@ export async function resendCurrentStepPrompt(
       }
 
       // Default: show menu
-      await handlers.handleRecurringMenu(wizard, chatId, userId)
+      await handlers.handleRecurringMenu(wizard, chatId, userId, state.lang)
       break
     }
 
@@ -951,6 +951,6 @@ export async function resendCurrentStepPrompt(
 
     default:
       wizard.clearState(userId)
-      await showMainMenu(wizard.getBot(), chatId)
+      await showMainMenu(wizard.getBot(), chatId, state.lang)
   }
 }

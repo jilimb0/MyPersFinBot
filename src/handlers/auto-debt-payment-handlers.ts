@@ -4,10 +4,11 @@
 
 import type { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
-import { showDebtsMenu } from "../menus"
+import { showDebtsMenu } from "../menus-i18n"
 import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
 import { Debt } from "../types"
+import { t } from "../i18n"
 
 /**
  * Handle auto-payment enable/disable toggle
@@ -21,6 +22,7 @@ export async function handleAutoPaymentToggle(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
+  const lang = state.lang || 'en';
   const debt = state.data.debt as Debt
 
   if (text === "✅ Enable Auto-Payment") {
@@ -29,7 +31,7 @@ export async function handleAutoPaymentToggle(
       await wizard.sendMessage(
         chatId,
         "⚠️ Auto-payment only available for debts you owe.",
-        wizard.getBackButton()
+        wizard.getBackButton(lang)
       )
       return true
     }
@@ -45,8 +47,8 @@ export async function handleAutoPaymentToggle(
     if (balances.length === 0) {
       await wizard.sendMessage(
         chatId,
-        "⚠️ No accounts found. Please add a balance account first.",
-        wizard.getBackButton()
+        t(lang, 'errors.noAccountsFound'),
+        wizard.getBackButton(lang)
       )
       return true
     }
@@ -86,7 +88,7 @@ export async function handleAutoPaymentToggle(
       { parse_mode: "Markdown" }
     )
 
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     wizard.clearState(userId)
     return true
   }
@@ -105,7 +107,7 @@ export async function handleAutoPaymentAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
-
+  const lang = state.lang || 'en';
   const debt = state.data.debt as Debt
 
   // Extract account name from "AccountName (CURRENCY)"
@@ -114,7 +116,7 @@ export async function handleAutoPaymentAccountSelect(
     await wizard.sendMessage(
       chatId,
       "❌ Invalid account format. Please select from the list.",
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -169,13 +171,14 @@ export async function handleAutoPaymentAmountInput(
 
   const debt = state.data.debt as Debt
   const accountId = state.data.autoPaymentAccountId as string
+  const lang = state.lang || 'en';
 
   const amount = parseFloat(text)
   if (isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid amount. Please enter a positive number.",
-      wizard.getBackButton()
+      t(lang, 'errors.invalidAmountPositive'),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -185,7 +188,7 @@ export async function handleAutoPaymentAmountInput(
     await wizard.sendMessage(
       chatId,
       `⚠️ Amount exceeds remaining debt (${remaining} ${debt.currency}). Please enter a smaller amount.`,
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -236,6 +239,7 @@ export async function handleAutoPaymentDaySelect(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
+  const lang = state.lang || 'en';
   const debt = state.data.debt as Debt
   const accountId = state.data.autoPaymentAccountId as string
   const amount = state.data.autoPaymentAmount as number
@@ -244,8 +248,8 @@ export async function handleAutoPaymentDaySelect(
   if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid day. Please enter a number between 1-31.",
-      wizard.getBackButton()
+      t(lang, 'errors.invalidDay'),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -270,7 +274,7 @@ export async function handleAutoPaymentDaySelect(
     { parse_mode: "Markdown" }
   )
 
-  await showDebtsMenu(wizard.getBot(), chatId, userId)
+  await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
   wizard.clearState(userId)
   return true
 }

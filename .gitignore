@@ -36,6 +36,7 @@ db.json.backup
 data/*.db
 data/*.db-shm
 data/*.db-wal
+data/fx-cache.json
 
 # Logs
 logs/
@@ -52,3 +53,8 @@ backups/
 # Temp files
 tmp/
 temp/
+
+# Cache files
+fx-cache.json
+*.cache.json
+cache/

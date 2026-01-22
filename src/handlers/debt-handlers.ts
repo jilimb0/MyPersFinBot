@@ -2,12 +2,13 @@ import type { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
 import * as validators from "../validators"
 import { formatAmount, formatMoney, handleInsufficientFunds } from "../utils"
-import { showDebtsMenu } from "../menus"
+import { showDebtsMenu } from "../menus-i18n"
 import * as handlers from "./index"
 import { reminderManager } from "../services/reminder-manager"
 import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
 import { randomUUID } from "crypto"
+import { t } from "../i18n"
 
 export async function handleDebtCreateDetails(
   wizard: WizardManager,
@@ -17,12 +18,12 @@ export async function handleDebtCreateDetails(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-
+  const lang = state.lang || 'en';
   const debtType = state.data?.type
   if (!debtType) {
-    await wizard.sendMessage(chatId, "❌ Debt type not found.")
+    await wizard.sendMessage(chatId, t(state.lang, 'debts.typeNotFound'))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, state.lang)
     return true
   }
 
@@ -38,7 +39,7 @@ export async function handleDebtCreateDetails(
       `• Maria 5000 ${defaultCurrency}`,
       {
         parse_mode: "Markdown",
-        ...wizard.getBackButton(),
+        ...wizard.getBackButton(lang),
       }
     )
     return true
@@ -54,7 +55,7 @@ export async function handleDebtCreateDetails(
     await wizard.sendMessage(
       chatId,
       `❌ Invalid format. Try: ${name} 100 or ${name} 100 ${defaultCurrency}`,
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -72,7 +73,7 @@ export async function handleDebtCreateDetails(
       `Please choose a different name or manage existing debt in the Debts menu.`,
       {
         parse_mode: "Markdown",
-        ...wizard.getBackButton(),
+        ...wizard.getBackButton(lang),
       }
     )
     return true
@@ -99,8 +100,8 @@ export async function handleDebtCreateDetails(
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: "⏩ Skip" }],
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+          [{ text: t(state.lang, 'common.skip') }],
+          [{ text: t(state.lang, 'common.back') }, { text: t(state.lang, 'mainMenu.mainMenuButton') }],
         ],
         resize_keyboard: true,
       },
@@ -118,12 +119,12 @@ export async function handleDebtPartialAmount(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-
+  const lang = state.lang || 'en';
   const debt = state.data.debt
   if (!debt) {
     await wizard.sendMessage(chatId, "❌ Error: Missing debt data")
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, state.lang)
     return true
   }
 
@@ -133,7 +134,7 @@ export async function handleDebtPartialAmount(
     await wizard.sendMessage(
       chatId,
       `❌ Invalid format. Try: 100 or 100 ${defaultCurrency}`,
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -144,7 +145,7 @@ export async function handleDebtPartialAmount(
     await wizard.sendMessage(
       chatId,
       `❌ Amount must be greater than zero.`,
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -153,7 +154,7 @@ export async function handleDebtPartialAmount(
     await wizard.sendMessage(
       chatId,
       `❌ Error: Amount (${formatAmount(parsed.amount)}) exceeds remaining debt (${formatMoney(remaining, debt.currency)}).`,
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -172,8 +173,8 @@ export async function handleDebtPartialAmount(
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: "💳 Go to Balances" }],
-            [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+            [{ text: t(state.lang, 'transactions.goToBalances') }],
+            [{ text: t(state.lang, 'common.back') }, { text: t(state.lang, 'mainMenu.mainMenuButton') }],
           ],
           resize_keyboard: true,
         },
@@ -188,8 +189,8 @@ export async function handleDebtPartialAmount(
 
   const promptText =
     debt.type === "I_OWE"
-      ? "💳 Select account to pay from:"
-      : "💰 Select account to add to:"
+      ? t(state.lang, 'debts.selectPayAccount')
+      : t(state.lang, 'debts.selectReceiveAccount')
 
   await handlers.handleTxAccount(wizard, chatId, userId, promptText)
   return true
@@ -204,6 +205,7 @@ export async function handleDebtPartialAccount(
   const state = wizard.getState(userId)
   if (!state) return false
 
+  const lang = state.lang || 'en';
   let cleanText = text
   if (text.startsWith("⭐ ")) {
     cleanText = text.substring(2)
@@ -216,7 +218,7 @@ export async function handleDebtPartialAccount(
   if (!debt || !payAmount) {
     await wizard.sendMessage(chatId, "❌ Error: Missing debt data")
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, state.lang)
     return true
   }
 
@@ -228,7 +230,7 @@ export async function handleDebtPartialAccount(
       await wizard.sendMessage(
         chatId,
         `❌ Error: Account "${accountName}" not found.`,
-        wizard.getBackButton()
+        wizard.getBackButton(lang)
       )
       return true
     }
@@ -245,8 +247,8 @@ export async function handleDebtPartialAccount(
         {
           reply_markup: {
             keyboard: [
-              [{ text: "💳 Go to Balances" }],
-              [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
+              [{ text: t(state.lang, 'transactions.goToBalances') }],
+              [{ text: t(state.lang, 'debts.changeAmount') }, { text: t(state.lang, 'mainMenu.mainMenuButton') }],
             ],
             resize_keyboard: true,
           },
@@ -267,8 +269,8 @@ export async function handleDebtPartialAccount(
   if (!result.success) {
     await wizard.sendMessage(
       chatId,
-      result.message || "❌ Error",
-      wizard.getBackButton()
+      result.message || t(lang, 'common.error'),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -277,8 +279,8 @@ export async function handleDebtPartialAccount(
   if (updatedDebt?.isPaid) {
     const closeMsg =
       debt.type === "I_OWE"
-        ? "🎉 Debt fully paid and closed!"
-        : "🎉 Debt fully received and closed!"
+        ? t(state.lang, 'debts.fullyPaidClosed')
+        : t(state.lang, 'debts.fullyReceivedClosed')
     await wizard.sendMessage(chatId, closeMsg)
   } else {
     const emoji = debt.type === "I_OWE" ? "💸" : "💰"
@@ -293,7 +295,7 @@ export async function handleDebtPartialAccount(
   }
 
   wizard.clearState(userId)
-  await showDebtsMenu(wizard.getBot(), chatId, userId)
+  await showDebtsMenu(wizard.getBot(), chatId, userId, state.lang)
 
   return true
 }

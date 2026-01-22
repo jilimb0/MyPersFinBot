@@ -1,6 +1,7 @@
 import { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
 import { SETTINGS_KEYBOARD } from "../constants"
+import { t } from "../i18n"
 
 // Show custom messages menu
 export async function handleCustomMessagesMenu(
@@ -8,25 +9,26 @@ export async function handleCustomMessagesMenu(
   chatId: number,
   userId: string
 ): Promise<void> {
+  const state = wizardManager.getState(userId)
   const settings = await db.getReminderSettings(userId)
   const customMessages = settings?.customMessages || {}
 
-  let msg = "📝 *Custom Notification Messages*\n\n"
-  msg += "Customize your reminder messages with placeholders:\n\n"
+  let msg = t(state.lang, 'notifications.customMessagesTitle') + "\n\n"
+  msg += t(state.lang, 'notifications.customizeReminders') + "\n\n"
 
-  msg += "💸 *Debt Reminder:*\n"
-  msg += customMessages.debt || "_Using default template_\n"
+  msg += t(state.lang, 'notifications.debtReminder')
+  msg += customMessages.debt || t(state.lang, 'notifications.usingDefaultTemplate') + "\n"
   msg += "\n"
 
-  msg += "🎯 *Goal Reminder:*\n"
+  msg += t(state.lang, 'notifications.goalReminder')
   msg += customMessages.goal || "_Using default template_\n"
   msg += "\n"
 
-  msg += "💰 *Income Reminder:*\n"
+  msg += t(state.lang, 'notifications.incomeReminder')
   msg += customMessages.income || "_Using default template_\n"
   msg += "\n\n"
 
-  msg += "📋 *Available placeholders:*\n"
+  msg += t(state.lang, 'notifications.availablePlaceholders') + "\n"
   msg += "`{name}` - Name\n"
   msg += "`{amount}` - Amount\n"
   msg += "`{currency}` - Currency\n"
@@ -46,10 +48,10 @@ export async function handleCustomMessagesMenu(
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: "✏️ Edit Debt Template" }],
-        [{ text: "✏️ Edit Goal Template" }],
-        [{ text: "✏️ Edit Income Template" }],
-        [{ text: "🔄 Reset to Defaults" }],
+        [{ text: t(state.lang, 'notifications.editDebtTemplate') }],
+        [{ text: t(state.lang, 'notifications.editGoalTemplate') }],
+        [{ text: t(state.lang, 'notifications.editIncomeTemplate') }],
+        [{ text: t(state.lang, 'notifications.resetToDefaults') }],
         [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
       ],
       resize_keyboard: true,
@@ -66,8 +68,8 @@ export async function handleCustomMessagesAction(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state || state.step !== "CUSTOM_MESSAGES_MENU") return false
-
-  if (text === "✏️ Edit Debt Template") {
+  const lang = state.lang || 'en';
+  if (text === t(state.lang, 'notifications.editDebtTemplate')) {
     wizardManager.setState(userId, {
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "debt" },
@@ -83,13 +85,13 @@ export async function handleCustomMessagesAction(
       "`{name}`, `{amount}`, `{currency}`, `{dueDate}`, `{remaining}`, `{monthlyAmount}`, `{monthsLeft}`",
       {
         parse_mode: "Markdown",
-        ...wizardManager.getBackButton(),
+        ...wizardManager.getBackButton(lang),
       }
     )
     return true
   }
 
-  if (text === "✏️ Edit Goal Template") {
+  if (text === t(state.lang, 'notifications.editGoalTemplate')) {
     wizardManager.setState(userId, {
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "goal" },
@@ -105,13 +107,13 @@ export async function handleCustomMessagesAction(
       "`{name}`, `{amount}`, `{currency}`, `{remaining}`, `{target}`",
       {
         parse_mode: "Markdown",
-        ...wizardManager.getBackButton(),
+        ...wizardManager.getBackButton(lang),
       }
     )
     return true
   }
 
-  if (text === "✏️ Edit Income Template") {
+  if (text === t(state.lang, 'notifications.editIncomeTemplate')) {
     wizardManager.setState(userId, {
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "income" },
@@ -127,13 +129,13 @@ export async function handleCustomMessagesAction(
       "`{name}`, `{amount}`, `{currency}`",
       {
         parse_mode: "Markdown",
-        ...wizardManager.getBackButton(),
+        ...wizardManager.getBackButton(lang),
       }
     )
     return true
   }
 
-  if (text === "🔄 Reset to Defaults") {
+  if (text === t(state.lang, 'notifications.resetToDefaults')) {
     const settings = await db.getReminderSettings(userId)
     if (settings) {
       settings.customMessages = undefined
@@ -142,7 +144,7 @@ export async function handleCustomMessagesAction(
 
     await wizardManager.sendMessage(
       chatId,
-      "✅ Templates reset to defaults",
+      t(state.lang, 'notifications.templatesReset'),
       { reply_markup: SETTINGS_KEYBOARD }
     )
     wizardManager.clearState(userId)
@@ -162,16 +164,16 @@ export async function handleCustomMessageSave(
   const state = wizardManager.getState(userId)
   if (!state || state.step !== "CUSTOM_MESSAGE_EDIT") return false
 
-  const { type } = state.data
+  const { type, lang } = state.data
 
   // Validate template has at least one placeholder
   if (!text.includes("{") || !text.includes("}")) {
     await wizardManager.sendMessage(
       chatId,
-      "⚠️ Template should contain at least one placeholder like `{name}` or `{amount}`",
+      t(state.lang, 'notifications.templatePlaceholderWarning'),
       {
         parse_mode: "Markdown",
-        ...wizardManager.getBackButton(),
+        ...wizardManager.getBackButton(lang),
       }
     )
     return true

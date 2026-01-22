@@ -6,27 +6,29 @@ import { TransactionType, TransactionCategory } from "../types"
 import * as validators from "../validators"
 import { SETTINGS_KEYBOARD } from "../constants"
 import dayjs from "dayjs"
+import { Language, t } from "../i18n"
 
 // Show recurring transactions menu
 export async function handleRecurringMenu(
   wizardManager: WizardManager,
   chatId: number,
-  userId: string
+  userId: string,
+  lang: Language
 ): Promise<boolean> {
   const recurring = await recurringManager.getUserRecurring(userId)
 
-  let msg = "🔁 *Recurring Payments*\n\n"
+  let msg = t(lang, 'recurring.title') + "\n\n"
 
   if (!recurring.length) {
-    msg += "No recurring transactions yet.\n\n"
-    msg += "💡 *Set up regular payments like:*\n"
+    msg += t(lang, 'recurring.noTransactions') + "\n\n"
+    msg += t(lang, 'recurring.setupInfo')
     msg += "• Monthly rent\n"
     msg += "• Subscriptions (Netflix, Spotify)\n"
     msg += "• Utilities (electricity, internet)\n"
     msg += "• Salary income\n\n"
-    msg += "Tap *✨ Add Recurring* to get started."
+    msg += t(lang, 'recurring.tapToStart')
   } else {
-    msg += "Your recurring transactions:\n\n"
+    msg += t(lang, 'recurring.yourTransactions') + "\n\n"
     recurring.forEach((r, idx) => {
       const typeEmoji = r.type === TransactionType.EXPENSE ? "💸" : "💰"
       const statusEmoji = r.isActive ? "▶️" : "⏸"
@@ -36,7 +38,7 @@ export async function handleRecurringMenu(
       msg += `   ${r.amount} ${r.currency} — ${freqLabel}\n`
       msg += `   Next: ${dayjs(r.nextExecutionDate).format("DD.MM.YYYY")}\n\n`
     })
-    msg += "\nTap on a transaction to manage it."
+    msg += "\n" + t(lang, 'recurring.tapToManage')
   }
 
   const buttons: TelegramBot.KeyboardButton[][] = []
@@ -47,7 +49,7 @@ export async function handleRecurringMenu(
     buttons.push([{ text: `${typeEmoji} ${r.description || "Unnamed"}` }])
   })
 
-  buttons.push([{ text: "✨ Add Recurring" }])
+  buttons.push([{ text: t(lang, 'recurring.addRecurring') }])
   buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
 
   wizardManager.setState(userId, {
@@ -74,6 +76,8 @@ export async function handleRecurringSelect(
   userId: string,
   text: string
 ): Promise<boolean> {
+  const state = wizardManager.getState(userId)
+  const lang = state.lang || 'en';
   const recurring = await recurringManager.getUserRecurring(userId)
   const selected = recurring.find(
     (r) => `${r.type === TransactionType.EXPENSE ? "💸" : "💰"} ${r.description || "Unnamed"}` === text
@@ -101,7 +105,7 @@ export async function handleRecurringSelect(
 
   const buttons: TelegramBot.KeyboardButton[][] = [
     [{ text: selected.isActive ? "⏸ Pause" : "▶️ Resume" }],
-    [{ text: "🗑 Delete" }],
+    [{ text: t(lang, 'common.delete') }],
     [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
   ]
 
@@ -125,7 +129,7 @@ export async function handleRecurringItemAction(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state?.data?.recurringId) return false
-
+  const lang = state.lang || 'en';
   const recurringId = state.data.recurringId
   const recurring = state.data.recurring
 
@@ -135,7 +139,7 @@ export async function handleRecurringItemAction(
 
     await wizardManager.sendMessage(
       chatId,
-      `✅ Recurring transaction ${newStatus ? "resumed" : "paused"}.`,
+      t(lang, newStatus ? 'recurring.resumed' : 'recurring.paused'),
       {
         reply_markup: SETTINGS_KEYBOARD,
       }
@@ -145,7 +149,7 @@ export async function handleRecurringItemAction(
     return true
   }
 
-  if (text === "🗑 Delete") {
+  if (text === t(lang, 'common.delete')) {
     wizardManager.setState(userId, {
       step: "RECURRING_DELETE_CONFIRM",
       data: { recurringId, recurring },
@@ -162,8 +166,8 @@ export async function handleRecurringItemAction(
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: "✅ Yes, delete" }],
-            [{ text: "❌ Cancel" }],
+            [{ text: t(lang, 'common.yesDelete') }],
+            [{ text: t(lang, 'common.cancel') }],
           ],
           resize_keyboard: true,
         },
@@ -184,13 +188,13 @@ export async function handleRecurringDeleteConfirm(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state?.data?.recurringId) return false
-
-  if (text === "✅ Yes, delete") {
+  const lang = state.lang || 'en';
+  if (text === t(lang, 'common.yesDelete')) {
     await recurringManager.deleteRecurring(state.data.recurringId)
 
     await wizardManager.sendMessage(
       chatId,
-      "✅ Recurring transaction deleted.",
+      t(lang, 'recurring.deleted'),
       {
         reply_markup: SETTINGS_KEYBOARD,
       }
@@ -200,10 +204,10 @@ export async function handleRecurringDeleteConfirm(
     return true
   }
 
-  if (text === "❌ Cancel") {
+  if (text === t(lang, 'common.cancel')) {
     await wizardManager.sendMessage(
       chatId,
-      "❌ Cancelled.",
+      t(lang, 'common.cancelled'),
       {
         reply_markup: SETTINGS_KEYBOARD,
       }
@@ -222,6 +226,8 @@ export async function handleRecurringCreateStart(
   chatId: number,
   userId: string
 ): Promise<boolean> {
+  const state = wizardManager.getState(userId)
+  const lang = state.lang || 'en';
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_DESCRIPTION",
     data: {},
@@ -230,8 +236,8 @@ export async function handleRecurringCreateStart(
 
   await wizardManager.sendMessage(
     chatId,
-    "✨ *New Recurring Transaction*\n\n" +
-    "Enter a description:\n\n" +
+    t(lang, 'recurring.newTransaction') + "\n\n" +
+    t(lang, 'recurring.enterDescription') + "\n\n" +
     "*Examples:*\n" +
     "• Rent\n" +
     "• Netflix Subscription\n" +
@@ -239,7 +245,7 @@ export async function handleRecurringCreateStart(
     "• Electricity Bill",
     {
       parse_mode: "Markdown",
-      ...wizardManager.getBackButton(),
+      ...wizardManager.getBackButton(lang),
     }
   )
 
@@ -255,7 +261,7 @@ export async function handleRecurringDescription(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-
+  const lang = state.lang || 'en';
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_TYPE",
     data: { ...state.data, description: text },
@@ -264,11 +270,11 @@ export async function handleRecurringDescription(
 
   await wizardManager.sendMessage(
     chatId,
-    "💰 Select transaction type:",
+    t(lang, 'recurring.selectType'),
     {
       reply_markup: {
         keyboard: [
-          [{ text: "💸 Expense" }, { text: "💰 Income" }],
+          [{ text: t(lang, 'recurring.expense') }, { text: t(lang, 'recurring.income') }],
           [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
         ],
         resize_keyboard: true,
@@ -288,11 +294,11 @@ export async function handleRecurringType(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-
+  const lang = state.lang || 'en';
   let type: TransactionType
-  if (text === "💸 Expense") {
+  if (text === t(lang, 'recurring.expense')) {
     type = TransactionType.EXPENSE
-  } else if (text === "💰 Income") {
+  } else if (text === t(lang, 'recurring.income')) {
     type = TransactionType.INCOME
   } else {
     return false
@@ -309,7 +315,7 @@ export async function handleRecurringType(
   await wizardManager.sendMessage(
     chatId,
     `💵 Enter amount:\n\nExamples: 1000, 1000 ${currency}`,
-    wizardManager.getBackButton()
+    wizardManager.getBackButton(lang)
   )
 
   return true
@@ -324,15 +330,15 @@ export async function handleRecurringAmount(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-
+  const lang = state.lang || 'en';
   const defaultCurrency = await db.getDefaultCurrency(userId)
   const parsed = validators.parseAmountWithCurrency(text, defaultCurrency)
 
   if (!parsed || parsed.amount <= 0) {
     await wizardManager.sendMessage(
       chatId,
-      "❌ Invalid amount. Please try again.",
-      wizardManager.getBackButton()
+      t(lang, 'errors.invalidAmountTryAgain'),
+      wizardManager.getBackButton(lang)
     )
     return true
   }
@@ -352,7 +358,7 @@ export async function handleRecurringAmount(
   if (!balances.length) {
     await wizardManager.sendMessage(
       chatId,
-      "⚠️ No accounts found. Please create a balance account first.",
+      t(lang, 'recurring.noAccountsCreate'),
       {
         reply_markup: SETTINGS_KEYBOARD,
       }
@@ -368,7 +374,7 @@ export async function handleRecurringAmount(
 
   await wizardManager.sendMessage(
     chatId,
-    "💳 Select account:",
+    t(lang, 'common.selectAccount'),
     {
       reply_markup: {
         keyboard: buttons,
@@ -390,6 +396,7 @@ export async function handleRecurringAccount(
   const state = wizardManager.getState(userId)
   if (!state) return false
 
+  const lang = state.lang || 'en';
   const accountId = text.replace("💳 ", "")
   const balances = await db.getBalancesList(userId)
   const account = balances.find((b) => b.accountId === accountId)
@@ -415,7 +422,7 @@ export async function handleRecurringAccount(
 
   await wizardManager.sendMessage(
     chatId,
-    "💼 Select category:",
+    t(lang, 'recurring.selectCategory'),
     {
       reply_markup: {
         keyboard: buttons,
@@ -436,7 +443,7 @@ export async function handleRecurringCategory(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-
+  const lang = state.lang || 'en';
   const validCategories = await db.getTopCategories(userId, state.data.type)
 
   if (!validCategories.includes(text as TransactionCategory)) return false
@@ -449,14 +456,14 @@ export async function handleRecurringCategory(
 
   await wizardManager.sendMessage(
     chatId,
-    "📅 *Enter day of month (1-31):*\n\n" +
+    t(lang, 'recurring.enterDayPrompt') +
     "Examples:\n" +
     "• 1 (first day of month)\n" +
     "• 15 (mid-month)\n" +
     "• 28 (safe for all months)",
     {
       parse_mode: "Markdown",
-      ...wizardManager.getBackButton(),
+      ...wizardManager.getBackButton(lang),
     }
   )
 
@@ -472,13 +479,13 @@ export async function handleRecurringDay(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-
+  const lang = state.lang || 'en';
   const day = parseInt(text)
   if (isNaN(day) || day < 1 || day > 31) {
     await wizardManager.sendMessage(
       chatId,
-      "❌ Invalid day. Please enter a number between 1 and 31.",
-      wizardManager.getBackButton()
+      t(lang, 'errors.invalidDay'),
+      wizardManager.getBackButton(lang)
     )
     return true
   }

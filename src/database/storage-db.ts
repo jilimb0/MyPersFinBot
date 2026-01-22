@@ -27,6 +27,7 @@ import {
 import { convertSync } from "../fx"
 import { formatMoney, handleInsufficientFunds } from "../utils"
 import { randomUUID } from "crypto"
+import { Language } from "../i18n"
 
 export class DatabaseStorage {
   private userDataCache = new Map<
@@ -1843,6 +1844,20 @@ export class DatabaseStorage {
   async updateGoalDeadline(userId: string, goalId: string, deadline: Date | null): Promise<void> {
     const goalRepo = AppDataSource.getRepository(GoalEntity)
     await goalRepo.update({ id: goalId, userId }, { deadline })
+    this.clearCache(userId)
+  }
+
+  // --- Language Methods (i18n) ---
+  async getUserLanguage(userId: string): Promise<Language> {
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await userRepo.findOne({ where: { id: userId } })
+    return user?.language || 'en'
+  }
+
+  async setUserLanguage(userId: string, language: Language): Promise<void> {
+    const userRepo = AppDataSource.getRepository(User)
+    await this.ensureUser(userId)
+    await userRepo.update({ id: userId }, { language })
     this.clearCache(userId)
   }
 

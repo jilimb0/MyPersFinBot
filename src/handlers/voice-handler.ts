@@ -12,21 +12,25 @@ import { randomUUID } from "crypto"
 import { exec } from "child_process"
 import { promisify } from "util"
 import fs from "fs"
+import { t } from "../i18n"
+import { WizardManager } from "../wizards/wizards"
 
 const execAsync = promisify(exec)
 
 export async function handleVoiceMessage(
   bot: TelegramBot,
-  msg: TelegramBot.Message
+  msg: TelegramBot.Message,
+  wizard: WizardManager
 ): Promise<void> {
   const chatId = msg.chat.id
   const userId = chatId.toString()
   const voice = msg.voice
-
+  const state = wizard.getState(userId)
+  const lang = state.lang || 'en'
   if (!voice) return
 
   try {
-    await bot.sendMessage(chatId, "🎤 Processing voice message...")
+    await bot.sendMessage(chatId, "await bot.sendMessage(chatId, t(lang, 'voiceHandler.processing'))")
 
     const fileLink = await bot.getFileLink(voice.file_id)
     const response = await axios.get(fileLink, { responseType: "arraybuffer" })
@@ -44,8 +48,9 @@ export async function handleVoiceMessage(
         unlinkSync(ogaPath)
       }
 
+
       const errorMsg = conversionError.message.includes("FFmpeg")
-        ? "❌ **FFmpeg is not installed** ⚠️\n\n" +
+        ? t(lang, 'voiceHandler.ffmpegNotInstalled') +
         "**Admin needs to install FFmpeg:**\n" +
         "• macOS: `brew install ffmpeg`\n" +
         "• Linux: `apt-get install ffmpeg`\n\n" +
@@ -53,7 +58,7 @@ export async function handleVoiceMessage(
         "• `50 coffee` ☕\n" +
         "• `100 taxi` 🚕\n" +
         "• `потратил 200 на еду` 🍔"
-        : "❌ Audio conversion failed. Please try text input."
+        : t(lang, 'voiceHandler.conversionFailed')
 
       await bot.sendMessage(chatId, errorMsg, { parse_mode: "Markdown" })
       return
@@ -63,7 +68,7 @@ export async function handleVoiceMessage(
       unlinkSync(ogaPath)
       await bot.sendMessage(
         chatId,
-        "❌ Failed to convert audio. Please use text input.\n\n" +
+        t(lang, 'voiceHandler.conversionFailedLong') +
         "Examples: `50 coffee`, `100 taxi`, `потратил 200 на еду`",
         { parse_mode: "Markdown" }
       )
@@ -81,7 +86,7 @@ export async function handleVoiceMessage(
     if (!text) {
       await bot.sendMessage(
         chatId,
-        "🎤 *Voice transcription not configured*\n\n" +
+        t(lang, 'voiceHandler.notConfigured') + "\n\n" +
         "To enable voice messages, admin needs to set ASSEMBLYAI_API_KEY.\n\n" +
         "**Meanwhile, you can:**\n\n" +
         "**Option 1: Use Telegram's transcription** 📝\n" +
@@ -102,15 +107,17 @@ export async function handleVoiceMessage(
 
     await bot.sendMessage(chatId, `📝 Recognized: "${text}"`)
 
-    await handleNLPInput(bot, chatId, userId, text)
+    await handleNLPInput(bot, chatId, userId, text, wizard)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Voice processing error:", error)
 
-    let errorMsg = "❌ Failed to process voice message."
+    const state = wizard.getState(userId)
+    const lang = state.lang || 'en'
+    let errorMsg = t(lang, 'voiceHandler.processingFailed')
 
     if (error.message && error.message.includes("FFmpeg")) {
-      errorMsg = "❌ FFmpeg is not installed.⚠️" +
+      errorMsg = t(lang, 'voiceHandler.ffmpegMissing') +
         "**Admin: Install FFmpeg**" +
         "\u2022 macOS: `brew install ffmpeg`" +
         "\u2022 Linux: `apt-get install ffmpeg`" +
@@ -129,8 +136,12 @@ export async function handleNLPInput(
   bot: TelegramBot,
   chatId: number,
   userId: string,
-  text: string
+  text: string,
+  wizard: WizardManager
 ): Promise<void> {
+  const state = wizard.getState(userId)
+  const lang = state.lang || 'en';
+
   try {
     const defaultCurrency = await db.getDefaultCurrency(userId)
 
@@ -139,7 +150,7 @@ export async function handleNLPInput(
     if (!result || !result.amount) {
       await bot.sendMessage(
         chatId,
-        "❓ I couldn't understand that. Try:\n\n" +
+        t(lang, 'voiceHandler.couldNotUnderstand') + "\n\n" +
         "• \"50 coffee\"\n" +
         "• \"потратил 100 на такси\"\n" +
         "• \"зарплата пришла 5000\"\n" +
@@ -166,19 +177,19 @@ export async function handleNLPInput(
         inline_keyboard: [
           [
             {
-              text: "✅ Yes, Save",
+              text: t(lang, 'common.yesSave'),
               callback_data: `nlp_confirm|${result.amount}|${result.type}|${result.category}|${result.description}`,
             },
           ],
           [
             {
-              text: "✏️ Edit Category",
+              text: t(lang, 'common.editCategory'),
               callback_data: `nlp_edit_category|${result.amount}|${result.type}|${result.description}`,
             },
           ],
           [
             {
-              text: "❌ Cancel",
+              text: t(lang, 'common.cancel'),
               callback_data: "nlp_cancel",
             },
           ],
@@ -196,13 +207,17 @@ export async function handleNLPInput(
 
 export async function handleNLPCallback(
   bot: TelegramBot,
-  query: TelegramBot.CallbackQuery
+  query: TelegramBot.CallbackQuery,
+  wizard: WizardManager
 ): Promise<void> {
   const chatId = query.message?.chat.id
   const userId = query.from.id.toString()
   const data = query.data
 
   if (!chatId || !data) return
+
+  const state = wizard.getState(userId)
+  const lang = state.lang || 'en';
 
   try {
     if (data === "nlp_cancel") {
@@ -258,7 +273,7 @@ export async function handleNLPCallback(
         }
       )
 
-      await bot.answerCallbackQuery(query.id, { text: "✅ Saved!" })
+      await bot.answerCallbackQuery(query.id, { text: t(lang, 'common.save') })
       return
     }
 
@@ -306,14 +321,14 @@ export async function handleNLPCallback(
       await bot.answerCallbackQuery(query.id)
 
       const newQuery = { ...query, confirmData }
-      await handleNLPCallback(bot, newQuery)
+      await handleNLPCallback(bot, newQuery, wizard)
       return
     }
 
     await bot.answerCallbackQuery(query.id)
   } catch (error) {
     console.error("NLP callback error:", error)
-    await bot.answerCallbackQuery(query.id, { text: "❌ Error" })
+    await bot.answerCallbackQuery(query.id, { text: t(lang, 'common.error') })
   }
 }
 

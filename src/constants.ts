@@ -1,47 +1,31 @@
-export const MAIN_MENU_KEYBOARD = {
-  reply_markup: {
-    keyboard: [
-      [{ text: "💸 Expense" }, { text: "💰 Income" }],
-      [{ text: "💳 Balances" }, { text: "🔮 Budget Planner" }],
-      [{ text: "📉 Debts" }, { text: "🎯 Goals" }],
-      [{ text: "📊 Analytics" }, { text: "⚙️ Settings" }],
-    ],
-    resize_keyboard: true,
-  },
-}
+// ⚠️ DEPRECATED: Static keyboards removed
+// Use dynamic keyboard generators from i18n/keyboards.ts instead
 
+// Example migration:
+// OLD: import { MAIN_MENU_KEYBOARD } from './constants'
+// NEW: import { getMainMenuKeyboard } from './i18n/keyboards'
+//      const keyboard = getMainMenuKeyboard(lang)
+
+// Backwards compatibility exports (will be removed in future)
+import { getMainMenuKeyboard, getSettingsKeyboard, getAnalyticsKeyboard, getStatsKeyboard, getBackAndMainKeyboard } from './i18n/keyboards'
+
+// Default language for backwards compatibility
+const DEFAULT_LANG = 'en'
+
+export const MAIN_MENU_KEYBOARD = getMainMenuKeyboard(DEFAULT_LANG)
 export const SETTINGS_KEYBOARD = {
-  keyboard: [
-    [{ text: "🌐 Change currency" }],
-    [{ text: "💵 Income Sources" }],
-    [{ text: "🤖 Automation" }, { text: "🛠️ Advanced" }],
-    [{ text: "❓ Help & Info" }, { text: "🏠 Main Menu" }],
-  ],
+  keyboard: getSettingsKeyboard(DEFAULT_LANG).keyboard,
   resize_keyboard: true,
 }
-
 export const STATS_KEYBOARD = {
-  keyboard: [
-    [{ text: "📈 Reports" }],
-    [{ text: "📋 History" }],
-    [{ text: "💎 Net Worth" }],
-    [{ text: "🏠 Main Menu" }],
-  ],
+  keyboard: getStatsKeyboard(DEFAULT_LANG).keyboard,
   resize_keyboard: true,
 }
-
 export const BACK_N_MAIN_KEYBOARD = {
-  keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
+  keyboard: getBackAndMainKeyboard(DEFAULT_LANG).keyboard,
   resize_keyboard: true,
 }
-
 export const ANALYTICS_KEYBOARD = {
-  keyboard: [
-    [{ text: "📅 Export CSV" }],
-    [{ text: "🔎 Filters" }],
-    [{ text: "📈 Trends" }],
-    [{ text: "📉 Top Categories" }],
-    [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-  ],
+  keyboard: getAnalyticsKeyboard(DEFAULT_LANG).keyboard,
   resize_keyboard: true,
 }

@@ -4,10 +4,11 @@
 
 import type { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
-import { showGoalsMenu } from "../menus"
+import { showGoalsMenu } from "../menus-i18n"
 import { AppDataSource } from "../database/data-source"
 import { Goal as GoalEntity } from "../database/entities/Goal"
 import { Goal } from "../types"
+import { t } from "../i18n"
 
 /**
  * Handle auto-deposit enable/disable toggle
@@ -20,6 +21,7 @@ export async function handleAutoDepositToggle(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
+  const lang = state.lang || 'en';
 
   const goal = state.data.goal as Goal
 
@@ -35,8 +37,8 @@ export async function handleAutoDepositToggle(
     if (balances.length === 0) {
       await wizard.sendMessage(
         chatId,
-        "⚠️ No accounts found. Please add a balance account first.",
-        wizard.getBackButton()
+        t(lang, 'errors.noAccountsFound'),
+        wizard.getBackButton(lang)
       )
       return true
     }
@@ -76,7 +78,7 @@ export async function handleAutoDepositToggle(
       { parse_mode: "Markdown" }
     )
 
-    await showGoalsMenu(wizard.getBot(), chatId, userId)
+    await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
     wizard.clearState(userId)
     return true
   }
@@ -95,7 +97,7 @@ export async function handleAutoDepositAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
-
+  const lang = state.lang || 'en';
   const goal = state.data.goal as Goal
 
   // Extract account name from "AccountName (CURRENCY)"
@@ -104,7 +106,7 @@ export async function handleAutoDepositAccountSelect(
     await wizard.sendMessage(
       chatId,
       "❌ Invalid account format. Please select from the list.",
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -154,6 +156,7 @@ export async function handleAutoDepositAmountInput(
   const state = wizard.getState(userId)
   if (!state?.data?.goal || !state.data.autoDepositAccountId) return false
 
+  const lang = state.lang || 'en';
   const goal = state.data.goal as Goal
   const accountId = state.data.autoDepositAccountId as string
 
@@ -161,8 +164,8 @@ export async function handleAutoDepositAmountInput(
   if (isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid amount. Please enter a positive number.",
-      wizard.getBackButton()
+      t(lang, 'errors.invalidAmountPositive'),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -298,6 +301,7 @@ export async function handleAutoDepositDayWeeklySelect(
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
 
+  const lang = state.lang || 'en';
   const goal = state.data.goal as Goal
   const accountId = state.data.autoDepositAccountId as string
   const amount = state.data.autoDepositAmount as number
@@ -317,7 +321,7 @@ export async function handleAutoDepositDayWeeklySelect(
     await wizard.sendMessage(
       chatId,
       "❌ Invalid day. Please select from the list.",
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -344,7 +348,7 @@ export async function handleAutoDepositDayWeeklySelect(
     { parse_mode: "Markdown" }
   )
 
-  await showGoalsMenu(wizard.getBot(), chatId, userId)
+  await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
   wizard.clearState(userId)
   return true
 }
@@ -361,6 +365,7 @@ export async function handleAutoDepositDayMonthlySelect(
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
 
+  const lang = state.lang || 'en';
   const goal = state.data.goal as Goal
   const accountId = state.data.autoDepositAccountId as string
   const amount = state.data.autoDepositAmount as number
@@ -369,8 +374,8 @@ export async function handleAutoDepositDayMonthlySelect(
   if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid day. Please enter a number between 1-31.",
-      wizard.getBackButton()
+      t(lang, 'errors.invalidDay'),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -397,7 +402,7 @@ export async function handleAutoDepositDayMonthlySelect(
     { parse_mode: "Markdown" }
   )
 
-  await showGoalsMenu(wizard.getBot(), chatId, userId)
+  await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
   wizard.clearState(userId)
   return true
 }

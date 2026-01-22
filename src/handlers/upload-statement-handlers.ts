@@ -6,17 +6,22 @@ import { ParsedTransaction, BankType, Currency, TransactionCategory } from "../t
 import { formatMoney } from "../utils"
 import { SETTINGS_KEYBOARD } from "../constants"
 import { randomUUID } from "crypto"
+import { t } from "../i18n"
 
 // Handle file upload
 export async function handleStatementUpload(
   bot: TelegramBot,
   msg: TelegramBot.Message,
-  userId: string
+  userId: string,
+  wizardManager: WizardManager
 ): Promise<void> {
   const document = msg.document
 
+  const state = wizardManager.getState(userId)
+  const lang = state.lang || 'en'
+  
   if (!document) {
-    await bot.sendMessage(msg.chat.id, "⚠️ Please upload a valid file")
+    await bot.sendMessage(msg.chat.id, t(lang, 'upload.pleaseUploadValid'))
     return
   }
 
@@ -27,7 +32,7 @@ export async function handleStatementUpload(
   if (!ext || !["csv", "txt", "json"].includes(ext)) {
     await bot.sendMessage(
       msg.chat.id,
-      "⚠️ *Unsupported file format*\n\n" +
+      t(lang, 'upload.unsupportedFormat') + "\n\n" +
       "Supported formats:\n" +
       "• CSV (Tinkoff, Monobank, Revolut)\n" +
       "• TXT (Wise)\n" +
@@ -38,7 +43,7 @@ export async function handleStatementUpload(
   }
 
   try {
-    await bot.sendMessage(msg.chat.id, "📥 Downloading and parsing file...")
+    await bot.sendMessage(msg.chat.id, t(lang, 'upload.downloadingParsing'))
 
     // Download file
     const fileLink = await bot.getFileLink(document.file_id)
@@ -55,7 +60,7 @@ export async function handleStatementUpload(
     if (result.errors.length > 0) {
       await bot.sendMessage(
         msg.chat.id,
-        `⚠️ *Parsing errors:*\n${result.errors.join("\n")}`,
+        t(lang, 'upload.parsingErrors') + "\n" + result.errors.join("\n"),
         { parse_mode: "Markdown" }
       )
     }
@@ -63,7 +68,7 @@ export async function handleStatementUpload(
     if (result.transactions.length === 0) {
       await bot.sendMessage(
         msg.chat.id,
-        "❌ No transactions found in the file"
+        t(lang, 'upload.noTransactionsFound')
       )
       return
     }
@@ -74,13 +79,14 @@ export async function handleStatementUpload(
       msg.chat.id,
       userId,
       result.transactions,
-      result.bankType
+      result.bankType,
+      wizardManager
     )
   } catch (error) {
     console.error("Upload error:", error)
     await bot.sendMessage(
       msg.chat.id,
-      `❌ Failed to parse file: ${error instanceof Error ? error.message : "Unknown error"}`
+      t(lang, 'upload.failedToParse') + ": " + (error instanceof Error ? error.message : "Unknown error")
     )
   }
 }
@@ -91,7 +97,8 @@ async function showTransactionPreview(
   chatId: number,
   userId: string,
   transactions: ParsedTransaction[],
-  bankType: BankType
+  bankType: BankType,
+  wizardManager: WizardManager
 ): Promise<void> {
   const total = transactions.length
   const incomeCount = transactions.filter(t => t.type === "INCOME").length
@@ -137,8 +144,8 @@ async function showTransactionPreview(
     msg += `\n...and ${total - 5} more\n`
   }
 
-  // Store in wizard state for import
-  const wizardManager = new WizardManager(bot)
+  const state = wizardManager.getState(userId)
+  const lang = state.lang || 'en';
   wizardManager.setState(userId, {
     step: "STATEMENT_PREVIEW",
     data: {
@@ -153,9 +160,9 @@ async function showTransactionPreview(
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: "✅ Import All" }, { text: "✏️ Edit & Import" }],
+        [{ text: t(lang, 'common.importAll') }, { text: t(lang, 'common.editAndImport') }],
         [{ text: "🔍 Review Transactions" }],
-        [{ text: "❌ Cancel" }],
+        [{ text: t(lang, 'common.cancel') }],
       ],
       resize_keyboard: true,
     },
@@ -172,13 +179,13 @@ export async function handleStatementPreviewAction(
   const state = wizardManager.getState(userId)
   if (!state || state.step !== "STATEMENT_PREVIEW") return false
 
-  const { transactions } = state.data
+  const { transactions, lang } = state.data
 
-  if (text === "✅ Import All") {
+  if (text === t(lang, 'common.importAll')) {
     return await importAllTransactions(wizardManager, chatId, userId, transactions)
   }
 
-  if (text === "✏️ Edit & Import") {
+  if (text === t(lang, 'common.editAndImport')) {
     return await startEditingTransactions(wizardManager, chatId, userId, transactions)
   }
 
@@ -186,7 +193,7 @@ export async function handleStatementPreviewAction(
     return await showTransactionsList(wizardManager, chatId, userId, transactions)
   }
 
-  if (text === "❌ Cancel") {
+  if (text === t(lang, 'common.cancel')) {
     wizardManager.clearState(userId)
     await wizardManager.sendMessage(
       chatId,
@@ -300,6 +307,9 @@ async function showTransactionEditor(
   index: number,
   total: number
 ): Promise<boolean> {
+  const state = wizardManager.getState(userId)
+  const lang = state.lang || 'en';
+
   const emoji = tx.type === "INCOME" ? "💰" : "💸"
   const sign = tx.type === "INCOME" ? "+" : "-"
 
@@ -313,9 +323,9 @@ async function showTransactionEditor(
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: "✏️ Edit Category" }, { text: "✏️ Edit Description" }],
-        [{ text: "✅ Keep & Next" }, { text: "❌ Skip" }],
-        [{ text: "💾 Save All" }],
+        [{ text: t(lang, 'common.editCategory') }, { text: t(lang, 'common.editDescription') }],
+        [{ text: t(lang, 'common.keepAndNext') }, { text: t(lang, 'common.skip') }],
+        [{ text: t(lang, 'upload.saveAll') }],
       ],
       resize_keyboard: true,
     },
@@ -331,6 +341,9 @@ async function showTransactionsList(
   userId: string,
   transactions: ParsedTransaction[]
 ): Promise<boolean> {
+  const state = wizardManager.getState(userId)
+  const lang = state.lang || 'en';
+
   let msg = `📋 *All Transactions (${transactions.length})*\n\n`
 
   transactions.forEach((tx, i) => {
@@ -344,8 +357,8 @@ async function showTransactionsList(
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: "✅ Import All" }, { text: "✏️ Edit & Import" }],
-        [{ text: "❌ Cancel" }],
+        [{ text: t(lang, 'common.importAll') }, { text: t(lang, 'common.editAndImport') }],
+        [{ text: t(lang, 'common.cancel') }],
       ],
       resize_keyboard: true,
     },

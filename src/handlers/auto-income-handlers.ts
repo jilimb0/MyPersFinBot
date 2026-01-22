@@ -4,10 +4,11 @@
 
 import type { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
-import { showIncomeSourcesMenu } from "../menus"
+import { showIncomeSourcesMenu } from "../menus-i18n"
 import { AppDataSource } from "../database/data-source"
 import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
 import { IncomeSource } from "../types"
+import { t } from "../i18n"
 
 /**
  * Handle auto-income enable/disable toggle
@@ -20,6 +21,7 @@ export async function handleAutoIncomeToggle(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
+  const lang = state.lang || 'en';
 
   const income = state.data.source as IncomeSource
 
@@ -35,8 +37,8 @@ export async function handleAutoIncomeToggle(
     if (balances.length === 0) {
       await wizard.sendMessage(
         chatId,
-        "⚠️ No accounts found. Please add a balance account first.",
-        wizard.getBackButton()
+        t(lang, 'errors.noAccountsFound'),
+        wizard.getBackButton(lang)
       )
       return true
     }
@@ -76,7 +78,7 @@ export async function handleAutoIncomeToggle(
       { parse_mode: "Markdown" }
     )
 
-    await showIncomeSourcesMenu(wizard.getBot(), chatId, userId)
+    await showIncomeSourcesMenu(wizard.getBot(), chatId, userId, lang)
     wizard.clearState(userId)
     return true
   }
@@ -95,7 +97,7 @@ export async function handleAutoIncomeAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
-
+  const lang = state.lang || 'en';
   const income = state.data.source as IncomeSource
 
   // Extract account name from "AccountName (CURRENCY)"
@@ -104,7 +106,7 @@ export async function handleAutoIncomeAccountSelect(
     await wizard.sendMessage(
       chatId,
       "❌ Invalid account format. Please select from the list.",
-      wizard.getBackButton()
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -153,6 +155,7 @@ export async function handleAutoIncomeAmountInput(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source || !state.data.autoIncomeAccountId) return false
+  const lang = state.lang || 'en';
 
   const income = state.data.source as IncomeSource
   const accountId = state.data.autoIncomeAccountId as string
@@ -161,8 +164,8 @@ export async function handleAutoIncomeAmountInput(
   if (isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid amount. Please enter a positive number.",
-      wizard.getBackButton()
+      t(lang, 'errors.invalidAmountPositive'),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -212,6 +215,7 @@ export async function handleAutoIncomeDaySelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
+  const lang = state.lang || 'en';
 
   const income = state.data.source as IncomeSource
   const accountId = state.data.autoIncomeAccountId as string
@@ -226,8 +230,8 @@ export async function handleAutoIncomeDaySelect(
   if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid day. Please enter a number between 1-31.",
-      wizard.getBackButton()
+      t(lang, 'errors.invalidDay'),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -252,7 +256,7 @@ export async function handleAutoIncomeDaySelect(
     { parse_mode: "Markdown" }
   )
 
-  await showIncomeSourcesMenu(wizard.getBot(), chatId, userId)
+  await showIncomeSourcesMenu(wizard.getBot(), chatId, userId, lang)
   wizard.clearState(userId)
   return true
 }

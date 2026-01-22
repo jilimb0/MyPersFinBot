@@ -11,6 +11,7 @@ import { Debt } from "./Debt"
 import { Goal } from "./Goal"
 import { IncomeSource } from "./IncomeSource"
 import { Currency, TransactionTemplate, ReminderSettings } from "../../types"
+import { Language } from "../../i18n"
 
 @Entity("users")
 export class User {
@@ -19,6 +20,9 @@ export class User {
 
   @Column({ type: "text", default: "USD" })
   defaultCurrency: Currency
+
+  @Column({ type: "text", default: "en" })
+  language!: Language
 
   @CreateDateColumn()
   createdAt!: Date

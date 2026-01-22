@@ -4,6 +4,7 @@ import { dbStorage as db } from "../database/storage-db"
 import type { WizardState } from "../wizards/wizards"
 import { createListButtons, formatMoney, handleInsufficientFunds } from "../utils"
 import { randomUUID } from "crypto"
+import { t } from "../i18n"
 
 export class QuickActionsHandlers {
   static async handleQuickCategory(
@@ -71,6 +72,7 @@ export class QuickActionsHandlers {
       state.data = {}
     }
 
+    const lang = state.lang || 'en';
     const balances = await db.getBalancesList(userId)
     const balancesCount = balances.length
 
@@ -100,7 +102,7 @@ export class QuickActionsHandlers {
             {
               reply_markup: {
                 keyboard: [
-                  [{ text: "💳 Go to Balances" }],
+                  [{ text: t(lang, 'common.goToBalances') }],
                   [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                 ],
                 resize_keyboard: true,
@@ -123,7 +125,7 @@ export class QuickActionsHandlers {
             {
               reply_markup: {
                 keyboard: [
-                  [{ text: "💳 Go to Balances" }],
+                  [{ text: t(lang, 'common.goToBalances') }],
                   [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                 ],
                 resize_keyboard: true,
@@ -182,7 +184,7 @@ export class QuickActionsHandlers {
           {
             reply_markup: {
               keyboard: [
-                [{ text: "💳 Go to Balances" }],
+                [{ text: t(lang, 'common.goToBalances') }],
                 [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
               ],
               resize_keyboard: true,
@@ -224,7 +226,7 @@ export class QuickActionsHandlers {
               {
                 reply_markup: {
                   keyboard: [
-                    [{ text: "💳 Go to Balances" }],
+                    [{ text: t(lang, 'common.goToBalances') }],
                     [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                   ],
                   resize_keyboard: true,
@@ -260,7 +262,7 @@ export class QuickActionsHandlers {
               {
                 reply_markup: {
                   keyboard: [
-                    [{ text: "💳 Go to Balances" }],
+                    [{ text: t(lang, 'common.goToBalances') }],
                     [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                   ],
                   resize_keyboard: true,
@@ -281,7 +283,7 @@ export class QuickActionsHandlers {
               {
                 reply_markup: {
                   keyboard: [
-                    [{ text: "💳 Go to Balances" }],
+                    [{ text: t(lang, 'common.goToBalances') }],
                     [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                   ],
                   resize_keyboard: true,
