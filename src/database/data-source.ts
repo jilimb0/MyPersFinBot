@@ -18,7 +18,6 @@ const DB_PATH = path.resolve(__dirname, "../../data/database.sqlite")
 export const AppDataSource = new DataSource({
   type: "sqlite",
   database: DB_PATH,
-  synchronize: true,
   logging: ["error", "warn", "schema"],
   logger: new CustomQueryLogger(),
   entities: [
@@ -33,7 +32,10 @@ export const AppDataSource = new DataSource({
     RecurringTransaction,
     Reminder,
   ],
-  migrations: [],
+  synchronize: process.env.NODE_ENV !== 'production',
+  migrations: ['src/database/migrations/*.ts'],
+  migrationsRun: true,
+
   subscribers: [],
 
   extra: {
