@@ -58,3 +58,5 @@ temp/
 fx-cache.json
 *.cache.json
 cache/
+
+translation-coverage.js
