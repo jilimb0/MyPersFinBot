@@ -1,7 +1,14 @@
 import TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "./database/storage-db"
 import { formatGoals, formatMonthlyStats } from "./reports"
-import { Debt, Goal, IncomeSource, ExpenseCategory, Transaction } from "./types"
+import {
+  Debt,
+  Goal,
+  IncomeSource,
+  ExpenseCategory,
+  Transaction,
+  Balance,
+} from "./types"
 import {
   ANALYTICS_KEYBOARD,
   BACK_N_MAIN_KEYBOARD,
@@ -58,31 +65,41 @@ export async function showDebtsMenu(
   const userData = await db.getUserData(userId)
   const activeDebts = userData.debts.filter((d: Debt) => !d.isPaid)
 
-  const youOwe = activeDebts.filter((d) => d.type === "I_OWE")
-  const theyOwe = activeDebts.filter((d) => d.type === "OWES_ME")
+  const youOwe = activeDebts.filter((d: Debt) => d.type === "I_OWE")
+  const theyOwe = activeDebts.filter((d: Debt) => d.type === "OWES_ME")
 
-  const youOweTotal = youOwe.reduce((sum, d) => sum + (d.amount - d.paidAmount), 0)
-  const theyOweTotal = theyOwe.reduce((sum, d) => sum + (d.amount - d.paidAmount), 0)
+  const youOweTotal = youOwe.reduce(
+    (sum: number, d) => sum + (d.amount - d.paidAmount),
+    0
+  )
+  const theyOweTotal = theyOwe.reduce(
+    (sum: number, d) => sum + (d.amount - d.paidAmount),
+    0
+  )
 
   let msg = "💸 *Debts*\n\n"
 
   if (youOwe.length > 0) {
     msg += `💸 *YOU OWE:* ${formatMoney(-youOweTotal, userData.defaultCurrency)}\n`
-    youOwe.forEach((d) => {
+    youOwe.forEach((d: Debt) => {
       const remaining = d.amount - d.paidAmount
-      const dueDateStr = d.dueDate ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString('en-GB')}` : ''
-      msg += `└─ ${d.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
+      const dueDateStr = d.dueDate
+        ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString("en-GB")}`
+        : ""
+      msg += `└─ ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
     })
     msg += "\n"
   }
 
   if (theyOwe.length > 0) {
     msg += `💰 *THEY OWE YOU:* ${formatMoney(theyOweTotal, userData.defaultCurrency)}\n`
-    theyOwe.forEach((d, index) => {
+    theyOwe.forEach((d: Debt, index: number) => {
       const remaining = d.amount - d.paidAmount
       const prefix = index === theyOwe.length - 1 ? "└─" : "┣─"
-      const dueDateStr = d.dueDate ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString('en-GB')}` : ''
-      msg += `${prefix} ${d.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
+      const dueDateStr = d.dueDate
+        ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString("en-GB")}`
+        : ""
+      msg += `${prefix} ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
     })
     msg += "\n"
   }
@@ -195,13 +212,14 @@ export async function showHistoryMenu(
   const limit = 8
 
   const state = wizard.getState(userId)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const filters: any = {}
 
-  if (state?.step === "HISTORY_FILTERED" && state.data) {
-    if (state.data.startDate) filters.startDate = new Date(state.data.startDate)
-    if (state.data.endDate) filters.endDate = new Date(state.data.endDate)
-    if (state.data.type) filters.type = state.data.type as Transaction
+  if (state?.step === "HISTORY_FILTERED" && state?.data) {
+    if (state?.data?.startDate)
+      filters.startDate = new Date(state?.data?.startDate)
+    if (state?.data?.endDate) filters.endDate = new Date(state?.data?.endDate)
+    if (state?.data?.type) filters.type = state?.data?.type as Transaction
   }
 
   const { transactions, total, hasMore } = await db.getTransactionsPaginated(
@@ -212,23 +230,21 @@ export async function showHistoryMenu(
   )
 
   if (total === 0) {
-    const msg = Object.keys(filters).length > 0
-      ? "📖 *Transaction History*\n\n🔍 No transactions found with these filters."
-      : "📖 *Transaction History*\n\n💭 No transactions yet."
+    const msg =
+      Object.keys(filters).length > 0
+        ? "📖 *Transaction History*\n\n🔍 No transactions found with these filters."
+        : "📖 *Transaction History*\n\n💭 No transactions yet."
 
-    await wizard.sendMessage(
-      chatId,
-      msg,
-      {
-        parse_mode: "Markdown",
-        reply_markup: BACK_N_MAIN_KEYBOARD,
-      }
-    )
+    await wizard.sendMessage(chatId, msg, {
+      parse_mode: "Markdown",
+      reply_markup: BACK_N_MAIN_KEYBOARD,
+    })
     return
   }
 
   wizard.setState(userId, {
-    step: state?.step === "HISTORY_FILTERED" ? "HISTORY_FILTERED" : "HISTORY_LIST",
+    step:
+      state?.step === "HISTORY_FILTERED" ? "HISTORY_FILTERED" : "HISTORY_LIST",
     data: {
       page,
       totalPages: Math.ceil(total / limit),
@@ -242,14 +258,14 @@ export async function showHistoryMenu(
 
   // Добавляем информацию о фильтрах
   let filterInfo = ""
-  if (state?.step === "HISTORY_FILTERED" && state.data?.filterType) {
+  if (state?.step === "HISTORY_FILTERED" && state?.data?.filterType) {
     const filterLabels: Record<string, string> = {
       last7days: "📅 Last 7 Days",
       last30days: "📅 Last 30 Days",
       expenses: "📉 Expenses Only",
       income: "📈 Income Only",
     }
-    filterInfo = `\n🔍 Filter: ${filterLabels[state.data.filterType] || state.data.filterType}`
+    filterInfo = `\n🔍 Filter: ${filterLabels[state?.data?.filterType] || state?.data?.filterType}`
   }
 
   let msg = `📖 *Transaction History* (${startIdx}-${endIdx} of ${total})${filterInfo}\n\n`
@@ -283,7 +299,6 @@ export async function showHistoryMenu(
     },
   })
 }
-
 
 export async function showBudgetMenu(
   wizard: WizardManager,
@@ -319,7 +334,6 @@ export async function showBudgetMenu(
 
     items.push(cat)
   }
-
 
   const summaryLine =
     totalLimit > 0
@@ -371,7 +385,7 @@ export async function showNetWorthMenu(
   bot: TelegramBot,
   chatId: number,
   userId: string,
-  view: 'summary' | 'assets' | 'debts' | 'full' = 'summary'
+  view: "summary" | "assets" | "debts" | "full" = "summary"
 ): Promise<void> {
   const userData = await db.getUserData(userId)
   const balances = userData.balances
@@ -379,62 +393,75 @@ export async function showNetWorthMenu(
   const defaultCurrency = userData.defaultCurrency
 
   // Считаем итоги
-  const totalAssets = balances.reduce((sum, b) => sum + b.amount, 0)
+  const totalAssets = balances.reduce(
+    (sum: number, b: Balance) => sum + b.amount,
+    0
+  )
 
-  const youOwe = debts.filter((d) => d.type === "I_OWE")
-  const theyOwe = debts.filter((d) => d.type === "OWES_ME")
-  const youOweTotal = youOwe.reduce((sum, d) => sum + (d.amount - d.paidAmount), 0)
-  const theyOweTotal = theyOwe.reduce((sum, d) => sum + (d.amount - d.paidAmount), 0)
+  const youOwe = debts.filter((d: Debt) => d.type === "I_OWE")
+  const theyOwe = debts.filter((d: Debt) => d.type === "OWES_ME")
+  const youOweTotal = youOwe.reduce(
+    (sum: number, d) => sum + (d.amount - d.paidAmount),
+    0
+  )
+  const theyOweTotal = theyOwe.reduce(
+    (sum: number, d) => sum + (d.amount - d.paidAmount),
+    0
+  )
   const netDebt = theyOweTotal - youOweTotal
 
   const netWorth = totalAssets + netDebt
 
   let msg = `💎 *Net Worth: ${formatMoney(netWorth, defaultCurrency)}*\n\n`
 
-  if (view === 'summary') {
+  if (view === "summary") {
     // Краткая версия
     msg += `💳 Assets: ${formatMoney(totalAssets, defaultCurrency)} (${balances.length} accounts)\n`
     msg += `💰 Debts: ${formatMoney(netDebt, defaultCurrency)} (${debts.length} debts)\n`
     msg += `──────────────────\n`
     msg += `Net: ${formatMoney(netWorth, defaultCurrency)}\n`
-  } else if (view === 'assets') {
+  } else if (view === "assets") {
     // Детали активов
     msg += `💳 *Assets: ${formatMoney(totalAssets, defaultCurrency)}*\n\n`
-    balances.forEach((b) => {
+    balances.forEach((b: Balance) => {
       msg += `• ${b.accountId}: ${formatMoney(b.amount, b.currency)}\n`
     })
-  } else if (view === 'debts') {
+  } else if (view === "debts") {
     // Детали долгов
     msg += `💰 *Debts*\n\n`
 
     if (youOwe.length > 0) {
       msg += `💸 *YOU OWE:* ${formatMoney(-youOweTotal, defaultCurrency)}\n`
-      youOwe.forEach((d) => {
+      youOwe.forEach((d: Debt) => {
         const remaining = d.amount - d.paidAmount
-        const dueDateStr = d.dueDate ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString('en-GB')}` : ''
-        msg += `└─ ${d.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
+        const dueDateStr = d.dueDate
+          ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString("en-GB")}`
+          : ""
+        msg += `└─ ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
       })
       msg += "\n"
     }
 
     if (theyOwe.length > 0) {
       msg += `💰 *THEY OWE YOU:* ${formatMoney(theyOweTotal, defaultCurrency)}\n`
-      theyOwe.forEach((d, index) => {
+      theyOwe.forEach((d: Debt, index: number) => {
         const remaining = d.amount - d.paidAmount
         const prefix = index === theyOwe.length - 1 ? "└─" : "┣─"
-        const dueDateStr = d.dueDate ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString('en-GB')}` : ''
-        msg += `${prefix} ${d.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
+        const dueDateStr = d.dueDate
+          ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString("en-GB")}`
+          : ""
+        msg += `${prefix} ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
       })
     }
 
     if (debts.length > 0) {
       msg += `\n──────────────────\n`
-      msg += `📊 Net: ${formatMoney(Math.abs(netDebt), defaultCurrency)} ${netDebt > 0 ? '(they owe you)' : '(you owe)'}\n`
+      msg += `📊 Net: ${formatMoney(Math.abs(netDebt), defaultCurrency)} ${netDebt > 0 ? "(they owe you)" : "(you owe)"}\n`
     }
-  } else if (view === 'full') {
+  } else if (view === "full") {
     // Полный отчёт
     msg += `💳 *Assets:*\n`
-    balances.forEach((b) => {
+    balances.forEach((b: Balance) => {
       msg += `• ${b.accountId}: ${formatMoney(b.amount, b.currency)}\n`
     })
     msg += `Total: ${formatMoney(totalAssets, defaultCurrency)}\n\n`
@@ -455,17 +482,17 @@ export async function showNetWorthMenu(
   // Кнопки в зависимости от view
   const keyboard: TelegramBot.KeyboardButton[][] = []
 
-  if (view === 'summary') {
+  if (view === "summary") {
     keyboard.push([
       { text: "💳 Assets" },
       { text: "💰 Debts" },
-      { text: "📋 Full Report" }
+      { text: "📋 Full Report" },
     ])
   } else {
     const row: TelegramBot.KeyboardButton[] = []
-    if (view !== 'assets') row.push({ text: "💳 Assets" })
-    if (view !== 'debts') row.push({ text: "💰 Debts" })
-    if (view !== 'full') row.push({ text: "📋 Full Report" })
+    if (view !== "assets") row.push({ text: "💳 Assets" })
+    if (view !== "debts") row.push({ text: "💰 Debts" })
+    if (view !== "full") row.push({ text: "📋 Full Report" })
     row.push({ text: "📊 Summary" })
 
     if (row.length > 0) keyboard.push(row)
@@ -482,58 +509,59 @@ export async function showNetWorthMenu(
   })
 }
 
-
-
 export async function showActiveRemindersMenu(
   wizard: WizardManager,
   chatId: number,
   userId: string
 ): Promise<void> {
-  const { reminderManager } = await import('./services/reminder-manager')
+  const { reminderManager } = await import("./services/reminder-manager")
   const data = await reminderManager.getUserReminders(userId)
 
-  let msg = '📝 *Active Reminders*\n\n'
+  let msg = "📝 *Active Reminders*\n\n"
 
   // Debts
   if (data.debts.length > 0) {
-    msg += '💸 *Debts:*\n'
+    msg += "💸 *Debts:*\n"
     for (const { debt, reminders } of data.debts) {
       msg += `• ${debt.name} (${reminders.length} reminder(s))\n`
     }
-    msg += '\n'
+    msg += "\n"
   }
 
   // Goals
   if (data.goals.length > 0) {
-    msg += '🎯 *Goals:*\n'
+    msg += "🎯 *Goals:*\n"
     for (const { goal, reminders } of data.goals) {
       msg += `• ${goal.name} (${reminders.length} reminder(s))\n`
     }
-    msg += '\n'
+    msg += "\n"
   }
 
   // Income
   if (data.income.length > 0) {
-    msg += '💵 *Income Sources:*\n'
+    msg += "💵 *Income Sources:*\n"
     for (const { income, reminders } of data.income) {
       msg += `• ${income.name} (${reminders.length} reminder(s))\n`
     }
-    msg += '\n'
+    msg += "\n"
   }
 
-  if (data.debts.length === 0 && data.goals.length === 0 && data.income.length === 0) {
-    msg += '💭 No active reminders\n\n'
-    msg += 'Create debts, goals, or income sources with due dates to see reminders here.'
+  if (
+    data.debts.length === 0 &&
+    data.goals.length === 0 &&
+    data.income.length === 0
+  ) {
+    msg += "💭 No active reminders\n\n"
+    msg +=
+      "Create debts, goals, or income sources with due dates to see reminders here."
   }
 
   await wizard.sendMessage(chatId, msg, {
-    parse_mode: 'Markdown',
+    parse_mode: "Markdown",
     reply_markup: {
-      keyboard: [
-        [{ text: '⬅️ Back' }, { text: '🏠 Main Menu' }],
-      ],
+      keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
       resize_keyboard: true,
-    }
+    },
   })
 }
 
@@ -550,14 +578,14 @@ export async function showAutomationMenu(
 
   await wizard.sendMessage(
     chatId,
-    '🤖 *Automation*\n\nManage automated features:',
+    "🤖 *Automation*\n\nManage automated features:",
     {
-      parse_mode: 'Markdown',
+      parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: '🔔 Notifications' }],
-          [{ text: '🔁 Recurring Payments' }],
-          [{ text: '⬅️ Back' }, { text: '🏠 Main Menu' }],
+          [{ text: "🔔 Notifications" }],
+          [{ text: "🔁 Recurring Payments" }],
+          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
         ],
         resize_keyboard: true,
       },
@@ -578,15 +606,15 @@ export async function showAdvancedMenu(
 
   await wizard.sendMessage(
     chatId,
-    '🛠️ *Advanced Settings*\n\nAdvanced features and data management:',
+    "🛠️ *Advanced Settings*\n\nAdvanced features and data management:",
     {
-      parse_mode: 'Markdown',
+      parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: '📝 Custom Messages' }],
-          [{ text: '📥 Upload Statement' }],
-          [{ text: '🗑️ Clear All Data' }],
-          [{ text: '⬅️ Back' }, { text: '🏠 Main Menu' }],
+          [{ text: "📝 Custom Messages" }],
+          [{ text: "📥 Upload Statement" }],
+          [{ text: "🗑️ Clear All Data" }],
+          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
         ],
         resize_keyboard: true,
       },

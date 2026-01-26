@@ -1,5 +1,5 @@
 import { BankParser } from "./base-parser"
-import { ParsedTransaction, BankParserResult, BankType, TransactionType } from "../types"
+import { ParsedTransaction, BankParserResult, BankType } from "../types"
 
 export class TinkoffParser extends BankParser {
   get bankType(): BankType {
@@ -8,7 +8,7 @@ export class TinkoffParser extends BankParser {
 
   async parse(content: string): Promise<BankParserResult> {
     const lines = content.trim().split("\n")
-    
+
     if (lines.length < 2) {
       this.errors.push("File is empty or invalid")
       return this.buildResult([])
@@ -35,7 +35,7 @@ export class TinkoffParser extends BankParser {
   private parseLine(line: string): ParsedTransaction | null {
     // Tinkoff CSV format: "Date","Time","Card","Status","Amount","Currency","Category","Description"
     // Example: "01.12.2023","12:34:56","*1234","OK","-100.00","RUB","Продукты","ATB Supermarket"
-    
+
     const regex = /"([^"]*)"/g
     const matches = []
     let match
@@ -49,7 +49,16 @@ export class TinkoffParser extends BankParser {
       return null
     }
 
-    const [date, time, card, status, amountStr, currencyStr, category, description] = matches
+    const [
+      date,
+      time,
+      // card,
+      status,
+      amountStr,
+      currencyStr,
+      category,
+      description,
+    ] = matches
 
     // Skip rejected transactions
     if (status && status !== "OK") {
@@ -60,11 +69,13 @@ export class TinkoffParser extends BankParser {
     const dateTime = `${date} ${time || "00:00:00"}`
     const isoDate = this.normalizeDate(dateTime, ["DD.MM.YYYY HH:mm:ss"])
 
+    if (!amountStr) return null
+
     // Parse amount
     const { amount, type } = this.parseAmount(amountStr)
 
     // Get currency
-    const currency = this.extractCurrency(currencyStr)
+    const currency = this.extractCurrency(currencyStr || "RUB")
 
     // Auto-categorize if enabled
     const autoCategory = this.options.autoCategorie

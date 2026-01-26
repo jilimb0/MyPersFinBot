@@ -2,7 +2,11 @@ import TelegramBot from "node-telegram-bot-api"
 import { TransactionType, ExpenseCategory, IncomeCategory } from "../types"
 import { dbStorage as db } from "../database/storage-db"
 import type { WizardState } from "../wizards/wizards"
-import { createListButtons, formatMoney, handleInsufficientFunds } from "../utils"
+import {
+  createListButtons,
+  formatMoney,
+  handleInsufficientFunds,
+} from "../utils"
 import { randomUUID } from "crypto"
 import { t } from "../i18n"
 
@@ -14,19 +18,20 @@ export class QuickActionsHandlers {
     text: string,
     state: WizardState
   ): Promise<{ handled: boolean; showAllCategories?: boolean }> {
-    if (!state.data) {
+    if (!state?.data) {
+      if (!state) return { handled: false, showAllCategories: false }
       state.data = {}
     }
 
-    if (!state.data.topCategoriesShown) {
+    if (!state?.data?.topCategoriesShown) {
       const topCategories = await db.getTopCategories(
         userId,
-        state.txType,
+        state.txType!,
         5,
         30
       )
 
-      const defaultCategories = this.getDefaultTopCategories(state.txType)
+      const defaultCategories = this.getDefaultTopCategories(state.txType!)
 
       for (const category of defaultCategories) {
         if (!topCategories.includes(category) && topCategories.length < 5) {
@@ -50,7 +55,9 @@ export class QuickActionsHandlers {
         }
       )
 
-      state.data.topCategoriesShown = true
+      if (state?.data) {
+        state.data.topCategoriesShown = true
+      }
       return { handled: true }
     }
 
@@ -68,11 +75,13 @@ export class QuickActionsHandlers {
     state: WizardState,
     clearState: (userId: string) => void
   ): Promise<boolean> {
-    if (!state.data) {
-      state.data = {}
+    if (!state?.data) {
+      if (state) {
+        state.data = {}
+      }
     }
 
-    const lang = state.lang || 'en';
+    const lang = state?.lang || "en"
     const balances = await db.getBalancesList(userId)
     const balancesCount = balances.length
 
@@ -85,7 +94,8 @@ export class QuickActionsHandlers {
       eligibleBalances = balances.filter(
         (b) =>
           b.amount > 0 &&
-          (b.currency === state.data.currency || b.amount >= state.data.amount)
+          (b.currency === state?.data?.currency ||
+            b.amount >= state?.data?.amount)
       )
 
       if (eligibleBalances.length > 1) {
@@ -93,16 +103,16 @@ export class QuickActionsHandlers {
       }
 
       if (eligibleBalances.length === 1) {
-        const onlyAccount = eligibleBalances[0].accountId
+        const onlyAccount = eligibleBalances[0]?.accountId || ""
 
-        if (eligibleBalances[0].currency !== state.data.currency) {
+        if (eligibleBalances[0]?.currency !== state?.data?.currency) {
           await bot.sendMessage(
             chatId,
-            `❌ Currency mismatch. Account "${onlyAccount}" is in ${eligibleBalances[0].currency}, but expense is in ${state.data.currency}.`,
+            `❌ Currency mismatch. Account "${onlyAccount}" is in ${eligibleBalances[0]?.currency}, but expense is in ${state?.data?.currency}.`,
             {
               reply_markup: {
                 keyboard: [
-                  [{ text: t(lang, 'common.goToBalances') }],
+                  [{ text: t(lang, "common.goToBalances") }],
                   [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                 ],
                 resize_keyboard: true,
@@ -112,20 +122,23 @@ export class QuickActionsHandlers {
           return true
         }
 
-        if (eligibleBalances[0].amount < state.data.amount) {
+        if (
+          eligibleBalances[0] &&
+          eligibleBalances[0].amount < state?.data?.amount
+        ) {
           await bot.sendMessage(
             chatId,
             handleInsufficientFunds(
               onlyAccount,
-              eligibleBalances[0].amount,
-              eligibleBalances[0].currency,
-              state.data.amount,
-              state.data.currency
+              eligibleBalances[0]?.amount,
+              eligibleBalances[0]?.currency,
+              state?.data?.amount,
+              state?.data?.currency
             ),
             {
               reply_markup: {
                 keyboard: [
-                  [{ text: t(lang, 'common.goToBalances') }],
+                  [{ text: t(lang, "common.goToBalances") }],
                   [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                 ],
                 resize_keyboard: true,
@@ -137,25 +150,25 @@ export class QuickActionsHandlers {
 
         await db.addTransaction(userId, {
           id: randomUUID(),
-          type: state.txType,
-          amount: state.data.amount,
-          category: state.data.category,
+          type: state.txType!,
+          amount: state?.data?.amount,
+          category: state?.data?.category,
           fromAccountId: onlyAccount,
-          currency: state.data.currency,
+          currency: state?.data?.currency,
           date: new Date(),
         })
 
         await db.setCategoryPreferredAccount(
           userId,
-          state.data.category,
+          state?.data?.category,
           onlyAccount
         )
 
         await bot.sendMessage(
           chatId,
-          `✅ 💸 Added: ${formatMoney(state.data.amount, state.data.currency)}\n` +
-          `Category: ${state.data.category}\n` +
-          `Account: ${onlyAccount}`,
+          `✅ 💸 Added: ${formatMoney(state?.data?.amount, state?.data?.currency)}\n` +
+            `Category: ${state?.data?.category}\n` +
+            `Account: ${onlyAccount}`,
           {
             reply_markup: {
               keyboard: [
@@ -179,12 +192,12 @@ export class QuickActionsHandlers {
         await bot.sendMessage(
           chatId,
           `❌ No accounts available for this expense.\n\n` +
-          `Either no accounts have sufficient balance, or currency doesn't match.\n\n` +
-          `💡 Add funds to an account or create a new one with ${state.data.currency}.`,
+            `Either no accounts have sufficient balance, or currency doesn't match.\n\n` +
+            `💡 Add funds to an account or create a new one with ${state?.data?.currency}.`,
           {
             reply_markup: {
               keyboard: [
-                [{ text: t(lang, 'common.goToBalances') }],
+                [{ text: t(lang, "common.goToBalances") }],
                 [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
               ],
               resize_keyboard: true,
@@ -197,7 +210,7 @@ export class QuickActionsHandlers {
 
     const smartAccount = await db.getSmartBalanceSelection(
       userId,
-      state.data.category
+      state?.data?.category
     )
 
     if (smartAccount) {
@@ -218,15 +231,15 @@ export class QuickActionsHandlers {
       }
 
       if (state.txType === TransactionType.EXPENSE) {
-        if (balance.currency !== state.data.currency) {
+        if (balance.currency !== state?.data?.currency) {
           if (balancesCount === 1) {
             await bot.sendMessage(
               chatId,
-              `❌ Currency mismatch. Account "${smartAccount}" is in ${balance.currency}, but expense is in ${state.data.currency}.\n\n💡 You can change the amount or add a new account with ${state.data.currency}.`,
+              `❌ Currency mismatch. Account "${smartAccount}" is in ${balance.currency}, but expense is in ${state?.data?.currency}.\n\n💡 You can change the amount or add a new account with ${state?.data?.currency}.`,
               {
                 reply_markup: {
                   keyboard: [
-                    [{ text: t(lang, 'common.goToBalances') }],
+                    [{ text: t(lang, "common.goToBalances") }],
                     [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                   ],
                   resize_keyboard: true,
@@ -237,7 +250,7 @@ export class QuickActionsHandlers {
           } else {
             await bot.sendMessage(
               chatId,
-              `❌ Currency mismatch. Account "${smartAccount}" is in ${balance.currency}, but expense is in ${state.data.currency}.`,
+              `❌ Currency mismatch. Account "${smartAccount}" is in ${balance.currency}, but expense is in ${state?.data?.currency}.`,
               {
                 reply_markup: {
                   keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
@@ -248,7 +261,7 @@ export class QuickActionsHandlers {
             return false
           }
         }
-        if (balance.amount < state.data.amount) {
+        if (balance.amount < state?.data?.amount) {
           if (balancesCount === 1) {
             await bot.sendMessage(
               chatId,
@@ -256,13 +269,13 @@ export class QuickActionsHandlers {
                 smartAccount,
                 balance.amount,
                 balance.currency,
-                state.data.amount,
-                state.data.currency
+                state?.data?.amount,
+                state?.data?.currency
               ),
               {
                 reply_markup: {
                   keyboard: [
-                    [{ text: t(lang, 'common.goToBalances') }],
+                    [{ text: t(lang, "common.goToBalances") }],
                     [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                   ],
                   resize_keyboard: true,
@@ -277,13 +290,13 @@ export class QuickActionsHandlers {
                 smartAccount,
                 balance.amount,
                 balance.currency,
-                state.data.amount,
-                state.data.currency
+                state?.data?.amount,
+                state?.data?.currency
               ),
               {
                 reply_markup: {
                   keyboard: [
-                    [{ text: t(lang, 'common.goToBalances') }],
+                    [{ text: t(lang, "common.goToBalances") }],
                     [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
                   ],
                   resize_keyboard: true,
@@ -297,20 +310,20 @@ export class QuickActionsHandlers {
 
       await db.addTransaction(userId, {
         id: randomUUID(),
-        type: state.txType,
-        amount: state.data.amount,
-        category: state.data.category,
+        type: state.txType!,
+        amount: state?.data?.amount,
+        category: state?.data?.category,
         fromAccountId:
           state.txType === TransactionType.EXPENSE ? smartAccount : undefined,
         toAccountId:
           state.txType === TransactionType.INCOME ? smartAccount : undefined,
-        currency: state.data.currency,
+        currency: state?.data?.currency,
         date: new Date(),
       })
 
       await db.setCategoryPreferredAccount(
         userId,
-        state.data.category,
+        state?.data?.category,
         smartAccount
       )
 
@@ -318,9 +331,9 @@ export class QuickActionsHandlers {
 
       await bot.sendMessage(
         chatId,
-        `✅ ${emoji} Added: ${formatMoney(state.data.amount, state.data.currency)}\n` +
-        `Category: ${state.data.category}\n` +
-        `Account: ${smartAccount}`,
+        `✅ ${emoji} Added: ${formatMoney(state?.data?.amount, state?.data?.currency)}\n` +
+          `Category: ${state?.data?.category}\n` +
+          `Account: ${smartAccount}`,
         {
           reply_markup: {
             keyboard: [
@@ -373,7 +386,9 @@ export class QuickActionsHandlers {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     if (categoryTxs.length > 0) {
-      return categoryTxs[0].fromAccountId || categoryTxs[0].toAccountId || null
+      return (
+        categoryTxs[0]?.fromAccountId || categoryTxs[0]?.toAccountId || null
+      )
     }
 
     return null

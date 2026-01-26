@@ -3,8 +3,8 @@
  * Simplified translation functions with automatic language detection
  */
 
-import { t, Language } from './index';
-import { userContext } from '../services/user-context';
+import { t, Language } from "./index"
+import { userContext } from "../services/user-context"
 
 /**
  * Translate with automatic language detection from user context
@@ -15,8 +15,8 @@ export async function tUser(
   key: string,
   params?: Record<string, string | number>
 ): Promise<string> {
-  const lang = await userContext.getLang(userId);
-  return t(lang, key, params);
+  const lang = await userContext.getLang(userId)
+  return t(lang, key, params)
 }
 
 /**
@@ -24,28 +24,32 @@ export async function tUser(
  * Usage: const lang = await getUserLang(userId)
  */
 export async function getUserLang(userId: string): Promise<Language> {
-  return await userContext.getLang(userId);
+  return await userContext.getLang(userId)
 }
 
 /**
  * Set user language
  * Usage: await setUserLang(userId, 'ru')
  */
-export async function setUserLang(userId: string, lang: Language): Promise<void> {
-  await userContext.setLanguage(userId, lang);
+export async function setUserLang(
+  userId: string,
+  lang: Language
+): Promise<void> {
+  await userContext.setLanguage(userId, lang)
 }
 
 /**
  * Create a translator function bound to a specific user
- * Usage: 
+ * Usage:
  * const translate = await createUserTranslator(userId);
  * const text = translate('mainMenu.welcome');
  */
 export async function createUserTranslator(
   userId: string
 ): Promise<(key: string, params?: Record<string, string | number>) => string> {
-  const lang = await userContext.getLang(userId);
-  return (key: string, params?: Record<string, string | number>) => t(lang, key, params);
+  const lang = await userContext.getLang(userId)
+  return (key: string, params?: Record<string, string | number>) =>
+    t(lang, key, params)
 }
 
 /**
@@ -56,6 +60,6 @@ export async function tUserBatch(
   userId: string,
   keys: string[]
 ): Promise<string[]> {
-  const lang = await userContext.getLang(userId);
-  return keys.map(key => t(lang, key));
+  const lang = await userContext.getLang(userId)
+  return keys.map((key) => t(lang, key))
 }

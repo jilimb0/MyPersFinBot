@@ -168,10 +168,13 @@ function groupByCategory(
   const categoryTotals: CategoryTotals = {}
 
   transactions.forEach((tx: Transaction) => {
-    if (!categoryTotals[tx.category]) categoryTotals[tx.category] = {}
-    if (!categoryTotals[tx.category][tx.currency])
-      categoryTotals[tx.category][tx.currency] = 0
-    categoryTotals[tx.category][tx.currency] += tx.amount
+    if (!categoryTotals[tx.category]) {
+      categoryTotals[tx.category] = {}
+    }
+    if (!categoryTotals[tx.category]![tx.currency]) {
+      categoryTotals[tx.category]![tx.currency] = 0
+    }
+    categoryTotals[tx.category]![tx.currency]! += tx.amount
   })
 
   const categoryAmounts: Array<{ category: string; amount: number }> = []

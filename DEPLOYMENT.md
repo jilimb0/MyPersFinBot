@@ -1,377 +1,231 @@
-# 🚀 Production Deployment Guide
+# 🚀 Deployment Guide
 
-**Personal Finance Telegram Bot - Production Setup**
+> **Personal Finance Telegram Bot**  
+> Production Deployment Instructions
 
 ---
 
 ## 📋 Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Server Setup](#server-setup)
-3. [Deployment Methods](#deployment-methods)
-   - [PM2 (Recommended)](#option-1-pm2-recommended)
-   - [Docker](#option-2-docker)
-   - [Systemd](#option-3-systemd)
-4. [Environment Configuration](#environment-configuration)
-5. [Database Setup](#database-setup)
-6. [Monitoring](#monitoring)
-7. [Backup Strategy](#backup-strategy)
-8. [Updates & Maintenance](#updates--maintenance)
-9. [Troubleshooting](#troubleshooting)
+2. [Environment Setup](#environment-setup)
+3. [Docker Deployment](#docker-deployment-recommended)
+4. [PM2 Deployment](#pm2-deployment)
+5. [Systemd Service](#systemd-service)
+6. [Database Setup](#database-setup)
+7. [Nginx Reverse Proxy](#nginx-reverse-proxy-optional)
+8. [Backup & Restore](#backup--restore)
+9. [Update Procedure](#update-procedure)
+10. [Monitoring](#monitoring)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Prerequisites
 
-### Server Requirements
+### Required:
+- **Node.js:** 20.x or higher
+- **pnpm:** 8.x or higher
+- **Telegram Bot Token:** From [@BotFather](https://t.me/botfather)
 
-**Minimum:**
-- **CPU:** 1 vCPU
-- **RAM:** 512 MB
-- **Disk:** 2 GB
-- **OS:** Ubuntu 20.04+ / Debian 11+ / CentOS 8+
+### Optional (recommended):
+- **Docker:** 24.x or higher
+- **Docker Compose:** 2.x or higher
+- **PM2:** For process management
+- **Redis:** For caching (optional but recommended)
+- **Nginx:** For reverse proxy (if needed)
 
-**Recommended:**
-- **CPU:** 2 vCPU
-- **RAM:** 1 GB
-- **Disk:** 5 GB SSD
-- **OS:** Ubuntu 22.04 LTS
-
-### Software Requirements
-
-- **Node.js** 20+ LTS
-- **pnpm** (package manager)
-- **FFmpeg** (for voice messages)
-- **Git** (for deployment)
+### Server Requirements:
+- **RAM:** Minimum 512MB, recommended 1GB
+- **Disk:** Minimum 1GB free space
+- **OS:** Ubuntu 20.04/22.04, Debian 11/12, or similar
 
 ---
 
-## Server Setup
+## Environment Setup
 
-### 1. Update System
+### 1. Create `.env` file:
 
 ```bash
-# Ubuntu/Debian
-sudo apt update && sudo apt upgrade -y
-
-# CentOS/RHEL
-sudo yum update -y
+cp .env.example .env
 ```
 
-### 2. Install Node.js 20+
+### 2. Configure environment variables:
 
-```bash
-# Using NodeSource repository (Ubuntu/Debian)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
+```env
+# Required
+TELEGRAM_BOT_TOKEN=your_bot_token_here
 
-# Verify
-node --version  # Should show v20.x.x
-npm --version
-```
+# Database
+DB_PATH=./data/database.sqlite
+DB_LOG_QUERIES=false
 
-### 3. Install pnpm
+# Redis (optional)
+REDIS_URL=redis://localhost:6379
+REDIS_ENABLED=true
 
-```bash
-npm install -g pnpm
-pnpm --version
-```
+# Application
+NODE_ENV=production
+LOG_LEVEL=info
 
-### 4. Install FFmpeg
+# Currency API (optional)
+EXCHANGE_RATE_API_KEY=your_api_key_here
 
-```bash
-# Ubuntu/Debian
-sudo apt install -y ffmpeg
-
-# CentOS/RHEL
-sudo yum install -y ffmpeg
-
-# Verify
-ffmpeg -version
-```
-
-### 5. Install Git
-
-```bash
-sudo apt install -y git  # Ubuntu/Debian
-sudo yum install -y git  # CentOS/RHEL
-```
-
-### 6. Create Bot User (Optional but Recommended)
-
-```bash
-# Create dedicated user
-sudo useradd -m -s /bin/bash botuser
-sudo su - botuser
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=20
 ```
 
 ---
 
-## Deployment Methods
+## Docker Deployment (Recommended)
 
-### Option 1: PM2 (Recommended) ⭐
-
-**PM2** is a production process manager for Node.js with built-in load balancer, auto-restart, and monitoring.
-
-#### Install PM2
+### Quick Start:
 
 ```bash
-npm install -g pm2
-pm2 --version
-```
-
-#### Clone Repository
-
-```bash
-cd /home/botuser
+# 1. Clone repository
 git clone https://github.com/yourusername/MyPersFinBot.git
 cd MyPersFinBot
+
+# 2. Configure environment
+cp .env.example .env
+nano .env  # Edit with your values
+
+# 3. Start with Docker Compose
+docker-compose up -d
+
+# 4. Check logs
+docker-compose logs -f bot
 ```
 
-#### Install Dependencies
-
-```bash
-pnpm install
-```
-
-#### Build Project
-
-```bash
-pnpm run build
-```
-
-#### Create PM2 Config
-
-**Create:** `ecosystem.config.js`
-
-```javascript
-module.exports = {
-  apps: [
-    {
-      name: 'finance-bot',
-      script: './dist/index.js',
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '500M',
-      env: {
-        NODE_ENV: 'production',
-      },
-      error_file: './logs/err.log',
-      out_file: './logs/out.log',
-      log_file: './logs/combined.log',
-      time: true,
-      max_restarts: 10,
-      min_uptime: '10s',
-    },
-  ],
-}
-```
-
-#### Create Logs Directory
-
-```bash
-mkdir -p logs
-```
-
-#### Configure Environment
-
-Create `.env` file (see [Environment Configuration](#environment-configuration))
-
-#### Start Bot
-
-```bash
-# Start
-pm2 start ecosystem.config.js
-
-# Check status
-pm2 status
-
-# View logs
-pm2 logs finance-bot
-
-# Monitor
-pm2 monit
-```
-
-#### Auto-Start on Boot
-
-```bash
-# Generate startup script
-pm2 startup
-
-# Follow the output instructions (usually):
-sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u botuser --hp /home/botuser
-
-# Save current PM2 process list
-pm2 save
-
-# Verify
-sudo systemctl status pm2-botuser
-```
-
-#### PM2 Commands Reference
-
-```bash
-# Start
-pm2 start ecosystem.config.js
-
-# Stop
-pm2 stop finance-bot
-
-# Restart
-pm2 restart finance-bot
-
-# Delete
-pm2 delete finance-bot
-
-# Logs
-pm2 logs finance-bot
-pm2 logs finance-bot --lines 100
-
-# Monitor
-pm2 monit
-
-# List
-pm2 list
-
-# Info
-pm2 info finance-bot
-
-# Reload (zero-downtime)
-pm2 reload finance-bot
-```
-
----
-
-### Option 2: Docker 🐳
-
-#### Create Dockerfile
-
-**Create:** `Dockerfile`
-
-```dockerfile
-FROM node:20-alpine
-
-# Install FFmpeg
-RUN apk add --no-cache ffmpeg
-
-# Create app directory
-WORKDIR /app
-
-# Install pnpm
-RUN npm install -g pnpm
-
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy source
-COPY . .
-
-# Build TypeScript
-RUN pnpm run build
-
-# Create data directory for SQLite
-RUN mkdir -p /app/data
-
-# Expose (not needed for Telegram bot, but useful for health checks)
-# EXPOSE 3000
-
-# Start bot
-CMD ["node", "dist/index.js"]
-```
-
-#### Create .dockerignore
-
-```
-node_modules
-dist
-logs
-data/*.db
-.env
-secure.json
-.git
-*.md
-```
-
-#### Create docker-compose.yml
+### Docker Compose Configuration:
 
 ```yaml
+# docker-compose.yml (already exists)
 version: '3.8'
 
 services:
   bot:
     build: .
-    container_name: finance-bot
     restart: unless-stopped
-    env_file:
-      - .env
+    env_file: .env
     volumes:
       - .//app/data
       - ./logs:/app/logs
-    environment:
-      - NODE_ENV=production
-    # Optional: health check
-    # healthcheck:
-    #   test: ["CMD", "node", "healthcheck.js"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
+    depends_on:
+      - redis
+  
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-/data
+
+volumes:
+  redis-
 ```
 
-#### Build & Run
+### Docker Commands:
 
 ```bash
-# Build image
-docker-compose build
-
-# Start
+# Start services
 docker-compose up -d
 
-# Check logs
-docker-compose logs -f
-
-# Stop
+# Stop services
 docker-compose down
 
-# Restart
-docker-compose restart
-```
+# Restart bot
+docker-compose restart bot
 
-#### Docker Commands
-
-```bash
 # View logs
-docker logs finance-bot
-docker logs -f finance-bot
-docker logs --tail 100 finance-bot
+docker-compose logs -f bot
 
-# Execute command inside container
-docker exec -it finance-bot sh
+# Update and restart
+docker-compose pull
+docker-compose up -d --build
 
-# Stop/Start
-docker stop finance-bot
-docker start finance-bot
-
-# Remove
-docker rm -f finance-bot
-
-# Rebuild
-docker-compose build --no-cache
-docker-compose up -d
+# Clean up
+docker-compose down -v  # Warning: removes volumes!
 ```
 
 ---
 
-### Option 3: Systemd
+## PM2 Deployment
 
-#### Create Service File
+### 1. Install PM2:
 
-**Create:** `/etc/systemd/system/finance-bot.service`
+```bash
+npm install -g pm2
+```
+
+### 2. Build project:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm run build
+```
+
+### 3. Start with PM2:
+
+```bash
+# Production
+pnpm run pm2:start
+
+# Or directly
+pm2 start ecosystem.config.js --env production
+```
+
+### PM2 Commands:
+
+```bash
+# Status
+pm2 status
+pm2 monit
+
+# Logs
+pm2 logs my-pers-fin-bot
+pm2 logs my-pers-fin-bot --lines 100
+
+# Restart
+pm2 restart my-pers-fin-bot
+
+# Stop
+pm2 stop my-pers-fin-bot
+
+# Delete
+pm2 delete my-pers-fin-bot
+
+# Save configuration
+pm2 save
+
+# Startup script (run on boot)
+pm2 startup
+sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME
+```
+
+### PM2 Log Rotation:
+
+```bash
+# Install pm2-logrotate
+pm2 install pm2-logrotate
+
+# Configure
+pm2 set pm2-logrotate:max_size 10M
+pm2 set pm2-logrotate:retain 30
+pm2 set pm2-logrotate:compress true
+```
+
+---
+
+## Systemd Service
+
+### 1. Create service file:
+
+```bash
+sudo nano /etc/systemd/system/my-pers-fin-bot.service
+```
+
+### 2. Add configuration:
 
 ```ini
 [Unit]
@@ -381,600 +235,389 @@ After=network.target
 [Service]
 Type=simple
 User=botuser
-WorkingDirectory=/home/botuser/MyPersFinBot
-Environment=NODE_ENV=production
-EnvironmentFile=/home/botuser/MyPersFinBot/.env
-ExecStart=/usr/bin/node /home/botuser/MyPersFinBot/dist/index.js
+WorkingDirectory=/opt/my-pers-fin-bot
+ExecStart=/usr/bin/node dist/index.js
 Restart=on-failure
-RestartSec=10s
-StandardOutput=append:/home/botuser/MyPersFinBot/logs/bot.log
-StandardError=append:/home/botuser/MyPersFinBot/logs/error.log
+RestartSec=10
+StandardOutput=append:/var/log/my-pers-fin-bot/out.log
+StandardError=append:/var/log/my-pers-fin-bot/error.log
+
+# Environment
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/my-pers-fin-bot/.env
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/my-pers-fin-bot/data /opt/my-pers-fin-bot/logs
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-#### Enable & Start
+### 3. Enable and start:
 
 ```bash
+# Create log directory
+sudo mkdir -p /var/log/my-pers-fin-bot
+sudo chown botuser:botuser /var/log/my-pers-fin-bot
+
 # Reload systemd
 sudo systemctl daemon-reload
 
-# Enable auto-start
-sudo systemctl enable finance-bot
+# Enable service
+sudo systemctl enable my-pers-fin-bot
 
 # Start service
-sudo systemctl start finance-bot
+sudo systemctl start my-pers-fin-bot
 
 # Check status
-sudo systemctl status finance-bot
+sudo systemctl status my-pers-fin-bot
 
 # View logs
-journalctl -u finance-bot -f
-journalctl -u finance-bot --since "1 hour ago"
+sudo journalctl -u my-pers-fin-bot -f
 ```
-
-#### Systemd Commands
-
-```bash
-# Start
-sudo systemctl start finance-bot
-
-# Stop
-sudo systemctl stop finance-bot
-
-# Restart
-sudo systemctl restart finance-bot
-
-# Status
-sudo systemctl status finance-bot
-
-# Enable auto-start
-sudo systemctl enable finance-bot
-
-# Disable auto-start
-sudo systemctl disable finance-bot
-
-# Logs
-journalctl -u finance-bot
-journalctl -u finance-bot -f  # Follow
-journalctl -u finance-bot --since today
-```
-
----
-
-## Environment Configuration
-
-### Create .env File
-
-**Create:** `.env` in project root
-
-```env
-#
-# Telegram Bot Configuration
-#
-TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz1234567890
-
-#
-# AssemblyAI (Voice Transcription) - OPTIONAL
-# Get free key: https://www.assemblyai.com/
-#
-ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
-
-#
-# FX Rates API - OPTIONAL
-# Get free key: https://freecurrencyapi.com/
-#
-FX_API_KEY=your_fx_api_key_here
-
-#
-# Environment
-#
-NODE_ENV=production
-```
-
-### Secure File Permissions
-
-```bash
-chmod 600 .env
-chmod 600 secure.json  # If using legacy config
-```
-
-### Environment Variables Reference
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `TELEGRAM_BOT_TOKEN` | ✅ Yes | Telegram bot token from @BotFather |
-| `ASSEMBLYAI_API_KEY` | ❌ No | AssemblyAI API key for voice transcription |
-| `FX_API_KEY` | ❌ No | Free Currency API key for exchange rates |
-| `NODE_ENV` | ❌ No | Set to `production` |
-
-**Note:** Bot works without optional keys, but features are disabled:
-- Without `ASSEMBLYAI_API_KEY`: Voice messages won't work
-- Without `FX_API_KEY`: Exchange rates won't update (uses defaults)
 
 ---
 
 ## Database Setup
 
-### SQLite Database
-
-The bot uses **SQLite** with **WAL mode** for better concurrency.
-
-**Location:** `data/database.db`
-
-### Initial Setup
+### SQLite (Default):
 
 ```bash
 # Create data directory
 mkdir -p data
 
-# Database is created automatically on first run
-# No manual setup needed!
+# Database will be created automatically on first run
+# Location: ./data/database.sqlite
 ```
 
-### Database Files
+### Database Migrations:
 
-```
-data/
-├── database.db          # Main database
-├── database.db-shm      # Shared memory (WAL mode)
-└── database.db-wal      # Write-ahead log (WAL mode)
-```
-
-### Migrations
-
-TypeORM handles migrations automatically.
-
-**To create migration:**
+TypeORM handles migrations automatically:
 
 ```bash
-pnpm run migration:generate -- -n MigrationName
-pnpm run migration:run
+# Synchronize schema (development)
+DB_SYNCHRONIZE=true pnpm run dev
+
+# In production, synchronization is disabled
+# Use migrations for schema changes
+```
+
+---
+
+## Nginx Reverse Proxy (Optional)
+
+> Only needed if you're running a webhook-based bot or API
+
+### Configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name bot.yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### SSL with Let's Encrypt:
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d bot.yourdomain.com
+```
+
+---
+
+## Backup & Restore
+
+### Automated Backup Script:
+
+```bash
+#!/bin/bash
+# backup.sh
+
+BACKUP_DIR="/backups/my-pers-fin-bot"
+DATE=$(date +%Y%m%d_%H%M%S)
+APP_DIR="/opt/my-pers-fin-bot"
+
+# Create backup directory
+mkdir -p $BACKUP_DIR
+
+# Backup database
+cp $APP_DIR/data/database.sqlite $BACKUP_DIR/database_$DATE.sqlite
+
+# Backup .env file
+cp $APP_DIR/.env $BACKUP_DIR/env_$DATE.backup
+
+# Compress
+tar -czf $BACKUP_DIR/backup_$DATE.tar.gz \
+    $BACKUP_DIR/database_$DATE.sqlite \
+    $BACKUP_DIR/env_$DATE.backup
+
+# Clean up
+rm $BACKUP_DIR/database_$DATE.sqlite
+rm $BACKUP_DIR/env_$DATE.backup
+
+# Keep only last 30 days
+find $BACKUP_DIR -name "backup_*.tar.gz" -mtime +30 -delete
+
+echo "Backup completed: backup_$DATE.tar.gz"
+```
+
+### Cron Job (Daily Backup):
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add line (backup at 3 AM daily)
+0 3 * * * /opt/my-pers-fin-bot/backup.sh >> /var/log/backup.log 2>&1
+```
+
+### Restore:
+
+```bash
+# 1. Stop bot
+pm2 stop my-pers-fin-bot
+# or
+docker-compose down
+
+# 2. Extract backup
+tar -xzf backup_20260126_030000.tar.gz
+
+# 3. Restore database
+cp database_20260126_030000.sqlite /opt/my-pers-fin-bot/data/database.sqlite
+
+# 4. Restore env
+cp env_20260126_030000.backup /opt/my-pers-fin-bot/.env
+
+# 5. Start bot
+pm2 start my-pers-fin-bot
+# or
+docker-compose up -d
+```
+
+---
+
+## Update Procedure
+
+### Docker:
+
+```bash
+# 1. Pull latest changes
+git pull origin main
+
+# 2. Rebuild and restart
+docker-compose up -d --build
+
+# 3. Check logs
+docker-compose logs -f bot
+```
+
+### PM2:
+
+```bash
+# 1. Pull latest changes
+git pull origin main
+
+# 2. Install dependencies
+pnpm install --frozen-lockfile
+
+# 3. Build
+pnpm run build
+
+# 4. Restart
+pnpm run deploy
+# or
+pm2 restart my-pers-fin-bot
+```
+
+### Zero-Downtime Update (PM2):
+
+```bash
+# Use reload instead of restart
+pm2 reload my-pers-fin-bot
 ```
 
 ---
 
 ## Monitoring
 
-### PM2 Monitoring
+### PM2 Monitoring:
 
 ```bash
 # Real-time monitoring
 pm2 monit
 
 # Web dashboard (optional)
-pm2 plus
-
-# Process info
-pm2 info finance-bot
-
-# Logs
-pm2 logs finance-bot --lines 100
+pm2 install pm2-server-monit
 ```
 
-### Log Files
-
-**PM2:**
-```
-logs/
-├── err.log          # Error logs
-├── out.log          # Output logs
-└── combined.log     # Combined
-```
-
-**Systemd:**
-```bash
-journalctl -u finance-bot
-```
-
-**Docker:**
-```bash
-docker logs finance-bot
-```
-
-### Health Checks
-
-**Check if bot is running:**
+### Log Monitoring:
 
 ```bash
-# PM2
-pm2 status
+# Application logs
+tail -f logs/app.log
 
-# Systemd
-sudo systemctl status finance-bot
+# Error logs
+tail -f logs/error.log
 
-# Docker
-docker ps | grep finance-bot
+# PM2 logs
+pm2 logs my-pers-fin-bot --lines 100
 
-# Process
-ps aux | grep "node.*index.js"
+# Docker logs
+docker-compose logs -f bot
 ```
 
-**Check logs for errors:**
+### Health Check:
 
-```bash
-# PM2
-pm2 logs finance-bot --err
-
-# Systemd
-journalctl -u finance-bot -p err
-
-# Docker
-docker logs finance-bot 2>&1 | grep -i error
-```
-
-### Monitoring Tools (Optional)
-
-**PM2 Plus** (Free tier available):
-- Real-time monitoring
-- Error tracking
-- Performance metrics
-- https://pm2.io/
-
-**Prometheus + Grafana** (Advanced):
-- Custom metrics
-- Dashboards
-- Alerting
-
----
-
-## Backup Strategy
-
-### What to Backup
-
-1. **Database** (`data/database.db`)
-2. **Environment** (`.env` or `secure.json`)
-3. **Logs** (optional)
-
-### Automated Backup Script
-
-**Create:** `backup.sh`
+Create a simple health check script:
 
 ```bash
 #!/bin/bash
+# healthcheck.sh
 
-# Configuration
-BACKUP_DIR="/home/botuser/backups"
-BOT_DIR="/home/botuser/MyPersFinBot"
-DATE=$(date +%Y%m%d_%H%M%S)
-RETENTION_DAYS=30
-
-# Create backup directory
-mkdir -p $BACKUP_DIR
-
-# Backup database
-cp $BOT_DIR/data/database.db $BACKUP_DIR/database_$DATE.db
-
-# Backup environment (optional)
-cp $BOT_DIR/.env $BACKUP_DIR/env_$DATE.backup
-
-# Compress
-cd $BACKUP_DIR
-tar -czf backup_$DATE.tar.gz database_$DATE.db env_$DATE.backup
-rm database_$DATE.db env_$DATE.backup
-
-# Delete old backups (older than 30 days)
-find $BACKUP_DIR -name "backup_*.tar.gz" -mtime +$RETENTION_DAYS -delete
-
-echo "Backup completed: backup_$DATE.tar.gz"
-```
-
-**Make executable:**
-
-```bash
-chmod +x backup.sh
-```
-
-### Schedule Backups (Cron)
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add daily backup at 3 AM
-0 3 * * * /home/botuser/MyPersFinBot/backup.sh >> /home/botuser/backup.log 2>&1
-```
-
-### Manual Backup
-
-```bash
-# Quick backup
-cp data/database.db data/database_$(date +%Y%m%d).db
-
-# Or use backup script
-./backup.sh
-```
-
-### Restore from Backup
-
-```bash
-# Stop bot
-pm2 stop finance-bot  # PM2
-# OR
-sudo systemctl stop finance-bot  # Systemd
-
-# Restore database
-cp /home/botuser/backups/database_20260119.db data/database.db
-
-# Start bot
-pm2 start finance-bot
-# OR
-sudo systemctl start finance-bot
-```
-
----
-
-## Updates & Maintenance
-
-### Update Bot Code
-
-```bash
-# Navigate to bot directory
-cd /home/botuser/MyPersFinBot
-
-# Pull latest changes
-git pull origin main
-
-# Install new dependencies
-pnpm install
-
-# Rebuild
-pnpm run build
-
-# Restart bot
-pm2 restart finance-bot  # PM2
-# OR
-sudo systemctl restart finance-bot  # Systemd
-# OR
-docker-compose restart  # Docker
-```
-
-### Update Dependencies
-
-```bash
-# Check outdated packages
-pnpm outdated
-
-# Update all
-pnpm update
-
-# Or update specific package
-pnpm update axios
-
-# Rebuild & restart
-pnpm run build
-pm2 restart finance-bot
-```
-
-### Update Node.js
-
-```bash
-# Check current version
-node --version
-
-# Update via NodeSource (Ubuntu/Debian)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# Verify
-node --version
-
-# Restart bot
-pm2 restart finance-bot
-```
-
-### Database Maintenance
-
-```bash
-# Vacuum database (optimize)
-sqlite3 data/database.db "VACUUM;"
-
-# Check integrity
-sqlite3 data/database.db "PRAGMA integrity_check;"
-
-# Database size
-du -sh data/database.db
+# Check if process is running
+if pm2 list | grep -q "my-pers-fin-bot.*online"; then
+    echo "✅ Bot is running"
+    exit 0
+else
+    echo "❌ Bot is not running"
+    # Send alert (email, Telegram, etc.)
+    exit 1
+fi
 ```
 
 ---
 
 ## Troubleshooting
 
-### Bot Not Starting
-
-**Check logs:**
+### Bot not starting:
 
 ```bash
-# PM2
-pm2 logs finance-bot --err
+# Check logs
+pm2 logs my-pers-fin-bot --err
 
-# Systemd
-journalctl -u finance-bot -n 50
+# Check environment
+cat .env
 
-# Docker
-docker logs finance-bot
+# Verify Telegram token
+curl https://api.telegram.org/bot<YOUR_TOKEN>/getMe
+
+# Check Node.js version
+node --version  # Should be 20.x+
+
+# Reinstall dependencies
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
 ```
 
-**Common issues:**
-
-1. **Missing environment variables**
-   ```bash
-   # Check .env exists
-   cat .env
-   
-   # Verify TELEGRAM_BOT_TOKEN is set
-   grep TELEGRAM_BOT_TOKEN .env
-   ```
-
-2. **Port already in use** (if using webhooks)
-   ```bash
-   lsof -i :3000
-   kill <PID>
-   ```
-
-3. **Database locked**
-   ```bash
-   # Check for multiple instances
-   ps aux | grep "node.*index.js"
-   
-   # Kill duplicates
-   pkill -f "node.*index.js"
-   ```
-
-4. **Permission errors**
-   ```bash
-   # Fix ownership
-   sudo chown -R botuser:botuser /home/botuser/MyPersFinBot
-   
-   # Fix database permissions
-   chmod 644 data/database.db
-   ```
-
-### Voice Messages Not Working
-
-**Check FFmpeg:**
+### Database issues:
 
 ```bash
-ffmpeg -version
+# Check database file
+ls -lh data/database.sqlite
+
+# Check permissions
+chmod 644 data/database.sqlite
+
+# Verify database integrity
+sqlite3 data/database.sqlite "PRAGMA integrity_check;"
 ```
 
-**Check AssemblyAI key:**
-
-```bash
-grep ASSEMBLYAI_API_KEY .env
-```
-
-**See:** [VOICE_QUICK_START.md](VOICE_QUICK_START.md)
-
-### High Memory Usage
+### High memory usage:
 
 ```bash
 # Check memory
-free -h
+pm2 status
 
-# Check bot memory
-pm2 info finance-bot | grep memory
+# Restart bot
+pm2 restart my-pers-fin-bot
 
-# Restart if needed
-pm2 restart finance-bot
+# Increase max memory (if needed)
+# Edit ecosystem.config.js:
+# max_memory_restart: '2G'
 ```
 
-**Configure memory limit in PM2:**
-
-```javascript
-// ecosystem.config.js
-max_memory_restart: '300M',  // Restart if exceeds 300MB
-```
-
-### Database Issues
-
-**Database locked:**
+### Redis connection issues:
 
 ```bash
-# Stop bot
-pm2 stop finance-bot
+# Check Redis status
+redis-cli ping
 
-# Remove lock files
-rm data/database.db-shm data/database.db-wal
+# Check Redis connection
+redis-cli
+127.0.0.1:6379> INFO
 
-# Start bot
-pm2 start finance-bot
-```
-
-**Corrupt database:**
-
-```bash
-# Restore from backup
-cp /home/botuser/backups/database_latest.db data/database.db
-
-# Or create new (CAUTION: loses all data)
-rm data/database.db
-pm2 restart finance-bot  # Creates new DB
+# Test connection from app
+REDIS_URL=redis://localhost:6379 node -e "const redis = require('ioredis'); const client = new redis(); client.ping().then(console.log).catch(console.error);"
 ```
 
 ---
 
 ## Security Checklist
 
-- [ ] `.env` and `secure.json` in `.gitignore`
-- [ ] File permissions: `chmod 600 .env`
-- [ ] Firewall configured (if using webhooks)
-- [ ] Regular backups enabled
-- [ ] Updates scheduled
-- [ ] Logs rotation configured
-- [ ] User whitelist enabled (optional)
-- [ ] SSL/TLS for webhooks (if used)
-
----
-
-## Performance Tuning
-
-### Database Optimization
-
-```bash
-# Add indexes (if needed)
-sqlite3 data/database.db <<EOF
-CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(userId);
-CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
-EOF
-```
-
-### PM2 Clustering (Optional)
-
-```javascript
-// ecosystem.config.js
-instances: 2,  // Run 2 instances
-exec_mode: 'cluster',
-```
-
-**Note:** Not recommended for Telegram bots (use only for webhooks)
-
----
-
-## Additional Resources
-
-- [PM2 Documentation](https://pm2.keymetrics.io/docs/)
-- [Docker Documentation](https://docs.docker.com/)
-- [Systemd Documentation](https://systemd.io/)
-- [SQLite WAL Mode](https://www.sqlite.org/wal.html)
+- [ ] ✅ `.env` file has correct permissions (600)
+- [ ] ✅ Database file is not world-readable
+- [ ] ✅ Firewall configured (only necessary ports open)
+- [ ] ✅ Bot token kept secret
+- [ ] ✅ Regular backups configured
+- [ ] ✅ Logs rotated regularly
+- [ ] ✅ SSL/TLS for webhooks (if used)
+- [ ] ✅ Updates applied regularly
+- [ ] ✅ Monitoring alerts configured
 
 ---
 
 ## Quick Reference
 
-### PM2 Commands
-
+### Docker:
 ```bash
-pm2 start ecosystem.config.js
-pm2 stop finance-bot
-pm2 restart finance-bot
-pm2 logs finance-bot
-pm2 monit
-pm2 save
+docker-compose up -d          # Start
+docker-compose logs -f bot    # Logs
+docker-compose restart bot    # Restart
+docker-compose down           # Stop
 ```
 
-### Docker Commands
-
+### PM2:
 ```bash
-docker-compose up -d
-docker-compose down
-docker-compose restart
-docker logs -f finance-bot
+pm2 start ecosystem.config.js   # Start
+pm2 logs my-pers-fin-bot       # Logs
+pm2 restart my-pers-fin-bot    # Restart
+pm2 stop my-pers-fin-bot       # Stop
 ```
 
-### Systemd Commands
-
+### Systemd:
 ```bash
-sudo systemctl start finance-bot
-sudo systemctl stop finance-bot
-sudo systemctl restart finance-bot
-sudo systemctl status finance-bot
-journalctl -u finance-bot -f
+sudo systemctl start my-pers-fin-bot    # Start
+sudo journalctl -u my-pers-fin-bot -f   # Logs
+sudo systemctl restart my-pers-fin-bot  # Restart
+sudo systemctl stop my-pers-fin-bot     # Stop
 ```
 
 ---
 
-**Need help?** See [README.md](README.md) or open an issue.
+## Support
 
-**Happy deploying!** 🚀
+For issues and questions:
+- 📖 Check [README.md](README.md)
+- 🐛 Report bugs in GitHub Issues
+- 💬 Ask in Discussions
+
+---
+
+**Happy Deploying! 🚀**

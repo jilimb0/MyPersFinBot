@@ -29,6 +29,10 @@ export async function handleBalanceCreate(
     // Try without explicit currency
     const match = text.match(/^(.+?)\s+([0-9]+(?:\.[0-9]{1,2})?)$/)
     if (match) {
+      if (!match[1] || !match[2]) {
+        await wizard.sendMessage(chatId, "❌ Invalid format. Use: Name 100")
+        return true
+      }
       const accountId = match[1].trim()
       const amount = parseFloat(match[2])
 
@@ -39,9 +43,16 @@ export async function handleBalanceCreate(
         if (existing) {
           await wizard.sendMessage(
             chatId,
-            t(lang, 'balances.alreadyExists', { accountId, currency: defaultCurrency }) + "\n\n" +
-            t(lang, 'balances.currentAmount') + ": " + formatMoney(existing.amount, defaultCurrency) + "\n\n" +
-            `Please choose a different account name or edit the existing balance.`,
+            t(lang, "balances.alreadyExists", {
+              accountId,
+              currency: defaultCurrency,
+            }) +
+              "\n\n" +
+              t(lang, "balances.currentAmount") +
+              ": " +
+              formatMoney(existing.amount, defaultCurrency) +
+              "\n\n" +
+              `Please choose a different account name or edit the existing balance.`,
             {
               parse_mode: "Markdown",
               ...wizard.getBackButton(lang),
@@ -59,7 +70,11 @@ export async function handleBalanceCreate(
 
         await wizard.sendMessage(
           chatId,
-          t(lang, 'balances.created') + ": *" + accountId + "* - " + formatMoney(amount, defaultCurrency),
+          t(lang, "balances.created") +
+            ": *" +
+            accountId +
+            "* - " +
+            formatMoney(amount, defaultCurrency),
           { parse_mode: "Markdown" }
         )
 
@@ -79,8 +94,8 @@ export async function handleBalanceCreate(
         await wizard.sendMessage(
           chatId,
           `❌ *Balance "${justName}" (${defaultCurrency}) already exists!*\n\n` +
-          `Current amount: ${formatMoney(existing.amount, defaultCurrency)}\n\n` +
-          `Please choose a different account name or edit the existing balance.`,
+            `Current amount: ${formatMoney(existing.amount, defaultCurrency)}\n\n` +
+            `Please choose a different account name or edit the existing balance.`,
           {
             parse_mode: "Markdown",
             ...wizard.getBackButton(lang),
@@ -116,14 +131,18 @@ export async function handleBalanceCreate(
   }
 
   // Check for duplicate
-  const existing = await db.getBalance(userId, parsed.accountId, parsed.currency)
+  const existing = await db.getBalance(
+    userId,
+    parsed.accountId,
+    parsed.currency
+  )
 
   if (existing) {
     await wizard.sendMessage(
       chatId,
       `❌ *Balance "${parsed.accountId}" (${parsed.currency}) already exists!*\n\n` +
-      `Current amount: ${formatMoney(existing.amount, parsed.currency)}\n\n` +
-      `Please choose a different account name or edit the existing balance.`,
+        `Current amount: ${formatMoney(existing.amount, parsed.currency)}\n\n` +
+        `Please choose a different account name or edit the existing balance.`,
       {
         parse_mode: "Markdown",
         ...wizard.getBackButton(lang),
@@ -156,13 +175,14 @@ export async function handleBalanceSelection(
   text: string
 ): Promise<boolean> {
   // Get state and lang
-  const state = wizard.getState(userId);
-  if (!state) return false;
-  const lang = state.lang || 'en';
+  const state = wizard.getState(userId)
+  if (!state) return false
+  const lang = state?.lang || "en"
 
   // Парсим текст вида "Card (USD)"
   const match = text.match(/^(.+?)\s+\(([A-Z]{3})\)$/)
   if (!match) return false
+  if (!match[1] || !match[2]) return false
 
   const accountId = match[1].trim()
   const currency = match[2] as Currency
@@ -171,7 +191,7 @@ export async function handleBalanceSelection(
   if (!balance) {
     await wizard.sendMessage(
       chatId,
-      t(lang, 'errors.notFound'),
+      t(lang, "errors.notFound"),
       wizard.getBackButton(lang)
     )
     return true
@@ -187,21 +207,28 @@ export async function handleBalanceSelection(
   const keyboard: TelegramBot.KeyboardButton[][] = []
 
   if (balance.amount > 0) {
-    keyboard.push([{ text: t(lang, 'balances.setToZero') }])
+    keyboard.push([{ text: t(lang, "balances.setToZero") }])
   }
 
   keyboard.push(
-    [{ text: t(lang, 'common.delete') }],
-    [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }]
+    [{ text: t(lang, "common.delete") }],
+    [
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ]
   )
 
   await wizard.sendMessage(
     chatId,
-    "✏️ *" + accountId + "* (" + currency + ")\n\n" +
-    `Balance: ${formatMoney(balance.amount, currency)}\n\n` +
-    `💡 *Quick edit:*\n` +
-    `• Enter number → update amount\n` +
-    `• Enter text → rename account`,
+    "✏️ *" +
+      accountId +
+      "* (" +
+      currency +
+      ")\n\n" +
+      `Balance: ${formatMoney(balance.amount, currency)}\n\n` +
+      `💡 *Quick edit:*\n` +
+      `• Enter number → update amount\n` +
+      `• Enter text → rename account`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -225,21 +252,25 @@ export async function handleBalanceEditMenu(
   text: string
 ): Promise<boolean> {
   // Get state and lang
-  const state = wizard.getState(userId);
-  if (!state) return false;
-  const lang = state.lang || 'en';
+  const state = wizard.getState(userId)
+  if (!state) return false
+  const lang = state?.lang || "en"
 
+  if (!state.data) return true
   const { accountId, currency, currentAmount } = state.data
 
   // Back button - just redraw menu
-  if (text === t(lang, 'common.back')) {
+  if (text === t(lang, "common.back")) {
     wizard.clearState(userId)
     await showBalancesMenu(wizard, chatId, userId, lang)
     return true
   }
 
   // Кнопки (проверяем БЕЗ эмодзи, так как они могут не передаваться)
-  if (text === t(lang, 'balances.setToZero') || text === t(lang, 'balances.setToZero')) {
+  if (
+    text === t(lang, "balances.setToZero") ||
+    text === t(lang, "balances.setToZero")
+  ) {
     const balances = await db.getBalancesList(userId)
     const hasOtherBalances = balances.some(
       (b) => !(b.accountId === accountId && b.currency === currency)
@@ -255,20 +286,26 @@ export async function handleBalanceEditMenu(
     const keyboard = []
 
     if (currentAmount > 0 && hasOtherBalances) {
-      keyboard.push([{ text: t(lang, 'balances.transferToAnother') }])
+      keyboard.push([{ text: t(lang, "balances.transferToAnother") }])
     }
 
     keyboard.push(
-      [{ text: t(lang, 'common.yesSetToZero') }],
-      [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }]
+      [{ text: t(lang, "common.yesSetToZero") }],
+      [
+        { text: t(lang, "common.back") },
+        { text: t(lang, "mainMenu.mainMenuButton") },
+      ]
     )
 
     const msg =
-      t(lang, 'balances.setToZeroConfirm', { accountId, currency }) + "\n\n" +
+      t(lang, "balances.setToZeroConfirm", { accountId, currency }) +
+      "\n\n" +
       `Current: ${formatMoney(currentAmount, currency)}\n\n` +
       (hasOtherBalances
-        ? t(lang, 'balances.canTransferFirst', { amount: formatMoney(currentAmount, currency) })
-        : t(lang, 'balances.willBeCleared'))
+        ? t(lang, "balances.canTransferFirst", {
+            amount: formatMoney(currentAmount, currency),
+          })
+        : t(lang, "balances.willBeCleared"))
 
     await wizard.sendMessage(chatId, msg, {
       reply_markup: {
@@ -279,7 +316,7 @@ export async function handleBalanceEditMenu(
     return true
   }
 
-  if (text === t(lang, 'common.delete') || text === t(lang, 'common.delete')) {
+  if (text === t(lang, "common.delete") || text === t(lang, "common.delete")) {
     const balances = await db.getBalancesList(userId)
     const hasOtherBalances = balances.some(
       (b) => !(b.accountId === accountId && b.currency === currency)
@@ -299,17 +336,20 @@ export async function handleBalanceEditMenu(
     }
 
     keyboard.push(
-      [{ text: t(lang, 'balances.yesDelete') }],
-      [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }]
+      [{ text: t(lang, "balances.yesDelete") }],
+      [
+        { text: t(lang, "common.back") },
+        { text: t(lang, "mainMenu.mainMenuButton") },
+      ]
     )
 
     const msg =
       currentAmount > 0
         ? `⚠️ Delete ${accountId}?\n\n` +
-        `Current balance: ${formatMoney(currentAmount, currency)}\n\n` +
-        (hasOtherBalances
-          ? `⚡️ Transfer to another account before deleting, or clear ${formatMoney(currentAmount, currency)}.`
-          : `${formatMoney(currentAmount, currency)} will be cleared.`)
+          `Current balance: ${formatMoney(currentAmount, currency)}\n\n` +
+          (hasOtherBalances
+            ? `⚡️ Transfer to another account before deleting, or clear ${formatMoney(currentAmount, currency)}.`
+            : `${formatMoney(currentAmount, currency)} will be cleared.`)
         : `⚠️ Delete ${accountId}?`
 
     await wizard.sendMessage(chatId, msg, {
@@ -339,16 +379,19 @@ export async function handleBalanceEditMenu(
     await wizard.sendMessage(
       chatId,
       `💰 *Confirm Amount Change*\n\n` +
-      `Current: ${formatMoney(currentAmount, currency)}\n` +
-      `New: ${formatMoney(parsed.amount, currency)}\n\n` +
-      `✅ Yes / ❌ No?`,
+        `Current: ${formatMoney(currentAmount, currency)}\n` +
+        `New: ${formatMoney(parsed.amount, currency)}\n\n` +
+        `✅ Yes / ❌ No?`,
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: t(lang, 'common.yes') }],
-            [{ text: t(lang, 'common.no') }],
-            [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }],
+            [{ text: t(lang, "common.yes") }],
+            [{ text: t(lang, "common.no") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -389,16 +432,19 @@ export async function handleBalanceEditMenu(
     await wizard.sendMessage(
       chatId,
       `✏️ *Confirm Rename*\n\n` +
-      `Old: "${accountId}"\n` +
-      `New: "${newName}"\n\n` +
-      `✅ Yes / ❌ No?`,
+        `Old: "${accountId}"\n` +
+        `New: "${newName}"\n\n` +
+        `✅ Yes / ❌ No?`,
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: t(lang, 'common.yes') }],
-            [{ text: t(lang, 'common.no') }],
-            [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }],
+            [{ text: t(lang, "common.yes") }],
+            [{ text: t(lang, "common.no") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -411,8 +457,8 @@ export async function handleBalanceEditMenu(
   await wizard.sendMessage(
     chatId,
     "❌ Invalid input.\n\n" +
-    "• Enter *number* to change amount (e.g., 500)\n" +
-    "• Enter *text* to rename (e.g., MyCard)",
+      "• Enter *number* to change amount (e.g., 500)\n" +
+      "• Enter *text* to rename (e.g., MyCard)",
     { parse_mode: "Markdown", ...wizard.getBackButton(lang) }
   )
   return true
@@ -428,40 +474,44 @@ export async function handleBalanceConfirmAmount(
   text: string
 ): Promise<boolean> {
   // Get state and lang
-  const state = wizard.getState(userId);
-  if (!state) return false;
-  const lang = state.lang || 'en';
+  const state = wizard.getState(userId)
+  if (!state) return false
+  const lang = state?.lang || "en"
 
+  if (!state.data) return true
   const { accountId, currency, newAmount, currentAmount } = state.data
 
-  if (text === t(lang, 'common.yes')) {
+  if (text === t(lang, "common.yes")) {
     await db.safeUpdateBalance(userId, accountId, newAmount, currency)
     await wizard.goToStep(userId, "BALANCE_LIST", {})
     await showBalancesMenu(wizard, chatId, userId, lang)
     return true
   }
 
-  if (text === t(lang, 'common.no')) {
+  if (text === t(lang, "common.no")) {
     await wizard.goToStep(userId, "BALANCE_EDIT_MENU", {
       accountId,
       currency,
-      currentAmount: state.data.currentAmount,
+      currentAmount: state?.data?.currentAmount,
     })
 
     await wizard.sendMessage(
       chatId,
       `✏️ *${accountId}* (${currency})\n\n` +
-      `Balance: ${formatMoney(state.data.currentAmount, currency)}\n\n` +
-      `💡 *Quick edit:*\n` +
-      `• Number → update amount\n` +
-      `• Text → rename account`,
+        `Balance: ${formatMoney(state?.data?.currentAmount, currency)}\n\n` +
+        `💡 *Quick edit:*\n` +
+        `• Number → update amount\n` +
+        `• Text → rename account`,
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: t(lang, 'balances.setToZero') }],
-            [{ text: t(lang, 'common.delete') }],
-            [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }],
+            [{ text: t(lang, "balances.setToZero") }],
+            [{ text: t(lang, "common.delete") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -480,20 +530,23 @@ export async function handleBalanceConfirmAmount(
   // Формируем кнопки в зависимости от баланса
   const keyboard: TelegramBot.KeyboardButton[][] = []
   if (currentAmount > 0) {
-    keyboard.push([{ text: t(lang, 'balances.setToZero') }])
+    keyboard.push([{ text: t(lang, "balances.setToZero") }])
   }
   keyboard.push(
-    [{ text: t(lang, 'common.delete') }],
-    [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }]
+    [{ text: t(lang, "common.delete") }],
+    [
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ]
   )
 
   await wizard.sendMessage(
     chatId,
     `✏️ *${accountId}* (${currency})\n\n` +
-    `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
-    `💡 *Quick edit:*\n` +
-    `• Enter number → update amount\n` +
-    `• Enter text → rename account`,
+      `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
+      `💡 *Quick edit:*\n` +
+      `• Enter number → update amount\n` +
+      `• Enter text → rename account`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -515,13 +568,14 @@ export async function handleBalanceConfirmRename(
   text: string
 ): Promise<boolean> {
   // Get state and lang
-  const state = wizard.getState(userId);
-  if (!state) return false;
-  const lang = state.lang || 'en';
+  const state = wizard.getState(userId)
+  if (!state) return false
+  const lang = state?.lang || "en"
 
+  if (!state.data) return true
   const { accountId, currency, newName, currentAmount } = state.data
 
-  if (text === t(lang, 'common.yes')) {
+  if (text === t(lang, "common.yes")) {
     await db.renameBalance(userId, accountId, currency, newName)
 
     await wizard.goToStep(userId, "BALANCE_LIST", {})
@@ -529,7 +583,7 @@ export async function handleBalanceConfirmRename(
     return true
   }
 
-  if (text === t(lang, 'common.no')) {
+  if (text === t(lang, "common.no")) {
     await wizard.goToStep(userId, "BALANCE_EDIT_MENU", {
       accountId,
       currency,
@@ -539,17 +593,20 @@ export async function handleBalanceConfirmRename(
     await wizard.sendMessage(
       chatId,
       `✏️ *${accountId}* (${currency})\n\n` +
-      `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
-      `💡 *Quick edit:*\n` +
-      `• Number → update amount\n` +
-      `• Text → rename account`,
+        `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
+        `💡 *Quick edit:*\n` +
+        `• Number → update amount\n` +
+        `• Text → rename account`,
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: t(lang, 'balances.setToZero') }],
-            [{ text: t(lang, 'common.delete') }],
-            [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }],
+            [{ text: t(lang, "balances.setToZero") }],
+            [{ text: t(lang, "common.delete") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -567,20 +624,23 @@ export async function handleBalanceConfirmRename(
   // Формируем кнопки в зависимости от баланса
   const keyboard: TelegramBot.KeyboardButton[][] = []
   if (currentAmount > 0) {
-    keyboard.push([{ text: t(lang, 'balances.setToZero') }])
+    keyboard.push([{ text: t(lang, "balances.setToZero") }])
   }
   keyboard.push(
-    [{ text: t(lang, 'common.delete') }],
-    [{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }]
+    [{ text: t(lang, "common.delete") }],
+    [
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ]
   )
 
   await wizard.sendMessage(
     chatId,
     `✏️ *${accountId}* (${currency})\n\n` +
-    `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
-    `💡 *Quick edit:*\n` +
-    `• Enter number → update amount\n` +
-    `• Enter text → rename account`,
+      `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
+      `💡 *Quick edit:*\n` +
+      `• Enter number → update amount\n` +
+      `• Enter text → rename account`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -604,12 +664,11 @@ export async function handleBalanceSetToZero(
   const state = wizard.getState(userId)
   if (!state?.data) return false
 
-  const lang = state.lang || 'en';
-
+  const lang = state?.lang || "en"
 
   const { accountId, currency, amount, hasOtherBalances } = state.data
 
-  if (text === t(lang, 'common.yesSetToZero')) {
+  if (text === t(lang, "common.yesSetToZero")) {
     await db.convertBalanceAmount(userId, accountId, currency, 0)
     wizard.clearState(userId)
     await showBalancesMenu(wizard, chatId, userId, lang)
@@ -628,10 +687,15 @@ export async function handleBalanceSetToZero(
       (b) => !(b.accountId === accountId && b.currency === currency)
     )
 
-    const rows = otherBalances.map((b) => [{
-      text: `${b.accountId} ${b.currency}`,
-    }])
-    rows.push([{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }])
+    const rows = otherBalances.map((b) => [
+      {
+        text: `${b.accountId} ${b.currency}`,
+      },
+    ])
+    rows.push([
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ])
 
     await wizard.sendMessage(
       chatId,
@@ -664,11 +728,11 @@ export async function handleBalanceDelete(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data) return false
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   const { accountId, currency, amount, hasOtherBalances } = state.data
 
-  if (text === t(lang, 'balances.yesDelete')) {
+  if (text === t(lang, "balances.yesDelete")) {
     await db.deleteBalance(userId, accountId, currency)
     wizard.clearState(userId)
     await showBalancesMenu(wizard, chatId, userId, lang)
@@ -687,10 +751,15 @@ export async function handleBalanceDelete(
       (b) => !(b.accountId === accountId && b.currency === currency)
     )
 
-    const rows = otherBalances.map((b) => [{
-      text: `${b.accountId} ${b.currency}`,
-    }])
-    rows.push([{ text: t(lang, 'common.back') }, { text: t(lang, 'mainMenu.mainMenuButton') }])
+    const rows = otherBalances.map((b) => [
+      {
+        text: `${b.accountId} ${b.currency}`,
+      },
+    ])
+    rows.push([
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ])
 
     await wizard.sendMessage(
       chatId,
@@ -723,19 +792,20 @@ export async function handleBalanceDeleteSelectTarget(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data) return false
-  const lang = state.lang || 'en';
-
+  const lang = state?.lang || "en"
 
   const match = text.match(/^(.+?)\s+([A-Z]{3})$/)
   if (!match) {
     await wizard.sendMessage(
       chatId,
-      t(lang, 'balances.selectFromButtons'),
+      t(lang, "balances.selectFromButtons"),
       wizard.getBackButton(lang)
     )
     return true
   }
 
+  if (!match[1] || !match[2]) return true
+  if (!match[1]) return false
   const targetAccountId = match[1].trim()
   const targetCurrency = match[2] as Currency
 
@@ -780,7 +850,7 @@ export async function handleBalanceZeroSelectTarget(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data) return false
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   const match = text.match(/^(.+?)\s+([A-Z]{3})$/)
   if (!match) {
@@ -792,6 +862,7 @@ export async function handleBalanceZeroSelectTarget(
     return true
   }
 
+  if (!match[1]) return false
   const targetAccountId = match[1].trim()
   const targetCurrency = match[2] as Currency
 

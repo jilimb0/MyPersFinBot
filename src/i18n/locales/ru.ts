@@ -2,7 +2,8 @@ export const ru = {
   // Главное меню
   mainMenu: {
     welcome: "👋 Добро пожаловать в Финансового Бота!",
-    welcomeIntro: "📊 Управляйте деньгами легко:\n" +
+    welcomeIntro:
+      "📊 Управляйте деньгами легко:\n" +
       "• 💸 Записывайте расходы и доходы\n" +
       "• 💰 Управляйте несколькими счетами\n" +
       "• 📉 Отслеживайте долги\n" +
@@ -12,7 +13,8 @@ export const ru = {
     welcomeBack: "👋 С возвращением! Выберите опцию:",
     startTracking: "💰 Начать учёт",
     quickStartTitle: "🎉 *Отлично! Давайте начнём!*",
-    quickStartGuide: "📄 *Быстрый старт:*\n" +
+    quickStartGuide:
+      "📄 *Быстрый старт:*\n" +
       "1️⃣ Добавьте первый счёт в 💰 *Балансы*\n" +
       "2️⃣ Записывайте транзакции через 💸 *Расход* и 💰 *Доход*\n" +
       "3️⃣ Смотрите статистику в 📈 *Статистика*\n\n" +
@@ -34,7 +36,7 @@ export const ru = {
     mainMenu: "🏠 Главное меню",
     back: "⬅️ Назад",
     advanced: "⚙️ Дополнительно",
-    
+
     // Действия
     manage: "⚙️ Управление",
     saveAsTemplate: "💾 Сохранить как шаблон?",
@@ -47,14 +49,14 @@ export const ru = {
     editName: "✏️ Изменить название",
     tryAgain: "🔄 Попробовать снова",
     tryAgainEdit: "✏️ Попробовать снова",
-    
+
     // Периоды времени
     weekly: "📆 Еженедельно",
     monthly: "📅 Ежемесячно",
     last7Days: "📅 Последние 7 дней",
     last30Days: "📅 Последние 30 дней",
     customPeriod: "📅 Свой период",
-    
+
     // Категории
     food: "🍔 Еда",
     transport: "🚗 Транспорт",
@@ -64,24 +66,24 @@ export const ru = {
     health: "🏥 Здоровье",
     salary: "💼 Зарплата",
     other: "📦 Другое",
-    
+
     // Типы транзакций
     expensesOnly: "💸 Только расходы",
     incomeOnly: "💰 Только доходы",
     allTransactions: "🔍 Все транзакции",
-    
+
     // Виды отображения
     filters: "🔎 Фильтры",
     trends: "📈 Тренды",
     topCategories: "📉 Топ категорий",
     exportCsv: "📅 Экспорт CSV",
-    
+
     // Основные функции
     balances: "💳 Балансы",
     goToBalances: "💳 Перейти к балансам",
     reviewTransactions: "🔍 Просмотр транзакций",
     startTracking: "💰 Начать учёт",
-    
+
     // Добавление
     addBalance: "✨ Добавить баланс",
     addDebt: "✨ Добавить долг",
@@ -89,7 +91,7 @@ export const ru = {
     addIncomeSource: "✨ Добавить источник дохода",
     addEditBudget: "✨ Добавить / Изменить бюджет",
     addRecurring: "✨ Добавить повторяющийся",
-    
+
     // Разделы
     assets: "💳 Активы",
     debts: "💰 Долги",
@@ -104,17 +106,17 @@ export const ru = {
     history: "📋 История",
     netWorth: "💎 Чистая стоимость",
     showReport: "📊 Показать отчёт",
-    
+
     // Настройки
     disableReminders: "🔕 Отключить напоминания",
     changeTimezone: "🌍 Изменить часовой пояс",
-    
+
     // Дедлайны и даты
     changeDeadline: "📅 Изменить дедлайн",
     setDeadline: "📅 Установить дедлайн",
     removeDate: "🗑 Убрать дату",
     snooze1Day: "📅 Отложить на 1 день",
-    
+
     // Другие действия
     transferToAnotherAccount: "🔄 Перевести на другой счёт",
     getPaidFrom: "💰 Получить от",
@@ -123,11 +125,11 @@ export const ru = {
     previousPage: "🔙 Предыдущая страница",
     clearLimit: "🧹 Убрать лимит",
     emptyBalance: "⚪ Обнулить баланс",
-    
+
     // Типы долгов
     iOwe: "🔴 Я должен",
     theyOweMe: "🟢 Мне должны",
-    
+
     // Валюта
     convertTo: "🔄 Конвертировать в",
     changeTo: "💱 Изменить на",
@@ -157,7 +159,8 @@ export const ru = {
     saved: "✅ Транзакция сохранена!",
     addAnotherExpense: "✨ Добавить ещё расход",
     addAnotherIncome: "✨ Добавить ещё доход",
-    noBalances: "⚠️ *Балансы не найдены*\n\n" +
+    noBalances:
+      "⚠️ *Балансы не найдены*\n\n" +
       "Перед добавлением транзакций нужен хотя бы один счёт.\n\n" +
       "💡 *Быстрый старт:*\n" +
       "1️⃣ Перейдите в 💰 *Балансы*\n" +
@@ -197,7 +200,8 @@ export const ru = {
     noAccounts: "Нет счетов. Добавьте один.",
     listTitle: "💳 *Счета*",
     totalNet: "Общая чистая стоимость",
-    enterName: "Введите название счёта (например, Основная карта, Наличные, Сбережения):",
+    enterName:
+      "Введите название счёта (например, Основная карта, Наличные, Сбережения):",
     enterAmount: "Введите текущий баланс:",
     selectCurrency: "Выберите валюту:",
     amount: "Сумма:",
@@ -205,7 +209,7 @@ export const ru = {
     created: "✅ Счёт создан!",
     updated: "✅ Баланс обновлён!",
     deleted: "✅ Баланс удалён!",
-    deleteConfirm: "Вы уверены, что хотите удалить счёт \"{name}\"?",
+    deleteConfirm: 'Вы уверены, что хотите удалить счёт "{name}"?',
     cannotUndo: "Это действие нельзя отменить.",
     yesDelete: "✅ Да, удалить",
     transferFrom: "Перевести со счёта:",
@@ -219,7 +223,8 @@ export const ru = {
     enterNewAmount: "Введите новую сумму:",
     transferToAnother: "🔄 Перевести на другой счёт",
     yesSetZero: "✅ Да, обнулить",
-    invalidInput: "❌ Неверный ввод.\n\n• Введите *число* чтобы изменить сумму (например, 500)\n• Введите *текст* чтобы переименовать (например, МояКарта)",
+    invalidInput:
+      "❌ Неверный ввод.\n\n• Введите *число* чтобы изменить сумму (например, 500)\n• Введите *текст* чтобы переименовать (например, МояКарта)",
     selectFromButtons: "❌ Выберите баланс из кнопок.",
     invalidInputEdit: "❌ Неверный ввод.",
     balancesButton: "💳 Балансы",
@@ -254,7 +259,7 @@ export const ru = {
     paymentRecorded: "✅ Платёж записан!",
     markAsPaid: "✅ Отметить как выплаченный",
     recordPayment: "💵 Записать платёж",
-    deleteConfirm: "Вы уверены, что хотите удалить долг \"{name}\"?",
+    deleteConfirm: 'Вы уверены, что хотите удалить долг "{name}"?',
     editNameTitle: "📝 *Изменить название долга*",
     enterNewName: "Введите новое название:",
     editAmountTitle: "💰 *Изменить сумму долга*",
@@ -291,7 +296,8 @@ export const ru = {
     fullyReceivedClosed: "🎉 Долг полностью получен и закрыт!",
     notFound: "❌ Долг не найден.",
     typeNotFound: "❌ Тип долга не найден.",
-    noBalancesForPayment: "⚠️ *Балансы не найдены*\n\nПеред платежами нужен хотя бы один счёт.",
+    noBalancesForPayment:
+      "⚠️ *Балансы не найдены*\n\nПеред платежами нужен хотя бы один счёт.",
     quickStartTitle: "💡 *Быстрый старт:*",
     quickStartStep1: "1️⃣ Перейдите в 💰 *Балансы*",
     quickStartStep2: "2️⃣ Нажмите ✨ *Добавить баланс*",
@@ -333,7 +339,7 @@ export const ru = {
     statusInProgress: "⏳",
     statusCompleted: "✅",
     selectGoal: "Выберите цель для редактирования:",
-    deleteConfirm: "Вы уверены, что хотите удалить цель \"{name}\"?",
+    deleteConfirm: 'Вы уверены, что хотите удалить цель "{name}"?',
     editNameTitle: "🎯 *Изменить название цели*",
     enterNewName: "Введите новое название:",
     editTargetTitle: "🎯 *Изменить целевую сумму*",
@@ -360,7 +366,8 @@ export const ru = {
     completedGoalsTitle: "✅ *Завершённые цели*",
     noCompletedGoals: "💭 Завершённых целей пока нет.",
     errorMissingData: "❌ Ошибка: Данные цели отсутствуют",
-    noBalancesForDeposit: "⚠️ *Балансы не найдены*\n\nПеред пополнением целей нужен хотя бы один счёт.",
+    noBalancesForDeposit:
+      "⚠️ *Балансы не найдены*\n\nПеред пополнением целей нужен хотя бы один счёт.",
     quickStartTitle: "💡 *Быстрый старт:*",
     quickStartStep1: "1️⃣ Перейдите в 💰 *Балансы*",
     quickStartStep2: "2️⃣ Нажмите ✨ *Добавить баланс*",
@@ -454,13 +461,13 @@ export const ru = {
     next: "Вперёд ▶️",
     noCancel: "❌ Нет, отменить",
     cancelled: "✅ Отменено.",
-    
+
     // Действия редактирования
     editAmount: "💰 Изменить сумму",
     editAccount: "💳 Изменить счёт",
     editCategory: "✏️ Изменить категорию",
     editDescription: "✏️ Изменить описание",
-    
+
     // Навигация и общие действия
     goToBalances: "💳 Перейти к балансам",
     importAll: "✅ Импортировать всё",
@@ -469,11 +476,11 @@ export const ru = {
     yesSave: "✅ Да, сохранить",
     yesDelete: "✅ Да, удалить",
     yesSetToZero: "✅ Да, обнулить",
-    
+
     // Статус
     enabled: "✅ Включено",
     disabled: "❌ Отключено",
-    
+
     // Сообщения
     error: "❌ Ошибка",
     notFound: "❌ Не найдено",
@@ -484,25 +491,30 @@ export const ru = {
     botWasBlocked: "🚫 Бот был заблокирован пользователем или чат не найден.",
     fetchedFreshRates: "🌐 Получены свежие курсы валют из API",
     actionCannotBeUndone: "❗ Это действие НЕЛЬЗЯ отменить!\n\n",
-    
+
     // НОВОЕ: Кастомные сообщения
-    enterCustomDebtReminder: "📝 *Введите свой шаблон напоминания о долге:*\n\n",
+    enterCustomDebtReminder:
+      "📝 *Введите свой шаблон напоминания о долге:*\n\n",
     enterCustomGoalReminder: "📝 *Введите свой шаблон напоминания о цели:*\n\n",
-    enterCustomIncomeReminder: "📝 *Введите свой шаблон напоминания о доходе:*\n\n",
-    
+    enterCustomIncomeReminder:
+      "📝 *Введите свой шаблон напоминания о доходе:*\n\n",
+
     // НОВОЕ: Пользовательский ввод
     userCanTextInput: "💡 Или используйте текстовый ввод: ",
     trackMoneyWithEase: "📊 Управляйте деньгами легко:\n",
-    
+
     // НОВОЕ: Заголовки
-    transactionHistorySelectFilter: "📋 *История транзакций*\n\nВыберите фильтр:",
-    transactionHistorySelectPeriod: "📋 *История транзакций*\n\nВыберите период:",
+    transactionHistorySelectFilter:
+      "📋 *История транзакций*\n\nВыберите фильтр:",
+    transactionHistorySelectPeriod:
+      "📋 *История транзакций*\n\nВыберите период:",
     personalFinanceBotGuide: "❓ *Финансовый бот - Руководство*\n\n",
     uploadBankStatement: "📥 *Загрузить банковскую выписку*\n\n",
     welcomeTitle: "👋 *Добро пожаловать в Финансового Бота!*\n\n",
     analyticsViewInsights: "📊 *Аналитика*\n\nПросмотр финансовой информации:",
     analyticsSelectWhatToSee: "📊 *Аналитика*\n\nВыберите что хотите увидеть:",
-    automationManage: "🤖 *Автоматизация*\n\nУправление автоматическими функциями:",
+    automationManage:
+      "🤖 *Автоматизация*\n\nУправление автоматическими функциями:",
     queryPerformanceReport: "🔍 *Отчёт о производительности запросов*\n\n",
     incomePlanVsActual: "💵 *План доходов vs Факт*\n\nОжидается:\n",
     financialGoals: "🎯 *Ваши финансовые цели*\n\n",
@@ -513,11 +525,14 @@ export const ru = {
     goalsTitle: "🎯 *Цели:*\n",
     incomeSourcesTitle: "💵 *Источники дохода:*\n",
     reportsFiltersSelectPeriod: "📊 *Фильтры отчётов*\n\nВыберите период:",
-    budgetPlannerSelectCategory: "🔮 *Планировщик бюджета*\n\nВыберите категорию для установки лимита:",
-    editTransactionsSelect: "✏️ *Редактирование транзакций*\n\nВыберите другую транзакцию для редактирования:",
+    budgetPlannerSelectCategory:
+      "🔮 *Планировщик бюджета*\n\nВыберите категорию для установки лимита:",
+    editTransactionsSelect:
+      "✏️ *Редактирование транзакций*\n\nВыберите другую транзакцию для редактирования:",
     addIncomeSourceTitle: "💼 *Добавить источник дохода*\n\n",
-    enterIncomeSourceName: "💼 Введите название источника дохода:\n\nПример: Зарплата, Фриланс",
-    
+    enterIncomeSourceName:
+      "💼 Введите название источника дохода:\n\nПример: Зарплата, Фриланс",
+
     // НОВОЕ: Выбор счёта
     selectAccountAdd: "💰 Выберите счёт для добавления:",
     selectSourceAccount: "📤 Выберите счёт-источник:",
@@ -526,12 +541,13 @@ export const ru = {
     selectAccountWithdraw: "💳 Выберите счёт для снятия:",
     selectAccountReceiveRefund: "📥 Выберите счёт для получения возврата:",
     selectAccountDeposit: "💳 Выберите счёт для пополнения:",
-    selectAccountDepositRemaining: "💳 Выберите счёт для пополнения оставшейся суммы:",
-    
+    selectAccountDepositRemaining:
+      "💳 Выберите счёт для пополнения оставшейся суммы:",
+
     // НОВОЕ: Изменение категории
     editCategoryExpense: "📝 *Изменить категорию (Расход)*\n\nТекущая: ",
     editCategoryIncome: "📝 *Изменить категорию (Доход)*\n\nТекущая: ",
-    
+
     // НОВОЕ: Статусные сообщения
     noTransactionsThisMonth: "📊 Нет транзакций в этом месяце.",
     topExpensesNone: "📉 *Топ расходов*\n\nНет расходов в этом месяце.",
@@ -539,9 +555,10 @@ export const ru = {
     noMoreTransactions: "📭 Больше нет транзакций",
     noTransactionsMatchFilter: "📬 Нет транзакций, соответствующих фильтру.",
     noMoreTransactionsToEdit: "💭 Больше нет транзакций для редактирования.",
-    noIncomeOrExpenseThisMonth: "📊 Нет доходов или расходов в этом месяце (только переводы).",
+    noIncomeOrExpenseThisMonth:
+      "📊 Нет доходов или расходов в этом месяце (только переводы).",
     debtFullyReceived: "💰 Долг полностью получен!",
-    
+
     // НОВОЕ: Обработка
     uploadingAudioAssemblyAI: "🎤 Загрузка аудио в AssemblyAI...",
     creatingTranscriptionJob: "🎤 Создание задачи транскрипции...",
@@ -556,32 +573,36 @@ export const ru = {
   errors: {
     // Доступ и права
     accessDenied: "❌ Доступ запрещён",
-    
+
     // Не найдено
     debtNotFound: "❌ Долг не найден.",
     goalNotFound: "❌ Цель не найдена.",
     incomeSourceNotFound: "❌ Источник дохода не найден.",
     templateNotFound: "❌ Шаблон не найден.",
     goalDataNotFound: "❌ Данные цели не найдены.",
-    
+
     // Неверный ввод
     invalidData: "❌ Неверные данные. Проверьте ввод.",
     invalidInput: "❌ Неверный ввод.\n\n",
     invalidAccountFormat: "❌ Неверный формат счёта. Выберите из списка.",
     invalidAccountName: "❌ Неверное название счёта.",
-    invalidDateFormat: "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например, 31.12.2026)",
+    invalidDateFormat:
+      "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например, 31.12.2026)",
     invalidTimezone: "❌ Неверный часовой пояс. Выберите из предложенных.",
     invalidCategory: "❌ Неверная категория. Выберите из списка.",
     invalidDay: "❌ Неверный день. Выберите из списка.",
     invalidAmount: "❌ Неверная сумма. Введите корректное число.",
-    invalidPeriod: "❌ Неверный период (конец раньше начала или неверные даты).",
-    
+    invalidPeriod:
+      "❌ Неверный период (конец раньше начала или неверные даты).",
+
     // Неверный формат
     wrongDates: "❌ Неверные даты!",
-    wrongFormatStart: "❌ Неверный формат! Используйте ДД.ММ.ГГГГ (например 01.01.2026)",
-    wrongFormatEnd: "❌ Неверный формат! Используйте ДД.ММ.ГГГГ (например 13.01.2026)",
+    wrongFormatStart:
+      "❌ Неверный формат! Используйте ДД.ММ.ГГГГ (например 01.01.2026)",
+    wrongFormatEnd:
+      "❌ Неверный формат! Используйте ДД.ММ.ГГГГ (например 13.01.2026)",
     endDateBeforeStart: "❌ Дата окончания раньше начала!",
-    
+
     // Отсутствующие данные
     accountNameMissing: "❌ Название счёта отсутствует. Начните заново.",
     accountNameCannot: "❌ Название счёта не может",
@@ -590,65 +611,69 @@ export const ru = {
     missingDebtData: "❌ Ошибка: Данные долга отсутствуют",
     nameCannotBeEmpty: "❌ Название не может быть пустым.",
     incomeSourceNotSelected: "❌ Источник дохода не выбран.",
-    
+
     // Ошибки выбора
     selectBalanceFromButtons: "❌ Выберите баланс из кнопок.",
     selectTransactionFromList: "❌ Выберите транзакцию из списка.",
     selectDebtFromList: "❌ Выберите долг из списка.",
     selectGoalFromList: "❌ Выберите цель из списка.",
     selectCategoryFromList: "❌ Выберите категорию из списка.",
-    selectCategoryOrAddBudget: "❌ Выберите категорию из списка или используйте ✨ Добавить / Изменить бюджет.",
-    selectIncomeSourceOrAdd: "❌ Выберите источник дохода из списка или используйте ✨ Добавить источник дохода.",
+    selectCategoryOrAddBudget:
+      "❌ Выберите категорию из списка или используйте ✨ Добавить / Изменить бюджет.",
+    selectIncomeSourceOrAdd:
+      "❌ Выберите источник дохода из списка или используйте ✨ Добавить источник дохода.",
     selectOneFilter: "❌ Выберите один из фильтров.",
     pleaseSelectOption: "❌ Пожалуйста, выберите опцию из кнопок.",
-    pleaseSelectOptionOrAmount: "❌ Пожалуйста, выберите опцию или введите корректную сумму.",
+    pleaseSelectOptionOrAmount:
+      "❌ Пожалуйста, выберите опцию или введите корректную сумму.",
     pleaseSelectCategory: "❌ Пожалуйста, выберите категорию из списка.",
     pleaseTap: "❌ Пожалуйста, нажмите ",
     enterValidAmount: "❌ Введите корректную сумму или используйте кнопки.",
-    
+
     // Системные ошибки
     configValidationFailed: "❌ Валидация конфигурации не удалась:",
     errorInitializingDatabase: "❌ Ошибка инициализации базы данных:",
     networkError: "🌐 Ошибка сети. Проверьте подключение.",
-    
+
     // Ошибки транзакций
     errorUpdatingTransaction: "❌ Ошибка обновления транзакции.",
-    
+
     // Ошибки FX
     failedPersistCache: "❌ Не удалось сохранить кэш валют:",
     failedLoadCache: "❌ Не удалось загрузить кэш валют:",
     failedAutoRefresh: "❌ Не удалось автообновить курсы валют:",
     failedPreloadRates: "❌ Не удалось предзагрузить курсы валют:",
     failedClearCache: "❌ Не удалось очистить кэш:",
-    
+
     // Автоматизация
     disableAutoPayment: "❌ Отключить автоплатёж",
     disableAutoDeposit: "❌ Отключить автопополнение",
     disableAutoIncome: "❌ Отключить автодоход",
     disableNotifications: "❌ Отключить уведомления",
-    
+
     // Напоминания
     failedSnoozeReminder: "❌ Не удалось отложить напоминание",
-    failedMarkReminderDone: "❌ Не удалось отметить напоминание как выполненное",
-    
+    failedMarkReminderDone:
+      "❌ Не удалось отметить напоминание как выполненное",
+
     // Импорт/Экспорт
     importCancelled: "❌ Импорт отменён",
-    
+
     // FFmpeg
     ffmpegDidNotCreate: "❌ FFmpeg не создал выходной файл",
     wavFileEmpty: "❌ WAV файл пустой (0 байт)",
     ffmpegConversionError: "❌ Ошибка конвертации FFmpeg:",
-    
+
     // AssemblyAI
     assemblyAIUploadError: "❌ Ошибка загрузки AssemblyAI:",
     assemblyAIError: "❌ Ошибка AssemblyAI:",
-    
+
     // Бот
     failedStartBot: "❌ Не удалось запустить бота:",
-    
+
     // Шаблон
     failedUpdateTemplate: "❌ Не удалось обновить шаблон.",
-    
+
     // Действия
     cancel: "❌ Отмена",
     enterDifferentAmount: "❌ Нет, ввести другую сумму",
@@ -660,51 +685,54 @@ export const ru = {
     // FX
     metricsReset: "✅ Метрики валют сброшены!\n\nВсе счётчики обнулены.",
     ratesRefreshed: "✅ Курсы валют обновлены",
-    usingPersistedRates: "✅ Используются сохранённые курсы валют (без обращения к API)",
+    usingPersistedRates:
+      "✅ Используются сохранённые курсы валют (без обращения к API)",
     ratesPreloaded: "✅ Курсы валют предзагружены успешно",
     persistedCacheCleared: "✅ Кэш валют очищен",
     usingPersistedCache: "✅ Используется кэш валют (без обращения к API)",
-    
+
     // Запросы
-    queryStatsReset: "✅ Статистика запросов сброшена!\n\nВсе счётчики обнулены.",
+    queryStatsReset:
+      "✅ Статистика запросов сброшена!\n\nВсе счётчики обнулены.",
     queryMonitorReset: "✅ Мониторинг запросов сброшен",
-    
+
     // База данных
-    databaseInitialized: "✅ База данных инициализирована успешно (режим WAL включён)",
+    databaseInitialized:
+      "✅ База данных инициализирована успешно (режим WAL включён)",
     databaseClosed: "✅ Соединение с базой данных закрыто",
-    
+
     // Бот
     botStopped: "✅ Бот остановлен",
-    
+
     // Напоминания
     remindersDisabledDeadline: "✅ Напоминания отключены и дедлайн удалён.",
     remindersDisabledDueDate: "✅ Напоминания отключены и срок удалён.",
     reminderMarkedDone: "✅ Напоминание отмечено как выполненное",
     dueDateRemoved: "✅ Срок и напоминания удалены.",
     deadlineRemoved: "✅ Дедлайн и напоминания удалены.",
-    
+
     // Автоматизация
     enableAutoPayment: "✅ Включить автоплатёж",
     enableAutoDeposit: "✅ Включить автопополнение",
     enableAutoIncome: "✅ Включить автодоход",
     enableNotifications: "✅ Включить уведомления",
-    
+
     // Планировщик
     schedulerStarted: "✅ Планировщик запущен успешно",
     schedulerStopped: "✅ Планировщик остановлен",
-    
+
     // Обновления
     accountUpdated: "✅ Счёт обновлён",
     debtAmountUpdated: "✅ Сумма долга обновлена!",
     goalTargetUpdated: "✅ Целевая сумма обновлена!",
-    
+
     // Состояния
     noActiveDebts: "✅ Нет активных долгов!\n\n",
-    
+
     // AssemblyAI
     assemblyAITranscription: "✅ Транскрипция AssemblyAI:",
     assemblyAIConfigured: "✅ Сервис AssemblyAI настроен",
-    
+
     // Общее
     yes: "✅ Да, это",
     done: "✅ Готово",
@@ -716,24 +744,32 @@ export const ru = {
     noBalancesFound: "⚠️ Балансы не найдены",
     noBalancesFoundTitle: "⚠️ *Балансы не найдены*\n\n",
     noAccountsCreate: "⚠️ Счета не найдены. Пожалуйста, создайте счёт сначала.",
-    
+
     usingFallbackRates: "⚠️ Используются резервные курсы валют.",
     cacheExpired: "⚠️ Кэш валют устарел",
-    
-    autoPaymentOnlyForDebts: "⚠️ Автоплатёж доступен только для долгов, которые вы должны.",
-    
+
+    autoPaymentOnlyForDebts:
+      "⚠️ Автоплатёж доступен только для долгов, которые вы должны.",
+
     assemblyAINotConfigured: "⚠️ AssemblyAI не настроен. Голосовой файл:",
-    assemblyAINotConfiguredEnv: "⚠️ AssemblyAI не настроен. Установите ASSEMBLYAI_API_KEY в окружении.",
+    assemblyAINotConfiguredEnv:
+      "⚠️ AssemblyAI не настроен. Установите ASSEMBLYAI_API_KEY в окружении.",
   },
 
   // Сообщения (НОВАЯ СЕКЦИЯ)
   messages: {
-    voiceTranscriptionUnavailable: "🔑 Транскрипция голоса недоступна. Обратитесь в поддержку.",
-    installFFmpeg: "📦 Установить: brew install ffmpeg (macOS) или apt-get install ffmpeg (Linux)",
-    setAssemblyAIKey: "💡 Установите ASSEMBLYAI_API_KEY для включения транскрипции голоса",
-    transactionHistoryEmpty: "📖 *История транзакций*\n\n💭 Транзакций пока нет.",
-    advancedSettings: "🛠️ *Дополнительные настройки*\n\nПродвинутые функции и управление данными:",
-    goalsNoActive: "🎯 *Цели*\n\nНет активных целей. Установите одну, чтобы начать копить!",
+    voiceTranscriptionUnavailable:
+      "🔑 Транскрипция голоса недоступна. Обратитесь в поддержку.",
+    installFFmpeg:
+      "📦 Установить: brew install ffmpeg (macOS) или apt-get install ffmpeg (Linux)",
+    setAssemblyAIKey:
+      "💡 Установите ASSEMBLYAI_API_KEY для включения транскрипции голоса",
+    transactionHistoryEmpty:
+      "📖 *История транзакций*\n\n💭 Транзакций пока нет.",
+    advancedSettings:
+      "🛠️ *Дополнительные настройки*\n\nПродвинутые функции и управление данными:",
+    goalsNoActive:
+      "🎯 *Цели*\n\nНет активных целей. Установите одну, чтобы начать копить!",
   },
 
   // Автоматические функции
@@ -743,14 +779,15 @@ export const ru = {
     disableAutoPayment: "❌ Отключить автоплатёж",
     autoPaymentEnabled: "✅ Автоплатёж включён",
     autoPaymentDisabled: "❌ Автоплатёж отключён",
-    onlyForDebtsYouOwe: "⚠️ Автоплатёж доступен только для долгов, которые вы должны.",
-    
+    onlyForDebtsYouOwe:
+      "⚠️ Автоплатёж доступен только для долгов, которые вы должны.",
+
     // Автопополнение
     enableAutoDeposit: "✅ Включить автопополнение",
     disableAutoDeposit: "❌ Отключить автопополнение",
     autoDepositEnabled: "✅ Автопополнение включено",
     autoDepositDisabled: "❌ Автопополнение отключено",
-    
+
     // Дедлайны
     setDeadline: "📅 Установить дедлайн",
     changeDeadline: "📅 Изменить дедлайн",
@@ -769,8 +806,10 @@ export const ru = {
 
   // Даты
   dates: {
-    invalidFormatExample: "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например, 31.12.2026)",
-    invalidFormatExampleShort: "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например 31.12.2026) или нажмите Пропустить.",
+    invalidFormatExample:
+      "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например, 31.12.2026)",
+    invalidFormatExampleShort:
+      "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например 31.12.2026) или нажмите Пропустить.",
     deadlineCannotBePast: "❌ Дедлайн не может быть в прошлом.",
     dueDateCannotBePast: "❌ Срок не может быть в прошлом.",
   },
@@ -786,7 +825,8 @@ export const ru = {
   import: {
     title: "📄 *Импорт выписки*",
     upload: "Загрузите CSV, TXT или JSON файл из вашего банка",
-    supported: "*Поддерживаемые банки:*\n• Тинькофф\n• Монобанк\n• Revolut\n• Wise",
+    supported:
+      "*Поддерживаемые банки:*\n• Тинькофф\n• Монобанк\n• Revolut\n• Wise",
     processing: "📥 Скачивание и обработка файла...",
     preview: "📊 *Предпросмотр выписки*",
     importAll: "✅ Импортировать всё",
@@ -797,7 +837,8 @@ export const ru = {
     skipped: "Пропущено (неверные): {count}",
     errors: "Ошибки: {count}",
     time: "⚡ Время: {ms}мс",
-    unsupportedFormat: "⚠️ *Неподдерживаемый формат файла*\n\nПоддерживаемые форматы:\n• CSV (Тинькофф, Монобанк, Revolut)\n• TXT (Wise)\n• JSON (Монобанк)",
+    unsupportedFormat:
+      "⚠️ *Неподдерживаемый формат файла*\n\nПоддерживаемые форматы:\n• CSV (Тинькофф, Монобанк, Revolut)\n• TXT (Wise)\n• JSON (Монобанк)",
     noTransactions: "❌ Транзакции не найдены в файле",
     parsingErrors: "⚠️ *Ошибки обработки:*",
   },

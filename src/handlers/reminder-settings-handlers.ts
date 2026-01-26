@@ -19,7 +19,7 @@ export async function handleNotificationsMenu(
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   const settings = user?.reminderSettings || {
     enabled: false,
@@ -31,7 +31,7 @@ export async function handleNotificationsMenu(
 
   const msg =
     `🔔 *Notification Settings*\n\n` +
-    `Status: ${settings.enabled ? t(lang, 'common.enabled') : t(lang, 'common.disabled')}\n` +
+    `Status: ${settings.enabled ? t(lang, "common.enabled") : t(lang, "common.disabled")}\n` +
     `Time: ${settings.time}\n` +
     `Timezone: ${settings.timezone}\n\n` +
     `*Notify Before:*\n` +
@@ -120,8 +120,8 @@ export async function handleReminderTimeSelect(
   await wizard.sendMessage(
     chatId,
     `⏰ *Change Reminder Time*\n\n` +
-    `Current: ${currentTime}\n\n` +
-    `Select a time for daily reminders:`,
+      `Current: ${currentTime}\n\n` +
+      `Select a time for daily reminders:`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -150,7 +150,7 @@ export async function handleReminderTimeSave(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
   const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
   if (!timeRegex.test(text)) {
     await wizard.sendMessage(
@@ -184,7 +184,7 @@ export async function handleReminderTimeSave(
   await wizard.sendMessage(
     chatId,
     `✅ Reminder time updated to ${text}!\n\n` +
-    `You will receive daily notifications at this time.`,
+      `You will receive daily notifications at this time.`,
     { parse_mode: "Markdown" }
   )
 
@@ -210,8 +210,8 @@ export async function handleTimezoneSelect(
   await wizard.sendMessage(
     chatId,
     `🌍 *Change Timezone*\n\n` +
-    `Current: ${currentTimezone}\n\n` +
-    `Select your timezone:`,
+      `Current: ${currentTimezone}\n\n` +
+      `Select your timezone:`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -242,7 +242,8 @@ export async function handleTimezoneSave(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en'; const match = text.match(/([A-Za-z_]+\/[A-Za-z_]+)/)
+  const lang = state?.lang || "en"
+  const match = text.match(/([A-Za-z_]+\/[A-Za-z_]+)/)
   if (!match) {
     await wizard.sendMessage(
       chatId,
@@ -269,7 +270,7 @@ export async function handleTimezoneSave(
 
   const updatedSettings: ReminderSettings = {
     ...currentSettings,
-    timezone,
+    timezone: timezone || "UTC",
   }
 
   await userRepo.update({ id: userId }, { reminderSettings: updatedSettings })
@@ -277,7 +278,7 @@ export async function handleTimezoneSave(
   await wizard.sendMessage(
     chatId,
     `✅ Timezone updated to ${timezone}!\n\n` +
-    `Your reminder time (${currentSettings.time}) will be based on this timezone.`,
+      `Your reminder time (${currentSettings.time}) will be based on this timezone.`,
     { parse_mode: "Markdown" }
   )
 

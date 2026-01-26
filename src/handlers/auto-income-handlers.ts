@@ -21,9 +21,9 @@ export async function handleAutoIncomeToggle(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
-  const income = state.data.source as IncomeSource
+  const income = state?.data?.source as IncomeSource
 
   if (text === "✅ Enable Auto-Income") {
     // Start auto-income setup wizard
@@ -37,22 +37,24 @@ export async function handleAutoIncomeToggle(
     if (balances.length === 0) {
       await wizard.sendMessage(
         chatId,
-        t(lang, 'errors.noAccountsFound'),
+        t(lang, "errors.noAccountsFound"),
         wizard.getBackButton(lang)
       )
       return true
     }
 
-    const accountButtons = balances.map((b) => [{
-      text: `${b.accountId} (${b.currency})`
-    }])
+    const accountButtons = balances.map((b) => [
+      {
+        text: `${b.accountId} (${b.currency})`,
+      },
+    ])
     accountButtons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
 
     await wizard.sendMessage(
       chatId,
       `🤖 *Auto-Income Setup*\n\n` +
-      `Source: *${income.name}*\n\n` +
-      `Select the account to receive income:`,
+        `Source: *${income.name}*\n\n` +
+        `Select the account to receive income:`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -69,7 +71,7 @@ export async function handleAutoIncomeToggle(
     const incomeRepo = AppDataSource.getRepository(IncomeSourceEntity)
     await incomeRepo.update(
       { id: income.id, userId },
-      { autoCreate: null }
+      { autoCreate: undefined as any }
     )
 
     await wizard.sendMessage(
@@ -97,8 +99,8 @@ export async function handleAutoIncomeAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
-  const lang = state.lang || 'en';
-  const income = state.data.source as IncomeSource
+  const lang = state?.lang || "en"
+  const income = state?.data?.source as IncomeSource
 
   // Extract account name from "AccountName (CURRENCY)"
   const match = text.match(/^(.+?)\s*\(([A-Z]{3})\)$/)
@@ -118,24 +120,22 @@ export async function handleAutoIncomeAccountSelect(
     ...state,
     step: "AUTO_INCOME_ENTER_AMOUNT",
     data: {
-      ...state.data,
-      autoIncomeAccountId: accountId.trim(),
+      ...state?.data,
+      autoIncomeAccountId: accountId?.trim() || "",
     },
   })
 
   await wizard.sendMessage(
     chatId,
     `💰 *Auto-Income Amount*\n\n` +
-    `Source: *${income.name}*\n` +
-    `To: *${accountId.trim()}*\n\n` +
-    `Enter the income amount:\n` +
-    `Example: 5000`,
+      `Source: *${income.name}*\n` +
+      `To: *${accountId?.trim() || "N/A"}*\n\n` +
+      `Enter the income amount:\n` +
+      `Example: 5000`,
     {
       parse_mode: "Markdown",
       reply_markup: {
-        keyboard: [
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-        ],
+        keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
         resize_keyboard: true,
       },
     }
@@ -154,17 +154,17 @@ export async function handleAutoIncomeAmountInput(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
-  if (!state?.data?.source || !state.data.autoIncomeAccountId) return false
-  const lang = state.lang || 'en';
+  if (!state?.data?.source || !state?.data?.autoIncomeAccountId) return false
+  const lang = state?.lang || "en"
 
-  const income = state.data.source as IncomeSource
-  const accountId = state.data.autoIncomeAccountId as string
+  const income = state?.data?.source as IncomeSource
+  // const accountId = state?.data?.autoIncomeAccountId as string
 
   const amount = parseFloat(text)
   if (isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      t(lang, 'errors.invalidAmountPositive'),
+      t(lang, "errors.invalidAmountPositive"),
       wizard.getBackButton(lang)
     )
     return true
@@ -175,7 +175,7 @@ export async function handleAutoIncomeAmountInput(
     ...state,
     step: "AUTO_INCOME_SELECT_DAY",
     data: {
-      ...state.data,
+      ...state?.data,
       autoIncomeAmount: amount,
     },
   })
@@ -183,10 +183,10 @@ export async function handleAutoIncomeAmountInput(
   await wizard.sendMessage(
     chatId,
     `📅 *Select Day of Month*\n\n` +
-    `Source: *${income.name}*\n` +
-    `Amount: *${amount} ${income.currency || 'USD'}*\n\n` +
-    `Enter the day (1-31) for automatic income:\n` +
-    `Example: 25 (for 25th of each month)`,
+      `Source: *${income.name}*\n` +
+      `Amount: *${amount} ${income.currency || "USD"}*\n\n` +
+      `Enter the day (1-31) for automatic income:\n` +
+      `Example: 25 (for 25th of each month)`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -215,11 +215,11 @@ export async function handleAutoIncomeDaySelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
-  const income = state.data.source as IncomeSource
-  const accountId = state.data.autoIncomeAccountId as string
-  const amount = state.data.autoIncomeAmount as number
+  const income = state?.data?.source as IncomeSource
+  const accountId = state?.data?.autoIncomeAccountId as string
+  const amount = state?.data?.autoIncomeAmount as number
 
   let dayOfMonth = parseInt(text)
 
@@ -230,29 +230,23 @@ export async function handleAutoIncomeDaySelect(
   if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
-      t(lang, 'errors.invalidDay'),
+      t(lang, "errors.invalidDay"),
       wizard.getBackButton(lang)
     )
     return true
   }
 
   // Save auto-income configuration
-  await saveAutoIncomeConfig(
-    userId,
-    income.id,
-    accountId,
-    amount,
-    dayOfMonth
-  )
+  await saveAutoIncomeConfig(userId, income.id, accountId, amount, dayOfMonth)
 
   await wizard.sendMessage(
     chatId,
     `✅ *Auto-Income Enabled!*\n\n` +
-    `Source: *${income.name}*\n` +
-    `Amount: *${amount} ${income.currency || 'USD'}*\n` +
-    `To: *${accountId}*\n` +
-    `Day: *${text === "Last day" ? "Last day of month" : `${dayOfMonth}th`}*\n\n` +
-    `🤖 The bot will automatically add this income on day ${dayOfMonth} of each month.`,
+      `Source: *${income.name}*\n` +
+      `Amount: *${amount} ${income.currency || "USD"}*\n` +
+      `To: *${accountId}*\n` +
+      `Day: *${text === "Last day" ? "Last day of month" : `${dayOfMonth}th`}*\n\n` +
+      `🤖 The bot will automatically add this income on day ${dayOfMonth} of each month.`,
     { parse_mode: "Markdown" }
   )
 

@@ -1,5 +1,11 @@
 import { BankParser } from "./base-parser"
-import { ParsedTransaction, BankParserResult, BankType, TransactionType, Currency } from "../types"
+import {
+  ParsedTransaction,
+  BankParserResult,
+  BankType,
+  TransactionType,
+  Currency,
+} from "../types"
 
 interface MonobankJSONTransaction {
   time: number // Unix timestamp in seconds
@@ -47,7 +53,9 @@ export class MonobankParser extends BankParser {
     }
   }
 
-  private parseJSONItem(item: MonobankJSONTransaction): ParsedTransaction | null {
+  private parseJSONItem(
+    item: MonobankJSONTransaction
+  ): ParsedTransaction | null {
     if (!item.time || item.amount === undefined) {
       return null
     }
@@ -57,7 +65,8 @@ export class MonobankParser extends BankParser {
 
     // Amount in minor units (1 UAH = 100 units)
     const amount = Math.abs(item.amount / 100)
-    const type = item.amount < 0 ? TransactionType.EXPENSE : TransactionType.INCOME
+    const type =
+      item.amount < 0 ? TransactionType.EXPENSE : TransactionType.INCOME
 
     // Currency code (980 = UAH, 840 = USD, 978 = EUR)
     const currencyCode = item.currencyCode || 980
@@ -76,7 +85,8 @@ export class MonobankParser extends BankParser {
         currency = this.options.defaultCurrency || "UAH"
     }
 
-    const description = item.description || item.comment || "Monobank transaction"
+    const description =
+      item.description || item.comment || "Monobank transaction"
     const category = this.options.autoCategorie
       ? this.categorizeByDescription(description)
       : undefined
@@ -120,13 +130,15 @@ export class MonobankParser extends BankParser {
 
   private parseCSVLine(line: string): ParsedTransaction | null {
     // Monobank CSV: "Date","Description","Category","Amount","Currency"
-    const parts = line.split(",").map(p => p.replace(/^"|"$/g, "").trim())
+    const parts = line.split(",").map((p) => p.replace(/^"|"$/g, "").trim())
 
     if (parts.length < 4) {
       return null
     }
 
     const [dateStr, description, categoryStr, amountStr, currencyStr] = parts
+
+    if (!dateStr || !amountStr) return null
 
     const isoDate = this.normalizeDate(dateStr, ["DD.MM.YYYY HH:mm:ss"])
     const { amount, type } = this.parseAmount(amountStr)

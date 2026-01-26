@@ -19,7 +19,7 @@ export class User {
   id!: string
 
   @Column({ type: "text", default: "USD" })
-  defaultCurrency: Currency
+  defaultCurrency!: Currency
 
   @Column({ type: "text", default: "en" })
   language!: Language

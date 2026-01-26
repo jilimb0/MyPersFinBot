@@ -32,8 +32,8 @@ export const AppDataSource = new DataSource({
     RecurringTransaction,
     Reminder,
   ],
-  synchronize: process.env.NODE_ENV !== 'production',
-  migrations: ['src/database/migrations/*.ts'],
+  synchronize: process.env.NODE_ENV !== "production",
+  migrations: ["src/database/migrations/*.ts"],
   migrationsRun: true,
 
   subscribers: [],

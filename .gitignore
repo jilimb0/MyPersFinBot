@@ -8,7 +8,13 @@ build/
 
 # Environment and Secrets
 .env
+.env.local
+.env.*.local
 secure.json
+
+# Keep environment templates (safe to commit)
+.env.development
+.env.production
 
 # OS specific
 .DS_Store
@@ -41,6 +47,7 @@ data/fx-cache.json
 # Logs
 logs/
 *.log
+*.log.gz
 
 # Backups
 backups/
@@ -54,9 +61,11 @@ backups/
 tmp/
 temp/
 
-# Cache files
+# Cache files (runtime data, not source code)
 fx-cache.json
 *.cache.json
-cache/
+data/cache/
+.cache/
+node_modules/.cache/
 
 translation-coverage.js

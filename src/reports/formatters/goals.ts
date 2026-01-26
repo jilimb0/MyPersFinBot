@@ -3,6 +3,7 @@
  */
 
 import { dbStorage as db } from "../../database/storage-db"
+import { Goal } from "../../types"
 import { formatMoney } from "../../utils"
 import { createProgressBar, getProgressEmoji } from "../helpers"
 
@@ -13,7 +14,7 @@ import { createProgressBar, getProgressEmoji } from "../helpers"
  */
 export async function formatGoals(userId: string): Promise<string> {
   const userData = await db.getUserData(userId)
-  const activeGoals = userData.goals.filter((g) => g.status === "ACTIVE")
+  const activeGoals = userData.goals.filter((g: Goal) => g.status === "ACTIVE")
 
   if (activeGoals.length === 0) {
     return "🎯 *Goals*\n\nNo active goals. Set one to start saving!"
@@ -21,7 +22,7 @@ export async function formatGoals(userId: string): Promise<string> {
 
   let msg = "🎯 *Your Financial Goals*\n\n"
 
-  activeGoals.forEach((g) => {
+  activeGoals.forEach((g: Goal) => {
     const remaining = g.targetAmount - g.currentAmount
     const progress = createProgressBar(g.currentAmount, g.targetAmount)
     const statusEmoji = getProgressEmoji(g.currentAmount, g.targetAmount)
@@ -40,7 +41,7 @@ export async function formatGoals(userId: string): Promise<string> {
     // Add deadline if exists
     if (g.deadline) {
       const deadlineDate = new Date(g.deadline)
-      msg += `Deadline: ${deadlineDate.toLocaleDateString('en-GB')}\n`
+      msg += `Deadline: ${deadlineDate.toLocaleDateString("en-GB")}\n`
     }
 
     msg += "\n"

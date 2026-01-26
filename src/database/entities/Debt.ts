@@ -10,7 +10,7 @@ import { User } from "./User"
 import { Currency } from "../../types"
 
 @Entity("debts")
-@Index(['userId', 'isPaid'])
+@Index(["userId", "isPaid"])
 export class Debt {
   @PrimaryGeneratedColumn("uuid")
   id!: string
@@ -26,13 +26,13 @@ export class Debt {
   amount!: number
 
   @Column({ type: "text" })
-  currency: Currency
+  currency!: Currency
 
   @Column()
   counterparty!: string
 
   @Column({ type: "text" })
-  type: "OWES_ME" | "I_OWE"
+  type!: "OWES_ME" | "I_OWE"
 
   @Column("real", { default: 0 })
   paidAmount!: number

@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Production Logger
- * 
+ *
  * Features:
  * - Structured logging with context
  * - Log levels (debug, info, warn, error)
@@ -11,9 +10,9 @@
  * - Timestamp + metadata
  */
 
-import winston from 'winston'
-import path from 'path'
-import { config } from './config'
+import winston from "winston"
+import path from "path"
+import { config } from "./config"
 
 // ==========================================
 // LOG LEVELS
@@ -28,11 +27,11 @@ const levels = {
 }
 
 const colors = {
-  error: 'red',
-  warn: 'yellow',
-  info: 'green',
-  http: 'magenta',
-  debug: 'blue',
+  error: "red",
+  warn: "yellow",
+  info: "green",
+  http: "magenta",
+  debug: "blue",
 }
 
 winston.addColors(colors)
@@ -42,28 +41,30 @@ winston.addColors(colors)
 // ==========================================
 
 const consoleFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.colorize({ all: true }),
   winston.format.printf((info) => {
     const { timestamp, level, message, ...meta } = info
-    
-    let metaStr = ''
+
+    let metaStr = ""
     if (Object.keys(meta).length > 0) {
       // Exclude internal winston properties
       const filteredMeta = Object.fromEntries(
-        Object.entries(meta).filter(([key]) => !['Symbol(level)', 'Symbol(message)'].includes(key))
+        Object.entries(meta).filter(
+          ([key]) => !["Symbol(level)", "Symbol(message)"].includes(key)
+        )
       )
       if (Object.keys(filteredMeta).length > 0) {
-        metaStr = ' ' + JSON.stringify(filteredMeta)
+        metaStr = " " + JSON.stringify(filteredMeta)
       }
     }
-    
+
     return `${timestamp} [${level}]: ${message}${metaStr}`
   })
 )
 
 const fileFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.errors({ stack: true }),
   winston.format.json()
 )
@@ -77,19 +78,19 @@ const transports: winston.transport[] = [
   new winston.transports.Console({
     format: consoleFormat,
   }),
-  
+
   // Error log file
   new winston.transports.File({
-    filename: path.join(process.cwd(), 'logs', 'error.log'),
-    level: 'error',
+    filename: path.join(process.cwd(), "logs", "error.log"),
+    level: "error",
     format: fileFormat,
     maxsize: 5242880, // 5MB
     maxFiles: 5,
   }),
-  
+
   // Combined log file
   new winston.transports.File({
-    filename: path.join(process.cwd(), 'logs', 'combined.log'),
+    filename: path.join(process.cwd(), "logs", "combined.log"),
     format: fileFormat,
     maxsize: 5242880, // 5MB
     maxFiles: 14, // 14 days
@@ -101,7 +102,7 @@ const transports: winston.transport[] = [
 // ==========================================
 
 const logger = winston.createLogger({
-  level: config.LOG_LEVEL || 'info',
+  level: config.LOG_LEVEL || "info",
   levels,
   transports,
   exitOnError: false,
@@ -115,7 +116,7 @@ const logger = winston.createLogger({
  * Log with context (userId, chatId, action)
  */
 export function logWithContext(
-  level: 'debug' | 'info' | 'warn' | 'error',
+  level: "debug" | "info" | "warn" | "error",
   message: string,
   context?: {
     userId?: string
@@ -140,7 +141,7 @@ export function logError(
   }
 ) {
   const err = error as Error
-  logger.error(err.message || 'Unknown error', {
+  logger.error(err.message || "Unknown error", {
     ...context,
     stack: err.stack,
     name: err.name,
@@ -166,12 +167,12 @@ export function logBotAction(
  * Log API call
  */
 export function logAPICall(
-  api: 'telegram' | 'assemblyai' | 'fx',
+  api: "telegram" | "assemblyai" | "fx",
   method: string,
   success: boolean,
   details?: Record<string, any>
 ) {
-  const level = success ? 'info' : 'warn'
+  const level = success ? "info" : "warn"
   logger.log(level, `API ${api}: ${method}`, {
     api,
     method,
@@ -202,14 +203,18 @@ export function logUserAction(
 export default logger
 
 export const log = {
-  debug: (message: string, meta?: Record<string, any>) => logger.debug(message, meta),
-  info: (message: string, meta?: Record<string, any>) => logger.info(message, meta),
-  warn: (message: string, meta?: Record<string, any>) => logger.warn(message, meta),
-  error: (message: string, meta?: Record<string, any>) => logger.error(message, meta),
-  
+  debug: (message: string, meta?: Record<string, any>) =>
+    logger.debug(message, meta),
+  info: (message: string, meta?: Record<string, any>) =>
+    logger.info(message, meta),
+  warn: (message: string, meta?: Record<string, any>) =>
+    logger.warn(message, meta),
+  error: (message: string, meta?: Record<string, any>) =>
+    logger.error(message, meta),
+
   // With context
   withContext: logWithContext,
-  
+
   // Specialized
   logError,
   botAction: logBotAction,

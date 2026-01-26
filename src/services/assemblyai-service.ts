@@ -28,7 +28,6 @@ export class AssemblyAIService {
   // Upload audio file to AssemblyAI
   private async uploadFile(filePath: string): Promise<string> {
     try {
-
       // Check file exists and get size
       if (!existsSync(filePath)) {
         throw new Error(`File not found: ${filePath}`)
@@ -59,7 +58,6 @@ export class AssemblyAIService {
 
       console.log(`✅ Upload successful: ${response.data.upload_url}`)
       return response.data.upload_url
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("❌ AssemblyAI upload error:", error.message)
       if (error.response) {

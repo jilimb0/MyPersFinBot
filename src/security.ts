@@ -1,6 +1,6 @@
 /**
  * Security Module
- * 
+ *
  * Provides:
  * - User whitelist/blacklist
  * - Rate limiting per user
@@ -15,28 +15,35 @@ import TelegramBot from "node-telegram-bot-api"
 
 /**
  * User Access Control
- * 
+ *
  * Leave empty arrays to allow all users (default)
  * Add Telegram user IDs to restrict access
  */
 export const SECURITY_CONFIG = {
   // Whitelist: Only these users can use the bot (empty = allow all)
   // Example: ['123456789', '987654321']
-  ALLOWED_USERS: (process.env.ALLOWED_USERS || '').split(',').map(id => id.trim()).filter(Boolean),
+  ALLOWED_USERS: (process.env.ALLOWED_USERS || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean),
 
   // Blacklist: These users are blocked (even if in whitelist)
   // Example: ['111111111', '222222222']
-  BLOCKED_USERS: (process.env.BLOCKED_USERS || '').split(',').map(id => id.trim()).filter(Boolean),
+  BLOCKED_USERS: (process.env.BLOCKED_USERS || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean),
 
   // Rate limiting
   RATE_LIMIT: {
-    enabled: process.env.RATE_LIMIT_ENABLED === 'true' || false,
-    maxMessages: parseInt(process.env.RATE_LIMIT_MAX_MESSAGES || '30'),
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'), // 1 minute
+    enabled: process.env.RATE_LIMIT_ENABLED === "true" || false,
+    maxMessages: parseInt(process.env.RATE_LIMIT_MAX_MESSAGES || "30"),
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000"), // 1 minute
   },
 
   // Security logging
-  LOG_UNAUTHORIZED_ACCESS: process.env.LOG_UNAUTHORIZED_ACCESS === 'true' || true,
+  LOG_UNAUTHORIZED_ACCESS:
+    process.env.LOG_UNAUTHORIZED_ACCESS === "true" || true,
 }
 
 // ==========================================
@@ -72,9 +79,9 @@ export function sendUnauthorizedMessage(
   bot.sendMessage(
     chatId,
     "🚫 *Access Denied*\n\n" +
-    "You are not authorized to use this bot.\n\n" +
-    `Your ID: ${userId}`,
-    { parse_mode: 'Markdown' }
+      "You are not authorized to use this bot.\n\n" +
+      `Your ID: ${userId}`,
+    { parse_mode: "Markdown" }
   )
   if (SECURITY_CONFIG.LOG_UNAUTHORIZED_ACCESS) {
     console.warn(`🚫 Unauthorized access attempt from user ${userId}`)
@@ -139,8 +146,8 @@ export function sendRateLimitMessage(
   bot.sendMessage(
     chatId,
     "⏱ *Rate Limit Exceeded*\n\n" +
-    `Too many requests.Please wait ${waitSeconds} seconds.`,
-    { parse_mode: 'Markdown' }
+      `Too many requests.Please wait ${waitSeconds} seconds.`,
+    { parse_mode: "Markdown" }
   )
 
   console.warn(`⏱ Rate limit exceeded for user ${userId}`)
@@ -165,7 +172,7 @@ if (SECURITY_CONFIG.RATE_LIMIT.enabled) {
 
 /**
  * Security middleware for message handling
- * 
+ *
  * @returns true if message should be processed, false if blocked
  */
 export function securityCheck(
@@ -173,7 +180,7 @@ export function securityCheck(
   msg: TelegramBot.Message
 ): boolean {
   const chatId = msg.chat.id
-  const userId = msg.from?.id.toString() || ''
+  const userId = msg.from?.id.toString() || ""
 
   // Check user access
   if (!isUserAllowed(userId)) {

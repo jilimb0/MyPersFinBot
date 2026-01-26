@@ -1,27 +1,55 @@
-import { z } from 'zod'
+import "dotenv/config"
+import { z } from "zod"
 
 const ConfigSchema = z.object({
-  TELEGRAM_BOT_TOKEN: z.string().min(20).describe("Telegram bot token from @BotFather"),
+  TELEGRAM_BOT_TOKEN: z
+    .string()
+    .min(20)
+    .describe("Telegram bot token from @BotFather"),
   ASSEMBLYAI_API_KEY: z.string().optional(),
   FX_API_KEY: z.string().optional(),
 
-  ALLOWED_USERS: z.string().transform((val) => val ? val.split(',') : []).describe("Comma-separated Telegram user IDs"),
-  BLOCKED_USERS: z.string().transform((val) => val ? val.split(',') : []).describe("Comma-separated Telegram user IDs"),
-  RATE_LIMIT_ENABLED: z.string().transform((val) => val === 'true').pipe(z.boolean()).default(false)
-  ,
+  ALLOWED_USERS: z
+    .string()
+    .optional()
+    .default("")
+    .transform((val) => (val ? val.split(",").filter(Boolean) : []))
+    .describe("Comma-separated Telegram user IDs"),
+  BLOCKED_USERS: z
+    .string()
+    .optional()
+    .default("")
+    .transform((val) => (val ? val.split(",").filter(Boolean) : []))
+    .describe("Comma-separated Telegram user IDs"),
+  RATE_LIMIT_ENABLED: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((val) => val === "true")
+    .pipe(z.boolean()),
   RATE_LIMIT_MAX_MESSAGES: z.coerce.number().min(1).max(1000).default(30),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().min(1000).max(3600000).default(60000),
-  LOG_UNAUTHORIZED_ACCESS: z.string().transform((val) => val === 'true').pipe(z.boolean()).default(true)
-  ,
-
-  DB_PATH: z.string().default('./data/database.db'),
-  DB_WAL_ENABLED: z.string().transform((val) => val === 'true').pipe(z.boolean()).default(true)
-  ,
-
-  SCHEDULER_MINUTE: z.string().default('* * * * *'),
+  LOG_UNAUTHORIZED_ACCESS: z
+    .string()
+    .optional()
+    .default("true")
+    .transform((val) => val === "true")
+    .pipe(z.boolean()),
+  DB_PATH: z.string().default("./data/database.db"),
+  DB_WAL_ENABLED: z
+    .string()
+    .optional()
+    .default("true")
+    .transform((val) => val === "true")
+    .pipe(z.boolean()),
+  SCHEDULER_MINUTE: z.string().default("* * * * *"),
   RECURRING_CHECK_INTERVAL: z.coerce.number().min(1).max(60).default(1),
 
-  VOICE_TRANSCRIPTION_TIMEOUT: z.coerce.number().min(1000).max(60000).default(30000),
+  VOICE_TRANSCRIPTION_TIMEOUT: z.coerce
+    .number()
+    .min(1000)
+    .max(60000)
+    .default(30000),
   VOICE_MAX_DURATION: z.coerce.number().min(1).max(300).default(60),
 
   ASSEMBLYAI_POLL_INTERVAL: z.coerce.number().min(100).max(5000).default(1000),
@@ -33,8 +61,8 @@ const ConfigSchema = z.object({
 
   MAX_FILE_SIZE_MB: z.coerce.number().min(1).max(50).default(20),
 
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
-  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
+  LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
 })
 
 export type AppConfig = z.infer<typeof ConfigSchema>
@@ -42,10 +70,14 @@ export type AppConfig = z.infer<typeof ConfigSchema>
 export const config = ConfigSchema.parse(process.env) as AppConfig
 
 export function logConfig() {
-  console.log('\n⚙️  Configuration Loaded:')
+  console.log("\n⚙️  Configuration Loaded:")
   console.log(`  NODE_ENV: ${config.NODE_ENV}`)
-  console.log(`  FX_REFRESH_INTERVAL_HOURS: ${config.FX_REFRESH_INTERVAL_HOURS}h`)
-  console.log(`  VOICE_TRANSCRIPTION_TIMEOUT: ${config.VOICE_TRANSCRIPTION_TIMEOUT}ms`)
+  console.log(
+    `  FX_REFRESH_INTERVAL_HOURS: ${config.FX_REFRESH_INTERVAL_HOURS}h`
+  )
+  console.log(
+    `  VOICE_TRANSCRIPTION_TIMEOUT: ${config.VOICE_TRANSCRIPTION_TIMEOUT}ms`
+  )
   console.log(`  RATE_LIMIT_ENABLED: ${config.RATE_LIMIT_ENABLED}`)
   console.log(`  LOG_LEVEL: ${config.LOG_LEVEL}`)
 
@@ -56,7 +88,7 @@ export function logConfig() {
     console.log(`  BLOCKED_USERS: ${config.BLOCKED_USERS.length} user(s)`)
   }
 
-  console.log('')
+  console.log("")
 }
 
 export function validateConfig() {
@@ -64,7 +96,7 @@ export function validateConfig() {
     ConfigSchema.parse(process.env)
     return true
   } catch (error) {
-    console.error('❌ Configuration validation failed:', error)
+    console.error("❌ Configuration validation failed:", error)
     process.exit(1)
   }
 }
@@ -72,18 +104,18 @@ export function validateConfig() {
 export function getConfigDump() {
   return {
     ...config,
-    TELEGRAM_BOT_TOKEN: '[REDACTED]',
-    ASSEMBLYAI_API_KEY: config.ASSEMBLYAI_API_KEY ? '[REDACTED]' : undefined,
-    FX_API_KEY: config.FX_API_KEY ? '[REDACTED]' : undefined,
+    TELEGRAM_BOT_TOKEN: "[REDACTED]",
+    ASSEMBLYAI_API_KEY: config.ASSEMBLYAI_API_KEY ? "[REDACTED]" : undefined,
+    FX_API_KEY: config.FX_API_KEY ? "[REDACTED]" : undefined,
   }
 }
 
 export function isDevelopment() {
-  return config.NODE_ENV === 'development'
+  return config.NODE_ENV === "development"
 }
 
 export function isProduction() {
-  return config.NODE_ENV === 'production'
+  return config.NODE_ENV === "production"
 }
 
 export function getFxRefreshInterval() {
@@ -106,13 +138,16 @@ export function printConfigHelp() {
   const help = `
 📋 Available Configuration Options:
 
-${ConfigSchema.shape
-      .TELEGRAM_BOT_TOKEN.description ? `TELEGRAM_BOT_TOKEN - ${ConfigSchema.shape.TELEGRAM_BOT_TOKEN.description}` : ''}
-${ConfigSchema.shape.ASSEMBLYAI_API_KEY.description ? `ASSEMBLYAI_API_KEY - ${ConfigSchema.shape.ASSEMBLYAI_API_KEY.description}` : ''}
-${ConfigSchema.shape.FX_API_KEY.description ? `FX_API_KEY - ${ConfigSchema.shape.FX_API_KEY.description}` : ''}
-${ConfigSchema.shape.ALLOWED_USERS.description ? `ALLOWED_USERS - ${ConfigSchema.shape.ALLOWED_USERS.description}` : ''}
-${ConfigSchema.shape.BLOCKED_USERS.description ? `BLOCKED_USERS - ${ConfigSchema.shape.BLOCKED_USERS.description}` : ''}
-RATE_LIMIT_ENABLED - ${config.RATE_LIMIT_ENABLED ? 'true' : 'false'} (default: false)
+${
+  ConfigSchema.shape.TELEGRAM_BOT_TOKEN.description
+    ? `TELEGRAM_BOT_TOKEN - ${ConfigSchema.shape.TELEGRAM_BOT_TOKEN.description}`
+    : ""
+}
+${ConfigSchema.shape.ASSEMBLYAI_API_KEY.description ? `ASSEMBLYAI_API_KEY - ${ConfigSchema.shape.ASSEMBLYAI_API_KEY.description}` : ""}
+${ConfigSchema.shape.FX_API_KEY.description ? `FX_API_KEY - ${ConfigSchema.shape.FX_API_KEY.description}` : ""}
+${ConfigSchema.shape.ALLOWED_USERS.description ? `ALLOWED_USERS - ${ConfigSchema.shape.ALLOWED_USERS.description}` : ""}
+${ConfigSchema.shape.BLOCKED_USERS.description ? `BLOCKED_USERS - ${ConfigSchema.shape.BLOCKED_USERS.description}` : ""}
+RATE_LIMIT_ENABLED - ${config.RATE_LIMIT_ENABLED ? "true" : "false"} (default: false)
 RATE_LIMIT_MAX_MESSAGES - ${config.RATE_LIMIT_MAX_MESSAGES} (default: 30)
 RATE_LIMIT_WINDOW_MS - ${config.RATE_LIMIT_WINDOW_MS}ms (default: 60000)
 LOG_UNAUTHORIZED_ACCESS - ${config.LOG_UNAUTHORIZED_ACCESS} (default: true)

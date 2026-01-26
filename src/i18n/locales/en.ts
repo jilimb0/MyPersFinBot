@@ -2,7 +2,8 @@ export const en = {
   // Main Menu
   mainMenu: {
     welcome: "👋 Welcome to Personal Finance Bot!",
-    welcomeIntro: "📊 Track your money with ease:\n" +
+    welcomeIntro:
+      "📊 Track your money with ease:\n" +
       "• 💸 Record expenses and income\n" +
       "• 💰 Manage multiple accounts\n" +
       "• 📉 Track debts\n" +
@@ -12,7 +13,8 @@ export const en = {
     welcomeBack: "👋 Welcome back! Select an option:",
     startTracking: "💰 Start tracking",
     quickStartTitle: "🎉 *Great! Let's get started!*",
-    quickStartGuide: "📄 *Quick Start Guide:*\n" +
+    quickStartGuide:
+      "📄 *Quick Start Guide:*\n" +
       "1️⃣ Add your first account in 💰 *Balances*\n" +
       "2️⃣ Record transactions via 💸 *Expense* and 💰 *Income*\n" +
       "3️⃣ View your stats in 📈 *Stats*\n\n" +
@@ -34,7 +36,7 @@ export const en = {
     mainMenu: "🏠 Main Menu",
     back: "⬅️ Back",
     advanced: "⚙️ Advanced",
-    
+
     // Actions
     manage: "⚙️ Manage",
     saveAsTemplate: "💾 Save as template?",
@@ -47,14 +49,14 @@ export const en = {
     editName: "✏️ Edit Name",
     tryAgain: "🔄 Try Again",
     tryAgainEdit: "✏️ Try Again",
-    
+
     // Time periods
     weekly: "📆 Weekly",
     monthly: "📅 Monthly",
     last7Days: "📅 Last 7 days",
     last30Days: "📅 Last 30 days",
     customPeriod: "📅 Custom Period",
-    
+
     // Categories
     food: "🍔 Food",
     transport: "🚗 Transport",
@@ -64,24 +66,24 @@ export const en = {
     health: "🏥 Health",
     salary: "💼 Salary",
     other: "📦 Other",
-    
+
     // Transaction types
     expensesOnly: "💸 Expenses only",
     incomeOnly: "💰 Income only",
     allTransactions: "🔍 All transactions",
-    
+
     // Views
     filters: "🔎 Filters",
     trends: "📈 Trends",
     topCategories: "📉 Top Categories",
     exportCsv: "📅 Export CSV",
-    
+
     // Main features
     balances: "💳 Balances",
     goToBalances: "💳 Go to Balances",
     reviewTransactions: "🔍 Review Transactions",
     startTracking: "💰 Start tracking",
-    
+
     // Add new items
     addBalance: "✨ Add Balance",
     addDebt: "✨ Add Debt",
@@ -89,7 +91,7 @@ export const en = {
     addIncomeSource: "✨ Add Income Source",
     addEditBudget: "✨ Add / Edit Budget",
     addRecurring: "✨ Add Recurring",
-    
+
     // Sections
     assets: "💳 Assets",
     debts: "💰 Debts",
@@ -104,17 +106,17 @@ export const en = {
     history: "📋 History",
     netWorth: "💎 Net Worth",
     showReport: "📊 Show Report",
-    
+
     // Settings
     disableReminders: "🔕 Disable Reminders",
     changeTimezone: "🌍 Change Timezone",
-    
+
     // Deadlines & dates
     changeDeadline: "📅 Change Deadline",
     setDeadline: "📅 Set Deadline",
     removeDate: "🗑 Remove Date",
     snooze1Day: "📅 Snooze 1 day",
-    
+
     // Other actions
     transferToAnotherAccount: "🔄 Transfer to another account",
     getPaidFrom: "💰 Get paid from",
@@ -123,11 +125,11 @@ export const en = {
     previousPage: "🔙 Previous Page",
     clearLimit: "🧹 Clear Limit",
     emptyBalance: "⚪ Empty Balance",
-    
+
     // Debt types
     iOwe: "🔴 I Owe",
     theyOweMe: "🟢 They Owe Me",
-    
+
     // Currency
     convertTo: "🔄 Convert to",
     changeTo: "💱 Change to",
@@ -157,7 +159,8 @@ export const en = {
     saved: "✅ Transaction saved!",
     addAnotherExpense: "✨ Add Another Expense",
     addAnotherIncome: "✨ Add Another Income",
-    noBalances: "⚠️ *No Balances Found*\n\n" +
+    noBalances:
+      "⚠️ *No Balances Found*\n\n" +
       "Before adding transactions, you need at least one balance account.\n\n" +
       "💡 *Quick Start:*\n" +
       "1️⃣ Go to 💰 *Balances*\n" +
@@ -183,8 +186,10 @@ export const en = {
     selectDeductAccount: "💸 Select account to deduct from:",
     selectAddAccount: "💰 Select account to add to:",
     yesRefund: "✅ Yes, it's a refund",
-    noPositiveBalance: "❌ No accounts with positive balance available for transfer.",
-    cannotTransferSame: "❌ Cannot transfer to the same account. Please select a different destination.",
+    noPositiveBalance:
+      "❌ No accounts with positive balance available for transfer.",
+    cannotTransferSame:
+      "❌ Cannot transfer to the same account. Please select a different destination.",
   },
 
   // Balances
@@ -205,7 +210,7 @@ export const en = {
     created: "✅ Balance account created!",
     updated: "✅ Balance updated!",
     deleted: "✅ Balance deleted!",
-    deleteConfirm: "Are you sure you want to delete balance account \"{name}\"?",
+    deleteConfirm: 'Are you sure you want to delete balance account "{name}"?',
     cannotUndo: "This action cannot be undone.",
     yesDelete: "✅ Yes, Delete",
     transferFrom: "Transfer from:",
@@ -219,7 +224,8 @@ export const en = {
     enterNewAmount: "Enter new amount:",
     transferToAnother: "🔄 Transfer to another account",
     yesSetZero: "✅ Yes, Set to Zero",
-    invalidInput: "❌ Invalid input.\n\n• Enter *number* to change amount (e.g., 500)\n• Enter *text* to rename (e.g., MyCard)",
+    invalidInput:
+      "❌ Invalid input.\n\n• Enter *number* to change amount (e.g., 500)\n• Enter *text* to rename (e.g., MyCard)",
     selectFromButtons: "❌ Select a balance from buttons.",
     invalidInputEdit: "❌ Invalid input.",
     balancesButton: "💳 Balances",
@@ -254,7 +260,7 @@ export const en = {
     paymentRecorded: "✅ Payment recorded!",
     markAsPaid: "✅ Mark as Paid",
     recordPayment: "💵 Record Payment",
-    deleteConfirm: "Are you sure you want to delete debt \"{name}\"?",
+    deleteConfirm: 'Are you sure you want to delete debt "{name}"?',
     editNameTitle: "📝 *Edit Debt Name*",
     enterNewName: "Enter new name:",
     editAmountTitle: "💰 *Edit Debt Amount*",
@@ -291,7 +297,8 @@ export const en = {
     fullyReceivedClosed: "🎉 Debt fully received and closed!",
     notFound: "❌ Debt not found.",
     typeNotFound: "❌ Debt type not found.",
-    noBalancesForPayment: "⚠️ *No Balances Found*\n\nBefore making payments, you need at least one balance account.",
+    noBalancesForPayment:
+      "⚠️ *No Balances Found*\n\nBefore making payments, you need at least one balance account.",
     quickStartTitle: "💡 *Quick Start:*",
     quickStartStep1: "1️⃣ Go to 💰 *Balances*",
     quickStartStep2: "2️⃣ Tap ✨ *Add Balance*",
@@ -333,7 +340,7 @@ export const en = {
     statusInProgress: "⏳",
     statusCompleted: "✅",
     selectGoal: "Select goal to edit:",
-    deleteConfirm: "Are you sure you want to delete goal \"{name}\"?",
+    deleteConfirm: 'Are you sure you want to delete goal "{name}"?',
     editNameTitle: "🎯 *Edit Goal Name*",
     enterNewName: "Enter new name:",
     editTargetTitle: "🎯 *Edit Goal Target*",
@@ -360,7 +367,8 @@ export const en = {
     completedGoalsTitle: "✅ *Completed Goals*",
     noCompletedGoals: "💭 No completed goals yet.",
     errorMissingData: "❌ Error: Missing goal data",
-    noBalancesForDeposit: "⚠️ *No Balances Found*\n\nBefore depositing to goals, you need at least one balance account.",
+    noBalancesForDeposit:
+      "⚠️ *No Balances Found*\n\nBefore depositing to goals, you need at least one balance account.",
     quickStartTitle: "💡 *Quick Start:*",
     quickStartStep1: "1️⃣ Go to 💰 *Balances*",
     quickStartStep2: "2️⃣ Tap ✨ *Add Balance*",
@@ -454,13 +462,13 @@ export const en = {
     next: "Next ▶️",
     noCancel: "❌ No, cancel",
     cancelled: "✅ Cancelled.",
-    
+
     // Edit actions
     editAmount: "💰 Edit Amount",
     editAccount: "💳 Edit Account",
     editCategory: "✏️ Edit Category",
     editDescription: "✏️ Edit Description",
-    
+
     // Navigation & Common Actions
     goToBalances: "💳 Go to Balances",
     importAll: "✅ Import All",
@@ -469,11 +477,11 @@ export const en = {
     yesSave: "✅ Yes, Save",
     yesDelete: "✅ Yes, delete",
     yesSetToZero: "✅ Yes, Set to Zero",
-    
+
     // Status
     enabled: "✅ Enabled",
     disabled: "❌ Disabled",
-    
+
     // Messages
     error: "❌ Error",
     notFound: "❌ Not found",
@@ -484,19 +492,22 @@ export const en = {
     botWasBlocked: "🚫 Bot was blocked by user or chat not found.",
     fetchedFreshRates: "🌐 Fetched fresh FX rates from API",
     actionCannotBeUndone: "❗ This action CANNOT be undone!\n\n",
-    
+
     // NEW: Custom messages
     enterCustomDebtReminder: "📝 *Enter custom debt reminder template:*\n\n",
     enterCustomGoalReminder: "📝 *Enter custom goal reminder template:*\n\n",
-    enterCustomIncomeReminder: "📝 *Enter custom income reminder template:*\n\n",
-    
+    enterCustomIncomeReminder:
+      "📝 *Enter custom income reminder template:*\n\n",
+
     // NEW: User input
     userCanTextInput: "💡 Or user can use text input: ",
     trackMoneyWithEase: "📊 Track your money with ease:\n",
-    
+
     // NEW: Titles
-    transactionHistorySelectFilter: "📋 *Transaction History*\n\nSelect filter:",
-    transactionHistorySelectPeriod: "📋 *Transaction History*\n\nSelect period:",
+    transactionHistorySelectFilter:
+      "📋 *Transaction History*\n\nSelect filter:",
+    transactionHistorySelectPeriod:
+      "📋 *Transaction History*\n\nSelect period:",
     personalFinanceBotGuide: "❓ *Personal Finance Bot - User Guide*\n\n",
     uploadBankStatement: "📥 *Upload Bank Statement*\n\n",
     welcomeTitle: "👋 *Welcome to Personal Finance Bot!*\n\n",
@@ -513,11 +524,14 @@ export const en = {
     goalsTitle: "🎯 *Goals:*\n",
     incomeSourcesTitle: "💵 *Income Sources:*\n",
     reportsFiltersSelectPeriod: "📊 *Reports Filters*\n\nSelect period:",
-    budgetPlannerSelectCategory: "🔮 *Budget Planner*\n\nSelect category to set limit:",
-    editTransactionsSelect: "✏️ *Edit Transactions*\n\nSelect another transaction to edit:",
+    budgetPlannerSelectCategory:
+      "🔮 *Budget Planner*\n\nSelect category to set limit:",
+    editTransactionsSelect:
+      "✏️ *Edit Transactions*\n\nSelect another transaction to edit:",
     addIncomeSourceTitle: "💼 *Add Income Source*\n\n",
-    enterIncomeSourceName: "💼 Enter income source name:\n\nExample:  Salary, Freelance",
-    
+    enterIncomeSourceName:
+      "💼 Enter income source name:\n\nExample:  Salary, Freelance",
+
     // NEW: Select account
     selectAccountAdd: "💰 Select account to add to:",
     selectSourceAccount: "📤 Select source account:",
@@ -526,12 +540,13 @@ export const en = {
     selectAccountWithdraw: "💳 Select account to withdraw from:",
     selectAccountReceiveRefund: "📥 Select account to receive refund:",
     selectAccountDeposit: "💳 Select account to deposit from:",
-    selectAccountDepositRemaining: "💳 Select account to deposit remaining amount:",
-    
+    selectAccountDepositRemaining:
+      "💳 Select account to deposit remaining amount:",
+
     // NEW: Edit category
     editCategoryExpense: "📝 *Edit Category (Expense)*\n\nCurrent: ",
     editCategoryIncome: "📝 *Edit Category (Income)*\n\nCurrent: ",
-    
+
     // NEW: Status messages
     noTransactionsThisMonth: "📊 No transactions this month.",
     topExpensesNone: "📉 *Top Expenses*\n\nNo expenses this month.",
@@ -539,9 +554,10 @@ export const en = {
     noMoreTransactions: "📭 No more transactions",
     noTransactionsMatchFilter: "📬 No transactions match this filter.",
     noMoreTransactionsToEdit: "💭 No more transactions to edit.",
-    noIncomeOrExpenseThisMonth: "📊 No Income or Expense transactions this month (only Transfers).",
+    noIncomeOrExpenseThisMonth:
+      "📊 No Income or Expense transactions this month (only Transfers).",
     debtFullyReceived: "💰 Debt fully received!",
-    
+
     // NEW: Processing
     uploadingAudioAssemblyAI: "🎤 Uploading audio to AssemblyAI...",
     creatingTranscriptionJob: "🎤 Creating transcription job...",
@@ -556,32 +572,34 @@ export const en = {
   errors: {
     // Access & permissions
     accessDenied: "❌ Access denied",
-    
+
     // Not found
     debtNotFound: "❌ Debt not found.",
     goalNotFound: "❌ Goal not found.",
     incomeSourceNotFound: "❌ Income source not found.",
     templateNotFound: "❌ Template not found.",
     goalDataNotFound: "❌ Goal data not found.",
-    
+
     // Invalid input
     invalidData: "❌ Invalid data. Please check your input.",
     invalidInput: "❌ Invalid input.\n\n",
-    invalidAccountFormat: "❌ Invalid account format. Please select from the list.",
+    invalidAccountFormat:
+      "❌ Invalid account format. Please select from the list.",
     invalidAccountName: "❌ Invalid account name.",
-    invalidDateFormat: "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
+    invalidDateFormat:
+      "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
     invalidTimezone: "❌ Invalid timezone. Please select from the options.",
     invalidCategory: "❌ Invalid category. Please select from the list.",
     invalidDay: "❌ Invalid day. Please select from the list.",
     invalidAmount: "❌ Invalid amount. Please enter a valid number.",
     invalidPeriod: "❌ Invalid period (end before start or bad dates).",
-    
+
     // Wrong format
     wrongDates: "❌ Wrong dates!",
     wrongFormatStart: "❌ Wrong format! Use DD.MM.YYYY (e.g. 01.01.2026)",
     wrongFormatEnd: "❌ Wrong format! Use DD.MM.YYYY (e.g. 13.01.2026)",
     endDateBeforeStart: "❌ End date before Start!",
-    
+
     // Missing data
     accountNameMissing: "❌ Account name missing. Start again.",
     accountNameCannot: "❌ Account name can",
@@ -590,65 +608,68 @@ export const en = {
     missingDebtData: "❌ Error: Missing debt data",
     nameCannotBeEmpty: "❌ Name cannot be empty.",
     incomeSourceNotSelected: "❌ No income source selected.",
-    
+
     // Selection errors
     selectBalanceFromButtons: "❌ Select a balance from buttons.",
     selectTransactionFromList: "❌ Select a transaction from the list.",
     selectDebtFromList: "❌ Select a debt from the list.",
     selectGoalFromList: "❌ Select a goal from the list.",
     selectCategoryFromList: "❌ Select a category from the list.",
-    selectCategoryOrAddBudget: "❌ Select a category from the list or use ✨ Add / Edit Budget.",
-    selectIncomeSourceOrAdd: "❌ Select an income source from the list or use ✨ Add Income Source.",
+    selectCategoryOrAddBudget:
+      "❌ Select a category from the list or use ✨ Add / Edit Budget.",
+    selectIncomeSourceOrAdd:
+      "❌ Select an income source from the list or use ✨ Add Income Source.",
     selectOneFilter: "❌ Select one of the filters.",
     pleaseSelectOption: "❌ Please select an option from the buttons.",
-    pleaseSelectOptionOrAmount: "❌ Please select an option or enter a valid amount.",
+    pleaseSelectOptionOrAmount:
+      "❌ Please select an option or enter a valid amount.",
     pleaseSelectCategory: "❌ Please select a category from the list.",
     pleaseTap: "❌ Please tap ",
     enterValidAmount: "❌ Enter a valid amount or use buttons.",
-    
+
     // System errors
     configValidationFailed: "❌ Configuration validation failed:",
     errorInitializingDatabase: "❌ Error initializing database:",
     networkError: "🌐 Network error. Please check your connection.",
-    
+
     // Transaction errors
     errorUpdatingTransaction: "❌ Error updating transaction.",
-    
+
     // FX errors
     failedPersistCache: "❌ Failed to persist FX cache:",
     failedLoadCache: "❌ Failed to load persisted FX cache:",
     failedAutoRefresh: "❌ Failed to auto-refresh FX rates:",
     failedPreloadRates: "❌ Failed to preload FX rates:",
     failedClearCache: "❌ Failed to clear persisted cache:",
-    
+
     // Automation
     disableAutoPayment: "❌ Disable Auto-Payment",
     disableAutoDeposit: "❌ Disable Auto-Deposit",
     disableAutoIncome: "❌ Disable Auto-Income",
     disableNotifications: "❌ Disable Notifications",
-    
+
     // Reminders
     failedSnoozeReminder: "❌ Failed to snooze reminder",
     failedMarkReminderDone: "❌ Failed to mark reminder as done",
-    
+
     // Import/Export
     importCancelled: "❌ Import cancelled",
-    
+
     // FFmpeg
     ffmpegDidNotCreate: "❌ FFmpeg did not create output file",
     wavFileEmpty: "❌ WAV file is empty (0 bytes)",
     ffmpegConversionError: "❌ FFmpeg conversion error:",
-    
+
     // AssemblyAI
     assemblyAIUploadError: "❌ AssemblyAI upload error:",
     assemblyAIError: "❌ AssemblyAI error:",
-    
+
     // Bot
     failedStartBot: "❌ Failed to start bot:",
-    
+
     // Template
     failedUpdateTemplate: "❌ Failed to update template.",
-    
+
     // Actions
     cancel: "❌ Cancel",
     enterDifferentAmount: "❌ No, Enter Different Amount",
@@ -658,53 +679,56 @@ export const en = {
   // Success (NEW SECTION)
   success: {
     // FX
-    metricsReset: "✅ FX metrics reset!\n\nAll counters have been reset to zero.",
+    metricsReset:
+      "✅ FX metrics reset!\n\nAll counters have been reset to zero.",
     ratesRefreshed: "✅ FX rates refreshed",
     usingPersistedRates: "✅ Using persisted FX rates (no API call needed)",
     ratesPreloaded: "✅ FX rates preloaded successfully",
     persistedCacheCleared: "✅ Persisted FX cache cleared",
     usingPersistedCache: "✅ Using persisted FX cache (no API call)",
-    
+
     // Query
-    queryStatsReset: "✅ Query statistics reset!\n\nAll query counters have been reset to zero.",
+    queryStatsReset:
+      "✅ Query statistics reset!\n\nAll query counters have been reset to zero.",
     queryMonitorReset: "✅ Query monitor statistics reset",
-    
+
     // Database
-    databaseInitialized: "✅ Database initialized successfully (WAL mode enabled)",
+    databaseInitialized:
+      "✅ Database initialized successfully (WAL mode enabled)",
     databaseClosed: "✅ Database connection closed",
-    
+
     // Bot
     botStopped: "✅ Bot stopped",
-    
+
     // Reminders
     remindersDisabledDeadline: "✅ Reminders disabled and deadline removed.",
     remindersDisabledDueDate: "✅ Reminders disabled and due date removed.",
     reminderMarkedDone: "✅ Reminder marked as done",
     dueDateRemoved: "✅ Due date and reminders removed.",
     deadlineRemoved: "✅ Deadline and reminders removed.",
-    
+
     // Automation
     enableAutoPayment: "✅ Enable Auto-Payment",
     enableAutoDeposit: "✅ Enable Auto-Deposit",
     enableAutoIncome: "✅ Enable Auto-Income",
     enableNotifications: "✅ Enable Notifications",
-    
+
     // Scheduler
     schedulerStarted: "✅ Scheduler started successfully",
     schedulerStopped: "✅ Scheduler stopped",
-    
+
     // Updates
     accountUpdated: "✅ Account updated",
     debtAmountUpdated: "✅ Debt amount updated!",
     goalTargetUpdated: "✅ Goal target updated!",
-    
+
     // States
     noActiveDebts: "✅ No active debts!\n\n",
-    
+
     // AssemblyAI
     assemblyAITranscription: "✅ AssemblyAI transcription:",
     assemblyAIConfigured: "✅ AssemblyAI service configured",
-    
+
     // General
     yes: "✅ Yes, it",
     done: "✅ Done",
@@ -715,24 +739,31 @@ export const en = {
     noBalancesAdd: "⚠️ No balances found. Add one in 💳 Balances.",
     noBalancesFound: "⚠️ No balances found",
     noBalancesFoundTitle: "⚠️ *No Balances Found*\n\n",
-    noAccountsCreate: "⚠️ No accounts found. Please create a balance account first.",
-    
+    noAccountsCreate:
+      "⚠️ No accounts found. Please create a balance account first.",
+
     usingFallbackRates: "⚠️ Using fallback exchange rates.",
     cacheExpired: "⚠️ Persisted FX cache expired",
-    
-    autoPaymentOnlyForDebts: "⚠️ Auto-payment only available for debts you owe.",
-    
+
+    autoPaymentOnlyForDebts:
+      "⚠️ Auto-payment only available for debts you owe.",
+
     assemblyAINotConfigured: "⚠️ AssemblyAI not configured. Voice file:",
-    assemblyAINotConfiguredEnv: "⚠️ AssemblyAI not configured. Set ASSEMBLYAI_API_KEY in environment.",
+    assemblyAINotConfiguredEnv:
+      "⚠️ AssemblyAI not configured. Set ASSEMBLYAI_API_KEY in environment.",
   },
 
   // Messages (NEW SECTION)
   messages: {
-    voiceTranscriptionUnavailable: "🔑 Voice transcription unavailable. Please contact support.",
-    installFFmpeg: "📦 Install: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)",
+    voiceTranscriptionUnavailable:
+      "🔑 Voice transcription unavailable. Please contact support.",
+    installFFmpeg:
+      "📦 Install: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)",
     setAssemblyAIKey: "💡 Set ASSEMBLYAI_API_KEY to enable voice transcription",
-    transactionHistoryEmpty: "📖 *Transaction History*\n\n💭 No transactions yet.",
-    advancedSettings: "🛠️ *Advanced Settings*\n\nAdvanced features and data management:",
+    transactionHistoryEmpty:
+      "📖 *Transaction History*\n\n💭 No transactions yet.",
+    advancedSettings:
+      "🛠️ *Advanced Settings*\n\nAdvanced features and data management:",
     goalsNoActive: "🎯 *Goals*\n\nNo active goals. Set one to start saving!",
   },
 
@@ -744,13 +775,13 @@ export const en = {
     autoPaymentEnabled: "✅ Auto-payment enabled",
     autoPaymentDisabled: "❌ Auto-payment disabled",
     onlyForDebtsYouOwe: "⚠️ Auto-payment only available for debts you owe.",
-    
+
     // Auto-deposit
     enableAutoDeposit: "✅ Enable Auto-Deposit",
     disableAutoDeposit: "❌ Disable Auto-Deposit",
     autoDepositEnabled: "✅ Auto-deposit enabled",
     autoDepositDisabled: "❌ Auto-deposit disabled",
-    
+
     // Deadlines
     setDeadline: "📅 Set Deadline",
     changeDeadline: "📅 Change Deadline",
@@ -760,7 +791,8 @@ export const en = {
   // Quick Start
   quickStart: {
     noBalancesTitle: "⚠️ *No Balances Found*",
-    beforeAddingDebts: "Before adding transactions, you need at least one balance account.",
+    beforeAddingDebts:
+      "Before adding transactions, you need at least one balance account.",
     title: "💡 *Quick Start:*",
     step1: "1️⃣ Go to 💰 *Balances*",
     step2: "2️⃣ Tap ✨ *Add Balance*",
@@ -769,8 +801,10 @@ export const en = {
 
   // Dates
   dates: {
-    invalidFormatExample: "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
-    invalidFormatExampleShort: "❌ Invalid date format. Use DD.MM.YYYY (e.g. 31.12.2026) or tap Skip.",
+    invalidFormatExample:
+      "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
+    invalidFormatExampleShort:
+      "❌ Invalid date format. Use DD.MM.YYYY (e.g. 31.12.2026) or tap Skip.",
     deadlineCannotBePast: "❌ Deadline cannot be in the past.",
     dueDateCannotBePast: "❌ Due date cannot be in the past.",
   },
@@ -797,7 +831,8 @@ export const en = {
     skipped: "Skipped (invalid): {count}",
     errors: "Errors: {count}",
     time: "⚡ Time: {ms}ms",
-    unsupportedFormat: "⚠️ *Unsupported file format*\n\nSupported formats:\n• CSV (Tinkoff, Monobank, Revolut)\n• TXT (Wise)\n• JSON (Monobank)",
+    unsupportedFormat:
+      "⚠️ *Unsupported file format*\n\nSupported formats:\n• CSV (Tinkoff, Monobank, Revolut)\n• TXT (Wise)\n• JSON (Monobank)",
     noTransactions: "❌ No transactions found in the file",
     parsingErrors: "⚠️ *Parsing errors:*",
   },

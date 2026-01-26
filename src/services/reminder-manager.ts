@@ -17,12 +17,12 @@ dayjs.extend(timezone)
 export class ReminderManager {
   // Create monthly reminders for debt until due date
   async createDebtReminder(userId: string, debt: Debt): Promise<void> {
-    if (!debt.dueDate) return
+    if (!debt.dueDate) return undefined
 
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
 
-    if (!user?.reminderSettings?.enabled) return
+    if (!user?.reminderSettings?.enabled) return undefined
 
     // Delete existing reminders for this debt
     await this.deleteRemindersForEntity(userId, debt.id)
@@ -32,17 +32,17 @@ export class ReminderManager {
     const remaining = debt.amount - debt.paidAmount
 
     // If already overdue or due today
-    if (dueDate.isBefore(now, 'day') || dueDate.isSame(now, 'day')) {
-      return
+    if (dueDate.isBefore(now, "day") || dueDate.isSame(now, "day")) {
+      return undefined
     }
 
     // Calculate months until due
-    let currentMonth = now.startOf('month')
+    let currentMonth = now.startOf("month")
     const reminderRepo = AppDataSource.getRepository(Reminder)
 
-    while (currentMonth.isBefore(dueDate, 'month')) {
-      const reminderDate = currentMonth.add(1, 'day').toDate() // 1st day of month
-      const monthsLeft = dueDate.diff(currentMonth, 'month', true)
+    while (currentMonth.isBefore(dueDate, "month")) {
+      const reminderDate = currentMonth.add(1, "day").toDate() // 1st day of month
+      const monthsLeft = dueDate.diff(currentMonth, "month", true)
       const monthlyAmount = monthsLeft > 0 ? remaining / monthsLeft : remaining
 
       const message = await this.formatDebtMonthlyReminder(
@@ -56,7 +56,7 @@ export class ReminderManager {
       const reminder = reminderRepo.create({
         id: randomUUID(),
         userId,
-        type: 'DEBT',
+        type: "DEBT",
         entityId: debt.id,
         reminderDate,
         message,
@@ -65,17 +65,21 @@ export class ReminderManager {
       })
       await reminderRepo.save(reminder)
 
-      currentMonth = currentMonth.add(1, 'month')
+      currentMonth = currentMonth.add(1, "month")
     }
 
     // Final reminder 1 day before due
-    const finalReminderDate = dueDate.subtract(1, 'day').toDate()
+    const finalReminderDate = dueDate.subtract(1, "day").toDate()
     if (dayjs(finalReminderDate).isAfter(now)) {
-      const finalMessage = await this.formatDebtFinalReminder(userId, debt, remaining)
+      const finalMessage = await this.formatDebtFinalReminder(
+        userId,
+        debt,
+        remaining
+      )
       const finalReminder = reminderRepo.create({
         id: randomUUID(),
         userId,
-        type: 'DEBT',
+        type: "DEBT",
         entityId: debt.id,
         reminderDate: finalReminderDate,
         message: finalMessage,
@@ -88,12 +92,12 @@ export class ReminderManager {
 
   // Create monthly reminders for goal until deadline
   async createGoalReminder(userId: string, goal: Goal): Promise<void> {
-    if (!goal.deadline) return
+    if (!goal.deadline) return undefined
 
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
 
-    if (!user?.reminderSettings?.enabled) return
+    if (!user?.reminderSettings?.enabled) return undefined
 
     // Delete existing reminders for this goal
     await this.deleteRemindersForEntity(userId, goal.id)
@@ -102,17 +106,17 @@ export class ReminderManager {
     const deadline = dayjs(goal.deadline)
     const remaining = goal.targetAmount - goal.currentAmount
 
-    if (deadline.isBefore(now, 'day') || deadline.isSame(now, 'day')) {
-      return
+    if (deadline.isBefore(now, "day") || deadline.isSame(now, "day")) {
+      return undefined
     }
 
     // Calculate months until deadline
-    let currentMonth = now.startOf('month')
+    let currentMonth = now.startOf("month")
     const reminderRepo = AppDataSource.getRepository(Reminder)
 
-    while (currentMonth.isBefore(deadline, 'month')) {
-      const reminderDate = currentMonth.add(1, 'day').toDate() // 1st day of month
-      const monthsLeft = deadline.diff(currentMonth, 'month', true)
+    while (currentMonth.isBefore(deadline, "month")) {
+      const reminderDate = currentMonth.add(1, "day").toDate() // 1st day of month
+      const monthsLeft = deadline.diff(currentMonth, "month", true)
       const monthlyAmount = monthsLeft > 0 ? remaining / monthsLeft : remaining
 
       const message = await this.formatGoalMonthlyReminder(
@@ -126,7 +130,7 @@ export class ReminderManager {
       const reminder = reminderRepo.create({
         id: randomUUID(),
         userId,
-        type: 'GOAL',
+        type: "GOAL",
         entityId: goal.id,
         reminderDate,
         message,
@@ -135,17 +139,21 @@ export class ReminderManager {
       })
       await reminderRepo.save(reminder)
 
-      currentMonth = currentMonth.add(1, 'month')
+      currentMonth = currentMonth.add(1, "month")
     }
 
     // Final reminder 3 days before deadline
-    const finalReminderDate = deadline.subtract(3, 'day').toDate()
+    const finalReminderDate = deadline.subtract(3, "day").toDate()
     if (dayjs(finalReminderDate).isAfter(now)) {
-      const finalMessage = await this.formatGoalFinalReminder(userId, goal, remaining)
+      const finalMessage = await this.formatGoalFinalReminder(
+        userId,
+        goal,
+        remaining
+      )
       const finalReminder = reminderRepo.create({
         id: randomUUID(),
         userId,
-        type: 'GOAL',
+        type: "GOAL",
         entityId: goal.id,
         reminderDate: finalReminderDate,
         message: finalMessage,
@@ -157,8 +165,11 @@ export class ReminderManager {
   }
 
   // Create monthly reminder for income (recurring)
-  async createIncomeReminder(userId: string, income: IncomeSource): Promise<void> {
-    if (!income.expectedDate || !income.reminderEnabled) return
+  async createIncomeReminder(
+    userId: string,
+    income: IncomeSource
+  ): Promise<void> {
+    if (!income.expectedDate || !income.reminderEnabled) return undefined
 
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
@@ -170,9 +181,11 @@ export class ReminderManager {
 
     const nextIncomeDate = this.calculateNextIncomeDate(income.expectedDate)
     const daysBefore = user.reminderSettings.notifyBefore.income
-    const reminderDate = dayjs(nextIncomeDate).subtract(daysBefore, 'day').toDate()
+    const reminderDate = dayjs(nextIncomeDate)
+      .subtract(daysBefore, "day")
+      .toDate()
 
-    if (dayjs(reminderDate).isBefore(dayjs(), 'day')) return
+    if (dayjs(reminderDate).isBefore(dayjs(), "day")) return undefined
 
     const message = await this.formatIncomeReminder(userId, income)
 
@@ -180,7 +193,7 @@ export class ReminderManager {
     const reminder = reminderRepo.create({
       id: randomUUID(),
       userId,
-      type: 'INCOME',
+      type: "INCOME",
       entityId: income.id.toString(),
       reminderDate,
       message,
@@ -209,25 +222,29 @@ export class ReminderManager {
         name: debt.name,
         amount: debt.amount.toFixed(2),
         currency: debt.currency,
-        dueDate: dayjs(debt.dueDate).format('DD.MM.YYYY'),
+        dueDate: dayjs(debt.dueDate).format("DD.MM.YYYY"),
         remaining: remaining.toFixed(2),
         monthlyAmount: monthlyAmount.toFixed(2),
         monthsLeft: monthsLeft.toString(),
       })
     }
 
-    const emoji = debt.type === 'I_OWE' ? '💸' : '💰'
+    const emoji = debt.type === "I_OWE" ? "💸" : "💰"
     return (
       `${emoji} *Monthly Debt Reminder*\n\n` +
       `Debt: ${debt.name}\n` +
       `Total remaining: ${remaining.toFixed(2)} ${debt.currency}\n` +
       `Months left: ${monthsLeft}\n` +
       `Suggested monthly payment: ${monthlyAmount.toFixed(2)} ${debt.currency}\n\n` +
-      `Due: ${dayjs(debt.dueDate).format('DD.MM.YYYY')}`
+      `Due: ${dayjs(debt.dueDate).format("DD.MM.YYYY")}`
     )
   }
 
-  private async formatDebtFinalReminder(userId: string, debt: Debt, remaining: number): Promise<string> {
+  private async formatDebtFinalReminder(
+    userId: string,
+    debt: Debt,
+    remaining: number
+  ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
 
@@ -238,17 +255,17 @@ export class ReminderManager {
         name: debt.name,
         amount: debt.amount.toFixed(2),
         currency: debt.currency,
-        dueDate: dayjs(debt.dueDate).format('DD.MM.YYYY'),
+        dueDate: dayjs(debt.dueDate).format("DD.MM.YYYY"),
         remaining: remaining.toFixed(2),
       })
     }
 
-    const emoji = debt.type === 'I_OWE' ? '⚠️' : '💰'
+    const emoji = debt.type === "I_OWE" ? "⚠️" : "💰"
     return (
       `${emoji} *Debt Due Tomorrow!*\n\n` +
       `${debt.name}\n` +
       `Amount: ${remaining.toFixed(2)} ${debt.currency}\n` +
-      `Due: ${dayjs(debt.dueDate).format('DD.MM.YYYY')}`
+      `Due: ${dayjs(debt.dueDate).format("DD.MM.YYYY")}`
     )
   }
 
@@ -273,7 +290,7 @@ export class ReminderManager {
         target: goal.targetAmount.toFixed(2),
         monthlyAmount: monthlyAmount.toFixed(2),
         monthsLeft: monthsLeft.toString(),
-        dueDate: dayjs(goal.deadline).format('DD.MM.YYYY'),
+        dueDate: dayjs(goal.deadline).format("DD.MM.YYYY"),
       })
     }
 
@@ -283,11 +300,15 @@ export class ReminderManager {
       `Total remaining: ${remaining.toFixed(2)} ${goal.currency}\n` +
       `Months left: ${monthsLeft}\n` +
       `Suggested monthly saving: ${monthlyAmount.toFixed(2)} ${goal.currency}\n\n` +
-      `Deadline: ${dayjs(goal.deadline).format('DD.MM.YYYY')}`
+      `Deadline: ${dayjs(goal.deadline).format("DD.MM.YYYY")}`
     )
   }
 
-  private async formatGoalFinalReminder(userId: string, goal: Goal, remaining: number): Promise<string> {
+  private async formatGoalFinalReminder(
+    userId: string,
+    goal: Goal,
+    remaining: number
+  ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
 
@@ -300,7 +321,7 @@ export class ReminderManager {
         currency: goal.currency,
         remaining: remaining.toFixed(2),
         target: goal.targetAmount.toFixed(2),
-        dueDate: dayjs(goal.deadline).format('DD.MM.YYYY'),
+        dueDate: dayjs(goal.deadline).format("DD.MM.YYYY"),
       })
     }
 
@@ -308,11 +329,14 @@ export class ReminderManager {
       `⏰ *Goal Deadline Approaching!*\n\n` +
       `${goal.name}\n` +
       `Remaining: ${remaining.toFixed(2)} ${goal.currency}\n` +
-      `Deadline: ${dayjs(goal.deadline).format('DD.MM.YYYY')} (in 3 days)`
+      `Deadline: ${dayjs(goal.deadline).format("DD.MM.YYYY")} (in 3 days)`
     )
   }
 
-  private async formatIncomeReminder(userId: string, income: IncomeSource): Promise<string> {
+  private async formatIncomeReminder(
+    userId: string,
+    income: IncomeSource
+  ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
 
@@ -321,8 +345,8 @@ export class ReminderManager {
     if (customTemplate) {
       return this.replacePlaceholders(customTemplate, {
         name: income.name,
-        amount: income.expectedAmount?.toFixed(2) || '0',
-        currency: income.currency || 'USD',
+        amount: income.expectedAmount?.toFixed(2) || "0",
+        currency: income.currency || "USD",
       })
     }
 
@@ -340,16 +364,16 @@ export class ReminderManager {
     let nextDate = now.date(dayOfMonth)
 
     if (nextDate.isBefore(now)) {
-      nextDate = nextDate.add(1, 'month')
+      nextDate = nextDate.add(1, "month")
     }
 
     return nextDate.toDate()
   }
 
-  async getPendingReminders(date?: Date): Promise<Reminder[]> {
+  async getPendingReminders(_date?: Date): Promise<Reminder[]> {
     const reminderRepo = AppDataSource.getRepository(Reminder)
     const userRepo = AppDataSource.getRepository(User)
-    const checkDate = date || new Date()
+    // const checkDate = date || new Date()
 
     // Get all users with reminder settings
     const users = await userRepo.find()
@@ -358,30 +382,36 @@ export class ReminderManager {
     for (const user of users) {
       if (!user.reminderSettings?.enabled) continue
 
-      const userTimezone = user.reminderSettings.timezone || 'Asia/Tbilisi'
-      const userTime = user.reminderSettings.time || '09:00'
+      const userTimezone = user.reminderSettings.timezone || "Asia/Tbilisi"
+      const userTime = user.reminderSettings.time || "09:00"
 
       // Get current time in user's timezone
       const nowInUserTz = dayjs().tz(userTimezone)
       const currentHour = nowInUserTz.hour()
-      const currentMinute = nowInUserTz.minute()
+      // const currentMinute = nowInUserTz.minute()
 
       // Parse user's reminder time
-      const [targetHour, targetMinute] = userTime.split(':').map(Number)
+      const [targetHour, _targetMinute] = userTime.split(":").map(Number)
 
       // Check if it's reminder time for this user (within current hour)
       if (currentHour === targetHour) {
         // Get today's date in user's timezone
-        const todayInUserTz = nowInUserTz.startOf('day').toDate()
-        const endOfDayInUserTz = nowInUserTz.endOf('day').toDate()
+        const todayInUserTz = nowInUserTz.startOf("day").toDate()
+        const endOfDayInUserTz = nowInUserTz.endOf("day").toDate()
 
         // Get unprocessed reminders for this user for today
         const userReminders = await reminderRepo
-          .createQueryBuilder('reminder')
-          .where('reminder.userId = :userId', { userId: user.id })
-          .andWhere('reminder.isProcessed = :isProcessed', { isProcessed: false })
-          .andWhere('reminder.reminderDate >= :startOfDay', { startOfDay: todayInUserTz })
-          .andWhere('reminder.reminderDate <= :endOfDay', { endOfDay: endOfDayInUserTz })
+          .createQueryBuilder("reminder")
+          .where("reminder.userId = :userId", { userId: user.id })
+          .andWhere("reminder.isProcessed = :isProcessed", {
+            isProcessed: false,
+          })
+          .andWhere("reminder.reminderDate >= :startOfDay", {
+            startOfDay: todayInUserTz,
+          })
+          .andWhere("reminder.reminderDate <= :endOfDay", {
+            endOfDay: endOfDayInUserTz,
+          })
           .getMany()
 
         pendingReminders.push(...userReminders)
@@ -394,22 +424,22 @@ export class ReminderManager {
   async sendReminder(bot: TelegramBot, reminder: Reminder): Promise<void> {
     try {
       await bot.sendMessage(reminder.userId, reminder.message, {
-        parse_mode: 'Markdown',
+        parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
             [
               {
-                text: '✅ Done',
+                text: "✅ Done",
                 callback_data: `reminder_done|${reminder.id}`,
               },
             ],
             [
               {
-                text: '⏰ Snooze 1 hour',
+                text: "⏰ Snooze 1 hour",
                 callback_data: `reminder_snooze|${reminder.id}|1h`,
               },
               {
-                text: '📅 Snooze 1 day',
+                text: "📅 Snooze 1 day",
                 callback_data: `reminder_snooze|${reminder.id}|1d`,
               },
             ],
@@ -426,7 +456,10 @@ export class ReminderManager {
     await reminderRepo.update({ id: reminderId }, { isProcessed: true })
   }
 
-  async deleteRemindersForEntity(userId: string, entityId: string): Promise<void> {
+  async deleteRemindersForEntity(
+    userId: string,
+    entityId: string
+  ): Promise<void> {
     const reminderRepo = AppDataSource.getRepository(Reminder)
     await reminderRepo.delete({ userId, entityId, isProcessed: false })
   }
@@ -444,44 +477,66 @@ export class ReminderManager {
     // Get all pending reminders
     const allReminders = await reminderRepo.find({
       where: { userId, isProcessed: false },
-      order: { reminderDate: 'ASC' },
+      order: { reminderDate: "ASC" },
     })
 
     // Group by type
-    const debtReminders = allReminders.filter((r) => r.type === 'DEBT')
-    const goalReminders = allReminders.filter((r) => r.type === 'GOAL')
-    const incomeReminders = allReminders.filter((r) => r.type === 'INCOME')
+    const debtReminders = allReminders.filter(
+      (r: Reminder) => r.type === "DEBT"
+    )
+    const goalReminders = allReminders.filter(
+      (r: Reminder) => r.type === "GOAL"
+    )
+    const incomeReminders = allReminders.filter(
+      (r: Reminder) => r.type === "INCOME"
+    )
 
     // Load entities
     const debts: Array<{ debt: Debt; reminders: Reminder[] }> = []
-    for (const entityId of [...new Set(debtReminders.map((r) => r.entityId))]) {
+    for (const entityId of [
+      ...new Set(debtReminders.map((r: Reminder) => r.entityId)),
+    ]) {
       const debt = await debtRepo.findOne({ where: { id: entityId, userId } })
       if (debt) {
         debts.push({
           debt,
-          reminders: debtReminders.filter((r) => r.entityId === entityId),
+          reminders: debtReminders.filter(
+            (r: Reminder) => r.entityId === entityId
+          ),
         })
       }
     }
 
     const goals: Array<{ goal: Goal; reminders: Reminder[] }> = []
-    for (const entityId of [...new Set(goalReminders.map((r) => r.entityId))]) {
+    for (const entityId of [
+      ...new Set(goalReminders.map((r: Reminder) => r.entityId)),
+    ]) {
       const goal = await goalRepo.findOne({ where: { id: entityId, userId } })
       if (goal) {
         goals.push({
           goal,
-          reminders: goalReminders.filter((r) => r.entityId === entityId),
+          reminders: goalReminders.filter(
+            (r: Reminder) => r.entityId === entityId
+          ),
         })
       }
     }
 
     const income: Array<{ income: IncomeSource; reminders: Reminder[] }> = []
-    for (const entityId of [...new Set(incomeReminders.map((r) => r.entityId))]) {
-      const inc = await incomeRepo.findOne({ where: { id: parseInt(entityId).toString(), userId } })
+    for (const entityId of [
+      ...new Set(incomeReminders.map((r: Reminder) => r.entityId)),
+    ]) {
+      if (typeof entityId !== "string") continue
+
+      const inc = await incomeRepo.findOne({
+        where: { id: parseInt(entityId).toString(), userId },
+      })
       if (inc) {
         income.push({
           income: inc,
-          reminders: incomeReminders.filter((r) => r.entityId === entityId),
+          reminders: incomeReminders.filter(
+            (r: Reminder) => r.entityId === entityId
+          ),
         })
       }
     }
@@ -492,8 +547,8 @@ export class ReminderManager {
   getDefaultSettings(): ReminderSettings {
     return {
       enabled: true,
-      time: '09:00',
-      timezone: 'Asia/Tbilisi',
+      time: "09:00",
+      timezone: "Asia/Tbilisi",
       channels: { telegram: true },
       notifyBefore: {
         debts: 1,
@@ -512,7 +567,7 @@ export class ReminderManager {
 
     Object.entries(data).forEach(([key, value]) => {
       const placeholder = `{${key}}`
-      result = result.replace(new RegExp(placeholder, 'g'), String(value))
+      result = result.replace(new RegExp(placeholder, "g"), String(value))
     })
 
     return result
@@ -521,7 +576,7 @@ export class ReminderManager {
   // Snooze reminder for specified duration
   async snoozeReminder(
     reminderId: string,
-    duration: '1h' | '1d'
+    duration: "1h" | "1d"
   ): Promise<boolean> {
     const reminderRepo = AppDataSource.getRepository(Reminder)
     const reminder = await reminderRepo.findOne({ where: { id: reminderId } })
@@ -534,16 +589,19 @@ export class ReminderManager {
     const currentDate = dayjs(reminder.reminderDate)
     let newDate: dayjs.Dayjs
 
-    if (duration === '1h') {
-      newDate = currentDate.add(1, 'hour')
+    if (duration === "1h") {
+      newDate = currentDate.add(1, "hour")
     } else {
-      newDate = currentDate.add(1, 'day')
+      newDate = currentDate.add(1, "day")
     }
 
     // Update reminder date
-    await reminderRepo.update({ id: reminderId }, {
-      reminderDate: newDate.toDate(),
-    })
+    await reminderRepo.update(
+      { id: reminderId },
+      {
+        reminderDate: newDate.toDate(),
+      }
+    )
 
     return true
   }

@@ -1,7 +1,7 @@
 import axios from "axios"
 import undici from "undici"
-import { promises as fs } from 'fs'
-import path from 'path'
+import { promises as fs } from "fs"
+import path from "path"
 import { Currency } from "./types"
 
 interface FXRates {
@@ -38,7 +38,7 @@ const BASE_RETRY_DELAY = 30 * 1000 // 30 seconds
 const MAX_RETRIES = 3 // Maximum retry attempts
 const RETRY_DELAY_MS = 1000 // 1 second between retries
 
-const FX_CACHE_PATH = path.resolve(__dirname, '../data/fx-cache.json')
+const FX_CACHE_PATH = path.resolve(__dirname, "../data/fx-cache.json")
 
 let cache: FXCache | null = null
 let metrics: FXMetrics = {
@@ -68,41 +68,47 @@ async function persistRates(cache: FXCache): Promise<void> {
     // Создаем папку data если не существует
     await fs.mkdir(dataDir, { recursive: true })
 
-    const data = JSON.stringify({
-      rates: cache.rates,
-      timestamp: cache.timestamp,
-      errorCount: cache.errorCount,
-      version: '1.0', // Для будущей миграции
-    }, null, 2)
+    const data = JSON.stringify(
+      {
+        rates: cache.rates,
+        timestamp: cache.timestamp,
+        errorCount: cache.errorCount,
+        version: "1.0", // Для будущей миграции
+      },
+      null,
+      2
+    )
 
-    await fs.writeFile(FX_CACHE_PATH, data, 'utf-8')
+    await fs.writeFile(FX_CACHE_PATH, data, "utf-8")
   } catch (error) {
-    console.error('❌ Failed to persist FX cache:', error)
+    console.error("❌ Failed to persist FX cache:", error)
     // Не пробрасываем ошибку - это не критично
   }
 }
 
 async function loadPersistedRates(): Promise<FXCache | null> {
   try {
-    const data = await fs.readFile(FX_CACHE_PATH, 'utf-8')
+    const data = await fs.readFile(FX_CACHE_PATH, "utf-8")
     const parsed = JSON.parse(data)
 
     // Проверяем TTL
     if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
-      console.log(`✅ Loaded persisted FX rates (age: ${Math.round((Date.now() - parsed.timestamp) / 1000)}s)`)
+      console.log(
+        `✅ Loaded persisted FX rates (age: ${Math.round((Date.now() - parsed.timestamp) / 1000)}s)`
+      )
       return {
         rates: parsed.rates,
         timestamp: parsed.timestamp,
         errorCount: parsed.errorCount || 0,
       }
     } else {
-      console.log('⚠️ Persisted FX cache expired')
+      console.log("⚠️ Persisted FX cache expired")
       return null
     }
   } catch (error: unknown) {
     const err = error as { code?: string }
-    if (err.code !== 'ENOENT') {
-      console.error('❌ Failed to load persisted FX cache:', error)
+    if (err.code !== "ENOENT") {
+      console.error("❌ Failed to load persisted FX cache:", error)
     }
     return null
   }
@@ -401,23 +407,22 @@ function startAutoRefresh() {
   }, refreshInterval)
 }
 
-
 export async function preloadRates(): Promise<void> {
   try {
     const persisted = await loadPersistedRates()
 
     if (persisted) {
       cache = persisted
-      console.log('✅ Using persisted FX rates (no API call needed)')
+      console.log("✅ Using persisted FX rates (no API call needed)")
 
       startAutoRefresh()
       return
     }
 
     await getRates()
-    console.log('✅ FX rates preloaded successfully')
+    console.log("✅ FX rates preloaded successfully")
   } catch (error) {
-    console.error('❌ Failed to preload FX rates:', error)
+    console.error("❌ Failed to preload FX rates:", error)
   }
 }
 
@@ -486,11 +491,11 @@ export function getCacheStatus(): {
 export async function clearPersistedCache(): Promise<void> {
   try {
     await fs.unlink(FX_CACHE_PATH)
-    console.log('✅ Persisted FX cache cleared')
+    console.log("✅ Persisted FX cache cleared")
   } catch (error: unknown) {
     const err = error as { code?: string }
-    if (err.code !== 'ENOENT') {
-      console.error('❌ Failed to clear persisted cache:', error)
+    if (err.code !== "ENOENT") {
+      console.error("❌ Failed to clear persisted cache:", error)
     }
   }
 }

@@ -1,5 +1,10 @@
-// ⚠️ DEPRECATED: Static keyboards removed
-// Use dynamic keyboard generators from i18n/keyboards.ts instead
+// ⚠️ DEPRECATED: This file is deprecated
+//
+// NEW STRUCTURE:
+// - Messages: import from './constants/messages'
+// - Keyboards: import from './i18n/keyboards'
+//
+// This file kept for backwards compatibility only
 
 // Example migration:
 // OLD: import { MAIN_MENU_KEYBOARD } from './constants'
@@ -7,10 +12,16 @@
 //      const keyboard = getMainMenuKeyboard(lang)
 
 // Backwards compatibility exports (will be removed in future)
-import { getMainMenuKeyboard, getSettingsKeyboard, getAnalyticsKeyboard, getStatsKeyboard, getBackAndMainKeyboard } from './i18n/keyboards'
+import {
+  getMainMenuKeyboard,
+  getSettingsKeyboard,
+  getAnalyticsKeyboard,
+  getStatsKeyboard,
+  getBackAndMainKeyboard,
+} from "./i18n/keyboards"
 
 // Default language for backwards compatibility
-const DEFAULT_LANG = 'en'
+const DEFAULT_LANG = "en"
 
 export const MAIN_MENU_KEYBOARD = getMainMenuKeyboard(DEFAULT_LANG)
 export const SETTINGS_KEYBOARD = {

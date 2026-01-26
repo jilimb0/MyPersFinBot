@@ -26,21 +26,21 @@ export class RecurringManager {
     const recurringRepo = AppDataSource.getRepository(RecurringTransaction)
     return await recurringRepo.find({
       where: { userId },
-      order: { nextExecutionDate: 'ASC' }
+      order: { nextExecutionDate: "ASC" },
     })
   }
 
   async getDueRecurring(date?: Date): Promise<RecurringTransaction[]> {
     const recurringRepo = AppDataSource.getRepository(RecurringTransaction)
     const checkDate = date || new Date()
-    const startOfDay = dayjs(checkDate).startOf('day').toDate()
-    const endOfDay = dayjs(checkDate).endOf('day').toDate()
+    const startOfDay = dayjs(checkDate).startOf("day").toDate()
+    const endOfDay = dayjs(checkDate).endOf("day").toDate()
 
     return await recurringRepo
-      .createQueryBuilder('recurring')
-      .where('recurring.isActive = :isActive', { isActive: true })
-      .andWhere('recurring.nextExecutionDate >= :startOfDay', { startOfDay })
-      .andWhere('recurring.nextExecutionDate <= :endOfDay', { endOfDay })
+      .createQueryBuilder("recurring")
+      .where("recurring.isActive = :isActive", { isActive: true })
+      .andWhere("recurring.nextExecutionDate >= :startOfDay", { startOfDay })
+      .andWhere("recurring.nextExecutionDate <= :endOfDay", { endOfDay })
       .getMany()
   }
 
@@ -57,8 +57,14 @@ export class RecurringManager {
       category: recurring.category,
       date: new Date(),
       description: recurring.description,
-      fromAccountId: recurring.type === TransactionType.EXPENSE ? recurring.accountId : undefined,
-      toAccountId: recurring.type === TransactionType.INCOME ? recurring.accountId : undefined,
+      fromAccountId:
+        recurring.type === TransactionType.EXPENSE
+          ? recurring.accountId
+          : undefined,
+      toAccountId:
+        recurring.type === TransactionType.INCOME
+          ? recurring.accountId
+          : undefined,
     })
 
     await transactionRepo.save(transaction)
@@ -90,14 +96,14 @@ export class RecurringManager {
     const current = dayjs(recurring.nextExecutionDate)
 
     switch (recurring.frequency) {
-      case 'DAILY':
-        return current.add(1, 'day').toDate()
-      case 'WEEKLY':
-        return current.add(1, 'week').toDate()
-      case 'MONTHLY':
-        return current.add(1, 'month').toDate()
-      case 'YEARLY':
-        return current.add(1, 'year').toDate()
+      case "DAILY":
+        return current.add(1, "day").toDate()
+      case "WEEKLY":
+        return current.add(1, "week").toDate()
+      case "MONTHLY":
+        return current.add(1, "month").toDate()
+      case "YEARLY":
+        return current.add(1, "year").toDate()
       default:
         return current.toDate()
     }

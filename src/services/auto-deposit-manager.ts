@@ -39,8 +39,15 @@ class AutoDepositManager {
 
       if (goal.autoDeposit.frequency === "MONTHLY") {
         // Handle end of month (e.g., day 31 in Feb should execute on last day)
-        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
-        const targetDay = Math.min(goal.autoDeposit.dayOfMonth || 1, lastDayOfMonth)
+        const lastDayOfMonth = new Date(
+          today.getFullYear(),
+          today.getMonth() + 1,
+          0
+        ).getDate()
+        const targetDay = Math.min(
+          goal.autoDeposit.dayOfMonth || 1,
+          lastDayOfMonth
+        )
         return dayOfMonth === targetDay
       }
 
@@ -53,7 +60,10 @@ class AutoDepositManager {
   /**
    * Execute auto-deposit for a goal
    */
-  async executeAutoDeposit(goal: GoalEntity, bot?: TelegramBot): Promise<boolean> {
+  async executeAutoDeposit(
+    goal: GoalEntity,
+    bot?: TelegramBot
+  ): Promise<boolean> {
     try {
       if (!goal.autoDeposit) return false
 
@@ -67,8 +77,8 @@ class AutoDepositManager {
           await bot.sendMessage(
             goal.userId,
             `⚠️ *Auto-Deposit Failed*\n\n` +
-            `Goal: *${goal.name}*\n` +
-            `Reason: Account "${accountId}" not found.`,
+              `Goal: *${goal.name}*\n` +
+              `Reason: Account "${accountId}" not found.`,
             { parse_mode: "Markdown" }
           )
         }
@@ -80,10 +90,10 @@ class AutoDepositManager {
           await bot.sendMessage(
             goal.userId,
             `⚠️ *Auto-Deposit Failed*\n\n` +
-            `Goal: *${name}*\n` +
-            `Reason: Insufficient funds in "${accountId}"\n\n` +
-            `Available: ${formatMoney(balance.amount, balance.currency)}\n` +
-            `Required: ${formatMoney(amount, currency)}`,
+              `Goal: *${name}*\n` +
+              `Reason: Insufficient funds in "${accountId}"\n\n` +
+              `Available: ${formatMoney(balance.amount, balance.currency)}\n` +
+              `Required: ${formatMoney(amount, currency)}`,
             { parse_mode: "Markdown" }
           )
         }
@@ -109,7 +119,12 @@ class AutoDepositManager {
       await txRepo.save(txData)
 
       // Update balance
-      await db.safeUpdateBalance(goal.userId, accountId, -amount, balance.currency)
+      await db.safeUpdateBalance(
+        goal.userId,
+        accountId,
+        -amount,
+        balance.currency
+      )
 
       // Update goal progress
       const goalRepo = AppDataSource.getRepository(GoalEntity)
@@ -129,29 +144,31 @@ class AutoDepositManager {
       // Send success notification
       if (bot) {
         const remaining = goal.targetAmount - goal.currentAmount
-        const progress = Math.round((goal.currentAmount / goal.targetAmount) * 100)
+        const progress = Math.round(
+          (goal.currentAmount / goal.targetAmount) * 100
+        )
 
         if (goal.status === "COMPLETED") {
           await bot.sendMessage(
             goal.userId,
             `🎉 *Goal Completed!*\n\n` +
-            `🎯 *${goal.name}*\n\n` +
-            `Auto-deposit: ${formatMoney(amount, goal.currency)}\n` +
-            `From: ${accountId}\n\n` +
-            `🎆 You've reached your goal of ${formatMoney(goal.targetAmount, goal.currency)}!\n\n` +
-            `Auto-deposits have been disabled.`,
+              `🎯 *${goal.name}*\n\n` +
+              `Auto-deposit: ${formatMoney(amount, goal.currency)}\n` +
+              `From: ${accountId}\n\n` +
+              `🎆 You've reached your goal of ${formatMoney(goal.targetAmount, goal.currency)}!\n\n` +
+              `Auto-deposits have been disabled.`,
             { parse_mode: "Markdown" }
           )
         } else {
           await bot.sendMessage(
             goal.userId,
             `✅ *Auto-Deposit Completed*\n\n` +
-            `🎯 *${goal.name}*\n\n` +
-            `Deposited: ${formatMoney(amount, goal.currency)}\n` +
-            `From: ${accountId}\n` +
-            `Frequency: ${frequency}\n\n` +
-            `Progress: ${progress}%\n` +
-            `Remaining: ${formatMoney(remaining, goal.currency)}`,
+              `🎯 *${goal.name}*\n\n` +
+              `Deposited: ${formatMoney(amount, goal.currency)}\n` +
+              `From: ${accountId}\n` +
+              `Frequency: ${frequency}\n\n` +
+              `Progress: ${progress}%\n` +
+              `Remaining: ${formatMoney(remaining, goal.currency)}`,
             { parse_mode: "Markdown" }
           )
         }
@@ -159,7 +176,10 @@ class AutoDepositManager {
 
       return true
     } catch (error) {
-      console.error(`Failed to execute auto-deposit for goal ${goal.id}:`, error)
+      console.error(
+        `Failed to execute auto-deposit for goal ${goal.id}:`,
+        error
+      )
       return false
     }
   }

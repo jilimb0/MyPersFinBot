@@ -2,7 +2,12 @@ import TelegramBot from "node-telegram-bot-api"
 import { WizardManager } from "../wizards/wizards"
 import { BankParserFactory } from "../parsers"
 import { dbStorage as db } from "../database/storage-db"
-import { ParsedTransaction, BankType, Currency, TransactionCategory } from "../types"
+import {
+  ParsedTransaction,
+  BankType,
+  Currency,
+  TransactionCategory,
+} from "../types"
 import { formatMoney } from "../utils"
 import { SETTINGS_KEYBOARD } from "../constants"
 import { randomUUID } from "crypto"
@@ -18,10 +23,10 @@ export async function handleStatementUpload(
   const document = msg.document
 
   const state = wizardManager.getState(userId)
-  const lang = state.lang || 'en'
-  
+  const lang = state?.lang || "en"
+
   if (!document) {
-    await bot.sendMessage(msg.chat.id, t(lang, 'upload.pleaseUploadValid'))
+    await bot.sendMessage(msg.chat.id, t(lang, "upload.pleaseUploadValid"))
     return
   }
 
@@ -32,18 +37,19 @@ export async function handleStatementUpload(
   if (!ext || !["csv", "txt", "json"].includes(ext)) {
     await bot.sendMessage(
       msg.chat.id,
-      t(lang, 'upload.unsupportedFormat') + "\n\n" +
-      "Supported formats:\n" +
-      "• CSV (Tinkoff, Monobank, Revolut)\n" +
-      "• TXT (Wise)\n" +
-      "• JSON (Monobank)",
+      t(lang, "upload.unsupportedFormat") +
+        "\n\n" +
+        "Supported formats:\n" +
+        "• CSV (Tinkoff, Monobank, Revolut)\n" +
+        "• TXT (Wise)\n" +
+        "• JSON (Monobank)",
       { parse_mode: "Markdown" }
     )
     return
   }
 
   try {
-    await bot.sendMessage(msg.chat.id, t(lang, 'upload.downloadingParsing'))
+    await bot.sendMessage(msg.chat.id, t(lang, "upload.downloadingParsing"))
 
     // Download file
     const fileLink = await bot.getFileLink(document.file_id)
@@ -60,16 +66,13 @@ export async function handleStatementUpload(
     if (result.errors.length > 0) {
       await bot.sendMessage(
         msg.chat.id,
-        t(lang, 'upload.parsingErrors') + "\n" + result.errors.join("\n"),
+        t(lang, "upload.parsingErrors") + "\n" + result.errors.join("\n"),
         { parse_mode: "Markdown" }
       )
     }
 
     if (result.transactions.length === 0) {
-      await bot.sendMessage(
-        msg.chat.id,
-        t(lang, 'upload.noTransactionsFound')
-      )
+      await bot.sendMessage(msg.chat.id, t(lang, "upload.noTransactionsFound"))
       return
     }
 
@@ -86,7 +89,9 @@ export async function handleStatementUpload(
     console.error("Upload error:", error)
     await bot.sendMessage(
       msg.chat.id,
-      t(lang, 'upload.failedToParse') + ": " + (error instanceof Error ? error.message : "Unknown error")
+      t(lang, "upload.failedToParse") +
+        ": " +
+        (error instanceof Error ? error.message : "Unknown error")
     )
   }
 }
@@ -101,21 +106,22 @@ async function showTransactionPreview(
   wizardManager: WizardManager
 ): Promise<void> {
   const total = transactions.length
-  const incomeCount = transactions.filter(t => t.type === "INCOME").length
-  const expenseCount = transactions.filter(t => t.type === "EXPENSE").length
+  const incomeCount = transactions.filter((t) => t.type === "INCOME").length
+  const expenseCount = transactions.filter((t) => t.type === "EXPENSE").length
 
   // Calculate totals by currency
-  const totalsByCurrency: Record<string, { income: number; expense: number }> = {}
+  const totalsByCurrency: Record<string, { income: number; expense: number }> =
+    {}
 
-  transactions.forEach(tx => {
+  transactions.forEach((tx) => {
     if (!totalsByCurrency[tx.currency]) {
       totalsByCurrency[tx.currency] = { income: 0, expense: 0 }
     }
 
     if (tx.type === "INCOME") {
-      totalsByCurrency[tx.currency].income += tx.amount
+      totalsByCurrency[tx.currency]!.income += tx.amount
     } else if (tx.type === "EXPENSE") {
-      totalsByCurrency[tx.currency].expense += tx.amount
+      totalsByCurrency[tx.currency]!.expense += tx.amount
     }
   })
 
@@ -145,7 +151,7 @@ async function showTransactionPreview(
   }
 
   const state = wizardManager.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
   wizardManager.setState(userId, {
     step: "STATEMENT_PREVIEW",
     data: {
@@ -160,9 +166,12 @@ async function showTransactionPreview(
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: t(lang, 'common.importAll') }, { text: t(lang, 'common.editAndImport') }],
+        [
+          { text: t(lang, "common.importAll") },
+          { text: t(lang, "common.editAndImport") },
+        ],
         [{ text: "🔍 Review Transactions" }],
-        [{ text: t(lang, 'common.cancel') }],
+        [{ text: t(lang, "common.cancel") }],
       ],
       resize_keyboard: true,
     },
@@ -179,27 +188,41 @@ export async function handleStatementPreviewAction(
   const state = wizardManager.getState(userId)
   if (!state || state.step !== "STATEMENT_PREVIEW") return false
 
+  if (!state.data) return true
   const { transactions, lang } = state.data
 
-  if (text === t(lang, 'common.importAll')) {
-    return await importAllTransactions(wizardManager, chatId, userId, transactions)
+  if (text === t(lang, "common.importAll")) {
+    return await importAllTransactions(
+      wizardManager,
+      chatId,
+      userId,
+      transactions
+    )
   }
 
-  if (text === t(lang, 'common.editAndImport')) {
-    return await startEditingTransactions(wizardManager, chatId, userId, transactions)
+  if (text === t(lang, "common.editAndImport")) {
+    return await startEditingTransactions(
+      wizardManager,
+      chatId,
+      userId,
+      transactions
+    )
   }
 
   if (text === "🔍 Review Transactions") {
-    return await showTransactionsList(wizardManager, chatId, userId, transactions)
+    return await showTransactionsList(
+      wizardManager,
+      chatId,
+      userId,
+      transactions
+    )
   }
 
-  if (text === t(lang, 'common.cancel')) {
+  if (text === t(lang, "common.cancel")) {
     wizardManager.clearState(userId)
-    await wizardManager.sendMessage(
-      chatId,
-      "❌ Import cancelled",
-      { reply_markup: SETTINGS_KEYBOARD }
-    )
+    await wizardManager.sendMessage(chatId, "❌ Import cancelled", {
+      reply_markup: SETTINGS_KEYBOARD,
+    })
     return true
   }
 
@@ -227,9 +250,9 @@ async function importAllTransactions(
       return true
     }
 
-    const defaultAccount = balances[0].accountId
+    const defaultAccount = balances[0]?.accountId
 
-    const txsToImport = transactions.map(tx => ({
+    const txsToImport = transactions.map((tx) => ({
       id: randomUUID(),
       date: new Date(tx.date),
       amount: tx.amount,
@@ -237,8 +260,10 @@ async function importAllTransactions(
       type: tx.type,
       category: tx.category as TransactionCategory,
       description: tx.description,
-      fromAccountId: tx.type === "EXPENSE" ? (tx.accountId || defaultAccount) : undefined,
-      toAccountId: tx.type === "INCOME" ? (tx.accountId || defaultAccount) : undefined,
+      fromAccountId:
+        tx.type === "EXPENSE" ? tx.accountId || defaultAccount : undefined,
+      toAccountId:
+        tx.type === "INCOME" ? tx.accountId || defaultAccount : undefined,
     }))
 
     const { valid, invalid } = db.validateTransactionsBatch(txsToImport)
@@ -254,10 +279,10 @@ async function importAllTransactions(
     await wizardManager.sendMessage(
       chatId,
       `✅ *Import completed!*\n\n` +
-      `Imported: ${result.added}\n` +
-      (invalid.length > 0 ? `Skipped (invalid): ${invalid.length}\n` : "") +
-      (result.errors.length > 0 ? `Errors: ${result.errors.length}\n` : "") +
-      `\n⚡ Time: ${duration}ms`,
+        `Imported: ${result.added}\n` +
+        (invalid.length > 0 ? `Skipped (invalid): ${invalid.length}\n` : "") +
+        (result.errors.length > 0 ? `Errors: ${result.errors.length}\n` : "") +
+        `\n⚡ Time: ${duration}ms`,
       {
         parse_mode: "Markdown",
         reply_markup: SETTINGS_KEYBOARD,
@@ -295,7 +320,14 @@ async function startEditingTransactions(
     returnTo: "settings",
   })
 
-  return await showTransactionEditor(wizardManager, chatId, userId, transactions[0], 0, transactions.length)
+  return await showTransactionEditor(
+    wizardManager,
+    chatId,
+    userId,
+    transactions[0]!,
+    0,
+    transactions.length
+  )
 }
 
 // Show transaction editor
@@ -308,7 +340,7 @@ async function showTransactionEditor(
   total: number
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   const emoji = tx.type === "INCOME" ? "💰" : "💸"
   const sign = tx.type === "INCOME" ? "+" : "-"
@@ -323,9 +355,15 @@ async function showTransactionEditor(
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: t(lang, 'common.editCategory') }, { text: t(lang, 'common.editDescription') }],
-        [{ text: t(lang, 'common.keepAndNext') }, { text: t(lang, 'common.skip') }],
-        [{ text: t(lang, 'upload.saveAll') }],
+        [
+          { text: t(lang, "common.editCategory") },
+          { text: t(lang, "common.editDescription") },
+        ],
+        [
+          { text: t(lang, "common.keepAndNext") },
+          { text: t(lang, "common.skip") },
+        ],
+        [{ text: t(lang, "upload.saveAll") }],
       ],
       resize_keyboard: true,
     },
@@ -342,7 +380,7 @@ async function showTransactionsList(
   transactions: ParsedTransaction[]
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   let msg = `📋 *All Transactions (${transactions.length})*\n\n`
 
@@ -357,8 +395,11 @@ async function showTransactionsList(
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: t(lang, 'common.importAll') }, { text: t(lang, 'common.editAndImport') }],
-        [{ text: t(lang, 'common.cancel') }],
+        [
+          { text: t(lang, "common.importAll") },
+          { text: t(lang, "common.editAndImport") },
+        ],
+        [{ text: t(lang, "common.cancel") }],
       ],
       resize_keyboard: true,
     },

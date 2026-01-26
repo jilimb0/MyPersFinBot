@@ -160,7 +160,6 @@ export interface UploadedStatement {
   importedCount?: number
 }
 
-
 export interface UserData {
   balances: Balance[]
   debts: Debt[]

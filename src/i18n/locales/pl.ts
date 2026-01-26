@@ -2,7 +2,8 @@ export const pl = {
   // Menu główne
   mainMenu: {
     welcome: "👋 Witaj w Bocie Finansowym!",
-    welcomeIntro: "📊 Zarządzaj pieniędzmi z łatwością:\n" +
+    welcomeIntro:
+      "📊 Zarządzaj pieniędzmi z łatwością:\n" +
       "• 💸 Zapisuj wydatki i przychody\n" +
       "• 💰 Zarządzaj wieloma kontami\n" +
       "• 📉 Śledź długi\n" +
@@ -12,7 +13,8 @@ export const pl = {
     welcomeBack: "👋 Witaj z powrotem! Wybierz opcję:",
     startTracking: "💰 Rozpocznij śledzenie",
     quickStartTitle: "🎉 *Świetnie! Zacznijmy!*",
-    quickStartGuide: "📄 *Szybki start:*\n" +
+    quickStartGuide:
+      "📄 *Szybki start:*\n" +
       "1️⃣ Dodaj pierwsze konto w 💰 *Salda*\n" +
       "2️⃣ Zapisuj transakcje przez 💸 *Wydatek* i 💰 *Przychód*\n" +
       "3️⃣ Zobacz statystyki w 📈 *Statystyki*\n\n" +
@@ -34,7 +36,7 @@ export const pl = {
     mainMenu: "🏠 Menu główne",
     back: "⬅️ Wstecz",
     advanced: "⚙️ Zaawansowane",
-    
+
     // Akcje
     manage: "⚙️ Zarządzaj",
     saveAsTemplate: "💾 Zapisać jako szablon?",
@@ -47,14 +49,14 @@ export const pl = {
     editName: "✏️ Edytuj nazwę",
     tryAgain: "🔄 Spróbuj ponownie",
     tryAgainEdit: "✏️ Spróbuj ponownie",
-    
+
     // Okresy czasu
     weekly: "📆 Tygodniowo",
     monthly: "📅 Miesięcznie",
     last7Days: "📅 Ostatnie 7 dni",
     last30Days: "📅 Ostatnie 30 dni",
     customPeriod: "📅 Własny okres",
-    
+
     // Kategorie
     food: "🍔 Jedzenie",
     transport: "🚗 Transport",
@@ -64,24 +66,24 @@ export const pl = {
     health: "🏥 Zdrowie",
     salary: "💼 Pensja",
     other: "📦 Inne",
-    
+
     // Typy transakcji
     expensesOnly: "💸 Tylko wydatki",
     incomeOnly: "💰 Tylko przychody",
     allTransactions: "🔍 Wszystkie transakcje",
-    
+
     // Widoki
     filters: "🔎 Filtry",
     trends: "📈 Trendy",
     topCategories: "📉 Top kategorie",
     exportCsv: "📅 Eksport CSV",
-    
+
     // Główne funkcje
     balances: "💳 Salda",
     goToBalances: "💳 Przejdź do Sald",
     reviewTransactions: "🔍 Przejrzyj transakcje",
     startTracking: "💰 Rozpocznij śledzenie",
-    
+
     // Dodawanie
     addBalance: "✨ Dodaj saldo",
     addDebt: "✨ Dodaj dług",
@@ -89,7 +91,7 @@ export const pl = {
     addIncomeSource: "✨ Dodaj źródło przychodu",
     addEditBudget: "✨ Dodaj / Edytuj budżet",
     addRecurring: "✨ Dodaj cykliczny",
-    
+
     // Sekcje
     assets: "💳 Aktywa",
     debts: "💰 Długi",
@@ -104,17 +106,17 @@ export const pl = {
     history: "📋 Historia",
     netWorth: "💎 Wartość netto",
     showReport: "📊 Pokaż raport",
-    
+
     // Ustawienia
     disableReminders: "🔕 Wyłącz przypomnienia",
     changeTimezone: "🌍 Zmień strefę czasową",
-    
+
     // Terminy i daty
     changeDeadline: "📅 Zmień termin",
     setDeadline: "📅 Ustaw termin",
     removeDate: "🗑 Usuń datę",
     snooze1Day: "📅 Odłóż o 1 dzień",
-    
+
     // Inne akcje
     transferToAnotherAccount: "🔄 Przenieś na inne konto",
     getPaidFrom: "💰 Otrzymaj wypłatę od",
@@ -123,11 +125,11 @@ export const pl = {
     previousPage: "🔙 Poprzednia strona",
     clearLimit: "🧹 Wyczyść limit",
     emptyBalance: "⚪ Opróżnij saldo",
-    
+
     // Typy długów
     iOwe: "🔴 Ja jestem winien",
     theyOweMe: "🟢 Mi są winni",
-    
+
     // Waluta
     convertTo: "🔄 Konwertuj na",
     changeTo: "💱 Zmień na",
@@ -157,7 +159,8 @@ export const pl = {
     saved: "✅ Transakcja zapisana!",
     addAnotherExpense: "✨ Dodaj kolejny wydatek",
     addAnotherIncome: "✨ Dodaj kolejny przychód",
-    noBalances: "⚠️ *Nie znaleziono sald*\n\n" +
+    noBalances:
+      "⚠️ *Nie znaleziono sald*\n\n" +
       "Przed dodaniem transakcji potrzebne jest przynajmniej jedno konto.\n\n" +
       "💡 *Szybki start:*\n" +
       "1️⃣ Przejdź do 💰 *Salda*\n" +
@@ -184,7 +187,8 @@ export const pl = {
     selectAddAccount: "💰 Wybierz konto do dodania:",
     yesRefund: "✅ Tak, to zwrot",
     noPositiveBalance: "❌ Brak kont z dodatnim saldem do przelewu.",
-    cannotTransferSame: "❌ Nie można przelewać na to samo konto. Wybierz inne.",
+    cannotTransferSame:
+      "❌ Nie można przelewać na to samo konto. Wybierz inne.",
   },
 
   // Salda
@@ -197,7 +201,8 @@ export const pl = {
     noAccounts: "Brak kont. Dodaj jedno.",
     listTitle: "💳 *Konta*",
     totalNet: "Całkowita wartość netto",
-    enterName: "Wprowadź nazwę konta (np. Główna karta, Gotówka, Oszczędności):",
+    enterName:
+      "Wprowadź nazwę konta (np. Główna karta, Gotówka, Oszczędności):",
     enterAmount: "Wprowadź aktualne saldo:",
     selectCurrency: "Wybierz walutę:",
     amount: "Kwota:",
@@ -205,7 +210,7 @@ export const pl = {
     created: "✅ Konto utworzone!",
     updated: "✅ Saldo zaktualizowane!",
     deleted: "✅ Saldo usunięte!",
-    deleteConfirm: "Czy na pewno chcesz usunąć konto \"{name}\"?",
+    deleteConfirm: 'Czy na pewno chcesz usunąć konto "{name}"?',
     cannotUndo: "Tej akcji nie można cofnąć.",
     yesDelete: "✅ Tak, usuń",
     transferFrom: "Przenieś z konta:",
@@ -219,7 +224,8 @@ export const pl = {
     enterNewAmount: "Wprowadź nową kwotę:",
     transferToAnother: "🔄 Przenieś na inne konto",
     yesSetZero: "✅ Tak, wyzeruj",
-    invalidInput: "❌ Nieprawidłowe dane.\n\n• Wprowadź *liczbę* aby zmienić kwotę (np. 500)\n• Wprowadź *tekst* aby zmienić nazwę (np. MojaKarta)",
+    invalidInput:
+      "❌ Nieprawidłowe dane.\n\n• Wprowadź *liczbę* aby zmienić kwotę (np. 500)\n• Wprowadź *tekst* aby zmienić nazwę (np. MojaKarta)",
     selectFromButtons: "❌ Wybierz saldo z przycisków.",
     invalidInputEdit: "❌ Nieprawidłowe dane.",
     balancesButton: "💳 Salda",
@@ -254,7 +260,7 @@ export const pl = {
     paymentRecorded: "✅ Płatność zapisana!",
     markAsPaid: "✅ Oznacz jako spłacone",
     recordPayment: "💵 Zapisz płatność",
-    deleteConfirm: "Czy na pewno chcesz usunąć dług \"{name}\"?",
+    deleteConfirm: 'Czy na pewno chcesz usunąć dług "{name}"?',
     editNameTitle: "📝 *Edytuj nazwę długu*",
     enterNewName: "Wprowadź nową nazwę:",
     editAmountTitle: "💰 *Edytuj kwotę długu*",
@@ -277,9 +283,11 @@ export const pl = {
     changeDueDateTitle: "📅 *Zmień termin płatności*",
     enterDueDate: "Wprowadź nowy termin płatności (DD.MM.RRRR):",
     dueDateExample: "Przykład: 31.12.2026",
-    removeDueDatePrompt: "Lub naciśnij 🗑 Usuń datę aby usunąć termin płatności.",
+    removeDueDatePrompt:
+      "Lub naciśnij 🗑 Usuń datę aby usunąć termin płatności.",
     disableReminders: "🔕 Wyłącz przypomnienia",
-    remindersDisabled: "✅ Przypomnienia wyłączone i termin płatności usunięty.",
+    remindersDisabled:
+      "✅ Przypomnienia wyłączone i termin płatności usunięty.",
     enableAutoPayment: "✅ Włącz automatyczną płatność",
     disableAutoPayment: "❌ Wyłącz automatyczną płatność",
     autoPaymentComingSoon: "⚠️ Funkcja automatycznych płatności wkrótce!",
@@ -291,7 +299,8 @@ export const pl = {
     fullyReceivedClosed: "🎉 Dług całkowicie otrzymany i zamknięty!",
     notFound: "❌ Dług nie znaleziony.",
     typeNotFound: "❌ Typ długu nie znaleziony.",
-    noBalancesForPayment: "⚠️ *Nie znaleziono sald*\n\nPrzed dokonaniem płatności potrzebne jest przynajmniej jedno konto.",
+    noBalancesForPayment:
+      "⚠️ *Nie znaleziono sald*\n\nPrzed dokonaniem płatności potrzebne jest przynajmniej jedno konto.",
     quickStartTitle: "💡 *Szybki start:*",
     quickStartStep1: "1️⃣ Przejdź do 💰 *Salda*",
     quickStartStep2: "2️⃣ Naciśnij ✨ *Dodaj saldo*",
@@ -333,7 +342,7 @@ export const pl = {
     statusInProgress: "⏳",
     statusCompleted: "✅",
     selectGoal: "Wybierz cel do edycji:",
-    deleteConfirm: "Czy na pewno chcesz usunąć cel \"{name}\"?",
+    deleteConfirm: 'Czy na pewno chcesz usunąć cel "{name}"?',
     editNameTitle: "🎯 *Edytuj nazwę celu*",
     enterNewName: "Wprowadź nową nazwę:",
     editTargetTitle: "🎯 *Edytuj kwotę docelową*",
@@ -360,7 +369,8 @@ export const pl = {
     completedGoalsTitle: "✅ *Ukończone cele*",
     noCompletedGoals: "💭 Nie ma jeszcze ukończonych celów.",
     errorMissingData: "❌ Błąd: Brak danych celu",
-    noBalancesForDeposit: "⚠️ *Nie znaleziono sald*\n\nPrzed wpłatą na cele potrzebne jest przynajmniej jedno konto.",
+    noBalancesForDeposit:
+      "⚠️ *Nie znaleziono sald*\n\nPrzed wpłatą na cele potrzebne jest przynajmniej jedno konto.",
     quickStartTitle: "💡 *Szybki start:*",
     quickStartStep1: "1️⃣ Przejdź do 💰 *Salda*",
     quickStartStep2: "2️⃣ Naciśnij ✨ *Dodaj saldo*",
@@ -454,13 +464,13 @@ export const pl = {
     next: "Następna ▶️",
     noCancel: "❌ Nie, anuluj",
     cancelled: "✅ Anulowano.",
-    
+
     // Akcje edycji
     editAmount: "💰 Edytuj kwotę",
     editAccount: "💳 Edytuj konto",
     editCategory: "✏️ Edytuj kategorię",
     editDescription: "✏️ Edytuj opis",
-    
+
     // Nawigacja i ogólne akcje
     goToBalances: "💳 Przejdź do Sald",
     importAll: "✅ Importuj wszystko",
@@ -469,11 +479,11 @@ export const pl = {
     yesSave: "✅ Tak, zapisz",
     yesDelete: "✅ Tak, usuń",
     yesSetToZero: "✅ Tak, wyzeruj",
-    
+
     // Status
     enabled: "✅ Włączone",
     disabled: "❌ Wyłączone",
-    
+
     // Wiadomości
     error: "❌ Błąd",
     notFound: "❌ Nie znaleziono",
@@ -481,28 +491,37 @@ export const pl = {
     enterDay: "📅 *Wprowadź dzień miesiąca (1-31):*",
 
     // NOWE: Wiadomości bota
-    botWasBlocked: "🚫 Bot został zablokowany przez użytkownika lub czat nie został znaleziony.",
+    botWasBlocked:
+      "🚫 Bot został zablokowany przez użytkownika lub czat nie został znaleziony.",
     fetchedFreshRates: "🌐 Pobrano świeże kursy walut z API",
     actionCannotBeUndone: "❗ Tej akcji NIE MOŻNA cofnąć!\n\n",
-    
+
     // NOWE: Własne wiadomości
-    enterCustomDebtReminder: "📝 *Wprowadź własny szablon przypomnienia o długu:*\n\n",
-    enterCustomGoalReminder: "📝 *Wprowadź własny szablon przypomnienia o celu:*\n\n",
-    enterCustomIncomeReminder: "📝 *Wprowadź własny szablon przypomnienia o przychodzie:*\n\n",
-    
+    enterCustomDebtReminder:
+      "📝 *Wprowadź własny szablon przypomnienia o długu:*\n\n",
+    enterCustomGoalReminder:
+      "📝 *Wprowadź własny szablon przypomnienia o celu:*\n\n",
+    enterCustomIncomeReminder:
+      "📝 *Wprowadź własny szablon przypomnienia o przychodzie:*\n\n",
+
     // NOWE: Wprowadzanie użytkownika
     userCanTextInput: "💡 Lub użytkownik może użyć wprowadzania tekstowego: ",
     trackMoneyWithEase: "📊 Śledź swoje pieniądze z łatwością:\n",
-    
+
     // NOWE: Tytuły
-    transactionHistorySelectFilter: "📋 *Historia transakcji*\n\nWybierz filtr:",
-    transactionHistorySelectPeriod: "📋 *Historia transakcji*\n\nWybierz okres:",
-    personalFinanceBotGuide: "❓ *Bot Finansów Osobistych - Przewodnik użytkownika*\n\n",
+    transactionHistorySelectFilter:
+      "📋 *Historia transakcji*\n\nWybierz filtr:",
+    transactionHistorySelectPeriod:
+      "📋 *Historia transakcji*\n\nWybierz okres:",
+    personalFinanceBotGuide:
+      "❓ *Bot Finansów Osobistych - Przewodnik użytkownika*\n\n",
     uploadBankStatement: "📥 *Prześlij wyciąg bankowy*\n\n",
     welcomeTitle: "👋 *Witaj w Bocie Finansów Osobistych!*\n\n",
-    analyticsViewInsights: "📊 *Analityka*\n\nZobacz swoje spostrzeżenia finansowe:",
+    analyticsViewInsights:
+      "📊 *Analityka*\n\nZobacz swoje spostrzeżenia finansowe:",
     analyticsSelectWhatToSee: "📊 *Analityka*\n\nWybierz co chcesz zobaczyć:",
-    automationManage: "🤖 *Automatyzacja*\n\nZarządzaj funkcjami automatycznymi:",
+    automationManage:
+      "🤖 *Automatyzacja*\n\nZarządzaj funkcjami automatycznymi:",
     queryPerformanceReport: "🔍 *Raport wydajności zapytań*\n\n",
     incomePlanVsActual: "💵 *Plan przychodów vs Rzeczywiste*\n\nOczekiwane:\n",
     financialGoals: "🎯 *Twoje cele finansowe*\n\n",
@@ -513,11 +532,14 @@ export const pl = {
     goalsTitle: "🎯 *Cele:*\n",
     incomeSourcesTitle: "💵 *Źródła przychodu:*\n",
     reportsFiltersSelectPeriod: "📊 *Filtry raportów*\n\nWybierz okres:",
-    budgetPlannerSelectCategory: "🔮 *Planer budżetu*\n\nWybierz kategorię aby ustawić limit:",
-    editTransactionsSelect: "✏️ *Edytuj transakcje*\n\nWybierz inną transakcję do edycji:",
+    budgetPlannerSelectCategory:
+      "🔮 *Planer budżetu*\n\nWybierz kategorię aby ustawić limit:",
+    editTransactionsSelect:
+      "✏️ *Edytuj transakcje*\n\nWybierz inną transakcję do edycji:",
     addIncomeSourceTitle: "💼 *Dodaj źródło przychodu*\n\n",
-    enterIncomeSourceName: "💼 Wprowadź nazwę źródła przychodu:\n\nPrzykład: Pensja, Freelance",
-    
+    enterIncomeSourceName:
+      "💼 Wprowadź nazwę źródła przychodu:\n\nPrzykład: Pensja, Freelance",
+
     // NOWE: Wybierz konto
     selectAccountAdd: "💰 Wybierz konto do dodania:",
     selectSourceAccount: "📤 Wybierz konto źródłowe:",
@@ -526,12 +548,13 @@ export const pl = {
     selectAccountWithdraw: "💳 Wybierz konto do wypłaty:",
     selectAccountReceiveRefund: "📥 Wybierz konto do otrzymania zwrotu:",
     selectAccountDeposit: "💳 Wybierz konto do wpłaty:",
-    selectAccountDepositRemaining: "💳 Wybierz konto do wpłaty pozostałej kwoty:",
-    
+    selectAccountDepositRemaining:
+      "💳 Wybierz konto do wpłaty pozostałej kwoty:",
+
     // NOWE: Edytuj kategorię
     editCategoryExpense: "📝 *Edytuj kategorię (Wydatek)*\n\nAktualna: ",
     editCategoryIncome: "📝 *Edytuj kategorię (Przychód)*\n\nAktualna: ",
-    
+
     // NOWE: Wiadomości statusu
     noTransactionsThisMonth: "📊 Brak transakcji w tym miesiącu.",
     topExpensesNone: "📉 *Top wydatki*\n\nBrak wydatków w tym miesiącu.",
@@ -539,9 +562,10 @@ export const pl = {
     noMoreTransactions: "📭 Nie ma więcej transakcji",
     noTransactionsMatchFilter: "📬 Żadne transakcje nie pasują do tego filtra.",
     noMoreTransactionsToEdit: "💭 Nie ma więcej transakcji do edycji.",
-    noIncomeOrExpenseThisMonth: "📊 Brak transakcji przychodu lub wydatku w tym miesiącu (tylko przelewy).",
+    noIncomeOrExpenseThisMonth:
+      "📊 Brak transakcji przychodu lub wydatku w tym miesiącu (tylko przelewy).",
     debtFullyReceived: "💰 Dług całkowicie otrzymany!",
-    
+
     // NOWE: Przetwarzanie
     uploadingAudioAssemblyAI: "🎤 Przesyłanie audio do AssemblyAI...",
     creatingTranscriptionJob: "🎤 Tworzenie zadania transkrypcji...",
@@ -549,39 +573,45 @@ export const pl = {
     checkingRecurringTransactions: "🔄 Sprawdzanie transakcji cyklicznych...",
     checkingAutoDeposits: "💰 Sprawdzanie automatycznych wpłat...",
     checkingAutoIncomes: "💼 Sprawdzanie automatycznych przychodów...",
-    checkingAutoDebtPayments: "💸 Sprawdzanie automatycznych płatności długów...",
+    checkingAutoDebtPayments:
+      "💸 Sprawdzanie automatycznych płatności długów...",
   },
 
   // Błędy (NOWA SEKCJA)
   errors: {
     // Dostęp i uprawnienia
     accessDenied: "❌ Dostęp zabroniony",
-    
+
     // Nie znaleziono
     debtNotFound: "❌ Dług nie znaleziony.",
     goalNotFound: "❌ Cel nie znaleziony.",
     incomeSourceNotFound: "❌ Źródło przychodu nie znalezione.",
     templateNotFound: "❌ Szablon nie znaleziony.",
     goalDataNotFound: "❌ Dane celu nie znalezione.",
-    
+
     // Nieprawidłowe dane
-    invalidData: "❌ Nieprawidłowe dane. Proszę sprawdzić wprowadzone informacje.",
+    invalidData:
+      "❌ Nieprawidłowe dane. Proszę sprawdzić wprowadzone informacje.",
     invalidInput: "❌ Nieprawidłowe dane.\n\n",
-    invalidAccountFormat: "❌ Nieprawidłowy format konta. Proszę wybrać z listy.",
+    invalidAccountFormat:
+      "❌ Nieprawidłowy format konta. Proszę wybrać z listy.",
     invalidAccountName: "❌ Nieprawidłowa nazwa konta.",
-    invalidDateFormat: "❌ Nieprawidłowy format daty. Użyj DD.MM.RRRR (np. 31.12.2026)",
+    invalidDateFormat:
+      "❌ Nieprawidłowy format daty. Użyj DD.MM.RRRR (np. 31.12.2026)",
     invalidTimezone: "❌ Nieprawidłowa strefa czasowa. Proszę wybrać z opcji.",
     invalidCategory: "❌ Nieprawidłowa kategoria. Proszę wybrać z listy.",
     invalidDay: "❌ Nieprawidłowy dzień. Proszę wybrać z listy.",
-    invalidAmount: "❌ Nieprawidłowa kwota. Proszę wprowadzić prawidłową liczbę.",
-    invalidPeriod: "❌ Nieprawidłowy okres (koniec przed początkiem lub złe daty).",
-    
+    invalidAmount:
+      "❌ Nieprawidłowa kwota. Proszę wprowadzić prawidłową liczbę.",
+    invalidPeriod:
+      "❌ Nieprawidłowy okres (koniec przed początkiem lub złe daty).",
+
     // Zły format
     wrongDates: "❌ Złe daty!",
     wrongFormatStart: "❌ Zły format! Użyj DD.MM.RRRR (np. 01.01.2026)",
     wrongFormatEnd: "❌ Zły format! Użyj DD.MM.RRRR (np. 13.01.2026)",
     endDateBeforeStart: "❌ Data końcowa przed początkiem!",
-    
+
     // Brakujące dane
     accountNameMissing: "❌ Brak nazwy konta. Zacznij od nowa.",
     accountNameCannot: "❌ Nazwa konta nie może",
@@ -590,65 +620,71 @@ export const pl = {
     missingDebtData: "❌ Błąd: Brak danych długu",
     nameCannotBeEmpty: "❌ Nazwa nie może być pusta.",
     incomeSourceNotSelected: "❌ Nie wybrano źródła przychodu.",
-    
+
     // Błędy wyboru
     selectBalanceFromButtons: "❌ Wybierz saldo z przycisków.",
     selectTransactionFromList: "❌ Wybierz transakcję z listy.",
     selectDebtFromList: "❌ Wybierz dług z listy.",
     selectGoalFromList: "❌ Wybierz cel z listy.",
     selectCategoryFromList: "❌ Wybierz kategorię z listy.",
-    selectCategoryOrAddBudget: "❌ Wybierz kategorię z listy lub użyj ✨ Dodaj / Edytuj budżet.",
-    selectIncomeSourceOrAdd: "❌ Wybierz źródło przychodu z listy lub użyj ✨ Dodaj źródło przychodu.",
+    selectCategoryOrAddBudget:
+      "❌ Wybierz kategorię z listy lub użyj ✨ Dodaj / Edytuj budżet.",
+    selectIncomeSourceOrAdd:
+      "❌ Wybierz źródło przychodu z listy lub użyj ✨ Dodaj źródło przychodu.",
     selectOneFilter: "❌ Wybierz jeden z filtrów.",
     pleaseSelectOption: "❌ Proszę wybrać opcję z przycisków.",
-    pleaseSelectOptionOrAmount: "❌ Proszę wybrać opcję lub wprowadzić prawidłową kwotę.",
+    pleaseSelectOptionOrAmount:
+      "❌ Proszę wybrać opcję lub wprowadzić prawidłową kwotę.",
     pleaseSelectCategory: "❌ Proszę wybrać kategorię z listy.",
     pleaseTap: "❌ Proszę nacisnąć ",
     enterValidAmount: "❌ Wprowadź prawidłową kwotę lub użyj przycisków.",
-    
+
     // Błędy systemowe
     configValidationFailed: "❌ Walidacja konfiguracji nie powiodła się:",
     errorInitializingDatabase: "❌ Błąd inicjalizacji bazy danych:",
     networkError: "🌐 Błąd sieci. Proszę sprawdzić połączenie.",
-    
+
     // Błędy transakcji
     errorUpdatingTransaction: "❌ Błąd aktualizacji transakcji.",
-    
+
     // Błędy FX
     failedPersistCache: "❌ Nie udało się zachować pamięci podręcznej FX:",
-    failedLoadCache: "❌ Nie udało się załadować zachowanej pamięci podręcznej FX:",
+    failedLoadCache:
+      "❌ Nie udało się załadować zachowanej pamięci podręcznej FX:",
     failedAutoRefresh: "❌ Nie udało się automatycznie odświeżyć kursów FX:",
     failedPreloadRates: "❌ Nie udało się wstępnie załadować kursów FX:",
-    failedClearCache: "❌ Nie udało się wyczyścić zachowanej pamięci podręcznej:",
-    
+    failedClearCache:
+      "❌ Nie udało się wyczyścić zachowanej pamięci podręcznej:",
+
     // Automatyzacja
     disableAutoPayment: "❌ Wyłącz automatyczną płatność",
     disableAutoDeposit: "❌ Wyłącz automatyczną wpłatę",
     disableAutoIncome: "❌ Wyłącz automatyczny przychód",
     disableNotifications: "❌ Wyłącz powiadomienia",
-    
+
     // Przypomnienia
     failedSnoozeReminder: "❌ Nie udało się odłożyć przypomnienia",
-    failedMarkReminderDone: "❌ Nie udało się oznaczyć przypomnienia jako wykonane",
-    
+    failedMarkReminderDone:
+      "❌ Nie udało się oznaczyć przypomnienia jako wykonane",
+
     // Import/Eksport
     importCancelled: "❌ Import anulowany",
-    
+
     // FFmpeg
     ffmpegDidNotCreate: "❌ FFmpeg nie utworzył pliku wyjściowego",
     wavFileEmpty: "❌ Plik WAV jest pusty (0 bajtów)",
     ffmpegConversionError: "❌ Błąd konwersji FFmpeg:",
-    
+
     // AssemblyAI
     assemblyAIUploadError: "❌ Błąd przesyłania AssemblyAI:",
     assemblyAIError: "❌ Błąd AssemblyAI:",
-    
+
     // Bot
     failedStartBot: "❌ Nie udało się uruchomić bota:",
-    
+
     // Szablon
     failedUpdateTemplate: "❌ Nie udało się zaktualizować szablonu.",
-    
+
     // Akcje
     cancel: "❌ Anuluj",
     enterDifferentAmount: "❌ Nie, wprowadź inną kwotę",
@@ -658,53 +694,59 @@ export const pl = {
   // Sukces (NOWA SEKCJA)
   success: {
     // FX
-    metricsReset: "✅ Metryki FX zresetowane!\n\nWszystkie liczniki zostały zresetowane do zera.",
+    metricsReset:
+      "✅ Metryki FX zresetowane!\n\nWszystkie liczniki zostały zresetowane do zera.",
     ratesRefreshed: "✅ Kursy walut odświeżone",
-    usingPersistedRates: "✅ Używanie zachowanych kursów FX (nie potrzeba wywołania API)",
+    usingPersistedRates:
+      "✅ Używanie zachowanych kursów FX (nie potrzeba wywołania API)",
     ratesPreloaded: "✅ Kursy FX wstępnie załadowane pomyślnie",
     persistedCacheCleared: "✅ Zachowana pamięć podręczna FX wyczyszczona",
-    usingPersistedCache: "✅ Używanie zachowanej pamięci podręcznej FX (bez wywołania API)",
-    
+    usingPersistedCache:
+      "✅ Używanie zachowanej pamięci podręcznej FX (bez wywołania API)",
+
     // Zapytania
-    queryStatsReset: "✅ Statystyki zapytań zresetowane!\n\nWszystkie liczniki zapytań zostały zresetowane do zera.",
+    queryStatsReset:
+      "✅ Statystyki zapytań zresetowane!\n\nWszystkie liczniki zapytań zostały zresetowane do zera.",
     queryMonitorReset: "✅ Statystyki monitora zapytań zresetowane",
-    
+
     // Baza danych
-    databaseInitialized: "✅ Baza danych zainicjalizowana pomyślnie (tryb WAL włączony)",
+    databaseInitialized:
+      "✅ Baza danych zainicjalizowana pomyślnie (tryb WAL włączony)",
     databaseClosed: "✅ Połączenie z bazą danych zamknięte",
-    
+
     // Bot
     botStopped: "✅ Bot zatrzymany",
-    
+
     // Przypomnienia
     remindersDisabledDeadline: "✅ Przypomnienia wyłączone i termin usunięty.",
-    remindersDisabledDueDate: "✅ Przypomnienia wyłączone i termin płatności usunięty.",
+    remindersDisabledDueDate:
+      "✅ Przypomnienia wyłączone i termin płatności usunięty.",
     reminderMarkedDone: "✅ Przypomnienie oznaczone jako wykonane",
     dueDateRemoved: "✅ Termin płatności i przypomnienia usunięte.",
     deadlineRemoved: "✅ Termin i przypomnienia usunięte.",
-    
+
     // Automatyzacja
     enableAutoPayment: "✅ Włącz automatyczną płatność",
     enableAutoDeposit: "✅ Włącz automatyczną wpłatę",
     enableAutoIncome: "✅ Włącz automatyczny przychód",
     enableNotifications: "✅ Włącz powiadomienia",
-    
+
     // Harmonogram
     schedulerStarted: "✅ Harmonogram uruchomiony pomyślnie",
     schedulerStopped: "✅ Harmonogram zatrzymany",
-    
+
     // Aktualizacje
     accountUpdated: "✅ Konto zaktualizowane",
     debtAmountUpdated: "✅ Kwota długu zaktualizowana!",
     goalTargetUpdated: "✅ Cel zaktualizowany!",
-    
+
     // Stany
     noActiveDebts: "✅ Brak aktywnych długów!\n\n",
-    
+
     // AssemblyAI
     assemblyAITranscription: "✅ Transkrypcja AssemblyAI:",
     assemblyAIConfigured: "✅ Usługa AssemblyAI skonfigurowana",
-    
+
     // Ogólne
     yes: "✅ Tak, to",
     done: "✅ Gotowe",
@@ -715,25 +757,34 @@ export const pl = {
     noBalancesAdd: "⚠️ Nie znaleziono sald. Dodaj jedno w 💳 Salda.",
     noBalancesFound: "⚠️ Nie znaleziono sald",
     noBalancesFoundTitle: "⚠️ *Nie znaleziono sald*\n\n",
-    noAccountsCreate: "⚠️ Nie znaleziono kont. Proszę najpierw utworzyć konto salda.",
-    
+    noAccountsCreate:
+      "⚠️ Nie znaleziono kont. Proszę najpierw utworzyć konto salda.",
+
     usingFallbackRates: "⚠️ Używanie awaryjnych kursów walut.",
     cacheExpired: "⚠️ Zachowana pamięć podręczna FX wygasła",
-    
-    autoPaymentOnlyForDebts: "⚠️ Automatyczna płatność dostępna tylko dla długów, które jesteś winien.",
-    
+
+    autoPaymentOnlyForDebts:
+      "⚠️ Automatyczna płatność dostępna tylko dla długów, które jesteś winien.",
+
     assemblyAINotConfigured: "⚠️ AssemblyAI nie skonfigurowany. Plik głosowy:",
-    assemblyAINotConfiguredEnv: "⚠️ AssemblyAI nie skonfigurowany. Ustaw ASSEMBLYAI_API_KEY w środowisku.",
+    assemblyAINotConfiguredEnv:
+      "⚠️ AssemblyAI nie skonfigurowany. Ustaw ASSEMBLYAI_API_KEY w środowisku.",
   },
 
   // Wiadomości (NOWA SEKCJA)
   messages: {
-    voiceTranscriptionUnavailable: "🔑 Transkrypcja głosu niedostępna. Proszę skontaktować się z pomocą techniczną.",
-    installFFmpeg: "📦 Zainstaluj: brew install ffmpeg (macOS) lub apt-get install ffmpeg (Linux)",
-    setAssemblyAIKey: "💡 Ustaw ASSEMBLYAI_API_KEY aby włączyć transkrypcję głosu",
-    transactionHistoryEmpty: "📖 *Historia transakcji*\n\n💭 Nie ma jeszcze transakcji.",
-    advancedSettings: "🛠️ *Ustawienia zaawansowane*\n\nZaawansowane funkcje i zarządzanie danymi:",
-    goalsNoActive: "🎯 *Cele*\n\nBrak aktywnych celów. Ustaw jeden aby zacząć oszczędzać!",
+    voiceTranscriptionUnavailable:
+      "🔑 Transkrypcja głosu niedostępna. Proszę skontaktować się z pomocą techniczną.",
+    installFFmpeg:
+      "📦 Zainstaluj: brew install ffmpeg (macOS) lub apt-get install ffmpeg (Linux)",
+    setAssemblyAIKey:
+      "💡 Ustaw ASSEMBLYAI_API_KEY aby włączyć transkrypcję głosu",
+    transactionHistoryEmpty:
+      "📖 *Historia transakcji*\n\n💭 Nie ma jeszcze transakcji.",
+    advancedSettings:
+      "🛠️ *Ustawienia zaawansowane*\n\nZaawansowane funkcje i zarządzanie danymi:",
+    goalsNoActive:
+      "🎯 *Cele*\n\nBrak aktywnych celów. Ustaw jeden aby zacząć oszczędzać!",
   },
 
   // Funkcje automatyczne
@@ -743,14 +794,15 @@ export const pl = {
     disableAutoPayment: "❌ Wyłącz automatyczną płatność",
     autoPaymentEnabled: "✅ Automatyczna płatność włączona",
     autoPaymentDisabled: "❌ Automatyczna płatność wyłączona",
-    onlyForDebtsYouOwe: "⚠️ Automatyczna płatność dostępna tylko dla długów, które jesteś winien.",
-    
+    onlyForDebtsYouOwe:
+      "⚠️ Automatyczna płatność dostępna tylko dla długów, które jesteś winien.",
+
     // Automatyczna wpłata
     enableAutoDeposit: "✅ Włącz automatyczną wpłatę",
     disableAutoDeposit: "❌ Wyłącz automatyczną wpłatę",
     autoDepositEnabled: "✅ Automatyczna wpłata włączona",
     autoDepositDisabled: "❌ Automatyczna wpłata wyłączona",
-    
+
     // Terminy
     setDeadline: "📅 Ustaw termin",
     changeDeadline: "📅 Zmień termin",
@@ -760,7 +812,8 @@ export const pl = {
   // Szybki start
   quickStart: {
     noBalancesTitle: "⚠️ *Nie znaleziono sald*",
-    beforeAddingDebts: "Przed dodaniem transakcji potrzebne jest przynajmniej jedno konto.",
+    beforeAddingDebts:
+      "Przed dodaniem transakcji potrzebne jest przynajmniej jedno konto.",
     title: "💡 *Szybki start:*",
     step1: "1️⃣ Przejdź do 💰 *Salda*",
     step2: "2️⃣ Naciśnij ✨ *Dodaj saldo*",
@@ -769,8 +822,10 @@ export const pl = {
 
   // Daty
   dates: {
-    invalidFormatExample: "❌ Nieprawidłowy format daty. Użyj DD.MM.RRRR (np. 31.12.2026)",
-    invalidFormatExampleShort: "❌ Nieprawidłowy format daty. Użyj DD.MM.RRRR (np. 31.12.2026) lub naciśnij Pomiń.",
+    invalidFormatExample:
+      "❌ Nieprawidłowy format daty. Użyj DD.MM.RRRR (np. 31.12.2026)",
+    invalidFormatExampleShort:
+      "❌ Nieprawidłowy format daty. Użyj DD.MM.RRRR (np. 31.12.2026) lub naciśnij Pomiń.",
     deadlineCannotBePast: "❌ Termin nie może być w przeszłości.",
     dueDateCannotBePast: "❌ Termin płatności nie może być w przeszłości.",
   },
@@ -797,7 +852,8 @@ export const pl = {
     skipped: "Pominięto (nieprawidłowe): {count}",
     errors: "Błędy: {count}",
     time: "⚡ Czas: {ms}ms",
-    unsupportedFormat: "⚠️ *Nieobsługiwany format pliku*\n\nObsługiwane formaty:\n• CSV (Tinkoff, Monobank, Revolut)\n• TXT (Wise)\n• JSON (Monobank)",
+    unsupportedFormat:
+      "⚠️ *Nieobsługiwany format pliku*\n\nObsługiwane formaty:\n• CSV (Tinkoff, Monobank, Revolut)\n• TXT (Wise)\n• JSON (Monobank)",
     noTransactions: "❌ Nie znaleziono transakcji w pliku",
     parsingErrors: "⚠️ *Błędy parsowania:*",
   },

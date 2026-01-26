@@ -14,9 +14,9 @@ export async function showLanguageMenu(
   const currentLang = (await db.getUserLanguage(userId)) as Language
 
   const message =
-    `🌍 *${t(currentLang, 'settings.language')}*\n\n` +
-    `${t(currentLang, 'settings.currentLanguage')} ${languageNames[currentLang]}\n\n` +
-    `${t(currentLang, 'settings.selectLanguage')}`
+    `🌍 *${t(currentLang, "settings.language")}*\n\n` +
+    `${t(currentLang, "settings.currentLanguage")} ${languageNames[currentLang]}\n\n` +
+    `${t(currentLang, "settings.selectLanguage")}`
 
   await bot.sendMessage(chatId, message, {
     parse_mode: "Markdown",
@@ -36,16 +36,16 @@ export async function handleLanguageSelection(
   // Match language by emoji flag
   let selectedLang: Language | null = null
 
-  if (text.includes('English') || text.includes('🇬🇧')) {
-    selectedLang = 'en'
-  } else if (text.includes('Русский') || text.includes('🇷🇺')) {
-    selectedLang = 'ru'
-  } else if (text.includes('Українська') || text.includes('🇺🇦')) {
-    selectedLang = 'uk'
-  } else if (text.includes('Español') || text.includes('🇪🇸')) {
-    selectedLang = 'es'
-  } else if (text.includes('Polski') || text.includes('🇵🇱')) {
-    selectedLang = 'pl'
+  if (text.includes("English") || text.includes("🇬🇧")) {
+    selectedLang = "en"
+  } else if (text.includes("Русский") || text.includes("🇷🇺")) {
+    selectedLang = "ru"
+  } else if (text.includes("Українська") || text.includes("🇺🇦")) {
+    selectedLang = "uk"
+  } else if (text.includes("Español") || text.includes("🇪🇸")) {
+    selectedLang = "es"
+  } else if (text.includes("Polski") || text.includes("🇵🇱")) {
+    selectedLang = "pl"
   }
 
   if (!selectedLang || !isValidLanguage(selectedLang)) {
@@ -56,7 +56,7 @@ export async function handleLanguageSelection(
   await db.setUserLanguage(userId, selectedLang)
 
   // Send confirmation in NEW language
-  const confirmMsg = t(selectedLang, 'settings.languageChanged', {
+  const confirmMsg = t(selectedLang, "settings.languageChanged", {
     language: languageNames[selectedLang],
   })
 
@@ -80,10 +80,10 @@ export async function detectAndSetLanguage(
   }
 
   // Try to detect from Telegram
-  let detectedLang: Language = 'en'
+  let detectedLang: Language = "en"
 
   if (telegramLangCode) {
-    const langCode = telegramLangCode.toLowerCase().split('-')[0] as Language
+    const langCode = telegramLangCode.toLowerCase().split("-")[0] as Language
 
     if (isValidLanguage(langCode)) {
       detectedLang = langCode

@@ -22,10 +22,14 @@ export async function handleTemplateEditAmount(
   const template = templates.find((t) => t.id === templateId)
 
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   if (!template) {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'errors.templateNotFound'), show_alert: true })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "errors.templateNotFound"),
+      show_alert: true,
+    })
     return
   }
 
@@ -38,14 +42,21 @@ export async function handleTemplateEditAmount(
   await safeAnswerCallback(bot, { callback_query_id: query.id })
   await bot.sendMessage(
     chatId,
-    t(lang, 'templates.editAmount') + "\n\n" + t(lang, 'common.current') + ": " + formatMoney(template.amount, template.currency) + "\n\n" + t(lang, 'templates.enterNewAmount') + ":",
+    t(lang, "templates.editAmount") +
+      "\n\n" +
+      t(lang, "common.current") +
+      ": " +
+      formatMoney(template.amount, template.currency) +
+      "\n\n" +
+      t(lang, "templates.enterNewAmount") +
+      ":",
     {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: t(lang, 'common.cancel'),
+              text: t(lang, "common.cancel"),
               callback_data: `tmpl_cancel|${templateId}`,
             },
           ],
@@ -71,7 +82,7 @@ export async function handleTemplateCancelEdit(
   wizard.clearState(userId)
   await safeAnswerCallback(bot, { callback_query_id: query.id })
 
-  await showTemplateManageMenu(bot, chatId, userId, templateId, wizard)
+  await showTemplateManageMenu(bot, chatId, userId, templateId!, wizard)
 }
 
 export async function handleTemplateSave(
@@ -90,10 +101,14 @@ export async function handleTemplateSave(
   const accountId = parts[5]
   const amount = Number(amountStr)
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   if (!amount || !category || !kind) {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'errors.cannotSave'), show_alert: true })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "errors.cannotSave"),
+      show_alert: true,
+    })
     return
   }
 
@@ -108,7 +123,11 @@ export async function handleTemplateSave(
     type: kind === "exp" ? TransactionType.EXPENSE : TransactionType.INCOME,
   })
 
-  await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'templates.saved'), show_alert: false })
+  await safeAnswerCallback(bot, {
+    callback_query_id: query.id,
+    text: t(lang, "templates.saved"),
+    show_alert: false,
+  })
 }
 
 export async function handleTemplateUse(
@@ -124,17 +143,25 @@ export async function handleTemplateUse(
   const template = templates.find((t) => t.id === templateId)
 
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   if (!template) {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'errors.templateNotFound'), show_alert: true })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "errors.templateNotFound"),
+      show_alert: true,
+    })
     return
   }
 
   const balances = await db.getBalancesList(userId)
 
   if (balances.length === 0) {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'templates.noBalancesFound'), show_alert: true })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "templates.noBalancesFound"),
+      show_alert: true,
+    })
     return
   }
 
@@ -142,7 +169,7 @@ export async function handleTemplateUse(
   if (!smartAccount || !balances.find((b) => b.accountId === smartAccount)) {
     smartAccount =
       (await db.getSmartBalanceSelection(userId, template.category)) ||
-      balances[0].accountId
+      balances[0]?.accountId
   }
 
   await db.addTransaction(userId, {
@@ -162,7 +189,11 @@ export async function handleTemplateUse(
   const emoji = template.type === TransactionType.EXPENSE ? "💸" : "💰"
   const text = `${emoji} ${formatted} — ${template.category}\nAccount: *${smartAccount}*`
 
-  await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'templates.transactionAdded'), show_alert: false })
+  await safeAnswerCallback(bot, {
+    callback_query_id: query.id,
+    text: t(lang, "templates.transactionAdded"),
+    show_alert: false,
+  })
   await bot.sendMessage(chatId, text, { parse_mode: "Markdown" })
 }
 
@@ -179,9 +210,13 @@ export async function handleTemplateManage(
   const template = templates.find((t) => t.id === templateId)
 
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
   if (!template) {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'errors.templateNotFound'), show_alert: true })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "errors.templateNotFound"),
+      show_alert: true,
+    })
     return
   }
 
@@ -194,38 +229,38 @@ export async function handleTemplateManage(
   await bot.sendMessage(
     chatId,
     `⚙️ *Manage Template*\n\n` +
-    `*${template.name}*\n` +
-    `Amount: ${formatted}\n` +
-    `${accountText}\n\n` +
-    `Select action:`,
+      `*${template.name}*\n` +
+      `Amount: ${formatted}\n` +
+      `${accountText}\n\n` +
+      `Select action:`,
     {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: t(lang, 'common.editAmount'),
+              text: t(lang, "common.editAmount"),
               callback_data: `tmpl_edit_amt|${templateId}`,
             },
           ],
           [
             {
-              text: t(lang, 'common.editAccount'),
+              text: t(lang, "common.editAccount"),
               callback_data: `tmpl_edit_acc|${templateId}`,
             },
           ],
           [
             {
-              text: t(lang, 'common.delete'),
+              text: t(lang, "common.delete"),
               callback_data: `tmpl_del|${templateId}`,
             },
           ],
           [
             {
-              text: t(lang, 'common.cancel'),
+              text: t(lang, "common.cancel"),
               callback_data: `tmpl_list`,
-            }
-          ]
+            },
+          ],
         ],
       },
     }
@@ -243,17 +278,21 @@ export async function handleTemplateDelete(
   const templateId = data.replace("tmpl_del|", "")
   const success = await db.deleteTemplate(userId, templateId)
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   if (success) {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'templates.deleted'), show_alert: false })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "templates.deleted"),
+      show_alert: false,
+    })
 
     const templates = await db.getTemplates(userId)
 
     if (templates.length === 0) {
       await bot.sendMessage(
         chatId,
-        "📋 *Templates*\n\nNo templates saved yet.\n\nUse `/expense` or `/income` and click \"💾 Save as template?\" to create templates.",
+        '📋 *Templates*\n\nNo templates saved yet.\n\nUse `/expense` or `/income` and click "💾 Save as template?" to create templates.',
         { parse_mode: "Markdown" }
       )
     } else {
@@ -285,7 +324,11 @@ export async function handleTemplateDelete(
       )
     }
   } else {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'errors.templateNotFound'), show_alert: true })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "errors.templateNotFound"),
+      show_alert: true,
+    })
   }
 }
 
@@ -301,10 +344,14 @@ export async function handleTemplateEditAccount(
   const balances = await db.getBalancesList(userId)
 
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   if (balances.length === 0) {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: "⚠️ No balances found", show_alert: true })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: "⚠️ No balances found",
+      show_alert: true,
+    })
     return
   }
 
@@ -317,13 +364,13 @@ export async function handleTemplateEditAccount(
 
   buttons.push([
     {
-      text: t(lang, 'common.cancel'),
+      text: t(lang, "common.cancel"),
       callback_data: `tmpl_cancel|${templateId}`,
     },
   ])
 
   await safeAnswerCallback(bot, { callback_query_id: query.id })
-  await bot.sendMessage(chatId, t(lang, 'templates.selectDefaultAccount'), {
+  await bot.sendMessage(chatId, t(lang, "templates.selectDefaultAccount"), {
     parse_mode: "Markdown",
     reply_markup: {
       inline_keyboard: buttons,
@@ -340,15 +387,27 @@ export async function handleTemplateSetAccount(
   wizard: WizardManager
 ) {
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en'
+  const lang = state?.lang || "en"
   const [_, templateId, accountId] = data.split("|")
-  const success = await db.updateTemplateAccount(userId, templateId, accountId)
+  const success = await db.updateTemplateAccount(
+    userId,
+    templateId!,
+    accountId!
+  )
 
   if (success) {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'templates.accountUpdated'), show_alert: false })
-    await showTemplateManageMenu(bot, chatId, userId, templateId, wizard)
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "templates.accountUpdated"),
+      show_alert: false,
+    })
+    await showTemplateManageMenu(bot, chatId, userId, templateId!, wizard)
   } else {
-    await safeAnswerCallback(bot, { callback_query_id: query.id, text: t(lang, 'templates.failedToUpdate'), show_alert: true })
+    await safeAnswerCallback(bot, {
+      callback_query_id: query.id,
+      text: t(lang, "templates.failedToUpdate"),
+      show_alert: true,
+    })
   }
 }
 
@@ -362,7 +421,7 @@ export async function showTemplatesList(
   if (templates.length === 0) {
     await bot.sendMessage(
       chatId,
-      "📋 *Templates*\n\nNo templates saved yet.\n\nUse `/expense` or `/income` and click \"💾 Save as template?\" to create templates.",
+      '📋 *Templates*\n\nNo templates saved yet.\n\nUse `/expense` or `/income` and click "💾 Save as template?" to create templates.',
       { parse_mode: "Markdown" }
     )
     return
@@ -405,10 +464,10 @@ export async function showTemplateManageMenu(
   const template = templates.find((t) => t.id === templateId)
 
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
 
   if (!template) {
-    await bot.sendMessage(chatId, t(lang, 'errors.templateNotFound'))
+    await bot.sendMessage(chatId, t(lang, "errors.templateNotFound"))
     return
   }
 
@@ -420,38 +479,38 @@ export async function showTemplateManageMenu(
   await bot.sendMessage(
     chatId,
     `⚙️ *Manage Template*\n\n` +
-    `*${template.name}*\n` +
-    `Amount: ${formatted}\n` +
-    `${accountText}\n\n` +
-    `Select action:`,
+      `*${template.name}*\n` +
+      `Amount: ${formatted}\n` +
+      `${accountText}\n\n` +
+      `Select action:`,
     {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: t(lang, 'common.editAmount'),
+              text: t(lang, "common.editAmount"),
               callback_data: `tmpl_edit_amt|${templateId}`,
             },
           ],
           [
             {
-              text: t(lang, 'common.editAccount'),
+              text: t(lang, "common.editAccount"),
               callback_data: `tmpl_edit_acc|${templateId}`,
             },
           ],
           [
             {
-              text: t(lang, 'common.delete'),
+              text: t(lang, "common.delete"),
               callback_data: `tmpl_del|${templateId}`,
             },
           ],
           [
             {
-              text: t(lang, 'common.cancel'),
+              text: t(lang, "common.cancel"),
               callback_data: `tmpl_list`,
-            }
-          ]
+            },
+          ],
         ],
       },
     }

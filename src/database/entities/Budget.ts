@@ -7,8 +7,9 @@ import {
 } from "typeorm"
 
 export enum BudgetPeriod {
-  MONTHLY = "MONTHLY",
+  DAILY = "DAILY",
   WEEKLY = "WEEKLY",
+  MONTHLY = "MONTHLY",
   YEARLY = "YEARLY",
 }
 

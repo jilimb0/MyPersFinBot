@@ -22,8 +22,8 @@ export async function handleAutoPaymentToggle(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
-  const lang = state.lang || 'en';
-  const debt = state.data.debt as Debt
+  const lang = state?.lang || "en"
+  const debt = state?.data?.debt as Debt
 
   if (text === "✅ Enable Auto-Payment") {
     // Only for I_OWE debts
@@ -47,22 +47,24 @@ export async function handleAutoPaymentToggle(
     if (balances.length === 0) {
       await wizard.sendMessage(
         chatId,
-        t(lang, 'errors.noAccountsFound'),
+        t(lang, "errors.noAccountsFound"),
         wizard.getBackButton(lang)
       )
       return true
     }
 
-    const accountButtons = balances.map((b) => [{
-      text: `${b.accountId} (${b.currency})`
-    }])
+    const accountButtons = balances.map((b) => [
+      {
+        text: `${b.accountId} (${b.currency})`,
+      },
+    ])
     accountButtons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
 
     await wizard.sendMessage(
       chatId,
       `🤖 *Auto-Payment Setup*\n\n` +
-      `Debt: *${debt.name}* (${debt.counterparty})\n\n` +
-      `Select the account to pay from:`,
+        `Debt: *${debt.name}* (${debt.counterparty})\n\n` +
+        `Select the account to pay from:`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -79,7 +81,7 @@ export async function handleAutoPaymentToggle(
     const debtRepo = AppDataSource.getRepository(DebtEntity)
     await debtRepo.update(
       { id: debt.id, userId },
-      { autoPayment: null }
+      { autoPayment: undefined as any }
     )
 
     await wizard.sendMessage(
@@ -107,8 +109,8 @@ export async function handleAutoPaymentAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
-  const lang = state.lang || 'en';
-  const debt = state.data.debt as Debt
+  const lang = state?.lang || "en"
+  const debt = state?.data?.debt as Debt
 
   // Extract account name from "AccountName (CURRENCY)"
   const match = text.match(/^(.+?)\s*\(([A-Z]{3})\)$/)
@@ -128,8 +130,8 @@ export async function handleAutoPaymentAccountSelect(
     ...state,
     step: "AUTO_PAYMENT_ENTER_AMOUNT",
     data: {
-      ...state.data,
-      autoPaymentAccountId: accountId.trim(),
+      ...state?.data,
+      autoPaymentAccountId: accountId?.trim() || "",
     },
   })
 
@@ -138,17 +140,15 @@ export async function handleAutoPaymentAccountSelect(
   await wizard.sendMessage(
     chatId,
     `💸 *Auto-Payment Amount*\n\n` +
-    `Debt: *${debt.name}* (${debt.counterparty})\n` +
-    `From: *${accountId.trim()}*\n` +
-    `Remaining: *${remaining} ${debt.currency}*\n\n` +
-    `Enter the monthly payment amount:\n` +
-    `Example: 1000`,
+      `Debt: *${debt.name}* (${debt.counterparty})\n` +
+      `From: *${accountId?.trim() || "N/A"}*\n` +
+      `Remaining: *${remaining} ${debt.currency}*\n\n` +
+      `Enter the monthly payment amount:\n` +
+      `Example: 1000`,
     {
       parse_mode: "Markdown",
       reply_markup: {
-        keyboard: [
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-        ],
+        keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
         resize_keyboard: true,
       },
     }
@@ -167,17 +167,17 @@ export async function handleAutoPaymentAmountInput(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
-  if (!state?.data?.debt || !state.data.autoPaymentAccountId) return false
+  if (!state?.data?.debt || !state?.data?.autoPaymentAccountId) return false
 
-  const debt = state.data.debt as Debt
-  const accountId = state.data.autoPaymentAccountId as string
-  const lang = state.lang || 'en';
+  const debt = state?.data?.debt as Debt
+  // const accountId = state?.data?.autoPaymentAccountId as string
+  const lang = state?.lang || "en"
 
   const amount = parseFloat(text)
   if (isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      t(lang, 'errors.invalidAmountPositive'),
+      t(lang, "errors.invalidAmountPositive"),
       wizard.getBackButton(lang)
     )
     return true
@@ -198,7 +198,7 @@ export async function handleAutoPaymentAmountInput(
     ...state,
     step: "AUTO_PAYMENT_SELECT_DAY",
     data: {
-      ...state.data,
+      ...state?.data,
       autoPaymentAmount: amount,
     },
   })
@@ -206,10 +206,10 @@ export async function handleAutoPaymentAmountInput(
   await wizard.sendMessage(
     chatId,
     `📅 *Select Payment Day*\n\n` +
-    `Debt: *${debt.name}*\n` +
-    `Amount: *${amount} ${debt.currency}*\n\n` +
-    `Enter the day (1-31) for monthly payment:\n` +
-    `Example: 15 (for 15th of each month)`,
+      `Debt: *${debt.name}*\n` +
+      `Amount: *${amount} ${debt.currency}*\n\n` +
+      `Enter the day (1-31) for monthly payment:\n` +
+      `Example: 15 (for 15th of each month)`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -239,38 +239,32 @@ export async function handleAutoPaymentDaySelect(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
-  const lang = state.lang || 'en';
-  const debt = state.data.debt as Debt
-  const accountId = state.data.autoPaymentAccountId as string
-  const amount = state.data.autoPaymentAmount as number
+  const lang = state?.lang || "en"
+  const debt = state?.data?.debt as Debt
+  const accountId = state?.data?.autoPaymentAccountId as string
+  const amount = state?.data?.autoPaymentAmount as number
 
   const dayOfMonth = parseInt(text)
   if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
-      t(lang, 'errors.invalidDay'),
+      t(lang, "errors.invalidDay"),
       wizard.getBackButton(lang)
     )
     return true
   }
 
   // Save auto-payment configuration
-  await saveAutoPaymentConfig(
-    userId,
-    debt.id,
-    accountId,
-    amount,
-    dayOfMonth
-  )
+  await saveAutoPaymentConfig(userId, debt.id, accountId, amount, dayOfMonth)
 
   await wizard.sendMessage(
     chatId,
     `✅ *Auto-Payment Enabled!*\n\n` +
-    `Debt: *${debt.name}* (${debt.counterparty})\n` +
-    `Amount: *${amount} ${debt.currency}*\n` +
-    `From: *${accountId}*\n` +
-    `Day: *${dayOfMonth}th of each month*\n\n` +
-    `🤖 The bot will automatically pay this debt on day ${dayOfMonth} of each month.`,
+      `Debt: *${debt.name}* (${debt.counterparty})\n` +
+      `Amount: *${amount} ${debt.currency}*\n` +
+      `From: *${accountId}*\n` +
+      `Day: *${dayOfMonth}th of each month*\n\n` +
+      `🤖 The bot will automatically pay this debt on day ${dayOfMonth} of each month.`,
     { parse_mode: "Markdown" }
   )
 

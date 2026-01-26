@@ -1,17 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import TelegramBot from 'node-telegram-bot-api'
-import { log } from './logger'
+import TelegramBot from "node-telegram-bot-api"
+import { log } from "./logger"
 
 export enum ErrorType {
-  TELEGRAM_API = 'TELEGRAM_API',
-  DATABASE = 'DATABASE',
-  VALIDATION = 'VALIDATION',
-  ASSEMBLYAI = 'ASSEMBLYAI',
-  FX_API = 'FX_API',
-  PERMISSION = 'PERMISSION',
-  RATE_LIMIT = 'RATE_LIMIT',
-  NETWORK = 'NETWORK',
-  UNKNOWN = 'UNKNOWN',
+  TELEGRAM_API = "TELEGRAM_API",
+  DATABASE = "DATABASE",
+  VALIDATION = "VALIDATION",
+  ASSEMBLYAI = "ASSEMBLYAI",
+  FX_API = "FX_API",
+  PERMISSION = "PERMISSION",
+  RATE_LIMIT = "RATE_LIMIT",
+  NETWORK = "NETWORK",
+  UNKNOWN = "UNKNOWN",
 }
 
 export interface AppError extends Error {
@@ -39,7 +38,7 @@ export function handleTelegramError(error: any): AppError {
   const code = error.response?.body?.error_code
   const description = error.response?.body?.description
 
-  log.error('Telegram API error', {
+  log.error("Telegram API error", {
     code,
     description,
     stack: error.stack,
@@ -49,7 +48,7 @@ export function handleTelegramError(error: any): AppError {
     return createError(
       ErrorType.TELEGRAM_API,
       `Telegram 403: ${description}`,
-      '🚫 Bot was blocked by user or chat not found.',
+      "🚫 Bot was blocked by user or chat not found.",
       { code, description }
     )
   }
@@ -58,7 +57,7 @@ export function handleTelegramError(error: any): AppError {
     return createError(
       ErrorType.RATE_LIMIT,
       `Telegram rate limit: ${description}`,
-      '⏱ Too many requests. Please wait a moment.',
+      "⏱ Too many requests. Please wait a moment.",
       { code, description }
     )
   }
@@ -67,7 +66,7 @@ export function handleTelegramError(error: any): AppError {
     return createError(
       ErrorType.TELEGRAM_API,
       `Telegram 400: ${description}`,
-      '❌ Invalid request. Please try again.',
+      "❌ Invalid request. Please try again.",
       { code, description }
     )
   }
@@ -75,41 +74,41 @@ export function handleTelegramError(error: any): AppError {
   return createError(
     ErrorType.TELEGRAM_API,
     description || error.message,
-    '❌ Telegram error. Please try again.',
+    "❌ Telegram error. Please try again.",
     { code, description }
   )
 }
 
 export function handleDatabaseError(error: any): AppError {
-  log.error('Database error', {
+  log.error("Database error", {
     message: error.message,
     code: error.code,
     stack: error.stack,
   })
 
-  if (error.code === 'SQLITE_BUSY') {
+  if (error.code === "SQLITE_BUSY") {
     return createError(
       ErrorType.DATABASE,
-      'Database is busy',
-      '⏳ Database is busy. Please try again.',
+      "Database is busy",
+      "⏳ Database is busy. Please try again.",
       { code: error.code }
     )
   }
 
-  if (error.code === 'SQLITE_LOCKED') {
+  if (error.code === "SQLITE_LOCKED") {
     return createError(
       ErrorType.DATABASE,
-      'Database is locked',
-      '🔒 Database is locked. Please try again.',
+      "Database is locked",
+      "🔒 Database is locked. Please try again.",
       { code: error.code }
     )
   }
 
-  if (error.code === 'SQLITE_CONSTRAINT') {
+  if (error.code === "SQLITE_CONSTRAINT") {
     return createError(
       ErrorType.DATABASE,
-      'Constraint violation',
-      '❌ Invalid data. Please check your input.',
+      "Constraint violation",
+      "❌ Invalid data. Please check your input.",
       { code: error.code }
     )
   }
@@ -117,7 +116,7 @@ export function handleDatabaseError(error: any): AppError {
   return createError(
     ErrorType.DATABASE,
     error.message,
-    '❌ Database error. Please try again later.',
+    "❌ Database error. Please try again later.",
     { code: error.code }
   )
 }
@@ -125,7 +124,7 @@ export function handleDatabaseError(error: any): AppError {
 export function handleAssemblyAIError(error: any): AppError {
   const status = error.response?.status
 
-  log.error('AssemblyAI error', {
+  log.error("AssemblyAI error", {
     status,
     message: error.message,
     stack: error.stack,
@@ -134,8 +133,8 @@ export function handleAssemblyAIError(error: any): AppError {
   if (status === 429) {
     return createError(
       ErrorType.ASSEMBLYAI,
-      'AssemblyAI quota exceeded',
-      '⏱ Voice transcription quota exceeded. Please try again later or upgrade your plan.',
+      "AssemblyAI quota exceeded",
+      "⏱ Voice transcription quota exceeded. Please try again later or upgrade your plan.",
       { status }
     )
   }
@@ -143,8 +142,8 @@ export function handleAssemblyAIError(error: any): AppError {
   if (status === 402) {
     return createError(
       ErrorType.ASSEMBLYAI,
-      'AssemblyAI payment required',
-      '💳 AssemblyAI payment required. Please check your account.',
+      "AssemblyAI payment required",
+      "💳 AssemblyAI payment required. Please check your account.",
       { status }
     )
   }
@@ -152,8 +151,8 @@ export function handleAssemblyAIError(error: any): AppError {
   if (status === 401) {
     return createError(
       ErrorType.ASSEMBLYAI,
-      'AssemblyAI authentication failed',
-      '🔑 Voice transcription unavailable. Please contact support.',
+      "AssemblyAI authentication failed",
+      "🔑 Voice transcription unavailable. Please contact support.",
       { status }
     )
   }
@@ -161,13 +160,13 @@ export function handleAssemblyAIError(error: any): AppError {
   return createError(
     ErrorType.ASSEMBLYAI,
     error.message,
-    '❌ Voice transcription failed. Please try text input.',
+    "❌ Voice transcription failed. Please try text input.",
     { status }
   )
 }
 
 export function handleFXError(error: any): AppError {
-  log.warn('FX API error (using fallback)', {
+  log.warn("FX API error (using fallback)", {
     message: error.message,
     code: error.code,
   })
@@ -175,22 +174,17 @@ export function handleFXError(error: any): AppError {
   return createError(
     ErrorType.FX_API,
     error.message,
-    '⚠️ Using fallback exchange rates.',
+    "⚠️ Using fallback exchange rates.",
     { code: error.code }
   )
 }
 
 export function handleValidationError(message: string): AppError {
-  return createError(
-    ErrorType.VALIDATION,
-    message,
-    `❌ ${message}`,
-    {}
-  )
+  return createError(ErrorType.VALIDATION, message, `❌ ${message}`, {})
 }
 
 export function handleUnknownError(error: any): AppError {
-  log.error('Unknown error', {
+  log.error("Unknown error", {
     message: error.message,
     stack: error.stack,
     type: typeof error,
@@ -198,8 +192,8 @@ export function handleUnknownError(error: any): AppError {
 
   return createError(
     ErrorType.UNKNOWN,
-    error.message || 'Unknown error',
-    '❌ Something went wrong. Please try again.',
+    error.message || "Unknown error",
+    "❌ Something went wrong. Please try again.",
     {}
   )
 }
@@ -213,15 +207,15 @@ export function handleError(error: any): AppError {
     return handleTelegramError(error)
   }
 
-  if (error.code?.startsWith('SQLITE_')) {
+  if (error.code?.startsWith("SQLITE_")) {
     return handleDatabaseError(error)
   }
 
-  if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+  if (error.code === "ECONNREFUSED" || error.code === "ETIMEDOUT") {
     return createError(
       ErrorType.NETWORK,
       error.message,
-      '🌐 Network error. Please check your connection.',
+      "🌐 Network error. Please check your connection.",
       { code: error.code }
     )
   }
@@ -246,18 +240,16 @@ export async function sendErrorToUser(
   try {
     await bot.sendMessage(
       chatId,
-      error.userMessage || '❌ An error occurred. Please try again.',
+      error.userMessage || "❌ An error occurred. Please try again.",
       {
         reply_markup: {
-          keyboard: [
-            [{ text: '🔄 Try Again' }, { text: '🏠 Main Menu' }],
-          ],
+          keyboard: [[{ text: "🔄 Try Again" }, { text: "🏠 Main Menu" }]],
           resize_keyboard: true,
         },
       }
     )
   } catch (sendError) {
-    log.error('Failed to send error message to user', {
+    log.error("Failed to send error message to user", {
       chatId,
       originalError: error.message,
       sendError: (sendError as Error).message,
@@ -266,16 +258,16 @@ export async function sendErrorToUser(
 }
 
 export function setupGlobalErrorHandlers() {
-  process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
-    log.error('Unhandled Promise Rejection', {
+  process.on("unhandledRejection", (reason: any, promise: Promise<any>) => {
+    log.error("Unhandled Promise Rejection", {
       reason: reason?.message || reason,
       stack: reason?.stack,
       promise: promise.toString(),
     })
   })
 
-  process.on('uncaughtException', (error: Error) => {
-    log.error('Uncaught Exception', {
+  process.on("uncaughtException", (error: Error) => {
+    log.error("Uncaught Exception", {
       message: error.message,
       stack: error.stack,
     })
@@ -285,13 +277,13 @@ export function setupGlobalErrorHandlers() {
     }, 1000)
   })
 
-  process.on('SIGTERM', () => {
-    log.info('SIGTERM received, shutting down gracefully...')
+  process.on("SIGTERM", () => {
+    log.info("SIGTERM received, shutting down gracefully...")
     process.exit(0)
   })
 
-  process.on('SIGINT', () => {
-    log.info('SIGINT received, shutting down gracefully...')
+  process.on("SIGINT", () => {
+    log.info("SIGINT received, shutting down gracefully...")
     process.exit(0)
   })
 }

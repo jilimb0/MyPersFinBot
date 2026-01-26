@@ -2,10 +2,20 @@
  * Monthly statistics formatting
  */
 
-import { Transaction, TransactionType, IncomeSource, Currency } from "../../types"
+import {
+  Transaction,
+  TransactionType,
+  IncomeSource,
+  Currency,
+} from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
 import { formatMoney, formatAmount } from "../../utils"
-import { getCategoryEmoji, convertToDefaultCurrency, sumConverted, createProgressBar } from "../helpers"
+import {
+  getCategoryEmoji,
+  convertToDefaultCurrency,
+  sumConverted,
+  createProgressBar,
+} from "../helpers"
 import { CategoryTotals, MonthlyStatsData } from "../types"
 
 /**
@@ -55,7 +65,10 @@ function formatIncomeSection(
       currency: source.currency || defaultCurrency,
     }))
 
-    const convertedSources = convertToDefaultCurrency(sourceItems, defaultCurrency)
+    const convertedSources = convertToDefaultCurrency(
+      sourceItems,
+      defaultCurrency
+    )
     const totalExpected = sumConverted(convertedSources)
 
     incomeSources.forEach((source: IncomeSource) => {
@@ -79,9 +92,15 @@ function formatIncomeSection(
     }
 
     const difference = totalIncomeInDefaultCurrency - totalExpected
-    const progress = createProgressBar(totalIncomeInDefaultCurrency, totalExpected)
-    const progressPercent = totalExpected > 0 ? ((totalIncomeInDefaultCurrency / totalExpected) * 100).toFixed(2) : "0.00"
-    
+    const progress = createProgressBar(
+      totalIncomeInDefaultCurrency,
+      totalExpected
+    )
+    const progressPercent =
+      totalExpected > 0
+        ? ((totalIncomeInDefaultCurrency / totalExpected) * 100).toFixed(2)
+        : "0.00"
+
     section += `\n📈 Progress: ${progress} ${progressPercent}%\n`
 
     if (difference >= 0) {
@@ -89,11 +108,15 @@ function formatIncomeSection(
     } else {
       // Позитивный прогресс вместо "Short by"
       const now = new Date()
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+      const lastDay = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0
+      ).getDate()
       const daysLeft = Math.max(1, lastDay - now.getDate())
       const remaining = Math.abs(difference)
       const dailyTarget = Math.ceil(remaining / daysLeft)
-      
+
       section += `⚠️ Short by: ${formatMoney(remaining, defaultCurrency)}\n`
       section += `⏰ Days left: ${daysLeft}\n`
       section += `📈 Daily target: ~${formatMoney(dailyTarget, defaultCurrency)}\n`
@@ -136,7 +159,7 @@ function formatExpenseSection(
  */
 async function formatTrendsSection(
   userId: string,
-   data:MonthlyStatsData,
+  data: MonthlyStatsData,
   totalIncomeInDefaultCurrency: number,
   expenseTotals: CategoryTotals
 ): Promise<string> {
@@ -145,7 +168,11 @@ async function formatTrendsSection(
   const prevMonth = month === 0 ? 11 : month - 1
   const prevYear = month === 0 ? year - 1 : year
 
-  const prevTransactions = await db.getTransactionsByMonth(userId, prevYear, prevMonth)
+  const prevTransactions = await db.getTransactionsByMonth(
+    userId,
+    prevYear,
+    prevMonth
+  )
 
   if (prevTransactions.length === 0) return ""
 
@@ -243,7 +270,8 @@ export async function formatMonthlyStats(userId: string): Promise<string> {
   data.transactions.forEach((tx: Transaction) => {
     if (tx.type === TransactionType.TRANSFER) return
 
-    const targetMap = tx.type === TransactionType.INCOME ? incomeTotals : expenseTotals
+    const targetMap =
+      tx.type === TransactionType.INCOME ? incomeTotals : expenseTotals
 
     if (tx.type === TransactionType.INCOME) {
       totalIncomeCount++
@@ -251,20 +279,38 @@ export async function formatMonthlyStats(userId: string): Promise<string> {
       totalExpenseCount++
     }
 
-    if (!targetMap[tx.category]) targetMap[tx.category] = {}
-    if (!targetMap[tx.category][tx.currency]) targetMap[tx.category][tx.currency] = 0
+    if (!targetMap[tx.category]) {
+      targetMap[tx.category] = {}
+    }
+    if (!targetMap[tx.category]![tx.currency]) {
+      targetMap[tx.category]![tx.currency] = 0
+    }
 
-    targetMap[tx.category][tx.currency] += tx.amount
+    targetMap[tx.category]![tx.currency]! += tx.amount
   })
 
-  if (totalIncomeCount === 0 && totalExpenseCount === 0 && data.incomeSources.length === 0) {
+  if (
+    totalIncomeCount === 0 &&
+    totalExpenseCount === 0 &&
+    data.incomeSources.length === 0
+  ) {
     return "📊 No Income or Expense transactions this month (only Transfers)."
   }
 
   const sections = [
-    formatIncomeSection(data, incomeTotals, totalIncomeCount, totalIncomeInDefaultCurrency),
+    formatIncomeSection(
+      data,
+      incomeTotals,
+      totalIncomeCount,
+      totalIncomeInDefaultCurrency
+    ),
     formatExpenseSection(expenseTotals, totalExpenseCount),
-    await formatTrendsSection(userId, data, totalIncomeInDefaultCurrency, expenseTotals),
+    await formatTrendsSection(
+      userId,
+      data,
+      totalIncomeInDefaultCurrency,
+      expenseTotals
+    ),
   ].filter(Boolean)
 
   return `📈 *Monthly Report (${data.month + 1}/${data.year})*\n\n${sections.join("\n")}`

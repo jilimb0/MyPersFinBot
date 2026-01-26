@@ -24,7 +24,7 @@ export function parseAmountWithCurrency(
   const currencyRegex = /^(-?[0-9]+(?:\.[0-9]*)?)\s*([A-Z]{3}|\$)$/
   const currencyMatch = normalizedText.match(currencyRegex)
 
-  if (currencyMatch) {
+  if (currencyMatch && currencyMatch[1] && currencyMatch[2]) {
     const amount = parseFloat(currencyMatch[1])
     let currency = currencyMatch[2]
 
@@ -50,9 +50,9 @@ export function parseBalanceInput(
     return null
   }
 
-  const accountId = match[1].trim()
-  const amount = parseFloat(match[2])
-  const currency = match[3].toUpperCase()
+  const accountId = match[1]!.trim()
+  const amount = parseFloat(match[2]!)
+  const currency = match[3]!.toUpperCase()
 
   if (!accountId || isNaN(amount) || amount < 0) {
     return null
@@ -81,10 +81,10 @@ export function parseDebtInput(text: string): {
     return null
   }
 
-  const counterparty = match[1].trim()
-  const amount = parseFloat(match[2])
-  const currency = match[3].toUpperCase()
-  const typeStr = match[4].toLowerCase()
+  const counterparty = match[1]!.trim()
+  const amount = parseFloat(match[2]!)
+  const currency = match[3]!.toUpperCase()
+  const typeStr = match[4]!.toLowerCase()
 
   if (!counterparty || isNaN(amount) || amount <= 0) {
     return null
@@ -110,9 +110,9 @@ export function parseGoalInput(
   const matchWithCurrency = normalizedText.trim().match(regexWithCurrency)
 
   if (matchWithCurrency) {
-    const name = matchWithCurrency[1].trim()
-    const targetAmount = parseFloat(matchWithCurrency[2])
-    const currency = matchWithCurrency[3].toUpperCase()
+    const name = matchWithCurrency[1]!.trim()
+    const targetAmount = parseFloat(matchWithCurrency[2]!)
+    const currency = matchWithCurrency[3]!.toUpperCase()
 
     if (!name || isNaN(targetAmount) || targetAmount <= 0) {
       return null
@@ -129,8 +129,8 @@ export function parseGoalInput(
   const matchWithoutCurrency = normalizedText.trim().match(regexWithoutCurrency)
 
   if (matchWithoutCurrency) {
-    const name = matchWithoutCurrency[1].trim()
-    const targetAmount = parseFloat(matchWithoutCurrency[2])
+    const name = matchWithoutCurrency[1]!.trim()
+    const targetAmount = parseFloat(matchWithoutCurrency[2]!)
 
     if (!name || isNaN(targetAmount) || targetAmount <= 0) {
       return null

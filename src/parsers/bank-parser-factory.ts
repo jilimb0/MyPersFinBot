@@ -43,14 +43,21 @@ export class BankParserFactory {
       return "TINKOFF"
     }
 
-    if (lower.includes("type") && lower.includes("product") && lower.includes("state")) {
+    if (
+      lower.includes("type") &&
+      lower.includes("product") &&
+      lower.includes("state")
+    ) {
       return "REVOLUT"
     }
 
     return "UNKNOWN"
   }
 
-  static createParser(bankType: BankType, options?: BankParserOptions): BankParser {
+  static createParser(
+    bankType: BankType,
+    options?: BankParserOptions
+  ): BankParser {
     switch (bankType) {
       case "TINKOFF":
         return new TinkoffParser(options)
@@ -71,7 +78,7 @@ export class BankParserFactory {
     options?: BankParserOptions
   ) {
     const bankType = this.detectBankType(content, fileName)
-    
+
     if (bankType === "UNKNOWN") {
       throw new Error("Could not detect bank type. Please specify manually.")
     }

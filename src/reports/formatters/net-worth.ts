@@ -50,9 +50,9 @@ export async function formatNetWorth(userId: string): Promise<string> {
 
     const debtValue = convertedDebts[index]
     if (d.type === "OWES_ME") {
-      totalDebtsOwedToMe += debtValue
+      totalDebtsOwedToMe += debtValue!
     } else if (d.type === "I_OWE") {
-      totalDebtsIOwe += debtValue
+      totalDebtsIOwe += debtValue!
     }
   })
 
@@ -64,14 +64,14 @@ export async function formatNetWorth(userId: string): Promise<string> {
     breakdown.push("\n💳 *Balances:*")
     balances.forEach((b: Balance, index: number) => {
       const val = convertedBalances[index]
-      if (Math.abs(val) > 0.1) {
+      if (Math.abs(val!) > 0.1) {
         if (b.currency === defaultCurrency) {
           breakdown.push(
             `  • ${b.accountId}: *${formatMoney(b.amount, b.currency)}*`
           )
         } else {
           breakdown.push(
-            `  • ${b.accountId}: ${formatMoney(b.amount, b.currency)} _(≈${formatMoney(val, defaultCurrency)})_`
+            `  • ${b.accountId}: ${formatMoney(b.amount, b.currency)} _(≈${formatMoney(val!, defaultCurrency)})_`
           )
         }
       }
@@ -89,10 +89,10 @@ export async function formatNetWorth(userId: string): Promise<string> {
     debts.forEach((d: Debt, index: number) => {
       if (d.type === "OWES_ME" && !d.isPaid) {
         const val = convertedDebts[index]
-        if (val > 0.1) {
+        if (val! > 0.1) {
           const remaining = d.amount - d.paidAmount
           breakdown.push(
-            `  • ${d.counterparty}: ${formatMoney(remaining, d.currency)}`
+            `  • ${d?.counterparty}: ${formatMoney(remaining, d.currency)}`
           )
         }
       }
@@ -106,10 +106,10 @@ export async function formatNetWorth(userId: string): Promise<string> {
     debts.forEach((d: Debt, index: number) => {
       if (d.type === "I_OWE" && !d.isPaid) {
         const val = convertedDebts[index]
-        if (val > 0.1) {
+        if (val! > 0.1) {
           const remaining = d.amount - d.paidAmount
           breakdown.push(
-            `  • ${d.counterparty}: ${formatMoney(remaining, d.currency)}`
+            `  • ${d?.counterparty}: ${formatMoney(remaining, d.currency)}`
           )
         }
       }

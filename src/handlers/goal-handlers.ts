@@ -6,6 +6,7 @@ import { showGoalsMenu } from "../menus-i18n"
 import { formatAmount, formatMoney, handleInsufficientFunds } from "../utils"
 import { randomUUID } from "crypto"
 import { t } from "../i18n"
+import { Goal } from "../types"
 
 export async function handleGoalInput(
   wizard: WizardManager,
@@ -16,7 +17,7 @@ export async function handleGoalInput(
   const defaultCurrency = await db.getDefaultCurrency(userId)
   const parsed = validators.parseGoalInput(text, defaultCurrency)
   const state = wizard.getState(userId)
-  const lang = state.lang || 'en';
+  const lang = state?.lang || "en"
   if (!parsed) {
     await wizard.sendMessage(
       chatId,
@@ -29,14 +30,14 @@ export async function handleGoalInput(
   // ✅ Check for duplicate goal name
   const userData = await db.getUserData(userId)
   const existingGoal = userData.goals.find(
-    (g) => g.name === parsed.name && g.status === "ACTIVE"
+    (g: Goal) => g.name === parsed.name && g.status === "ACTIVE"
   )
 
   if (existingGoal) {
     await wizard.sendMessage(
       chatId,
       `❌ *Goal "${parsed.name}" already exists!*\n\n` +
-      `Please choose a different name or manage existing goal in the Goals menu.`,
+        `Please choose a different name or manage existing goal in the Goals menu.`,
       {
         parse_mode: "Markdown",
         ...wizard.getBackButton(lang),
@@ -66,14 +67,17 @@ export async function handleGoalInput(
   await wizard.sendMessage(
     chatId,
     `🎯 Goal created: *${parsed.name}*\n\n` +
-    `📅 Set a deadline for this goal?\n\n` +
-    `Enter date (DD.MM.YYYY) or tap Skip to create without reminder.`,
+      `📅 Set a deadline for this goal?\n\n` +
+      `Enter date (DD.MM.YYYY) or tap Skip to create without reminder.`,
     {
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: t(state.lang, 'common.skip') }],
-          [{ text: t(state.lang, 'common.back') }, { text: t(state.lang, 'mainMenu.mainMenuButton') }],
+          [{ text: t(state?.lang || "en", "common.skip") }],
+          [
+            { text: t(state?.lang || "en", "common.back") },
+            { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+          ],
         ],
         resize_keyboard: true,
       },
@@ -91,12 +95,15 @@ export async function handleGoalDepositAmount(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state.lang || 'en';
-  const goal = state.data.goal
+  const lang = state?.lang || "en"
+  const goal = state?.data?.goal
   if (!goal) {
-    await wizard.sendMessage(chatId, t(state.lang, 'goals.errorMissingData'))
+    await wizard.sendMessage(
+      chatId,
+      t(state?.lang || "en", "goals.errorMissingData")
+    )
     wizard.clearState(userId)
-    await showGoalsMenu(wizard.getBot(), chatId, userId, state.lang)
+    await showGoalsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
     return true
   }
 
@@ -136,17 +143,20 @@ export async function handleGoalDepositAmount(
     await wizard.sendMessage(
       chatId,
       "⚠️ *No Balances Found*\n\n" +
-      "Before depositing to goals, you need at least one balance account.\n\n" +
-      "💡 *Quick Start:*\n" +
-      "1️⃣ Go to 💰 *Balances*\n" +
-      "2️⃣ Tap ✨ *Add Balance*\n" +
-      "3️⃣ Enter account name and amount",
+        "Before depositing to goals, you need at least one balance account.\n\n" +
+        "💡 *Quick Start:*\n" +
+        "1️⃣ Go to 💰 *Balances*\n" +
+        "2️⃣ Tap ✨ *Add Balance*\n" +
+        "3️⃣ Enter account name and amount",
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: t(state.lang, 'transactions.goToBalances') }],
-            [{ text: t(state.lang, 'common.back') }, { text: t(state.lang, 'mainMenu.mainMenuButton') }],
+            [{ text: t(state?.lang || "en", "transactions.goToBalances") }],
+            [
+              { text: t(state?.lang || "en", "common.back") },
+              { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -177,15 +187,18 @@ export async function handleGoalDepositAccount(
     cleanText = text.substring(2)
   }
 
-  const lang = state.lang || 'en';
-  const accountName = cleanText.split(" (")[0].trim()
-  const goal = state.data.goal
-  const amount = state.data.depositAmount || state.data.payAmount
+  const lang = state?.lang || "en"
+  const accountName = cleanText.split(" (")[0]?.trim() || ""
+  const goal = state?.data?.goal
+  const amount = state?.data?.depositAmount || state?.data?.payAmount
 
   if (!goal || !amount) {
-    await wizard.sendMessage(chatId, t(state.lang, 'goals.errorMissingData'))
+    await wizard.sendMessage(
+      chatId,
+      t(state?.lang || "en", "goals.errorMissingData")
+    )
     wizard.clearState(userId)
-    await showGoalsMenu(wizard.getBot(), chatId, userId, state.lang)
+    await showGoalsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
     return true
   }
 
@@ -214,8 +227,11 @@ export async function handleGoalDepositAccount(
       {
         reply_markup: {
           keyboard: [
-            [{ text: t(state.lang, 'transactions.goToBalances') }],
-            [{ text: t(state.lang, 'goals.changeAmount') }, { text: t(state.lang, 'mainMenu.mainMenuButton') }],
+            [{ text: t(state?.lang || "en", "transactions.goToBalances") }],
+            [
+              { text: t(state?.lang || "en", "goals.changeAmount") },
+              { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -235,7 +251,7 @@ export async function handleGoalDepositAccount(
   if (!result.success) {
     await wizard.sendMessage(
       chatId,
-      result.message || t(lang, 'common.error'),
+      result.message || t(lang, "common.error"),
       wizard.getBackButton(lang)
     )
     return true
@@ -246,7 +262,7 @@ export async function handleGoalDepositAccount(
     `✅ 🎯 Deposited ${formatMoney(amount, goal.currency)} to "${goal.name}" from ${accountName}!`
   )
   wizard.clearState(userId)
-  await showGoalsMenu(wizard.getBot(), chatId, userId, state.lang)
+  await showGoalsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
 
   return true
 }

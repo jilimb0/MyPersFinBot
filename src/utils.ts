@@ -6,11 +6,16 @@ export async function safeAnswerCallback(
   bot: TelegramBot,
   options?: AnswerCallbackQueryOptions
 ) {
+  if (!options) return
+
   try {
     await bot.answerCallbackQuery(options.callback_query_id, options)
   } catch (err: unknown) {
     // Игнорируем ошибки устаревших callback queries
-    const error = err as { response?: { body?: { description?: string } }; message?: string }
+    const error = err as {
+      response?: { body?: { description?: string } }
+      message?: string
+    }
     if (
       error?.response?.body?.description?.includes("query is too old") ||
       error?.response?.body?.description?.includes("query ID is invalid")
@@ -28,8 +33,11 @@ export function formatAmount(amount: number | undefined | null): string {
     : Number(amount).toFixed(2)
 }
 
-
-export function formatMoney(amount: number, currency?: string, withoutSpace?: boolean): string {
+export function formatMoney(
+  amount: number,
+  currency?: string,
+  withoutSpace?: boolean
+): string {
   if (!currency) {
     return formatAmount(amount)
   }
@@ -54,8 +62,7 @@ export function matchTransaction(
 
   if (accountId) {
     const isMatch =
-      tx.fromAccountId === accountId ||
-      tx.toAccountId === accountId
+      tx.fromAccountId === accountId || tx.toAccountId === accountId
     if (!isMatch) return false
   }
 
@@ -106,9 +113,14 @@ export function createListButtons(options: {
   for (let i = 0; i < items.length; i += itemsPerRow) {
     const row: TelegramBot.KeyboardButton[] = []
     for (let j = 0; j < itemsPerRow && i + j < items.length; j++) {
-      row.push({ text: items[i + j] })
+      const text = items[i + j]
+      if (text) {
+        row.push({ text })
+      }
     }
-    buttons.push(row)
+    if (row.length > 0) {
+      buttons.push(row)
+    }
   }
 
   if (withoutBack) buttons.push([{ text: "🏠 Main Menu" }])

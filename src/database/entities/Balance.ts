@@ -27,7 +27,7 @@ export class Balance {
   amount!: number
 
   @Column({ type: "text" })
-  currency: Currency
+  currency!: Currency
 
   @UpdateDateColumn()
   lastUpdated!: Date

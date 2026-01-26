@@ -1,14 +1,17 @@
-import { Logger, QueryRunner } from 'typeorm'
-import { log } from './logger'
+import { Logger, QueryRunner } from "typeorm"
+import { log } from "./logger"
 
 export class QueryMonitor {
   private static instance: QueryMonitor
-  private slowQueries: Map<string, { count: number; totalTime: number; maxTime: number }> = new Map()
+  private slowQueries: Map<
+    string,
+    { count: number; totalTime: number; maxTime: number }
+  > = new Map()
   private queryLog: Array<{ query: string; time: number; timestamp: Date }> = []
   private readonly MAX_LOG_SIZE = 100
   private readonly SLOW_QUERY_THRESHOLD = 500 // ms
 
-  private constructor() { }
+  private constructor() {}
 
   static getInstance(): QueryMonitor {
     if (!QueryMonitor.instance) {
@@ -46,16 +49,18 @@ export class QueryMonitor {
   private normalizeQuery(query: string): string {
     // Убираем параметры для группировки
     return query
-      .replace(/\$\d+/g, '?') // PostgreSQL params
-      .replace(/'[^']*'/g, '?') // String literals
-      .replace(/\d+/g, '?') // Numbers
-      .replace(/\s+/g, ' ') // Multiple spaces
+      .replace(/\$\d+/g, "?") // PostgreSQL params
+      .replace(/'[^']*'/g, "?") // String literals
+      .replace(/\d+/g, "?") // Numbers
+      .replace(/\s+/g, " ") // Multiple spaces
       .trim()
       .substring(0, 200)
   }
 
   private truncateQuery(query: string, maxLength: number = 100): string {
-    return query.length > maxLength ? query.substring(0, maxLength) + '...' : query
+    return query.length > maxLength
+      ? query.substring(0, maxLength) + "..."
+      : query
   }
 
   getSlowQueries(limit: number = 10) {
@@ -70,9 +75,7 @@ export class QueryMonitor {
   }
 
   getRecentSlowQueries(limit: number = 10) {
-    return this.queryLog
-      .slice(-limit)
-      .reverse()
+    return this.queryLog.slice(-limit).reverse()
   }
 
   getStats() {
@@ -82,7 +85,7 @@ export class QueryMonitor {
     let totalTime = 0
     let maxTime = 0
 
-    this.slowQueries.forEach(stats => {
+    this.slowQueries.forEach((stats) => {
       totalTime += stats.totalTime
       maxTime = Math.max(maxTime, stats.maxTime)
     })
@@ -92,7 +95,8 @@ export class QueryMonitor {
       uniqueSlowQueries,
       totalTime,
       maxTime,
-      avgTime: totalSlowQueries > 0 ? Math.round(totalTime / totalSlowQueries) : 0,
+      avgTime:
+        totalSlowQueries > 0 ? Math.round(totalTime / totalSlowQueries) : 0,
     }
   }
 
@@ -101,7 +105,7 @@ export class QueryMonitor {
     const topQueries = this.getSlowQueries(5)
     const recentQueries = this.getRecentSlowQueries(5)
 
-    let report = '🔍 *Query Performance Report*\n\n'
+    let report = "🔍 *Query Performance Report*\n\n"
     report += `📊 *Statistics:*\n`
     report += `• Total slow queries: ${stats.totalSlowQueries}\n`
     report += `• Unique slow queries: ${stats.uniqueSlowQueries}\n`
@@ -114,7 +118,7 @@ export class QueryMonitor {
         report += `${i + 1}. ${this.truncateQuery(q.query, 60)}\n`
         report += `   Count: ${q.count} | Avg: ${q.avgTime}ms | Max: ${q.maxTime}ms\n`
       })
-      report += '\n'
+      report += "\n"
     }
 
     if (recentQueries.length > 0) {
@@ -141,7 +145,7 @@ export class QueryMonitor {
   reset() {
     this.slowQueries.clear()
     this.queryLog = []
-    log.info('✅ Query monitor statistics reset')
+    log.info("✅ Query monitor statistics reset")
   }
 }
 
@@ -149,37 +153,47 @@ export class QueryMonitor {
 export class CustomQueryLogger implements Logger {
   private monitor = QueryMonitor.getInstance()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  logQuery(query: string, parameters?: any[], queryRunner?: QueryRunner) {
+  logQuery(_query: string, _parameters?: any[], _queryRunner?: QueryRunner) {
     // Не логируем все запросы, только медленные
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  logQueryError(error: string | Error, query: string, parameters?: any[], queryRunner?: QueryRunner) {
+  logQueryError(
+    error: string | Error,
+    query: string,
+    parameters?: any[],
+    _queryRunner?: QueryRunner
+  ) {
     log.error(`❌ Query Error: ${error}`, { query, parameters })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  logQuerySlow(time: number, query: string, parameters?: any[], queryRunner?: QueryRunner) {
+  logQuerySlow(
+    time: number,
+    query: string,
+    _parameters?: any[],
+    _queryRunner?: QueryRunner
+  ) {
     this.monitor.logQuery(query, time)
   }
 
-  logSchemaBuild(message: string, queryRunner?: QueryRunner) {
+  logSchemaBuild(message: string, _queryRunner?: QueryRunner) {
     log.info(`🛠️ Schema: ${message}`)
   }
 
-  logMigration(message: string, queryRunner?: QueryRunner) {
+  logMigration(message: string, _queryRunner?: QueryRunner) {
     log.info(`📦 Migration: ${message}`)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  log(level: 'log' | 'info' | 'warn', message: any, queryRunner?: QueryRunner) {
+  log(
+    level: "log" | "info" | "warn",
+    message: any,
+    _queryRunner?: QueryRunner
+  ) {
     switch (level) {
-      case 'log':
-      case 'info':
+      case "log":
+      case "info":
         log.info(message)
         break
-      case 'warn':
+      case "warn":
         log.warn(message)
         break
     }
