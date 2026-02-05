@@ -69,3 +69,7 @@ data/cache/
 node_modules/.cache/
 
 translation-coverage.js
+
+#
+
+index-old.ts

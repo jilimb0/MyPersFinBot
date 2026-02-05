@@ -45,7 +45,7 @@ export function rateLimiterMiddleware(
         // Log the event
         logger.warn("Rate limit exceeded for user", {
           userId,
-          chatId: msg.chat.id,
+          chatId: msg.chat.id.toString(),
           remaining: result.remaining,
           retryAfter: result.retryAfter,
         })
@@ -108,7 +108,7 @@ async function handleRateLimitExceeded(
     await bot.sendMessage(msg.chat.id, message)
   } catch (error) {
     logger.error("Error sending rate limit message", error, {
-      chatId: msg.chat.id,
+      chatId: msg.chat.id.toString(),
     })
   }
 }

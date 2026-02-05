@@ -16,6 +16,24 @@ const translations: Record<Language, TranslationKey> = {
 }
 
 /**
+ * Language names for display
+ */
+export const languageNames: Record<Language, string> = {
+  en: "🇬🇧 English",
+  ru: "🇷🇺 Русский",
+  uk: "🇺🇦 Українська",
+  es: "🇪🇸 Español",
+  pl: "🇵🇱 Polski",
+}
+
+/**
+ * Check if language code is valid
+ */
+export function isValidLanguage(lang: string): lang is Language {
+  return ["en", "ru", "uk", "es", "pl"].includes(lang)
+}
+
+/**
  * Get translation by key path
  * @param lang - Language code
  * @param path - Dot-separated path (e.g., 'mainMenu.welcome')
@@ -49,68 +67,15 @@ export function t(
 
   let result = value as string
 
-  // Simple interpolation: replace {key} with value
+  // Replace parameters
   if (params) {
     Object.entries(params).forEach(([key, val]) => {
-      result = result.replace(new RegExp(`\\{${key}\\}`, "g"), String(val))
+      result = result.replace(new RegExp(`{${key}}`, "g"), String(val))
     })
   }
 
   return result
 }
 
-/**
- * Get all supported languages
- */
-export function getSupportedLanguages(): Language[] {
-  return ["en", "ru", "uk", "es", "pl"]
-}
-
-/**
- * Check if language is supported
- */
-export function isValidLanguage(lang: Language): lang is Language {
-  return ["en", "ru", "uk", "es", "pl"].includes(lang)
-}
-
-/**
- * Language names for display in UI
- */
-export const languageNames: Record<Language, string> = {
-  en: "🇬🇧 English",
-  ru: "🇷🇺 Русский",
-  uk: "🇺🇦 Українська",
-  es: "🇪🇸 Español",
-  pl: "🇵🇱 Polski",
-}
-
-/**
- * Language flags (emoji)
- */
-export const languageFlags: Record<Language, string> = {
-  en: "🇬🇧",
-  ru: "🇷🇺",
-  uk: "🇺🇦",
-  es: "🇪🇸",
-  pl: "🇵🇱",
-}
-
-/**
- * Detect language from Telegram user
- * Falls back to English if not supported
- */
-export function detectLanguage(telegramLangCode?: string): Language {
-  if (!telegramLangCode) return "en"
-
-  const lang = telegramLangCode.toLowerCase().split("-")[0] as Language
-
-  if (isValidLanguage(lang)) {
-    return lang
-  }
-
-  // Fallback
-  return "en"
-}
-
-// Export helper functions
-export * from "./helpers"
+// DO NOT export keyboards here - it creates circular dependency
+// Import keyboards directly where needed: import { ... } from "../i18n/keyboards"

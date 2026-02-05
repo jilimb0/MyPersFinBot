@@ -1,5 +1,5 @@
 import TelegramBot from "node-telegram-bot-api"
-import { log } from "./logger"
+import { logger as log } from "./logger"
 
 export enum ErrorType {
   TELEGRAM_API = "TELEGRAM_API",
@@ -232,9 +232,14 @@ export async function sendErrorToUser(
     action?: string
   }
 ) {
-  log.logError(error, {
+  // Log structured error information
+  log.error("AppError sent to user", {
+    type: error.type,
+    message: error.message,
+    userMessage: error.userMessage,
     chatId,
-    ...context,
+    context,
+    stack: error.stack,
   })
 
   try {

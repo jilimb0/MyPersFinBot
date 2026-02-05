@@ -1,41 +1,56 @@
-// ⚠️ DEPRECATED: This file is deprecated
-//
-// NEW STRUCTURE:
-// - Messages: import from './constants/messages'
-// - Keyboards: import from './i18n/keyboards'
-//
-// This file kept for backwards compatibility only
+/**
+ * Keyboard constants for backward compatibility
+ *
+ * DEPRECATED: Use i18n/keyboards instead
+ *
+ * These constants provide backwards compatibility for code that imports
+ * keyboards from './constants'. New code should import from 'i18n/keyboards'
+ * and pass the language parameter.
+ */
 
-// Example migration:
-// OLD: import { MAIN_MENU_KEYBOARD } from './constants'
-// NEW: import { getMainMenuKeyboard } from './i18n/keyboards'
-//      const keyboard = getMainMenuKeyboard(lang)
-
-// Backwards compatibility exports (will be removed in future)
 import {
   getMainMenuKeyboard,
   getSettingsKeyboard,
   getAnalyticsKeyboard,
   getStatsKeyboard,
   getBackAndMainKeyboard,
-} from "./i18n/keyboards"
+} from "../i18n/keyboards"
 
 // Default language for backwards compatibility
 const DEFAULT_LANG = "en"
 
+/**
+ * @deprecated Use getMainMenuKeyboard(lang) from 'i18n/keyboards' instead
+ */
 export const MAIN_MENU_KEYBOARD = getMainMenuKeyboard(DEFAULT_LANG)
+
+/**
+ * @deprecated Use getSettingsKeyboard(lang) from 'i18n/keyboards' instead
+ */
 export const SETTINGS_KEYBOARD = {
   keyboard: getSettingsKeyboard(DEFAULT_LANG).keyboard,
   resize_keyboard: true,
 }
+
+/**
+ * @deprecated Use getStatsKeyboard(lang) from 'i18n/keyboards' instead
+ */
 export const STATS_KEYBOARD = {
   keyboard: getStatsKeyboard(DEFAULT_LANG).keyboard,
   resize_keyboard: true,
 }
+
+/**
+ * @deprecated Use getBackAndMainKeyboard(lang) from 'i18n/keyboards' instead
+ */
 export const BACK_N_MAIN_KEYBOARD = {
   keyboard: getBackAndMainKeyboard(DEFAULT_LANG).keyboard,
   resize_keyboard: true,
 }
+
+/**
+ * @deprecated Use getAnalyticsKeyboard(lang) from 'i18n/keyboards' instead
+ */
 export const ANALYTICS_KEYBOARD = {
   keyboard: getAnalyticsKeyboard(DEFAULT_LANG).keyboard,
   resize_keyboard: true,

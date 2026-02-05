@@ -18,7 +18,6 @@ import {
   IncomeSource,
   Currency,
   InternalCategory,
-  UserData,
   ExpenseCategory,
   Budget,
   CategoryBudget,
@@ -30,50 +29,34 @@ import { convertSync } from "../fx"
 import { formatMoney, handleInsufficientFunds } from "../utils"
 import { randomUUID } from "crypto"
 import { Language } from "../i18n"
+import { getCacheManager } from "../services/cache-manager"
 
 export class DatabaseStorage {
-  private userDataCache = new Map<
-    string,
-    { data: UserData; timestamp: number }
-  >()
-  private balancesCache = new Map<
-    string,
-    { data: BalanceType[]; timestamp: number }
-  >()
-  private transactionsCache = new Map<
-    string,
-    { data: Transaction[]; timestamp: number }
-  >()
+  private _cacheManager: ReturnType<typeof getCacheManager> | null = null
 
-  private readonly CACHE_CONFIG = {
-    USER_DATA: 60_000,
-    BALANCES: 30_000,
-    TRANSACTIONS: 20_000,
-    RECENT_TRANSACTIONS: 10_000,
+  private get cacheManager() {
+    if (!this._cacheManager) {
+      this._cacheManager = getCacheManager()
+    }
+    return this._cacheManager
   }
 
-  private isCacheValid(timestamp: number, ttl: number): boolean {
-    return Date.now() - timestamp < ttl
-  }
-
-  clearCache(
+  async clearCache(
     userId: string,
     type?: "user" | "balances" | "transactions" | "all"
-  ) {
+  ): Promise<void> {
     if (!type || type === "all") {
-      this.userDataCache.delete(userId)
-      this.balancesCache.delete(userId)
-      this.transactionsCache.delete(userId)
+      await this.cacheManager.invalidateAllUserCaches(userId)
     } else {
       switch (type) {
         case "user":
-          this.userDataCache.delete(userId)
+          await this.cacheManager.invalidateUserData(userId)
           break
         case "balances":
-          this.balancesCache.delete(userId)
+          await this.cacheManager.invalidateBalances(userId)
           break
         case "transactions":
-          this.transactionsCache.delete(userId)
+          await this.cacheManager.invalidateTransactions(userId)
           break
       }
     }
@@ -104,12 +87,10 @@ export class DatabaseStorage {
   }
 
   async getUserData(userId: string) {
-    const cached = this.userDataCache.get(userId)
-    if (
-      cached &&
-      this.isCacheValid(cached.timestamp, this.CACHE_CONFIG.USER_DATA)
-    ) {
-      return cached.data
+    // Check cache first
+    const cached = await this.cacheManager.getUserData(userId)
+    if (cached) {
+      return cached
     }
 
     await this.ensureUser(userId)
@@ -174,7 +155,7 @@ export class DatabaseStorage {
       templates: user?.templates ?? [],
     }
 
-    this.userDataCache.set(userId, { data: result, timestamp: Date.now() })
+    await this.cacheManager.setUserData(userId, result)
 
     return result
   }
@@ -197,12 +178,9 @@ export class DatabaseStorage {
   // --- Balance Methods ---
 
   async getBalancesList(userId: string): Promise<BalanceType[]> {
-    const cached = this.balancesCache.get(userId)
-    if (
-      cached &&
-      this.isCacheValid(cached.timestamp, this.CACHE_CONFIG.BALANCES)
-    ) {
-      return cached.data
+    const cached = await this.cacheManager.getBalances(userId)
+    if (cached) {
+      return cached
     }
 
     await this.ensureUser(userId)
@@ -217,7 +195,7 @@ export class DatabaseStorage {
       lastUpdated: b.lastUpdated.toISOString(),
     }))
 
-    this.balancesCache.set(userId, { data: result, timestamp: Date.now() })
+    await this.cacheManager.setBalances(userId, result)
 
     return result
   }
@@ -709,12 +687,9 @@ export class DatabaseStorage {
   }
 
   async getAllTransactions(userId: string): Promise<Transaction[]> {
-    const cached = this.transactionsCache.get(userId)
-    if (
-      cached &&
-      this.isCacheValid(cached.timestamp, this.CACHE_CONFIG.TRANSACTIONS)
-    ) {
-      return cached.data
+    const cached = await this.cacheManager.getTransactions(userId)
+    if (cached) {
+      return cached
     }
 
     await this.ensureUser(userId)
@@ -727,7 +702,7 @@ export class DatabaseStorage {
 
     const result = transactions.map(this.mapTransaction.bind(this))
 
-    this.transactionsCache.set(userId, { data: result, timestamp: Date.now() })
+    await this.cacheManager.setTransactions(userId, result)
 
     return result
   }

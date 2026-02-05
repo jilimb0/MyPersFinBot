@@ -11,7 +11,7 @@ import logger from "../logger"
  * Sanitize text input for safe storage and display
  * Removes HTML tags and escapes special characters
  */
-export function sanitizeText(input: string): string {
+export function sanitizeText(input: string | undefined): string {
   if (!input || typeof input !== "string") {
     return ""
   }

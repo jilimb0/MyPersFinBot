@@ -2,6 +2,9 @@
  * Formatting utilities
  */
 
+/**
+ * Currency symbols map for custom formatting
+ */
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: "$",
   EUR: "€",
@@ -10,27 +13,83 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   TRY: "₺",
   UAH: "₴",
   PLN: "zł",
+  GBP: "£",
+  JPY: "¥",
+  CNY: "¥",
+}
+
+/**
+ * Format amount to string with proper decimal places
+ */
+export function formatAmount(amount: number | undefined | null): string {
+  if (amount == null || isNaN(amount)) return "0.00"
+  return Number(amount) % 1 === 0
+    ? Number(amount).toString()
+    : Number(amount).toFixed(2)
 }
 
 /**
  * Format money with currency symbol
+ * @param amount - Amount to format
+ * @param currency - Currency code (optional)
+ * @param withoutSpace - Remove space between amount and currency (optional)
  */
-export function formatMoney(amount: number, currency: string): string {
-  const symbol = CURRENCY_SYMBOLS[currency] || currency
-  const isNegative = amount < 0
-  const absoluteAmount = Math.abs(amount)
+export function formatMoney(
+  amount: number,
+  currency?: string,
+  withoutSpace?: boolean
+): string {
+  if (!currency) {
+    return formatAmount(amount)
+  }
 
-  // Format with thousands separator
-  const formatted = absoluteAmount.toLocaleString("en-US", {
+  // Format the number part
+  const formattedNumber = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })
+  }).format(Math.abs(amount))
 
-  return isNegative ? `-${symbol}${formatted}` : `${symbol}${formatted}`
+  // Get currency symbol (custom or from currency code)
+  const symbol = CURRENCY_SYMBOLS[currency] || currency
+
+  // Handle negative amounts
+  const sign = amount < 0 ? "-" : ""
+
+  // Format based on currency position
+  // Most currencies have symbol before amount, some after
+  const symbolAfter = ["PLN", "TRY"].includes(currency)
+
+  if (symbolAfter) {
+    return `${sign}${formattedNumber}${withoutSpace ? "" : " "}${symbol}`
+  }
+
+  return `${sign}${symbol}${formattedNumber}`
 }
 
 /**
- * Format date to YYYY-MM-DD
+ * Handle insufficient funds message
+ */
+export function handleInsufficientFunds(
+  accountName: string,
+  accountBalance: number,
+  accountCurrency: string,
+  requiredAmount: number,
+  requiredCurrency?: string
+): string {
+  const shortage = requiredAmount - accountBalance
+  const message =
+    `❌ Insufficient funds!\n\n` +
+    `Account: ${accountName}\n` +
+    `Available: ${formatMoney(accountBalance, accountCurrency)}\n` +
+    `Required: ${formatMoney(requiredAmount, requiredCurrency || accountCurrency)}\n\n` +
+    `Shortage: ${formatMoney(shortage, requiredCurrency || accountCurrency)}` +
+    "\n\n💡 You can change the amount or add funds to your account."
+
+  return message
+}
+
+/**
+ * Format date to YYYY-MM-DD (ISO format)
  */
 export function formatDate(date: Date): string {
   const year = date.getFullYear()
@@ -38,6 +97,13 @@ export function formatDate(date: Date): string {
   const day = String(date.getDate()).padStart(2, "0")
 
   return `${year}-${month}-${day}`
+}
+
+/**
+ * Format date to DD.MM (short format)
+ */
+export const formatDateShort = (date: Date): string => {
+  return `${date.getDate().toString().padStart(2, "0")}.${(date.getMonth() + 1).toString().padStart(2, "0")}`
 }
 
 /**

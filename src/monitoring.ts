@@ -1,5 +1,5 @@
 import { Logger, QueryRunner } from "typeorm"
-import { log } from "./logger"
+import { logger as log } from "./logger"
 
 export class QueryMonitor {
   private static instance: QueryMonitor

@@ -1,5 +1,5 @@
 import TelegramBot from "node-telegram-bot-api"
-import { sanitizeText, sanitizeAmount } from "../sanitize"
+import { sanitizeText, sanitizeAmount } from "../utils"
 import logger from "../logger"
 
 /**
@@ -20,9 +20,9 @@ export function sanitizeTextMiddleware(bot: TelegramBot) {
     // Log if sanitization changed the input (potential attack)
     if (originalText !== sanitizedText) {
       logger.warn("Input sanitized - potential XSS attempt", {
-        userId: msg.from?.id,
+        userId: msg.from?.id?.toString(),
         username: msg.from?.username,
-        chatId: msg.chat.id,
+        chatId: msg.chat.id.toString(),
         original: originalText.substring(0, 100),
         sanitized: sanitizedText.substring(0, 100),
       })
@@ -45,7 +45,7 @@ export function sanitizeCallbackMiddleware(bot: TelegramBot) {
 
     if (originalData !== sanitizedData) {
       logger.warn("Callback data sanitized", {
-        userId: query.from.id,
+        userId: query.from.id.toString(),
         username: query.from.username,
         original: originalData,
         sanitized: sanitizedData,
@@ -86,12 +86,16 @@ export function sanitizeTransactionInput(input: TransactionInput): {
   const amountStr =
     typeof input.amount === "number" ? input.amount.toString() : input.amount
 
+  // Ensure rawDate is always a string
+  const defaultDate = new Date().toISOString().split("T")[0]
+  const rawDate = input.date?.trim() || defaultDate
+
   return {
     amount: sanitizeAmount(amountStr),
     category: sanitizeText(input.category),
     description: sanitizeText(input.description || ""),
     accountId: sanitizeText(input.accountId),
-    date: sanitizeText(input.date || new Date().toISOString().split("T")[0]),
+    date: sanitizeText(rawDate),
   }
 }
 
