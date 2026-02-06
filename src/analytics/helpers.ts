@@ -3,6 +3,7 @@
  */
 
 import { AnalyticsPeriod } from "./types"
+import { Language, getLocale } from "../i18n"
 
 /**
  * Get date range for analytics period
@@ -163,51 +164,35 @@ export function groupByMonth<T extends { date: Date | string }>(
 /**
  * Get day name in Russian
  */
-export function getDayName(date: Date): string {
-  const days = [
-    "Воскресенье",
-    "Понедельник",
-    "Вторник",
-    "Среда",
-    "Четверг",
-    "Пятница",
-    "Суббота",
-  ]
-  return days[date.getDay()] || "Unknown"
+export function getDayName(date: Date, lang: Language = "ru"): string {
+  const locale = getLocale(lang)
+  return new Intl.DateTimeFormat(locale, { weekday: "long" }).format(date)
 }
 
 /**
  * Get month name in Russian
  */
-export function getMonthName(date: Date): string {
-  const months = [
-    "Январь",
-    "Февраль",
-    "Март",
-    "Апрель",
-    "Май",
-    "Июнь",
-    "Июль",
-    "Август",
-    "Сентябрь",
-    "Октябрь",
-    "Ноябрь",
-    "Декабрь",
-  ]
-  return months[date.getMonth()] || "Unknown"
+export function getMonthName(date: Date, lang: Language = "ru"): string {
+  const locale = getLocale(lang)
+  return new Intl.DateTimeFormat(locale, { month: "long" }).format(date)
 }
 
 /**
  * Format date range
  */
-export function formatDateRange(start: Date, end: Date): string {
+export function formatDateRange(
+  start: Date,
+  end: Date,
+  lang: Language = "ru"
+): string {
+  const locale = getLocale(lang)
   const sameDay = start.toDateString() === end.toDateString()
 
   if (sameDay) {
-    return start.toLocaleDateString("ru-RU")
+    return start.toLocaleDateString(locale)
   }
 
-  return `${start.toLocaleDateString("ru-RU")} - ${end.toLocaleDateString("ru-RU")}`
+  return `${start.toLocaleDateString(locale)} - ${end.toLocaleDateString(locale)}`
 }
 
 /**

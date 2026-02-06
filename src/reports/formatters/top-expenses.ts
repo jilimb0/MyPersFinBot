@@ -8,6 +8,7 @@ import { formatMoney, formatAmount } from "../../utils"
 import { convertBatchSync } from "../../fx"
 import { createProgressBar } from "../helpers"
 import { CategoryTotals } from "../types"
+import { t } from "../../i18n"
 
 /**
  * Formats top expenses for the current month
@@ -19,6 +20,7 @@ export async function formatTopExpenses(
   userId: string,
   limit: number = 5
 ): Promise<string> {
+  const lang = await db.getUserLanguage(userId)
   const now = new Date()
   const month = now.getMonth()
   const year = now.getFullYear()
@@ -32,7 +34,7 @@ export async function formatTopExpenses(
   )
 
   if (expenses.length === 0) {
-    return "📉 *Top Expenses*\n\nNo expenses this month."
+    return t(lang, "reports.topExpenses.none")
   }
 
   const categoryTotals: CategoryTotals = {}
@@ -67,19 +69,29 @@ export async function formatTopExpenses(
   const topN = categoryAmounts.slice(0, limit)
   const totalExpenses = categoryAmounts.reduce((sum, c) => sum + c.amount, 0)
 
-  let msg = `📉 *Top ${topN.length} Expenses (${month + 1}/${year})*\n\n`
+  let msg = t(lang, "reports.topExpenses.title", {
+    count: topN.length,
+    month: month + 1,
+    year,
+  })
+  msg += "\n\n"
 
   topN.forEach((item, index) => {
     const percentage = (item.amount / totalExpenses) * 100
     const bar = createProgressBar(item.amount, totalExpenses, 10)
 
     msg += `${index + 1}. *${item.category}*\n`
-    msg += `   ${formatMoney(item.amount, defaultCurrency)} (${formatAmount(percentage)}%)\n`
+    msg += `   ${t(lang, "reports.topExpenses.itemAmount", {
+      amount: formatMoney(item.amount, defaultCurrency),
+      percent: formatAmount(percentage),
+    })}\n`
     msg += `   ${bar}\n\n`
   })
 
   msg += `──────────────\n`
-  msg += `Total: ${formatMoney(totalExpenses, defaultCurrency)}`
+  msg += t(lang, "reports.topExpenses.total", {
+    amount: formatMoney(totalExpenses, defaultCurrency),
+  })
 
   return msg
 }

@@ -1,5 +1,7 @@
 import TelegramBot from "node-telegram-bot-api"
 import { logger as log } from "./logger"
+import { dbStorage as db } from "./database/storage-db"
+import { Language, t } from "./i18n"
 
 export enum ErrorType {
   TELEGRAM_API = "TELEGRAM_API",
@@ -19,18 +21,26 @@ export interface AppError extends Error {
   statusCode?: number
   context?: Record<string, any>
   userMessage?: string
+  userMessageKey?: string
+  userMessageParams?: Record<string, string | number>
 }
 
 export function createError(
   type: ErrorType,
   message: string,
-  userMessage?: string,
-  context?: Record<string, any>
+  options?: {
+    userMessage?: string
+    userMessageKey?: string
+    userMessageParams?: Record<string, string | number>
+    context?: Record<string, any>
+  }
 ): AppError {
   const error = new Error(message) as AppError
   error.type = type
-  error.userMessage = userMessage || message
-  error.context = context
+  error.userMessage = options?.userMessage
+  error.userMessageKey = options?.userMessageKey
+  error.userMessageParams = options?.userMessageParams
+  error.context = options?.context
   return error
 }
 
@@ -45,38 +55,38 @@ export function handleTelegramError(error: any): AppError {
   })
 
   if (code === 403) {
-    return createError(
-      ErrorType.TELEGRAM_API,
-      `Telegram 403: ${description}`,
-      "🚫 Bot was blocked by user or chat not found.",
-      { code, description }
-    )
+    return createError(ErrorType.TELEGRAM_API, `Telegram 403: ${description}`, {
+      userMessageKey: "common.botWasBlocked",
+      context: { code, description },
+    })
   }
 
   if (code === 429) {
+    const retryAfter = error.response?.body?.parameters?.retry_after
     return createError(
       ErrorType.RATE_LIMIT,
       `Telegram rate limit: ${description}`,
-      "⏱ Too many requests. Please wait a moment.",
-      { code, description }
+      {
+        userMessageKey: retryAfter
+          ? "errors.rateLimitExceeded"
+          : "errors.rateLimitExceededShort",
+        userMessageParams: retryAfter ? { retryAfter } : undefined,
+        context: { code, description },
+      }
     )
   }
 
   if (code === 400) {
-    return createError(
-      ErrorType.TELEGRAM_API,
-      `Telegram 400: ${description}`,
-      "❌ Invalid request. Please try again.",
-      { code, description }
-    )
+    return createError(ErrorType.TELEGRAM_API, `Telegram 400: ${description}`, {
+      userMessageKey: "errors.telegramInvalidRequest",
+      context: { code, description },
+    })
   }
 
-  return createError(
-    ErrorType.TELEGRAM_API,
-    description || error.message,
-    "❌ Telegram error. Please try again.",
-    { code, description }
-  )
+  return createError(ErrorType.TELEGRAM_API, description || error.message, {
+    userMessageKey: "errors.telegramGeneric",
+    context: { code, description },
+  })
 }
 
 export function handleDatabaseError(error: any): AppError {
@@ -87,38 +97,30 @@ export function handleDatabaseError(error: any): AppError {
   })
 
   if (error.code === "SQLITE_BUSY") {
-    return createError(
-      ErrorType.DATABASE,
-      "Database is busy",
-      "⏳ Database is busy. Please try again.",
-      { code: error.code }
-    )
+    return createError(ErrorType.DATABASE, "Database is busy", {
+      userMessageKey: "errors.databaseBusy",
+      context: { code: error.code },
+    })
   }
 
   if (error.code === "SQLITE_LOCKED") {
-    return createError(
-      ErrorType.DATABASE,
-      "Database is locked",
-      "🔒 Database is locked. Please try again.",
-      { code: error.code }
-    )
+    return createError(ErrorType.DATABASE, "Database is locked", {
+      userMessageKey: "errors.databaseLocked",
+      context: { code: error.code },
+    })
   }
 
   if (error.code === "SQLITE_CONSTRAINT") {
-    return createError(
-      ErrorType.DATABASE,
-      "Constraint violation",
-      "❌ Invalid data. Please check your input.",
-      { code: error.code }
-    )
+    return createError(ErrorType.DATABASE, "Constraint violation", {
+      userMessageKey: "errors.invalidData",
+      context: { code: error.code },
+    })
   }
 
-  return createError(
-    ErrorType.DATABASE,
-    error.message,
-    "❌ Database error. Please try again later.",
-    { code: error.code }
-  )
+  return createError(ErrorType.DATABASE, error.message, {
+    userMessageKey: "errors.databaseGeneric",
+    context: { code: error.code },
+  })
 }
 
 export function handleAssemblyAIError(error: any): AppError {
@@ -131,38 +133,34 @@ export function handleAssemblyAIError(error: any): AppError {
   })
 
   if (status === 429) {
-    return createError(
-      ErrorType.ASSEMBLYAI,
-      "AssemblyAI quota exceeded",
-      "⏱ Voice transcription quota exceeded. Please try again later or upgrade your plan.",
-      { status }
-    )
+    return createError(ErrorType.ASSEMBLYAI, "AssemblyAI quota exceeded", {
+      userMessageKey: "errors.assemblyQuota",
+      context: { status },
+    })
   }
 
   if (status === 402) {
-    return createError(
-      ErrorType.ASSEMBLYAI,
-      "AssemblyAI payment required",
-      "💳 AssemblyAI payment required. Please check your account.",
-      { status }
-    )
+    return createError(ErrorType.ASSEMBLYAI, "AssemblyAI payment required", {
+      userMessageKey: "errors.assemblyPayment",
+      context: { status },
+    })
   }
 
   if (status === 401) {
     return createError(
       ErrorType.ASSEMBLYAI,
       "AssemblyAI authentication failed",
-      "🔑 Voice transcription unavailable. Please contact support.",
-      { status }
+      {
+        userMessageKey: "messages.voiceTranscriptionUnavailable",
+        context: { status },
+      }
     )
   }
 
-  return createError(
-    ErrorType.ASSEMBLYAI,
-    error.message,
-    "❌ Voice transcription failed. Please try text input.",
-    { status }
-  )
+  return createError(ErrorType.ASSEMBLYAI, error.message, {
+    userMessageKey: "voice.failed",
+    context: { status },
+  })
 }
 
 export function handleFXError(error: any): AppError {
@@ -171,16 +169,18 @@ export function handleFXError(error: any): AppError {
     code: error.code,
   })
 
-  return createError(
-    ErrorType.FX_API,
-    error.message,
-    "⚠️ Using fallback exchange rates.",
-    { code: error.code }
-  )
+  return createError(ErrorType.FX_API, error.message, {
+    userMessageKey: "warnings.usingFallbackRates",
+    context: { code: error.code },
+  })
 }
 
 export function handleValidationError(message: string): AppError {
-  return createError(ErrorType.VALIDATION, message, `❌ ${message}`, {})
+  return createError(ErrorType.VALIDATION, message, {
+    userMessageKey: "errors.validationMessage",
+    userMessageParams: { message },
+    context: {},
+  })
 }
 
 export function handleUnknownError(error: any): AppError {
@@ -190,12 +190,10 @@ export function handleUnknownError(error: any): AppError {
     type: typeof error,
   })
 
-  return createError(
-    ErrorType.UNKNOWN,
-    error.message || "Unknown error",
-    "❌ Something went wrong. Please try again.",
-    {}
-  )
+  return createError(ErrorType.UNKNOWN, error.message || "Unknown error", {
+    userMessageKey: "errors.genericUnknown",
+    context: {},
+  })
 }
 
 export function handleError(error: any): AppError {
@@ -212,12 +210,10 @@ export function handleError(error: any): AppError {
   }
 
   if (error.code === "ECONNREFUSED" || error.code === "ETIMEDOUT") {
-    return createError(
-      ErrorType.NETWORK,
-      error.message,
-      "🌐 Network error. Please check your connection.",
-      { code: error.code }
-    )
+    return createError(ErrorType.NETWORK, error.message, {
+      userMessageKey: "errors.networkError",
+      context: { code: error.code },
+    })
   }
 
   return handleUnknownError(error)
@@ -243,16 +239,33 @@ export async function sendErrorToUser(
   })
 
   try {
-    await bot.sendMessage(
-      chatId,
-      error.userMessage || "❌ An error occurred. Please try again.",
-      {
-        reply_markup: {
-          keyboard: [[{ text: "🔄 Try Again" }, { text: "🏠 Main Menu" }]],
-          resize_keyboard: true,
-        },
+    let lang: Language = "en"
+    if (context?.userId !== undefined) {
+      try {
+        lang = await db.getUserLanguage(String(context.userId))
+      } catch (langError) {
+        log.warn("Failed to resolve user language", {
+          userId: context.userId,
+          error: (langError as Error).message,
+        })
       }
-    )
+    }
+
+    const resolvedMessage = error.userMessageKey
+      ? t(lang, error.userMessageKey, error.userMessageParams)
+      : error.userMessage || t(lang, "errors.genericUnknown")
+
+    await bot.sendMessage(chatId, resolvedMessage, {
+      reply_markup: {
+        keyboard: [
+          [
+            { text: t(lang, "buttons.tryAgain") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
+        ],
+        resize_keyboard: true,
+      },
+    })
   } catch (sendError) {
     log.error("Failed to send error message to user", {
       chatId,

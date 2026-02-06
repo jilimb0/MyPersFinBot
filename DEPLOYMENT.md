@@ -68,6 +68,16 @@ REDIS_ENABLED=true
 NODE_ENV=production
 LOG_LEVEL=info
 
+# Health checks
+HEALTH_HOST=0.0.0.0
+HEALTH_PORT=3001
+
+# Sentry (optional)
+SENTRY_DSN=
+SENTRY_ENV=production
+SENTRY_TRACES_SAMPLE_RATE=0
+SENTRY_RELEASE=
+
 # Currency API (optional)
 EXCHANGE_RATE_API_KEY=your_api_key_here
 
@@ -218,6 +228,42 @@ pm2 set pm2-logrotate:compress true
 ---
 
 ## Systemd Service
+
+### Systemd Service File
+
+The systemd unit file is located at `systemd/my-pers-fin-bot.service`.
+
+```ini
+# /etc/systemd/system/my-pers-fin-bot.service
+# Copy from repo: systemd/my-pers-fin-bot.service
+```
+
+### Install & Enable
+
+```bash
+# Copy the unit file
+sudo cp systemd/my-pers-fin-bot.service /etc/systemd/system/
+
+# Create non-root user
+sudo useradd -r -s /bin/false bot
+
+# Create log directory
+sudo mkdir -p /var/log/my-pers-fin-bot
+sudo chown bot:bot /var/log/my-pers-fin-bot
+
+# Reload systemd
+sudo systemctl daemon-reload
+
+# Enable and start
+sudo systemctl enable my-pers-fin-bot
+sudo systemctl start my-pers-fin-bot
+
+# Check status
+sudo systemctl status my-pers-fin-bot
+
+# Logs
+sudo journalctl -u my-pers-fin-bot -f
+```
 
 ### 1. Create service file:
 
@@ -457,6 +503,19 @@ pm2 reload my-pers-fin-bot
 
 ## Monitoring
 
+### Sentry:
+
+1. Set `SENTRY_DSN` and optional `SENTRY_ENV`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_RELEASE` in `.env`
+2. Restart the bot
+3. Trigger a test error and verify it appears in Sentry
+
+### Verify Sentry
+
+```bash
+# Send a test error
+node -e "throw new Error("sentry test")"
+```
+
 ### PM2 Monitoring:
 
 ```bash
@@ -484,6 +543,18 @@ docker-compose logs -f bot
 ```
 
 ### Health Check:
+
+HTTP endpoints:
+- `GET /healthz`
+- `GET /readyz`
+
+### Verify Health
+
+```bash
+curl -s http://localhost:${HEALTH_PORT:-3001}/healthz
+
+# Expect JSON {"status":"ok", ...}
+```
 
 Create a simple health check script:
 

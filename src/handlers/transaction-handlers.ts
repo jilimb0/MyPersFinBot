@@ -40,7 +40,8 @@ export async function handleTxCategory(
     await QuickActionsHandlers.showAllCategories(
       wizard.getBot(),
       chatId,
-      txType
+      txType,
+      lang
     )
     if (state.data) {
       state.data.showedAllCategories = true
@@ -64,7 +65,7 @@ export async function handleTxCategory(
   if (!validCategory) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid category. Please select from the list.",
+      t(lang, "transactions.invalidCategory"),
       wizard.getBackButton(lang)
     )
     if (state.data) {
@@ -97,8 +98,8 @@ export async function handleTxCategory(
       chatId,
       userId,
       txType === TransactionType.EXPENSE
-        ? "💸 Select account to deduct from:"
-        : "💰 Select account to add to:"
+        ? t(lang, "transactions.selectDeductAccount")
+        : t(lang, "transactions.selectAddAccount")
     )
   }
   return true
@@ -110,6 +111,10 @@ export async function handleTxAmount(
   userId: string,
   text: string
 ): Promise<boolean> {
+  const state = wizard.getState(userId)
+  if (!state) return false
+  const lang = state?.lang || "en"
+
   const cleanText = text.replace(/^[^\d\s]+\s*/, "").trim()
 
   const defaultCurrency = await db.getDefaultCurrency(userId)
@@ -120,30 +125,27 @@ export async function handleTxAmount(
   if (!parsed) {
     await wizard.sendMessage(
       chatId,
-      `❌ Invalid format. Try: 100 or 100 ${defaultCurrency}`
+      t(lang, "wizard.tx.invalidAmount", { currency: defaultCurrency })
     )
     return true
   }
-
-  const state = wizard.getState(userId)
-  if (!state) return false
-  const lang = state?.lang || "en"
   const txType = (state?.data?.txType || state.txType) as TransactionType
 
   if (parsed.amount < 0) {
     if (txType === TransactionType.EXPENSE) {
       await wizard.sendMessage(
         chatId,
-        `⚠️ Negative amount detected: ${parsed.amount} ${parsed.currency}\n\n` +
-          `This means a REFUND (money returned to you).\n\n` +
-          `This will increase your balance. Proceed?`,
+        t(lang, "wizard.tx.refundConfirmMessage", {
+          amount: Math.abs(parsed.amount),
+          currency: parsed.currency,
+        }),
         {
           reply_markup: {
             keyboard: [
-              [{ text: "✅ Yes, it's a refund" }],
+              [{ text: t(lang, "transactions.yesRefund") }],
               [
-                { text: t(state?.lang || "en", "common.back") },
-                { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+                { text: t(lang, "common.back") },
+                { text: t(lang, "mainMenu.mainMenuButton") },
               ],
             ],
             resize_keyboard: true,
@@ -159,14 +161,14 @@ export async function handleTxAmount(
     } else if (txType === TransactionType.INCOME) {
       await wizard.sendMessage(
         chatId,
-        `❌ Negative income doesn't make sense. Please enter a positive amount.`,
+        t(lang, "transactions.negativeIncomeNotAllowed"),
         wizard.getBackButton(lang)
       )
       return true
     } else if (txType === TransactionType.TRANSFER) {
       await wizard.sendMessage(
         chatId,
-        `❌ Transfer amount must be positive.`,
+        t(lang, "transactions.transferAmountPositive"),
         wizard.getBackButton(lang)
       )
       return true
@@ -241,12 +243,12 @@ export async function handleTxAccount(
       if (filteredBalances.length === 0) {
         await wizard.sendMessage(
           chatId,
-          t(state?.lang || "en", "errors.noPositiveBalanceAccounts"),
+          t(lang, "transactions.noPositiveBalance"),
           {
             reply_markup: {
               keyboard: [
-                [{ text: "💳 Balances" }],
-                [{ text: t(state?.lang || "en", "mainMenu.mainMenuButton") }],
+                [{ text: t(lang, "buttons.balances") }],
+                [{ text: t(lang, "mainMenu.mainMenuButton") }],
               ],
               resize_keyboard: true,
             },
@@ -300,7 +302,7 @@ export async function handleTxAccount(
   if (!balanceInfo) {
     await wizard.sendMessage(
       chatId,
-      `❌ Error: Account "${accountName}" not found.`,
+      t(lang, "errors.accountNotFound", { account: accountName }),
       wizard.getBackButton(lang)
     )
     return true
@@ -312,7 +314,11 @@ export async function handleTxAccount(
     if (balanceCurrency !== state?.data?.currency) {
       await wizard.sendMessage(
         chatId,
-        `❌ Currency mismatch. Account "${accountName}" is in ${balanceCurrency}, but expense is in ${state?.data?.currency}.`,
+        t(lang, "errors.currencyMismatchAccount", {
+          account: accountName,
+          accountCurrency: balanceCurrency,
+          transactionCurrency: state?.data?.currency || "",
+        }),
         wizard.getBackButton(lang)
       )
       return true
@@ -322,6 +328,7 @@ export async function handleTxAccount(
       await wizard.sendMessage(
         chatId,
         handleInsufficientFunds(
+          lang,
           accountName,
           balanceAmount,
           balanceCurrency,
@@ -333,7 +340,7 @@ export async function handleTxAccount(
             keyboard: [
               [{ text: t(state?.lang || "en", "common.goToBalances") }],
               [
-                { text: "💫 Change Amount" },
+                { text: t(lang, "buttons.changeAmount") },
                 { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
               ],
             ],
@@ -356,14 +363,17 @@ export async function handleTxAccount(
       currency: state?.data?.currency,
       type: TransactionType.INCOME,
       category: IncomeCategory.REFUND,
-      description: "Refund",
+      description: t(lang, "transactions.refundDescription"),
       toAccountId: accountName,
     }
     await db.addTransaction(userId, transaction)
 
     await wizard.sendMessage(
       chatId,
-      `✅ Refund of ${state?.data?.amount} ${state?.data?.currency} added to "${accountName}"!`
+      t(lang, "transactions.refundAdded", {
+        amount: formatMoney(state?.data?.amount, state?.data?.currency),
+        account: accountName,
+      })
     )
     wizard.clearState(userId)
     await showMainMenu(wizard.getBot(), chatId, state?.lang || "en")
@@ -399,9 +409,12 @@ export async function handleTxAccount(
     ) {
       await wizard.sendMessage(
         chatId,
-        `⚠️ Budget exceeded for ${state?.data?.category}!\n` +
-          `Limit: ${res.limit} ${state?.data?.currency}\n` +
-          `Overspent: ${Math.abs(res.remaining)} ${state?.data?.currency}`,
+        t(lang, "transactions.budgetExceeded", {
+          category: state?.data?.category,
+          limit: res.limit,
+          overspent: Math.abs(res.remaining),
+          currency: state?.data?.currency,
+        }),
         wizard.getBackButton(lang)
       )
     }
@@ -432,15 +445,23 @@ export async function handleTxAccount(
   const emoji = txType === TransactionType.EXPENSE ? "💸" : "💰"
   await wizard.sendMessage(
     chatId,
-    `✅ ${emoji} Added: ${formatMoney(state?.data?.amount, state?.data?.currency)}\n` +
-      `Category: ${state?.data?.category}\n` +
-      `Account: ${accountName}`,
+    t(lang, "transactions.addedDetails", {
+      emoji,
+      amount: formatMoney(state?.data?.amount, state?.data?.currency),
+      category: state?.data?.category,
+      account: accountName,
+    }),
     {
       reply_markup: {
         keyboard: [
           [
             {
-              text: `✨ Add Another${txType === TransactionType.EXPENSE ? " Expense" : " Income"}`,
+              text: t(
+                lang,
+                txType === TransactionType.EXPENSE
+                  ? "transactions.addAnotherExpense"
+                  : "transactions.addAnotherIncome"
+              ),
             },
           ],
           [{ text: t(state?.lang || "en", "mainMenu.mainMenuButton") }],
@@ -514,7 +535,7 @@ export async function handleTxToAccount(
     category: InternalCategory.TRANSFER,
     fromAccountId: state?.data?.fromAccountId,
     toAccountId: accountName,
-    description: "Transfer",
+    description: t(lang, "transactions.transferDescription"),
   }
 
   await db.addTransaction(userId, transaction)

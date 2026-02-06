@@ -145,6 +145,7 @@ export const en = {
     enterAmount: "Enter amount (e.g., 100 or 100 {currency}):",
     enterAmountShort: "Enter amount:",
     selectCategory: "Select category:",
+    moreCategories: "📋 More...",
     selectAccount: "Select account:",
     selectDate: "When was this transaction?",
     enterDescription: "Enter description (optional):",
@@ -186,10 +187,30 @@ export const en = {
     selectDeductAccount: "💸 Select account to deduct from:",
     selectAddAccount: "💰 Select account to add to:",
     yesRefund: "✅ Yes, it's a refund",
+    negativeIncomeNotAllowed:
+      "❌ Negative income doesn't make sense. Please enter a positive amount.",
+    transferAmountPositive: "❌ Transfer amount must be positive.",
+    refundAdded: '✅ Refund of {amount} added to "{account}"!',
+    addedDetails:
+      "✅ {emoji} Added: {amount}\nCategory: {category}\nAccount: {account}",
+    budgetExceeded:
+      "⚠️ Budget exceeded for {category}!\n" +
+      "Limit: {limit} {currency}\n" +
+      "Overspent: {overspent} {currency}",
+    noEligibleAccounts:
+      "❌ No accounts available for this expense.\n\n" +
+      "Either no accounts have sufficient balance, or currency doesn't match.\n\n" +
+      "💡 Add funds to an account or create a new one with {currency}.",
+    currencyMismatchSingleAccount:
+      '❌ Currency mismatch. Account "{account}" is in {accountCurrency}, but expense is in {transactionCurrency}.\n\n' +
+      "💡 You can change the amount or add a new account with {transactionCurrency}.",
+    refundDescription: "Refund",
+    transferDescription: "Transfer",
     noPositiveBalance:
       "❌ No accounts with positive balance available for transfer.",
     cannotTransferSame:
       "❌ Cannot transfer to the same account. Please select a different destination.",
+    debtPaymentDescription: "Debt Payment {name}",
   },
 
   // Balances
@@ -200,6 +221,7 @@ export const en = {
     transfer: "↔️ Transfer",
     noBalances: "💡 No balances yet. Add your first account!",
     noAccounts: "No balance accounts. Add one first.",
+    listItem: "💳 *{account}*: {amount}",
     listTitle: "💳 *Balance Accounts*",
     totalNet: "Total Net Worth",
     enterName: "Enter account name (e.g., Main Card, Cash, Savings):",
@@ -224,11 +246,44 @@ export const en = {
     enterNewAmount: "Enter new amount:",
     transferToAnother: "🔄 Transfer to another account",
     yesSetZero: "✅ Yes, Set to Zero",
+    setToZero: "🅰️ Set to Zero",
     invalidInput:
       "❌ Invalid input.\n\n• Enter *number* to change amount (e.g., 500)\n• Enter *text* to rename (e.g., MyCard)",
     selectFromButtons: "❌ Select a balance from buttons.",
     invalidInputEdit: "❌ Invalid input.",
     balancesButton: "💳 Balances",
+    invalidFormatShort: "❌ Invalid format. Use: Name 100",
+    alreadyExistsMessage:
+      '❌ *Balance "{accountId}" ({currency}) already exists!*\n\n' +
+      "Current amount: {amount}\n\n" +
+      "Please choose a different account name or edit the existing balance.",
+    createdWithAmount: "✅ Balance created: *{accountId}* - {amount}",
+    editTitle: "✏️ *{accountId}* ({currency})",
+    balanceLine: "Balance: {amount}",
+    quickEditTitle: "💡 *Quick edit:*",
+    quickEditNumber: "• Enter number → update amount",
+    quickEditText: "• Enter text → rename account",
+    setToZeroConfirm: "⚪ Set *{accountId}* ({currency}) to zero?",
+    currentLine: "Current: {amount}",
+    canTransferFirst:
+      "⚡️ Transfer to another account before clearing, or clear {amount}.",
+    willBeCleared: "This balance will be cleared.",
+    deleteConfirmTitle: "⚠️ Delete {accountId}?",
+    currentBalanceLine: "Current balance: {amount}",
+    deleteTransferHint:
+      "⚡️ Transfer to another account before deleting, or clear {amount}.",
+    deleteClearHint: "{amount} will be cleared.",
+    confirmAmountTitle: "💰 *Confirm Amount Change*",
+    newLine: "New: {amount}",
+    confirmYesNo: "✅ Yes / ❌ No?",
+    renameDuplicate:
+      '❌ Balance "{name}" already exists.\n\nTry a different name.',
+    confirmRenameTitle: "✏️ *Confirm Rename*",
+    confirmRenameOld: 'Old: "{name}"',
+    confirmRenameNew: 'New: "{name}"',
+    transferToPrompt: "🔄 Transfer {amount} to:",
+    transferDescDelete: "Transfer before deleting {accountId}",
+    transferDescZero: "Transfer before zeroing {accountId}",
   },
 
   // Debts
@@ -242,9 +297,19 @@ export const en = {
     totalIOwe: "Total I Owe",
     totalTheyOwe: "Total They Owe Me",
     noDebts: "✅ No active debts!",
+    noActiveDebts: "✅ No active debts!",
     noDebtsRecorded: "No debts recorded.",
+    yourDebtTitleSingular: "*Your debt:*",
+    yourDebtTitlePlural: "*Your debts:*",
+    debtsFromYouTitleSingular: "*Debt from you:*",
+    debtsFromYouTitlePlural: "*Debts from you:*",
+    paidLabel: "Paid:",
+    leftLabel: "Left:",
     listTitle: "📝 *Debts*",
     netDebt: "📊 Net:",
+    net: "📊 Net:",
+    netYouOwe: "you owe",
+    netTheyOwe: "they owe you",
     youOweNet: "you owe",
     theyOweNet: "they owe you",
     enterName: "Enter debtor/creditor name:",
@@ -304,6 +369,31 @@ export const en = {
     quickStartStep2: "2️⃣ Tap ✨ *Add Balance*",
     quickStartStep3: "3️⃣ Enter account name and amount",
     changeAmount: "💫 Change Amount",
+    invalidCreateFormat:
+      "❌ Invalid format. Use: Name Amount [Currency]\n\n" +
+      "*Examples:*\n" +
+      "• John 1000\n" +
+      "• Maria 5000 {currency}",
+    invalidCreateAmountTry:
+      "❌ Invalid format. Try: {name} 100 or {name} 100 {currency}",
+    duplicateName:
+      '❌ *Debt "{name}" already exists!*\n\n' +
+      "Please choose a different name or manage existing debt in the Debts menu.",
+    dueDateCreatePrompt:
+      "📅 Set a due date for this debt?\n\n" +
+      "Debt: *{name}* - {amount}\n\n" +
+      "Enter date (DD.MM.YYYY) or tap Skip to create without reminder.",
+    invalidPaymentFormat: "❌ Invalid format. Try: 100 or 100 {currency}",
+    paymentActionPaid: "Paid",
+    paymentActionReceived: "Received",
+    paymentRecordedWithRemaining:
+      "✅ {emoji} {action} {amount}. Remaining: {remaining}",
+    actionOweTo: "owe to",
+    actionOwedBy: "are owed by",
+    dueDateLine: "Due: {date} 📅",
+    createdMessage:
+      "✅ {emoji} Debt added!\n\nYou {action} *{name}*: {amount}{dueDateLine}",
+    dueDateUpdated: "✅ Due date updated to {date}!\n🔔 New reminders created.",
   },
 
   // Goals
@@ -318,6 +408,8 @@ export const en = {
     target: "Target:",
     current: "Current:",
     remaining: "Remaining",
+    targetLabel: "Target:",
+    savedLabel: "Saved:",
     completed: "✅ Completed Goals",
     completedTitle: "✅ *Completed Goals*",
     noCompleted: "💭 No completed goals yet.",
@@ -333,6 +425,10 @@ export const en = {
     example2: "• `Vacation 5000 USD`",
     example3: "• `Emergency Fund 10000` (uses {currency})",
     created: "✅ Goal created!",
+    duplicate:
+      '❌ *Goal "{name}" already exists!*\n\nPlease choose a different name or manage existing goal in the Goals menu.',
+    createdWithDeadlinePrompt:
+      "🎯 Goal created: *{name}*\n\n📅 Set a deadline for this goal?\n\nEnter date (DD.MM.YYYY) or tap {skipLabel} to create without reminder.",
     updated: "✅ Goal updated!",
     deleted: "✅ Goal deleted!",
     addProgress: "📈 Add Progress",
@@ -348,6 +444,8 @@ export const en = {
     depositTitle: "💰 *Deposit to Goal*",
     goalName: "Goal:",
     progressDetailed: "Progress: {current} / {target} {currency} ({percent}%)",
+    savedLine: "Saved: {current} / {target}",
+    amountLine: "Amount: {amount}",
     enterDeposit: "Enter amount to deposit:",
     markCompletedTitle: "🎉 Mark goal as completed?",
     willMarkCompleted: "• Mark the goal as COMPLETED",
@@ -364,6 +462,8 @@ export const en = {
     remindersDisabled: "✅ Reminders disabled and deadline removed.",
     enableAutoDeposit: "✅ Enable Auto-Deposit",
     disableAutoDeposit: "❌ Disable Auto-Deposit",
+    deadlineWithDaysLeft: "Deadline: {date} ({days} days)",
+    deadlinePassed: "⚠️ Deadline passed: {date}",
     completedGoalsTitle: "✅ *Completed Goals*",
     noCompletedGoals: "💭 No completed goals yet.",
     errorMissingData: "❌ Error: Missing goal data",
@@ -377,6 +477,20 @@ export const en = {
     advancedSettings: "⚙️ Advanced",
     editTarget: "✏️ Edit Target",
     deleteGoal: "🗑 Delete Goal",
+    deadlineUpdated:
+      "✅ Deadline updated to {date}!\n🔔 New reminders created.",
+    deadlineSetMessage: "✅ Deadline set for *{name}*: {date} 🎯",
+    createdWithoutDeadline: "✅ Goal *{name}* created without deadline.",
+  },
+
+  // Income Sources
+  incomeSources: {
+    addSource: "✨ Add Income Source",
+    noSources: "No income sources recorded.",
+    listItem: "💵 *{name}*: {amount}",
+    reminderSet: "✅ Reminder set for *{name}*: day {day} of each month 📅",
+    createdWithoutReminder:
+      "✅ Income source *{name}* created without reminder.",
   },
 
   // Settings
@@ -408,11 +522,44 @@ export const en = {
     yesChange: "✅ Yes, change",
     currencySet: "✅ Default currency set to {currency}",
     balancesConverted: "🔄 {count} balance(s) converted to {currency}",
+    clearDataWarning:
+      "⚠️ *WARNING*\n\nThis will permanently delete:\n" +
+      "• All transactions\n" +
+      "• All balances\n" +
+      "• All debts\n" +
+      "• All goals\n" +
+      "• All income sources\n" +
+      "• All settings\n\n" +
+      "❗ This action CANNOT be undone!\n\n" +
+      "Are you sure you want to continue?",
+    currencyAlreadyCurrent: "ℹ️ {currency} is already your current currency.",
+    currencyChangeConfirmWithBalances:
+      "⚠️ *Currency Change Confirmation*\n\n" +
+      "Change from *{oldCurrency}* to *{newCurrency}*?\n\n" +
+      "This will affect:\n" +
+      "• {balancesCount} balance(s) will be converted to {newCurrency}\n" +
+      "• Statistics display\n\n" +
+      "Are you sure?",
+    currencyChangeConfirmNoBalances:
+      "⚠️ *Currency Change Confirmation*\n\n" +
+      "Change from *{oldCurrency}* to *{newCurrency}*?\n\n" +
+      "This will affect:\n" +
+      "• Statistics display\n\n" +
+      "Are you sure?",
+    currencyOptions: {
+      usd: "USD 🇺🇸",
+      eur: "EUR 🇪🇺",
+      gel: "GEL 🇬🇪",
+      rub: "RUB 🇷🇺",
+      uah: "UAH 🇺🇦",
+      pln: "PLN 🇵🇱",
+    },
   },
 
   // Analytics
   analytics: {
     title: "📊 *Analytics*",
+    viewInsights: "📊 *Analytics*\n\nView your financial insights:",
     exportCSV: "📅 Export CSV",
     filters: "🔎 Filters",
     trends: "📈 Trends",
@@ -420,12 +567,78 @@ export const en = {
     reports: "📈 Reports",
     history: "📋 History",
     netWorth: "💎 Net Worth",
+    formatters: {
+      summaryTitle: "📊 *Analytics*",
+      summaryPeriodLine: "📅 {range}",
+      summaryStatsTitle: "*Overall stats:*",
+      summaryIncomeLine: "🟢 Income: {amount}",
+      summaryExpenseLine: "🔴 Expenses: {amount}",
+      summaryBalanceLine: "{emoji} Balance: {amount}",
+      summaryTransactionsLine: "📈 Transactions: {count}",
+      summaryByCategoryTitle: "*By categories:*",
+      summaryTopExpensesTitle: "*💸 Top expenses:*",
+      summaryInsightsTitle: "*💡 Insights:*",
+      comparisonTitle: "🔄 *Period comparison*",
+      comparisonIncomeTitle: "*🟢 Income:*",
+      comparisonExpenseTitle: "*🔴 Expenses:*",
+      comparisonBalanceTitle: "*📊 Balance:*",
+      comparisonCurrentLine: "Current: {amount}",
+      comparisonPreviousLine: "Previous: {amount}",
+      comparisonChangeLine: "Change: {amount}",
+      patternsTitle: "📈 *Spending patterns*",
+      patternsAverageLine: "Average: {amount}",
+      patternsTransactionsLine: "Transactions: {count}",
+      monthlyTrendTitle: "📉 *Monthly trend*",
+      monthlyTrendIncomeLine: "🟢 Income: {amount}",
+      monthlyTrendExpenseLine: "🔴 Expenses: {amount}",
+      monthlyTrendBalanceLine: "{emoji} Balance: {amount}",
+      categoriesTitle: "🏷️ *Expense categories*",
+      categoriesEmpty: "No data for this period",
+      categoriesAmountLine: "Amount: {amount}",
+      categoriesShareLine: "Share: {percent}%",
+      categoriesTransactionsLine: "Transactions: {count}",
+      quickStatsTitle: "📊 *Quick stats*",
+      quickStatsIncomeLine: "🟢 Income: {amount}",
+      quickStatsExpenseLine: "🔴 Expenses: {amount}",
+      quickStatsBalanceLine: "{emoji} Balance: {amount}",
+    },
+  },
+
+  currency: {
+    formatters: {
+      conversionTitle: "💱 *Currency conversion*",
+      arrowDownLine: "⬇️",
+      conversionRateLine: "📊 Rate: 1 {from} = {rate} {to}",
+      conversionTimestampLine: "⏰ {time}",
+      conversionMultipleTitle: "💱 *Conversion {flag} {amount} {currency}*",
+      rateTitle: "📊 *Rate {pair}*",
+      rateLine: "{fromFlag} 1 {from} = {rate} {to} {toFlag}",
+      rateLineReverse: "{fromFlag} 1 {from} = {rate} {to} {toFlag}",
+      ratesTitle: "📊 *Rates {flag} {currency}*",
+      rateHistoryTitle:
+        "📈 *Rate history {currencyFlag} {currency}/{baseFlag} {baseCurrency}*",
+      rateHistoryChange24hLine: "{emoji} 24h: {sign}{value}%",
+      rateHistoryChange7dLine: "{emoji} 7d: {sign}{value}%",
+      rateHistoryChange30dLine: "{emoji} 30d: {sign}{value}%",
+      currencyStatsTitle: "📊 *Currency stats*",
+      currencyStatsEmpty: "No data",
+      currencyStatsTransactionsLine: "Transactions: {count}",
+      currencyStatsAmountLine: "Amount: {amount} {symbol}",
+      currencyStatsAverageRateLine: "Avg rate: {rate}",
+      currencyStatsLastUsedLine: "Last used: {date}",
+      currencyListTitle: "🌍 *Available currencies*",
+      quickConversionLine:
+        "{fromFlag} {fromAmount} {fromCurrency} = {toFlag} {toAmount} {toCurrency}",
+    },
   },
 
   // Budget
   budget: {
     title: "🔮 *Budget Planner*",
     addBudget: "✨ Add Budget",
+    addEditBudget: "✨ Add / Edit Budget",
+    noBudgetsCategories: "💡 No budgets by category yet.",
+    summary: "Summary: {spent}/{total} ({percent}%)",
     noBudgets: "💡 No budgets yet. Create your first budget!",
     monthly: "Monthly",
     weekly: "Weekly",
@@ -433,6 +646,15 @@ export const en = {
     limit: "Limit",
     spent: "Spent",
     remaining: "Remaining",
+  },
+
+  // Languages
+  languages: {
+    en: "🇬🇧 English",
+    ru: "🇷🇺 Русский",
+    uk: "🇺🇦 Українська",
+    es: "🇪🇸 Español",
+    pl: "🇵🇱 Polski",
   },
 
   // Common (UPDATED WITH NEW KEYS)
@@ -447,13 +669,17 @@ export const en = {
     done: "✅ Done",
     yes: "✅ Yes",
     no: "❌ No",
+    checkYes: "✅",
+    checkNo: "❌",
     today: "📆 Today",
     yesterday: "🗓️ Yesterday",
     custom: "📅 Custom Date",
     selectDate: "Select date:",
     enterDate: "Enter date (DD.MM.YYYY):",
     or: "or",
+    of: "of",
     amount: "Amount:",
+    current: "Current:",
     continue: "Continue?",
     remove: "🗑 Remove",
     total: "Total:",
@@ -462,6 +688,9 @@ export const en = {
     next: "Next ▶️",
     noCancel: "❌ No, cancel",
     cancelled: "✅ Cancelled.",
+    notAvailable: "N/A",
+    noDescription: "No description",
+    featureInDevelopmentSuffix: "(feature in development)",
 
     // Edit actions
     editAmount: "💰 Edit Amount",
@@ -579,6 +808,13 @@ export const en = {
     incomeSourceNotFound: "❌ Income source not found.",
     templateNotFound: "❌ Template not found.",
     goalDataNotFound: "❌ Goal data not found.",
+    cannotSave: "❌ Cannot save. Please try again.",
+    cannotTransferSameAccount: "❌ Cannot transfer to the same account.",
+    clearingData: "❌ Error clearing data. Please try again.",
+    missingGoalData: "❌ Missing goal data. Please try again.",
+    missingIncomeData: "❌ Missing income data. Please try again.",
+    noAccountsFound: "❌ No accounts found.",
+    notFound: "❌ Not found.",
 
     // Invalid input
     invalidData: "❌ Invalid data. Please check your input.",
@@ -589,10 +825,54 @@ export const en = {
     invalidDateFormat:
       "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
     invalidTimezone: "❌ Invalid timezone. Please select from the options.",
+    invalidTimeFormat:
+      "❌ Invalid time format. Please select from the options or enter in HH:MM format (e.g., 09:00).",
     invalidCategory: "❌ Invalid category. Please select from the list.",
     invalidDay: "❌ Invalid day. Please select from the list.",
     invalidAmount: "❌ Invalid amount. Please enter a valid number.",
+    amountMustBePositive: "❌ Amount must be greater than zero.",
+    validationMessage: "❌ {message}",
+    unknown: "Unknown error",
     invalidPeriod: "❌ Invalid period (end before start or bad dates).",
+    accountNotFound: '❌ Account "{account}" not found.',
+    debtCurrencyMismatch:
+      "❌ Currency mismatch: debt in {debtCurrency}, payment in {paymentCurrency}.",
+    debtAmountExceedsRemaining:
+      "❌ Amount exceeds remaining debt ({remaining}).",
+    currencyMismatchAccount:
+      '❌ Currency mismatch. Account "{account}" is in {accountCurrency}, but transaction is in {transactionCurrency}.',
+    goalTargetTooLow:
+      "❌ New target ({newTarget}) cannot be less than current amount ({currentAmount}).",
+
+    // Telegram errors
+    telegramInvalidRequest: "❌ Invalid request. Please try again.",
+    telegramGeneric: "❌ Telegram error. Please try again.",
+
+    // Database errors
+    databaseBusy: "⏳ Database is busy. Please try again.",
+    databaseLocked: "🔒 Database is locked. Please try again.",
+    databaseGeneric: "❌ Database error. Please try again later.",
+
+    // Rate limit
+    rateLimitExceeded: "⏱ Too many requests. Please wait {retryAfter} seconds.",
+    rateLimitExceededShort: "⏱ Too many requests. Please wait a moment.",
+
+    // Transactions
+    transactionFailed: "❌ Transaction failed. Please try again.",
+    insufficientFunds:
+      "❌ Insufficient funds in {account}\n\nCurrent: {current}\nRequired: {required}",
+    insufficientFundsDetailed:
+      "❌ Insufficient funds!\n\nAccount: {account}\nAvailable: {available}\nRequired: {required}\n\nShortage: {shortage}\n\n💡 You can change the amount or add funds to your account.",
+
+    // AssemblyAI
+    assemblyQuota:
+      "⏱ Voice transcription quota exceeded. Please try again later or upgrade your plan.",
+    assemblyPayment:
+      "💳 AssemblyAI payment required. Please check your account.",
+
+    // Unknown
+    genericUnknown: "⚠️ Something went wrong. Please try again.",
+    noTransactionsFound: "No transactions found.",
 
     // Wrong format
     wrongDates: "❌ Wrong dates!",
@@ -676,6 +956,20 @@ export const en = {
     differentAmount: "❌ No, другой amount",
   },
 
+  // Validation
+  validation: {
+    invalidFormat: {
+      amount:
+        "❌ Invalid format!\n\nPlease use: `amount CURRENCY`\nExample: `100 USD`\n\nSupported currencies: {validCurrencies}",
+      balance:
+        "❌ Invalid format!\n\nPlease use: `AccountName amount CURRENCY`\nExample: `Cash 150 USD`\n\nSupported currencies: {validCurrencies}",
+      debt: "❌ Invalid format!\n\nPlease use: `Name amount CURRENCY type`\nExample: `Alice 50 USD me` (she owes me)\nExample: `Bob 100 USD owe` (I owe him)\n\nSupported currencies: {validCurrencies}",
+      goal: "❌ Invalid format!\n\nPlease use: `GoalName amount` or `GoalName amount CURRENCY`\nExample: `Laptop 2000` or `Laptop 2000 USD`\n\nSupported currencies: {validCurrencies}",
+      default: "❌ Invalid input format. Please try again.",
+    },
+    invalidAmountExample: "❌ Invalid amount. Try: 100 or 100 {currency}",
+  },
+
   // Success (NEW SECTION)
   success: {
     // FX
@@ -685,6 +979,8 @@ export const en = {
     usingPersistedRates: "✅ Using persisted FX rates (no API call needed)",
     ratesPreloaded: "✅ FX rates preloaded successfully",
     persistedCacheCleared: "✅ Persisted FX cache cleared",
+    persistedCacheClearedDetails:
+      "✅ Persisted FX cache cleared!\n\nThe cache file has been deleted. Next restart will fetch fresh rates from API.",
     usingPersistedCache: "✅ Using persisted FX cache (no API call)",
 
     // Query
@@ -734,6 +1030,232 @@ export const en = {
     done: "✅ Done",
   },
 
+  // Commands
+  commands: {
+    templates: {
+      empty:
+        '📋 *Templates*\n\nNo templates saved yet.\n\nUse `/expense` or `/income` and click "{saveAsTemplate}" to create templates.',
+      listHint: "📋 *Templates*\n\nClick to use or ⚙️ to manage:",
+    },
+    expense: {
+      invalidFormat:
+        "❌ Invalid format. Use: `/expense 100 coffee` or `/expense coffee 100`",
+      added: "💸 Expense added: *{amount}* — {category}\nAccount: *{account}*",
+    },
+    income: {
+      invalidFormat:
+        "❌ Invalid format. Use: `/income 1000 salary` or `/income salary 1000`",
+      added: "💰 Income added: *{amount}* — {category}\nAccount: *{account}*",
+    },
+  },
+
+  // Templates
+  templates: {
+    editAmount: "✏️ *Edit Template Amount*",
+    enterNewAmount: "Enter new amount",
+    saved: "✅ Template saved.",
+    deleted: "✅ Template deleted.",
+    transactionAdded: "✅ Transaction added from template.",
+    accountUpdated: "✅ Template account updated.",
+    failedToUpdate: "❌ Failed to update template.",
+    selectDefaultAccount: "Select default account:",
+    manageTitle: "⚙️ *Manage Template*",
+    nameLine: "*{name}*",
+    amountLine: "Amount: {amount}",
+    accountLine: "Account: *{account}*",
+    noDefaultAccount: "No default account",
+    selectAction: "Select action:",
+    balanceOption: "💳 {account} — {amount}",
+    useMessage: "{emoji} {amount} — {category}\nAccount: *{account}*",
+  },
+
+  // FX Report
+  fxReport: {
+    title: "📊 *FX Cache Statistics*",
+    cacheStatusTitle: "💾 *Cache Status:*",
+    valid: "• Valid: {value}",
+    age: "• Age: {seconds}s",
+    nextUpdate: "• Next update: {seconds}s",
+    persisted: "• Persisted: {value}",
+    errors: "• Errors: {count}",
+    performanceTitle: "📈 *Performance:*",
+    cacheHits: "• Cache hits: {count}",
+    cacheMisses: "• Cache misses: {count}",
+    hitRate: "• Hit rate: {percent}%",
+    apiTitle: "🌐 *API Usage:*",
+    totalCalls: "• Total calls: {count}",
+    apiErrors: "• Errors: {count}",
+    retries: "• Retries: {count}",
+    http2: "• HTTP/2: {value}",
+    lastUpdate: "⏰ Last update: {time} ({seconds}s ago)",
+  },
+
+  // Export
+  export: {
+    result: {
+      title: "✅ *Export completed*",
+      file: "📄 File: `{filename}`",
+      records: "📊 Records: {count}",
+      size: "📦 Size: {size}",
+    },
+    menu: {
+      title: "📤 *Export Data*",
+      chooseFormat: "Choose format:",
+      csvTitle: "📄 *CSV* - Table (Excel, Google Sheets)",
+      csvAll: "  • All transactions",
+      csvExpenses: "  • Expenses only",
+      csvIncome: "  • Income only",
+      xlsxTitle: "📊 *XLSX* - Excel with formulas",
+      xlsxCategories: "  • Category breakdown",
+      xlsxAutoSum: "  • Auto totals",
+      jsonTitle: "💾 *JSON* - Full backup",
+      jsonAll: "  • All data",
+      jsonRestore: "  • For restore",
+      commands: "Commands:",
+      commandCsv: "`/export csv` - CSV export",
+      commandXlsx: "`/export xlsx` - Excel export",
+      commandJson: "`/export json` - JSON backup",
+    },
+    presets: {
+      title: "📋 *Quick Export*",
+      all: "1️⃣ `/export_all` - All transactions",
+      expenses: "2️⃣ `/export_expenses` - Expenses only",
+      income: "3️⃣ `/export_income` - Income only",
+      month: "4️⃣ `/export_month` - Current month",
+      lastMonth: "5️⃣ `/export_last_month` - Last month",
+      backup: "6️⃣ `/backup` - Full backup",
+    },
+    size: {
+      bytes: "{count} B",
+      kb: "{count} KB",
+      mb: "{count} MB",
+    },
+    error: {
+      title: "❌ *Export error*",
+      noTransactions:
+        "No transactions to export.\nAdd transactions and try again.",
+      generic: "An error occurred: {error}",
+    },
+    backup: {
+      title: "💾 *Creating backup*",
+      records: "📊 Transactions: {count}",
+      balances: "✅ Balances",
+      debts: "✅ Debts",
+      goals: "✅ Goals",
+      budgets: "✅ Budgets",
+      incomeSources: "✅ Income sources",
+      keepSafe: "⚠️ Keep this file in a safe place!",
+    },
+    restore: {
+      title: "⚠️ *Restore from backup*",
+      date: "📅 Backup date: {date}",
+      records: "📊 Transactions: {count}",
+      warningTitle: "⚠️ *WARNING!*",
+      warningReplace: "Current data will be replaced.",
+      warningIrreversible: "This action is irreversible.",
+      confirmPrompt: "Confirm restore:",
+    },
+  },
+
+  // Rate Limiter
+  rateLimiter: {
+    minutesLabel: "min",
+    tooManyMessages:
+      "⚠️ You are sending too many messages.\n\nPlease wait {minutes} {minutesLabel} before the next command.\n\nThis helps prevent spam and protects the bot from overload.",
+    tooManyActions:
+      "⚠️ Too many actions. Please wait {minutes} {minutesLabel}.",
+    blocked:
+      "🚫 You are temporarily blocked for exceeding the limit.\n⏰ Remaining: {minutes} {minutesLabel}",
+    status:
+      "📊 Rate limit status:\n\n✅ Commands available: {remaining}/{max}\n⏰ Reset in: {minutes} {minutesLabel}",
+    statusError: "❌ Failed to get rate limit status.",
+  },
+
+  // Reports
+  reports: {
+    analyticsReport: {
+      title: "📊 *Analytics Report*",
+      periodLast7Days: "Last 7 Days",
+      periodLast30Days: "Last 30 Days",
+      periodCustomRange: "{start} - {end}",
+      periodLine: "📅 *Period:* {period}",
+      transactionsLine: "📝 *Transactions:* {count}",
+      noTransactions: "📭 No transactions found for this period.",
+      incomeLine: "💰 *Income:* {amount}",
+      expensesLine: "💸 *Expenses:* {amount}",
+      netLine: "💎 *Net:* {amount} {emoji}",
+      topExpenseCategoriesTitle: "💸 *Top Expense Categories*",
+      incomeSourcesTitle: "💰 *Income Sources*",
+      dailyAveragesTitle: "📊 *Daily Averages*",
+      dailyIncomeLine: "💰 Income: {amount}/day",
+      dailyExpensesLine: "💸 Expenses: {amount}/day",
+      transfersLine: "↔️ Transfers: {count}",
+    },
+    trends: {
+      title: "📈 *Trends (vs last month)*",
+      income: "💰 *Income:* {amount}",
+      expenses: "📉 *Expenses:* {amount}",
+      transactions: "*Transactions:* {count}",
+    },
+    stats: {
+      noTransactionsThisMonth: "📊 No transactions this month.",
+      noIncomeOrExpenseOnlyTransfers:
+        "📊 No Income or Expense transactions this month (only Transfers).",
+      monthlyTitle: "📈 *Monthly Report ({month}/{year})*",
+      incomePlanTitle: "💵 *Income Plan vs Actual*",
+      expectedTitle: "Expected:",
+      actualTitle: "Actual:",
+      total: "Total: {amount}",
+      noIncomeYet: "• No income received yet",
+      progress: "📈 Progress: {bar} {percent}%",
+      goalReached: "✅ Goal reached! +{amount}",
+      shortBy: "⚠️ Short by: {amount}",
+      daysLeft: "⏰ Days left: {days}",
+      dailyTarget: "📈 Daily target: ~{amount}",
+      incomeTitle: "💰 *Income*",
+      expensesTitle: "📉 *Expenses*",
+      categoryLine: "• {emoji} {category}: {amount}",
+      lineItem: "• {name}: {amount}",
+      vsLastMonth: "\n📊 *vs Last Month*",
+      vsIncomePositive: "💰 Income: +{amount} (+{percent}%)",
+      vsIncomeNegative: "💰 Income: {amount} ({percent}%)",
+      vsIncomeNoChange: "💰 Income: no change",
+      vsExpensesPositive: "📉 Expenses: +{amount} (+{percent}%)",
+      vsExpensesNegative: "📉 Expenses: {amount} ({percent}%)",
+      vsExpensesNoChange: "📉 Expenses: no change",
+    },
+    topExpenses: {
+      none: "📉 *Top Expenses*\n\nNo expenses this month.",
+      title: "📉 *Top {count} Expenses ({month}/{year})*",
+      itemAmount: "{amount} ({percent}%)",
+      total: "Total: {amount}",
+    },
+    transactions: {
+      empty: "📭 No transactions found yet.",
+      title: "📋 *Transaction History*",
+      line: "📅 {date} | {emoji} {label} | {sign}\n{amount} | 💳 {account}",
+    },
+    netWorth: {
+      title: "💎 *Net Worth:* `{amount}`",
+      empty: "Net Worth: 0 {currency}",
+      balancesTitle: "💳 *Balances:*",
+      balanceLine: "  • {account}: {amount}{approx}",
+      approx: " _(≈{amount})_",
+      totalBalances: "  💰 Total: *{amount}*",
+      owedToMe: "📗 *They owe you:* +{amount}",
+      iOwe: "📕 *You owe:* -{amount}",
+      debtLine: "  • {counterparty}: {amount}",
+    },
+    goals: {
+      empty: "🎯 *Goals*\n\nNo active goals. Set one to start saving!",
+      title: "🎯 *Your Financial Goals*",
+      target: "Target: {amount}",
+      remaining: "📈 Remaining: {amount}",
+      achieved: "🎉 Goal achieved!",
+      deadline: "Deadline: {date}",
+    },
+  },
+
   // Warnings (NEW SECTION)
   warnings: {
     noBalancesAdd: "⚠️ No balances found. Add one in 💳 Balances.",
@@ -765,6 +1287,82 @@ export const en = {
     advancedSettings:
       "🛠️ *Advanced Settings*\n\nAdvanced features and data management:",
     goalsNoActive: "🎯 *Goals*\n\nNo active goals. Set one to start saving!",
+    userGuide:
+      "❓ *Personal Finance Bot - User Guide*\n\n" +
+      "===================\n\n" +
+      "📊 *Core Features*\n\n" +
+      "💸 *Expense & Income*\n" +
+      "• Track expenses and income\n" +
+      "• Quick entry with amount buttons\n" +
+      "• Categorize transactions\n" +
+      "• Multi-currency support\n" +
+      '• Natural language: "50 coffee"\n\n' +
+      "💳 *Balances*\n" +
+      "• Manage multiple accounts\n" +
+      '• Format: "Cash 1000 USD" or just "Cash"\n' +
+      "• Edit and transfer between accounts\n" +
+      "• Auto currency conversion\n\n" +
+      "📉 *Debts*\n" +
+      "• Track money you owe or are owed\n" +
+      '• Format: "John 500 USD"\n' +
+      "• Set due dates and reminders\n" +
+      "• Partial payments supported\n\n" +
+      "🎯 *Goals*\n" +
+      "• Set savings targets\n" +
+      '• Format: "Laptop 2000 USD"\n' +
+      "• Track progress with visual bars\n" +
+      "• Auto-deposit automation\n\n" +
+      "📊 *Analytics*\n" +
+      "• Monthly/weekly stats\n" +
+      "• Trends and top categories\n" +
+      "• Custom period reports\n" +
+      "• CSV export\n" +
+      "• Net worth tracking\n\n" +
+      "===================\n\n" +
+      "🤖 *Automation Features*\n\n" +
+      "🔁 *Recurring Payments*\n" +
+      "• Set up auto transactions\n" +
+      "• Daily/weekly/monthly schedules\n" +
+      "• Auto-categorization\n\n" +
+      "🔔 *Notifications*\n" +
+      "• Debt/goal reminders\n" +
+      "• Custom timezone\n" +
+      "• Snooze and mark as done\n\n" +
+      "===================\n\n" +
+      "👥 *Advanced*\n\n" +
+      "📅 *History & Filters*\n" +
+      "• Browse all transactions\n" +
+      "• Filter by date/category/type\n" +
+      "• Edit or delete past entries\n\n" +
+      "📊 *Budget Planner*\n" +
+      "• Set category limits\n" +
+      "• Visual spending progress\n" +
+      "• Budget alerts\n\n" +
+      "💱 *Multi-Currency*\n" +
+      "• USD, EUR, GEL, RUB, UAH, PLN\n" +
+      "• Auto conversion\n" +
+      "• Live exchange rates\n\n" +
+      "📝 *Custom Messages*\n" +
+      "• Personalize transaction confirmations\n" +
+      "• Motivational messages for goals\n\n" +
+      "📥 *Upload Bank Statements*\n" +
+      "• Tinkoff, Monobank, Revolut, Wise\n" +
+      "• Auto-import transactions\n\n" +
+      "===================\n\n" +
+      "💡 *Quick Tips*\n\n" +
+      "• Use templates to save common transactions\n" +
+      "• Set reminders for bills and payments\n" +
+      "• Enable auto-deposit for consistent savings\n" +
+      "• Check Analytics weekly for insights\n" +
+      "• Export CSV for external analysis\n\n" +
+      "===================\n\n" +
+      "🆘 *Format Examples*\n\n" +
+      "*Balances:* Cash 1000 | Wallet 500 USD\n" +
+      "*Debts:* John 500 | Maria 200 EUR\n" +
+      "*Goals:* Laptop 2000 | Vacation 5000 USD\n" +
+      "*Natural:* 50 coffee | spent 100 lunch\n\n" +
+      "Version: 0.2 | Multi-currency support\n" +
+      "Built with ❤️ for personal finance management",
   },
 
   // Auto Features
@@ -805,8 +1403,10 @@ export const en = {
       "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
     invalidFormatExampleShort:
       "❌ Invalid date format. Use DD.MM.YYYY (e.g. 31.12.2026) or tap Skip.",
+    invalidDayWithSkip: "❌ Invalid day. Enter 1-31 or tap Skip.",
     deadlineCannotBePast: "❌ Deadline cannot be in the past.",
     dueDateCannotBePast: "❌ Due date cannot be in the past.",
+    pastDateConfirm: "⚠️ The date is in the past. Continue?",
   },
 
   // Voice
@@ -816,6 +1416,248 @@ export const en = {
     failed: "❌ Failed to recognize voice. Please try typing instead.",
   },
 
+  // Recurring
+  recurring: {
+    title: "🔁 *Recurring Transactions*",
+    noTransactions: "No recurring transactions yet.",
+    setupInfo: "Examples of recurring transactions:",
+    setupExamples:
+      "• Monthly rent\n" +
+      "• Subscriptions (Netflix, Spotify)\n" +
+      "• Utilities (electricity, internet)\n" +
+      "• Salary income",
+    tapToStart: "Tap ✨ Add Recurring to create one.",
+    yourTransactions: "Your recurring transactions:",
+    listItemAmountLine: "{amount} {currency} — {frequency}",
+    listItemNextLine: "Next: {date}",
+    tapToManage: "Tap a recurring transaction to manage it.",
+    unnamed: "Unnamed",
+    statusActive: "▶️ Active",
+    statusPaused: "⏸ Paused",
+    frequency: {
+      monthly: "monthly",
+      weekly: "weekly",
+      daily: "daily",
+      yearly: "yearly",
+    },
+    detailsTitle: "{emoji} *{name}*",
+    statusLine: "Status: {status}",
+    amountLine: "Amount: {amount} {currency}",
+    accountLine: "Account: {account}",
+    frequencyLine: "Frequency: {frequency}",
+    dayLine: "Day: {day}",
+    nextExecutionLine: "Next execution: {date}",
+    pauseButton: "⏸ Pause",
+    resumeButton: "▶️ Resume",
+    deleteConfirmTitle: "⚠️ *Delete Recurring Transaction?*",
+    deleteConfirmBody:
+      "This will delete: *{name}*\n" +
+      "Amount: {amount} {currency}\n\n" +
+      "Are you sure?",
+    deleted: "✅ Recurring transaction deleted.",
+    paused: "⏸ Recurring transaction paused.",
+    resumed: "▶️ Recurring transaction resumed.",
+    newTransaction: "🆕 *New Recurring Transaction*",
+    enterDescription: "Enter a description:",
+    descriptionExamples:
+      "*Examples:*\n" +
+      "• Rent\n" +
+      "• Netflix Subscription\n" +
+      "• Salary\n" +
+      "• Electricity Bill",
+    selectType: "Select transaction type:",
+    expense: "💸 Expense",
+    income: "💰 Income",
+    enterAmountPrompt: "💵 Enter amount:\n\nExamples: 1000, 1000 {currency}",
+    noAccountsCreate:
+      "⚠️ No accounts found. Please create a balance account first.",
+    selectCategory: "Select a category:",
+    enterDayPrompt: "📅 Enter day of month (1–31):",
+    dayExamples:
+      "Examples:\n" +
+      "• 1 (first day of month)\n" +
+      "• 15 (mid-month)\n" +
+      "• 28 (safe for all months)",
+    createdTitle: "✅ *Recurring transaction created!*",
+    dayOfMonthLine: "Day: {day} of each month",
+    nextLine: "Next: {date}",
+  },
+
+  // Auto-Deposit
+  autoDeposit: {
+    setupTitle: "🤖 *Auto-Deposit Setup*",
+    goalLine: "Goal: *{name}*",
+    selectAccountPrompt: "Select the account to transfer from:",
+    disabledMessage: "✅ Auto-deposit disabled for *{name}*.",
+    amountTitle: "💰 *Auto-Deposit Amount*",
+    fromLine: "From: *{account}*",
+    amountPrompt: "Enter the amount to deposit automatically:\nExample: 100",
+    amountLine: "Amount: *{amount} {currency}*",
+    frequencyTitle: "📅 *Auto-Deposit Frequency*",
+    frequencyPrompt: "Choose frequency:",
+    selectDayOfWeekTitle: "📆 *Select Day of Week*",
+    selectDayOfWeekPrompt: "Choose the day for automatic deposit:",
+    selectDayOfMonthTitle: "📅 *Select Day of Month*",
+    selectDayOfMonthPrompt:
+      "Enter the day (1-31) for automatic deposit:\n" +
+      "Example: 25 (for 25th of each month)",
+    enabledTitle: "✅ *Auto-Deposit Enabled!*",
+    frequencyLine: "Frequency: {frequency}",
+    frequencyWeekly: "Every *{day}*",
+    frequencyMonthly: "*{day}* of each month",
+    noteWeekly:
+      "🤖 The bot will automatically deposit money to your goal every {day}.",
+    noteMonthly:
+      "🤖 The bot will automatically deposit money to your goal on day {day} of each month.",
+  },
+
+  // Auto-Income
+  autoIncome: {
+    setupTitle: "🤖 *Auto-Income Setup*",
+    sourceLine: "Source: *{name}*",
+    selectAccountPrompt: "Select the account to receive income:",
+    disabledMessage: "✅ Auto-income disabled for *{name}*.",
+    amountTitle: "💰 *Auto-Income Amount*",
+    toLine: "To: *{account}*",
+    amountPrompt: "Enter the income amount:\nExample: 5000",
+    amountLine: "Amount: *{amount} {currency}*",
+    selectDayTitle: "📅 *Select Day of Month*",
+    selectDayPrompt:
+      "Enter the day (1-31) for automatic income:\n" +
+      "Example: 25 (for 25th of each month)",
+    lastDay: "Last day",
+    enabledTitle: "✅ *Auto-Income Enabled!*",
+    dayLine: "Day: *{day}*",
+    lastDayOfMonth: "Last day of month",
+    dayOfMonth: "{day}th",
+    noteMonthly:
+      "🤖 The bot will automatically add this income on day {day} of each month.",
+  },
+
+  // Auto-Payment
+  autoPayment: {
+    setupTitle: "🤖 *Auto-Payment Setup*",
+    debtLine: "Debt: *{name}* ({counterparty})",
+    selectAccountPrompt: "Select the account to pay from:",
+    disabledMessage: "✅ Auto-payment disabled for *{name}*.",
+    amountTitle: "💸 *Auto-Payment Amount*",
+    fromLine: "From: *{account}*",
+    remainingLine: "Remaining: *{remaining}*",
+    amountPrompt: "Enter the monthly payment amount:\nExample: 1000",
+    amountLine: "Amount: *{amount} {currency}*",
+    selectDayTitle: "📅 *Select Payment Day*",
+    selectDayPrompt:
+      "Enter the day (1-31) for monthly payment:\n" +
+      "Example: 15 (for 15th of each month)",
+    enabledTitle: "✅ *Auto-Payment Enabled!*",
+    dayLine: "Day: *{day}*",
+    dayOfMonth: "{day}th of each month",
+    noteMonthly:
+      "🤖 The bot will automatically pay this debt on day {day} of each month.",
+    onlyOweWarning: "⚠️ Auto-payment only available for debts you owe.",
+  },
+
+  // Reminders
+  reminders: {
+    title: "📝 *Reminders*",
+    debtsSection: "💸 Debts:",
+    goalsSection: "🎯 Goals:",
+    noReminders: "💭 No reminders",
+    settingsTitle: "🔔 *Notification Settings*",
+    statusLine: "Status: {status}",
+    timeLine: "Time: {time}",
+    timezoneLine: "Timezone: {timezone}",
+    notifyBeforeTitle: "*Notify Before:*",
+    notifyBeforeDebts: "• Debts: {days} days",
+    notifyBeforeGoals: "• Goals: {days} days",
+    notifyBeforeIncome: "• Income: {days} days",
+    changePrompt: "What would you like to change?",
+    toggledMessage: "✅ Notifications {status}!",
+    changeTimeTitle: "⏰ *Change Reminder Time*",
+    currentTimeLine: "Current: {time}",
+    selectTimePrompt: "Select a time for daily reminders:",
+    timeUpdatedMessage:
+      "✅ Reminder time updated to {time}!\n\n" +
+      "You will receive daily notifications at this time.",
+    changeTimezoneTitle: "🌍 *Change Timezone*",
+    currentTimezoneLine: "Current: {timezone}",
+    selectTimezonePrompt: "Select your timezone:",
+    timezoneUpdatedMessage:
+      "✅ Timezone updated to {timezone}!\n\n" +
+      "Your reminder time ({time}) will be based on this timezone.",
+    timezoneOptions: {
+      tbilisi: "🇬🇪 Asia/Tbilisi (GMT+4)",
+      kyiv: "🇺🇦 Europe/Kyiv (GMT+2)",
+      warsaw: "🇵🇱 Europe/Warsaw (GMT+1)",
+      london: "🇬🇧 Europe/London (GMT+0)",
+      newYork: "🇺🇸 America/New_York (GMT-5)",
+      losAngeles: "🇺🇸 America/Los_Angeles (GMT-8)",
+    },
+    timeOptions: [
+      "06:00",
+      "07:00",
+      "08:00",
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "14:00",
+      "16:00",
+      "18:00",
+      "20:00",
+      "21:00",
+    ],
+    messages: {
+      debtMonthlyTitle: "{emoji} *Monthly Debt Reminder*",
+      debtFinalTitle: "{emoji} *Debt Due Tomorrow!*",
+      goalMonthlyTitle: "🎯 *Monthly Goal Reminder*",
+      goalFinalTitle: "⏰ *Goal Deadline Approaching!*",
+      incomeTitle: "💰 *Income Reminder*",
+      debtLine: "Debt: {name}",
+      goalLine: "Goal: {name}",
+      sourceLine: "Source: {name}",
+      totalRemainingLine: "Total remaining: {amount} {currency}",
+      remainingLine: "Remaining: {amount} {currency}",
+      monthsLeftLine: "Months left: {months}",
+      suggestedMonthlyPaymentLine:
+        "Suggested monthly payment: {amount} {currency}",
+      suggestedMonthlySavingLine:
+        "Suggested monthly saving: {amount} {currency}",
+      dueLine: "Due: {date}",
+      deadlineLine: "Deadline: {date}",
+      deadlineCountdownLine: "Deadline: {date} (in {days} days)",
+      amountLine: "Amount: {amount} {currency}",
+      expectedAmountLine: "Expected amount: {amount} {currency}",
+      expectedDateLine: "Expected date: Day {day} of this month",
+    },
+    actions: {
+      snoozeHour: "⏰ Remind in 1 hour",
+      snoozeTomorrow: "📅 Remind tomorrow",
+      done: "✅ Done",
+    },
+    details: {
+      remainingLine: "💰 Remaining: {amount} {currency}",
+      dueLine: "📅 Due: {date}",
+      progressLine: "💰 Progress: {current} / {target} {currency}",
+      progressPercentLine: "📊 {percent}%",
+      deadlineLine: "📅 Deadline: {date}",
+    },
+  },
+
+  // Queue
+  queue: {
+    recurring: {
+      missingCategory: "Category is required for recurring transaction.",
+      notFound: "Recurring transaction not found.",
+      inactive: "Recurring transaction is inactive.",
+      accountRequired: "Account ID required for {type}.",
+      balanceNotFound: "Balance not found for account {account}.",
+      insufficientFunds: "Insufficient funds: {available} < {required}.",
+      recurringSuffix: "(Recurring)",
+      created: "Transaction created successfully.",
+    },
+  },
+
   // Import
   import: {
     title: "📄 *Import Statement*",
@@ -823,18 +1665,35 @@ export const en = {
     supported: "*Supported banks:*\n• Tinkoff\n• Monobank\n• Revolut\n• Wise",
     processing: "📥 Downloading and parsing file...",
     preview: "📊 *Statement Preview*",
+    bankLine: "Bank: {bank}",
+    totalTransactions: "Total transactions: {count}",
+    incomeExpenseLine: "Income: {income} | Expense: {expense}",
+    totalsTitle: "*Totals:*",
+    firstTransactionsTitle: "*First transactions:*",
+    moreTransactions: "...and {count} more",
     importAll: "✅ Import All",
     editImport: "✏️ Edit & Import",
     review: "🔍 Review Transactions",
     completed: "✅ *Import completed!*",
+    cancelled: "❌ Import cancelled",
     imported: "Imported: {count}",
     skipped: "Skipped (invalid): {count}",
     errors: "Errors: {count}",
     time: "⚡ Time: {ms}ms",
+    noAccounts: "⚠️ No accounts found. Please create a balance account first.",
+    failed: "❌ Import failed: {error}",
     unsupportedFormat:
       "⚠️ *Unsupported file format*\n\nSupported formats:\n• CSV (Tinkoff, Monobank, Revolut)\n• TXT (Wise)\n• JSON (Monobank)",
     noTransactions: "❌ No transactions found in the file",
     parsingErrors: "⚠️ *Parsing errors:*",
+    invalidFile: "❌ Please upload a valid statement file.",
+    editorTitle: "*Edit Transaction {index}/{total}*",
+    editorDateLine: "Date: {date}",
+    editorCategoryLine: "Category: {category}",
+    editorDescriptionLine: "Description: {description}",
+    saveAll: "✅ Save All",
+    allTransactionsTitle: "📋 *All Transactions ({count})*",
+    listItemLine: "{description} | {category}",
   },
 
   // Net Worth
@@ -844,6 +1703,651 @@ export const en = {
     viewDebts: "💰 Debts",
     fullReport: "📋 Full Report",
     summary: "📊 Summary",
+    accounts: "accounts",
+    debtsCount: "debts",
+    assets: "💳 Assets:",
+    debts: "💰 Debts:",
+    net: "💎 Net:",
+    assetsDetail: "💳 *Assets:*",
+    debtsDetail: "💰 *Debts:*",
+    netDebts: "💎 Net debts:",
+  },
+
+  history: {
+    title: "📋 *Transaction History*",
+    filters: "🔎 Filters",
+    filter: "Filter:",
+    last7days: "📅 Last 7 days",
+    last30days: "📅 Last 30 days",
+    expensesOnly: "💸 Expenses only",
+    incomeOnly: "💰 Income only",
+    noFilteredTransactions: "📬 No transactions match this filter.",
+    noTransactions: "📭 No transactions found yet.",
+  },
+
+  // Notifications
+  notifications: {
+    customMessagesTitle: "📝 *Custom Messages*",
+    customizeReminders: "Personalize your reminder templates:",
+    debtReminder: "*Debt reminder:* ",
+    goalReminder: "*Goal reminder:* ",
+    incomeReminder: "*Income reminder:* ",
+    usingDefaultTemplate: "_Using default template_",
+    availablePlaceholders: "*Available placeholders:*",
+    exampleTitle: "Example:",
+    examples: {
+      debt: "`💸 Pay {name}: {remaining} {currency} due {dueDate}`",
+      goal: "`🎯 Goal progress: {name} - {remaining} {currency} left (target: {target} {currency})`",
+      income: "`💰 Expected income: {name} - {amount} {currency} due today`",
+    },
+    placeholders: {
+      name: "`{name}` - Name",
+      amount: "`{amount}` - Amount",
+      currency: "`{currency}` - Currency",
+      dueDate: "`{dueDate}` - Due date",
+      remaining: "`{remaining}` - Remaining amount",
+      target: "`{target}` - Target amount",
+      monthlyAmount: "`{monthlyAmount}` - Monthly payment",
+      monthsLeft: "`{monthsLeft}` - Months remaining",
+    },
+    placeholdersList: {
+      debt: "`{name}`, `{amount}`, `{currency}`, `{dueDate}`, `{remaining}`, `{monthlyAmount}`, `{monthsLeft}`",
+      goal: "`{name}`, `{amount}`, `{currency}`, `{remaining}`, `{target}`",
+      income: "`{name}`, `{amount}`, `{currency}`",
+    },
+    editDebtTemplate: "✏️ Edit debt template",
+    editGoalTemplate: "✏️ Edit goal template",
+    editIncomeTemplate: "✏️ Edit income template",
+    resetToDefaults: "♻️ Reset to defaults",
+    templatesReset: "✅ Templates reset to default.",
+    templatePlaceholderWarning:
+      "⚠️ Template should include at least one placeholder like `{name}`.",
+    templateSaved: "✅ {type} template saved!\n\nTemplate: {template}",
+    templateTypes: {
+      debt: "Debt",
+      goal: "Goal",
+      income: "Income",
+    },
+    status: {
+      enabled: "✅ Enabled",
+      disabled: "❌ Disabled",
+    },
+    settings: {
+      title: "🔔 *Notification settings*",
+      statusLine: "Status: {status}",
+      enabledLine: "{icon} Enabled",
+      budget: {
+        title: "💰 *Budget alerts*",
+        warningThreshold: "  • Warning: at {threshold}%",
+        exceededAlert: "  • Exceeded alert: {icon}",
+      },
+      smart: {
+        title: "🧠 *Smart alerts*",
+        unusualExpenseMultiplier:
+          "  • Unusual expenses: x{multiplier} of average",
+        frequentSpendingDays: "  • Frequent spending: {days} days in a row",
+      },
+      analytics: {
+        title: "📊 *Analytics alerts*",
+        monthlyComparison: "  • Monthly comparison: {icon}",
+        goalRiskDays: "  • Goal risk: {days} days ahead",
+      },
+      reports: {
+        title: "📅 *Scheduled reports*",
+        weeklyEnabled: "  • Weekly: {icon}",
+        monthlyEnabled: "  • Monthly: {icon}",
+      },
+    },
+    list: {
+      empty: "🔔 *Notifications*\n\nNo new notifications",
+      titleWithCount: "🔔 *Notifications* ({count})\n\n",
+      priority: {
+        urgent: "🔴 *Urgent*",
+        high: "🟠 *Important*",
+        medium: "🟡 *Medium*",
+        low: "⚪ *Low*",
+      },
+    },
+    dailyDigest: {
+      title: "🌅 *Daily digest*",
+      importantTitle: "⚠️ *Important notifications:*",
+      moreCount: "And {count} more notifications...",
+    },
+    weekly: {
+      title: "📅 *Weekly summary*",
+      expensesLine: "💸 Expenses: {amount} {currency}",
+      incomeLine: "💰 Income: {amount} {currency}",
+      balanceLine: "📊 Balance: {amount} {currency}",
+      transactionsLine: "📋 Transactions: {count}",
+      topCategoryLine: "🎯 Top category: {category} ({amount} {currency})",
+      positiveBalance: "✅ Positive balance this week!",
+      negativeBalance: "⚠️ Expenses exceeded income",
+    },
+    monthly: {
+      title: "📆 *Monthly summary*",
+      expensesLine: "💸 Expenses: {amount} {currency}",
+      incomeLine: "💰 Income: {amount} {currency}",
+      balanceLine: "📊 Balance: {amount} {currency}",
+      transactionsLine: "📋 Transactions: {count}",
+      budgetUtilizationLine: "🎯 Budget usage: {percent}%",
+      topCategoriesTitle: "📈 *Top 3 categories:*",
+      topCategoryItem: "{index}. {category}: {amount} {currency}",
+    },
+    menu: {
+      title: "⚙️ *Notification settings*",
+      prompt: "Choose notification type:",
+      budgetItem: "💰 Budget - limit overages",
+      smartItem: "🧠 Smart - unusual spending",
+      analyticsItem: "📊 Analytics - trends and patterns",
+      reportsItem: "📅 Scheduled - weekly/monthly reports",
+    },
+    keyboard: {
+      viewBudget: "📊 View budget",
+      viewExpenses: "💸 View expenses",
+      viewTransaction: "📝 View transaction",
+      weeklyStats: "📊 Weekly stats",
+      dismiss: "✅ Got it",
+    },
+    dailySummary: {
+      title: "📅 *Daily summary*",
+      expensesLine: "💸 Expenses: {amount} {currency}",
+      incomeLine: "💰 Income: {amount} {currency}",
+      balanceLine: "📊 Balance: {amount} {currency}",
+      remainingTodayLine: "🎯 Left today: {amount} {currency}",
+      transactionsLine: "📋 Transactions: {count}",
+      error: "❌ Failed to generate summary",
+    },
+    alerts: {
+      common: {
+        generalBudget: "General",
+        noDescription: "No description",
+      },
+      budgetExceeded: {
+        title: "🚨 Budget exceeded!",
+        message:
+          "*{category} budget exceeded!*\n\n" +
+          "Limit: {limit} {currency}\n" +
+          "Spent: {spent} {currency}\n" +
+          "Overspent: {overspent} {currency} ({percentage}%)\n\n" +
+          "⚠️ We recommend reducing expenses in this category!",
+      },
+      budgetWarning: {
+        title: "⚠️ Budget warning",
+        message:
+          "*{category} budget*\n\n" +
+          "Limit: {limit} {currency}\n" +
+          "Spent: {spent} {currency} ({percentage}%)\n" +
+          "Remaining: {remaining} {currency}\n\n" +
+          "💡 You have used {percentage}% of your budget",
+      },
+      unusualExpense: {
+        title: "⚠️ Unusual expense",
+        message:
+          "*Large expense in {category}*\n\n" +
+          "Amount: {amount} {currency}\n" +
+          "Average: {average} {currency}\n" +
+          "Excess: {multiplier}x\n\n" +
+          "📝 {description}",
+      },
+      frequentSpending: {
+        title: "📊 Frequent spending",
+        message:
+          "*Regular spending in {category}*\n\n" +
+          "Days in a row: {days}\n" +
+          "Total: {total} {currency}\n" +
+          "Average per day: {average} {currency}\n\n" +
+          "💡 It may be worth reviewing these expenses",
+      },
+      spendingSpike: {
+        title: "📈 Spending spike",
+        message:
+          "*Spending increased by {percentage}%*\n\n" +
+          "Last week: {lastWeek} {currency}\n" +
+          "This week: {thisWeek} {currency}\n" +
+          "Increase: {increase} {currency}\n\n" +
+          "💡 Check recent expenses",
+      },
+    },
+  },
+
+  // Security
+  security: {
+    accessDeniedMessage:
+      "🚫 *Access Denied*\n\nYou are not authorized to use this bot.\n\nYour ID: {userId}",
+    rateLimitMessage:
+      "⏱ *Rate Limit Exceeded*\n\nToo many requests. Please wait {seconds} seconds.",
+  },
+
+  // Voice Handler
+  voiceHandler: {
+    processing: "🎙️ Processing voice message...",
+    ffmpegNotInstalledMessage:
+      "⚠️ Voice processing requires FFmpeg.\n\n" +
+      "**Admin needs to install FFmpeg:**\n" +
+      "• macOS: `brew install ffmpeg`\n" +
+      "• Linux: `apt-get install ffmpeg`\n\n" +
+      "**Meanwhile, you can type:**\n" +
+      "• `50 coffee` ☕\n" +
+      "• `100 taxi` 🚕\n" +
+      "• `потратил 200 на еду` 🍔",
+    conversionFailed: "❌ Failed to convert voice message.",
+    conversionFailedLong:
+      "❌ Failed to convert voice message.\n\nExamples: `50 coffee`, `100 taxi`, `потратил 200 на еду`",
+    notConfiguredMessage:
+      "⚠️ Voice transcription is not configured.\n\n" +
+      "To enable voice messages, admin needs to set ASSEMBLYAI_API_KEY.\n\n" +
+      "**Meanwhile, you can:**\n\n" +
+      "**Option 1: Use Telegram's transcription** 📝\n" +
+      "1. Tap and hold your voice message\n" +
+      '2. Select "Transcribe"\n' +
+      "3. Copy the text and send it to me\n\n" +
+      "**Option 2: Just type** ⌨️\n" +
+      "Examples:\n" +
+      "• `50 coffee` ☕\n" +
+      "• `100 taxi` 🚕\n" +
+      "• `потратил 200 на еду` 🍔\n" +
+      "• `витратив полтинник на каву` ☕\n" +
+      "• `зарплата пришла` 💰",
+    recognized: '📝 Recognized: "{text}"',
+    processingFailed: "❌ Failed to process voice message.",
+    ffmpegMissingMessage:
+      "⚠️ Voice processing requires FFmpeg.\n\n" +
+      "**Admin: Install FFmpeg**\n" +
+      "• macOS: `brew install ffmpeg`\n" +
+      "• Linux: `apt-get install ffmpeg`\n\n" +
+      "**You can use text instead:**\n" +
+      "• `50 coffee` ☕️\n" +
+      "• `100 taxi` 🚕",
+    tryTextInput: "Please try text input.",
+    couldNotUnderstandMessage:
+      "❌ I couldn't understand that.\n\n" +
+      '• "50 coffee"\n' +
+      '• "потратил 100 на такси"\n' +
+      '• "зарплата пришла 5000"\n' +
+      '• "витратив полтинник на каву"',
+    types: {
+      income: "Income",
+      expense: "Expense",
+    },
+    confirm: {
+      title: "{emoji} *Confirm {type}*",
+      amount: "Amount: {amount}",
+      category: "Category: {category}",
+      description: "Description: {description}",
+      confidence: "Confidence: {confidence}%",
+      isCorrect: "Is this correct?",
+    },
+    failedToParse: "❌ Failed to parse input. Please try again.",
+    transactionCancelled: "❌ Transaction cancelled",
+    noAccountsFound:
+      "❌ No accounts found. Please create a balance account first.",
+    transactionSaved:
+      "✅ {emoji} Transaction saved!\n\n{amount} - {description}",
+    selectCategory: "🏷️ Select category:",
+  },
+
+  // Period Report
+  periodReport: {
+    noTransactions: "📊 No transactions for period\n{start} - {end}",
+    title: "📊 *Report for period*",
+    dateRange: "📅 {start} - {end}",
+    typeLine: "📌 Type: {emoji} {type}",
+    types: {
+      income: "Income",
+      expense: "Expense",
+      transfer: "Transfer",
+    },
+    totalsHeader: "*Total:*",
+    totalLine: "{currency}: {total} ({count} tx)",
+    topCategoriesHeader: "*Top categories:*",
+    topCategoryLine: "{category}: {amount}",
+    prompt:
+      "📊 *Report for period*\n\n" +
+      "Enter dates in format:\n" +
+      "`YYYY-MM-DD YYYY-MM-DD`\n\n" +
+      "Example: `2024-01-01 2024-03-31`\n\n" +
+      "Optionally add type:\n" +
+      "`2024-01-01 2024-03-31 EXPENSE`\n" +
+      "`2024-01-01 2024-03-31 INCOME`\n" +
+      "`2024-01-01 2024-03-31 TRANSFER`",
+    invalidDateFormat: "❌ Invalid date format. Use YYYY-MM-DD",
+    startAfterEnd: "❌ Start date cannot be after end date",
+    generationError: "❌ Error generating report",
+    quarterTitle: "📊 *Report for Q{quarter} {year}*",
+    yearTitle: "📊 *Report for {year}*",
+    monthsHeader: "*By months:*",
+    monthLine: "{month}: {amount}",
+  },
+
+  // Wizard
+  wizard: {
+    common: {
+      skip: "⏩ Skip",
+      error: "⚠️ An error occurred. Please try again.",
+    },
+    tx: {
+      selectSourceAccount: "📤 Select source account:",
+      selectDestinationAccount: "📥 Select destination account:",
+      selectRefundAccount: "📥 Select account to receive refund:",
+      refundConfirmMessage:
+        "⚠️ Negative amount detected: -{amount} {currency}\n\n" +
+        "This means a REFUND (money returned to you).\n\n" +
+        "This will increase your balance. Proceed?",
+      selectPeriod: "Select period:",
+      periodAllTime: "All Time",
+      selectTransactionToEdit: "Select transaction to edit:",
+      selectTransactionFromList: "❌ Select a transaction from the list.",
+      detailsTitle: "📋 *Transaction Details*",
+      detailsType: "Type: {type}",
+      detailsCategory: "Category: {category}",
+      detailsAmount: "Amount: {amount}",
+      detailsAccount: "Account: {account}",
+      detailsDate: "Date: {date}",
+      detailsPrompt: "What would you like to do?",
+      deleteTransactionButton: "🗑️ Delete Transaction",
+      transactionDeleted: "✅ Transaction deleted!",
+      deleteError: "❌ Error deleting transaction",
+      noMoreToEdit: "💭 No more transactions to edit.",
+      editTransactionsTitle:
+        "✏️ *Edit Transactions*\n\nSelect another transaction to edit:",
+      editAmountTitle: "✏️ *Edit Amount*",
+      currentAmount: "Current: {amount}",
+      enterNewAmount: "Enter new amount (e.g. 100 or 100 {currency}):",
+      editCategoryExpenseTitle: "📝 *Edit Category (Expense)*",
+      editCategoryIncomeTitle: "📝 *Edit Category (Income)*",
+      currentCategory: "Current: {category}",
+      selectNewCategory: "Select new category:",
+      editAccountTitle: "💳 *Edit Account*",
+      currentAccount: "Current: {account}",
+      selectNewAccount: "Select new account:",
+      customPeriodPrompt:
+        "📅 *Period*\n\n1️⃣ DD.MM.YYYY-DD.MM.YYYY\nExample: `01.01.2026-13.01.2026`",
+      customPeriodWrongFormat:
+        "❌ *Wrong format!*\n\n✅ Example: `01.01.2026-13.01.2026`\n\n📋 Day: 01-31, Month: 01-12, Year: 2026",
+      customPeriodInvalid: "❌ Invalid date format!",
+      customPeriodWrongDates: "❌ Wrong dates!",
+      customPeriodEndBeforeStart: "❌ End date before Start!",
+      customPeriodNoTransactions: "📭 *No transactions*\n\nFor period {period}",
+      noTransactionsForFilter: "📬 No transactions match this filter.",
+      customPeriodTitle: "📋 *Custom Period: {period}*",
+      foundTransactions: "Found {count} transaction(s)",
+      noMoreTransactions: "📭 No more transactions",
+      nextBatchTitle: "📋 *Next batch* ({period})",
+      previousBatchTitle: "📋 *Previous batch* ({period})",
+      showingRange: "Showing {start}-{end} of {total}",
+      invalidAmount: "❌ Invalid amount. Try: 100 or 100 {currency}",
+      amountUpdated: "✅ Amount updated to {amount} {currency}!",
+      updateError: "❌ Error updating transaction.",
+      invalidCategory: "❌ Please select a category from the list.",
+      categoryUpdated: '✅ Category updated to "{category}"!',
+      invalidAccount: "❌ Invalid account name.",
+      accountUpdated: '✅ Account updated to "{account}"!',
+    },
+    debt: {
+      selectType: "Select debt type:",
+      enterAmount: "💰 Enter amount (e.g. 100 or 100 {currency}):",
+      partialPaymentPrompt:
+        '📉 Paying "{name}"\nRemaining: {remaining}\n\nEnter amount to pay:',
+      selectPaymentAccount: "💳 Select account for payment:",
+      selectToEdit: "Select debt to edit:",
+      editAmountPrompt:
+        "💰 Current: {current}\nPaid: {paid}\n\n✏️ Enter new total amount:",
+      payTo: "💸 Pay to",
+      getPaidFrom: "💰 Get paid from",
+      actionPay: "pay",
+      actionReceive: "receive",
+      totalLine: "Total: {amount}",
+      remainingLine: "Remaining: {amount}",
+      paidLabel: "🎉 Debt paid!",
+      dueLine: "Due: {date}",
+      enterAmountTo: "💡 Enter amount to {action}",
+      enableAutoPayment: "✅ Enable Auto-Payment",
+      disableAutoPayment: "❌ Disable Auto-Payment",
+      deleteDebtButton: "🗑 Delete Debt",
+      actionOweTo: "owe to",
+      actionLentTo: "lent to",
+      createDetails:
+        "{emoji} Enter person's name and amount you {action}:\n\n" +
+        "💡 *Format:* Name Amount [Currency]\n\n" +
+        "*Examples:*\n" +
+        "• John 1000\n" +
+        "• Maria 5000 USD\n" +
+        "• Alex 50000 {currency}",
+      selectFromListError: "❌ Select a debt from the list.",
+      notFound: "❌ Debt not found.",
+      invalidAmount: "❌ Invalid amount. Try: 500 or 500 {currency}",
+      fullyPaidLabel: "💸 Debt fully paid!",
+      fullyReceivedLabel: "💰 Debt fully received!",
+      fullySettledMessage: "✅ {status}\n\nTotal: {total}\nPaid: {paid}",
+      amountLessThanPaid:
+        "❌ New debt amount {amount} cannot be less than already paid amount {paid}.",
+      amountUpdated: "✅ Debt amount updated!",
+      editTotalPrompt:
+        "✏️ *Edit Total Debt Amount*\n\n" +
+        "Current: {current}\n" +
+        "Already Paid: {paid}\n\n" +
+        "Enter new total amount (e.g. 1000 or 1000 {currency}):",
+      deletedMessage: '✅ Debt "{name}" deleted.',
+      amountExceedsRemaining:
+        "❌ Amount {amount} exceeds remaining debt {remaining}.",
+      dueDateSetTitle: "Set Due Date",
+      dueDateChangeTitle: "Change Due Date",
+      dueDatePrompt:
+        "📅 {mode}\n\nEnter new due date (DD.MM.YYYY)\n" +
+        "Example: 31.12.2026\n\n" +
+        "Or tap Remove to delete due date.\n" +
+        "Or tap Skip to cancel.",
+      remindersRemoved: "✅ Reminders disabled and due date removed.",
+      dueDateRemoved: "✅ Due date and reminders removed.",
+    },
+    goal: {
+      addPrompt:
+        "🎯 *Add Goal*\n\n" +
+        "Enter goal in format:\n" +
+        "`GoalName amount CURRENCY`\n\n" +
+        "*Examples:*\n" +
+        "• `Laptop 2000 {currency}`\n" +
+        "• `Vacation 5000 USD`\n" +
+        "• `Emergency Fund 10000` (uses {currency})",
+      depositAmountPrompt:
+        '🎯 "{name}"\nTarget: {target}\nCurrent: {current}\n\nEnter deposit amount:',
+      selectWithdrawAccount: "💳 Select account to withdraw from:",
+      targetLine: "Target: {amount}",
+      remainingLine: "📈 Remaining: {amount}",
+      achievedLine: "🎉 Goal achieved!",
+      deadlineLine: "Deadline: {date}",
+      enterDepositAmount: "💡 Enter amount to deposit:",
+      enableAutoDeposit: "✅ Enable Auto-Deposit",
+      disableAutoDeposit: "❌ Disable Auto-Deposit",
+      deleteGoalButton: "🗑 Delete Goal",
+      completedItem: "✅ Goal: {name}",
+      completedSelect: "🎉 *Completed Goals*\n\nSelect goal:",
+      completedDeleteMessage:
+        '✅ Completed Goal: "{name}"\n\nTarget: {target}\nAchieved: {achieved}\n\n🎉 Congratulations on reaching this goal!',
+      completedDeleted: '✅ Completed goal "{name}" deleted.',
+      selectFromListError: "❌ Select a goal from the list.",
+      deleted: "✅ Goal deleted.",
+      noBalances:
+        "⚠️ *No Balances Found*\n\n" +
+        "Before depositing to goals, you need at least one balance account.\n\n" +
+        "💡 *Quick Start:*\n" +
+        "1️⃣ Go to 💰 *Balances*\n" +
+        "2️⃣ Tap ✨ *Add Balance*\n" +
+        "3️⃣ Enter account name and amount",
+      noBalancesComplete:
+        "⚠️ *No Balances Found*\n\n" +
+        "Before completing goals, you need at least one balance account.\n\n" +
+        "💡 *Quick Start:*\n" +
+        "1️⃣ Go to 💰 *Balances*\n" +
+        "2️⃣ Tap ✨ *Add Balance*\n" +
+        "3️⃣ Enter account name and amount",
+      selectDepositAccount: "💳 Select account to deposit from:",
+      selectDepositRemainingAccount:
+        "💳 Select account to deposit remaining amount:",
+      notFound: "❌ Goal not found.",
+      invalidAmount: "❌ Invalid amount. Try: 2000 or 2000 {currency}",
+      amountExceedsRemaining:
+        "❌ Amount {amount} exceeds remaining goal target {remaining}.",
+      confirmCompleteNoAlt: "❌ No, Enter Different Amount",
+      targetLessThanProgress:
+        "❌ New target amount *{amount}* is less than current progress *{progress}*.\n\n" +
+        "💡 You can mark this goal as completed instead.",
+      targetUpdated: "✅ Goal target updated!",
+      dataNotFound: "❌ Goal data not found.",
+      completedNow:
+        '🎉 *Goal "{name}" is now completed!*\n\nFinal amount: {amount}',
+      enterNewTargetPrompt:
+        "Enter new target amount for *{name}*:\n\n" +
+        "Current target: {target}\n" +
+        "Current progress: {progress}",
+      deadlineSetTitle: "Set Deadline",
+      deadlineChangeTitle: "Change Deadline",
+      deadlinePrompt:
+        "📅 {mode}\n\nEnter new deadline (DD.MM.YYYY)\n" +
+        "Example: 31.12.2026\n\n" +
+        "Or tap Remove to delete deadline.\n" +
+        "Or tap Skip to cancel.",
+      deadlineRemoved: "✅ Deadline and reminders removed.",
+      editTargetPrompt:
+        "✏️ *Edit Goal Target*\n\nCurrent: {current}\n\nEnter new target amount:",
+      completeConfirmMessage:
+        "🎯 New target amount *{amount}* equals your current progress.\n\n" +
+        "Would you like to update the target and mark this goal as completed?",
+      confirmCompleteYes: "✅ Yes, Complete Goal",
+      confirmCompleteNo: "❌ No, change amount",
+      autoDepositWeekly: "every {day}",
+      autoDepositMonthly: "on day {day} of each month",
+      autoDepositLine: "🤖 Auto-deposit: {amount} from {accountId} {schedule}",
+    },
+    income: {
+      enterAmount:
+        '💰 Enter expected monthly amount for "{name}":\n\nExample: 1000 or 1000 {currency}',
+      enterName: "💼 Enter income source name:\n\nExample: Salary, Freelance",
+      deleteConfirm: '🗑 Delete income source "{name}"?',
+      confirmDeleteButton: "✅ Confirm delete",
+      addPrompt:
+        "💼 *Add Income Source*\n\n" +
+        "Format: `Name Amount [Currency]`\n\n" +
+        "*Examples:*\n" +
+        "• Salary 1500\n" +
+        "• Freelance 800 {currency}",
+      selectFromListError:
+        "❌ Select an income source from the list or use ✨ Add Income Source.",
+      menuMessage:
+        "💼 *Income Source:* {name}\n\n" +
+        "Expected: {amount}\n\n" +
+        "You can edit name, delete or enter a new amount to update.",
+      enableAutoIncome: "✅ Enable Auto-Income",
+      disableAutoIncome: "❌ Disable Auto-Income",
+      deleteIncomeButton: "🗑️ Delete Income",
+      deletedMessage: '✅ Income source "{name}" deleted.',
+      noSourceSelected: "❌ No income source selected.",
+      deleteCancelled: "❌ Deletion cancelled.",
+      invalidFormat:
+        "❌ Invalid format.\n\nUse: Name Amount [Currency]\n" +
+        "Example: Salary 1500 or Salary 1500 {currency}",
+      invalidAmount: "❌ Invalid amount. Try: 1000 or 1000 {currency}",
+      addedMessage: '✅ Income source "{name}" added: {amount}.',
+      notFound: "❌ Income source not found.",
+      nameEmpty: "❌ Name cannot be empty.",
+      renamedMessage: '✅ Income source renamed from "{from}" to "{to}".',
+      editNamePrompt: '✏️ Enter new name for "{name}":',
+      amountUpdated: '✅ Updated amount for "{name}": {amount}',
+      selectOptionError: "❌ Please select an option or enter a valid amount.",
+    },
+    balance: {
+      enterName: "Enter account name (e.g., 'Cash' or 'Bank Card'):",
+      enterAmount: "Enter amount (e.g. 100 or 100 {currency}):",
+      deleteTransferPrompt:
+        '⚠️ Balance "{accountId}" has {amount}.\n\nWhat would you like to do?',
+      deleteAndClear: "🗑️ Delete and clear everything",
+      transferToPrompt: "↔️ Transfer {amount} to:",
+      currencyChoicePrompt:
+        "💱 You entered {inputAmount} {inputCurrency}, but balance is in {balanceCurrency}.\n\nChoose what to do:",
+      convertTo: "🔄 Convert to {amount}",
+      changeTo: "💱 Change to {amount} {currency}",
+      setToZero: "🅰️ Set to Zero",
+      deleteBalance: "🗑️ Delete Balance",
+      editTitle: "✏️ *{accountId}* ({currency})",
+      editBalanceLine: "Balance: {amount}",
+      quickEditTitle: "💡 *Quick edit:*",
+      quickEditNumber: "• Enter number → update amount",
+      quickEditText: "• Enter text → rename account",
+      addNewPrompt:
+        "✨ *Add New Balance*\n\n" +
+        "Enter account details in one step:\n\n" +
+        "*Format:* AccountName Amount [Currency]\n\n" +
+        "*Examples:*\n" +
+        "• Cash 1000\n" +
+        "• Bank Card 500 {currency}\n" +
+        "• Savings 2500 USD",
+      nameEmpty: "❌ Account name can't be empty.",
+      nameExists:
+        '❌ Account "{accountId}" already exists. Please choose a different name.',
+      invalidAmount: "❌ Invalid amount. Try: 100 or 100 {currency}",
+      nameMissing: "❌ Account name missing. Start again.",
+      deletedAndCleared:
+        '✅ Balance "{accountId}" deleted and {amount} cleared.',
+      selectOptionError: "❌ Please select an option from the buttons.",
+      converted:
+        '✅ Balance "{accountId}" converted: {inputAmount} {inputCurrency} → {converted}!',
+      changed: '✅ Balance "{accountId}" changed to {amount}!',
+    },
+    analytics: {
+      filtersTitle: "📊 *Reports Filters*",
+      selectPeriod: "Select period:",
+      menuTitle: "📊 *Analytics*\n\nSelect what you want to see:",
+      exportSuccess: "✅ CSV exported successfully!",
+      exportNoTransactions: "❌ No transactions to export.",
+      reportError: "❌ Error generating report. Please try again.",
+      startDatePrompt:
+        "📅 *Start Date*\n\nEnter date in format DD.MM.YYYY\nExample: `01.01.2026`",
+      endDatePrompt:
+        "📅 *End Date*\n\nEnter date in format DD.MM.YYYY\nExample: `13.01.2026`",
+      selectFilterError: "❌ Select one of the filters.",
+      dateFormatErrorStart: "❌ Wrong format! Use DD.MM.YYYY (e.g. 01.01.2026)",
+      dateFormatErrorEnd: "❌ Wrong format! Use DD.MM.YYYY (e.g. 13.01.2026)",
+      invalidPeriod: "❌ Invalid period (end before start or bad dates).",
+      periodSelected: "📊 Period selected. Tap `📊 Show Report`.",
+      tapShowReport: "❌ Please tap '📊 Show Report' button.",
+    },
+    budget: {
+      title: "🔮 *Budget Planner*",
+      selectCategory: "Select category to set limit:",
+      categoryTitle: "💳 *{category}*",
+      limitLine: "Limit: {amount} {currency}",
+      spentLine: "Spent: {amount} {currency}",
+      enterNewLimit: "Enter new limit (e.g. 500 or 500 USD), or use buttons.",
+      editOrClearHint:
+        "You can edit limit, clear it or enter a new limit directly.",
+      selectCategoryError:
+        "❌ Select a category from the list or use ✨ Add / Edit Budget.",
+      invalidCategory: "❌ Select a category from the list.",
+      categoryMissing: "❌ Category missing.",
+      invalidAmount: "❌ Enter a valid amount or use buttons.",
+    },
+    days: {
+      Sunday: "Sunday",
+      Monday: "Monday",
+      Tuesday: "Tuesday",
+      Wednesday: "Wednesday",
+      Thursday: "Thursday",
+      Friday: "Friday",
+      Saturday: "Saturday",
+    },
+    template: {
+      idMissing: "❌ Template ID missing.",
+      notFound: "❌ Template not found.",
+      invalidAmount: "❌ Invalid amount. Please enter a valid number.",
+      cancel: "❌ Cancel",
+      updateFailed: "❌ Failed to update template.",
+      amountUpdated: "✅ Amount updated to {amount}",
+    },
+    notifications: {
+      enable: "✅ Enable Notifications",
+      disable: "❌ Disable Notifications",
+      changeTime: "⏰ Change Time",
+    },
   },
 
   // Automation

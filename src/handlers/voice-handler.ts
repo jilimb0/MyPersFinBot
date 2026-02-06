@@ -30,10 +30,7 @@ export async function handleVoiceMessage(
   if (!voice) return
 
   try {
-    await bot.sendMessage(
-      chatId,
-      "await bot.sendMessage(chatId, t(lang, 'voiceHandler.processing'))"
-    )
+    await bot.sendMessage(chatId, t(lang, "voiceHandler.processing"))
 
     const fileLink = await bot.getFileLink(voice.file_id)
     const response = await axios.get(fileLink, { responseType: "arraybuffer" })
@@ -51,14 +48,7 @@ export async function handleVoiceMessage(
       }
 
       const errorMsg = conversionError.message.includes("FFmpeg")
-        ? t(lang, "voiceHandler.ffmpegNotInstalled") +
-          "**Admin needs to install FFmpeg:**\n" +
-          "• macOS: `brew install ffmpeg`\n" +
-          "• Linux: `apt-get install ffmpeg`\n\n" +
-          "**Meanwhile, you can type:**\n" +
-          "• `50 coffee` ☕\n" +
-          "• `100 taxi` 🚕\n" +
-          "• `потратил 200 на еду` 🍔"
+        ? t(lang, "voiceHandler.ffmpegNotInstalledMessage")
         : t(lang, "voiceHandler.conversionFailed")
 
       await bot.sendMessage(chatId, errorMsg, { parse_mode: "Markdown" })
@@ -69,8 +59,7 @@ export async function handleVoiceMessage(
       unlinkSync(ogaPath)
       await bot.sendMessage(
         chatId,
-        t(lang, "voiceHandler.conversionFailedLong") +
-          "Examples: `50 coffee`, `100 taxi`, `потратил 200 на еду`",
+        t(lang, "voiceHandler.conversionFailedLong"),
         { parse_mode: "Markdown" }
       )
       return
@@ -87,27 +76,13 @@ export async function handleVoiceMessage(
     if (!text) {
       await bot.sendMessage(
         chatId,
-        t(lang, "voiceHandler.notConfigured") +
-          "\n\n" +
-          "To enable voice messages, admin needs to set ASSEMBLYAI_API_KEY.\n\n" +
-          "**Meanwhile, you can:**\n\n" +
-          "**Option 1: Use Telegram's transcription** 📝\n" +
-          "1. Tap and hold your voice message\n" +
-          '2. Select "Transcribe"\n' +
-          "3. Copy the text and send it to me\n\n" +
-          "**Option 2: Just type** ⌨️\n" +
-          "Examples:\n" +
-          "• `50 coffee` ☕\n" +
-          "• `100 taxi` 🚕\n" +
-          "• `потратил 200 на еду` 🍔\n" +
-          "• `витратив полтинник на каву` ☕\n" +
-          "• `зарплата пришла` 💰",
+        t(lang, "voiceHandler.notConfiguredMessage"),
         { parse_mode: "Markdown" }
       )
       return
     }
 
-    await bot.sendMessage(chatId, `📝 Recognized: "${text}"`)
+    await bot.sendMessage(chatId, t(lang, "voiceHandler.recognized", { text }))
 
     await handleNLPInput(bot, chatId, userId, text, wizard)
   } catch (error: any) {
@@ -118,16 +93,9 @@ export async function handleVoiceMessage(
     let errorMsg = t(lang, "voiceHandler.processingFailed")
 
     if (error.message && error.message.includes("FFmpeg")) {
-      errorMsg =
-        t(lang, "voiceHandler.ffmpegMissing") +
-        "**Admin: Install FFmpeg**" +
-        "\u2022 macOS: `brew install ffmpeg`" +
-        "\u2022 Linux: `apt-get install ffmpeg`" +
-        "**You can use text instead:**" +
-        "\u2022 `50 coffee` ☕️" +
-        "\u2022 `100 taxi` 🚕"
+      errorMsg = t(lang, "voiceHandler.ffmpegMissingMessage")
     } else {
-      errorMsg += " Please try text input."
+      errorMsg += ` ${t(lang, "voiceHandler.tryTextInput")}`
     }
 
     await bot.sendMessage(chatId, errorMsg, { parse_mode: "Markdown" })
@@ -152,12 +120,7 @@ export async function handleNLPInput(
     if (!result || !result.amount) {
       await bot.sendMessage(
         chatId,
-        t(lang, "voiceHandler.couldNotUnderstand") +
-          "\n\n" +
-          '• "50 coffee"\n' +
-          '• "потратил 100 на такси"\n' +
-          '• "зарплата пришла 5000"\n' +
-          '• "витратив полтинник на каву"'
+        t(lang, "voiceHandler.couldNotUnderstandMessage")
       )
       return
     }
@@ -165,15 +128,28 @@ export async function handleNLPInput(
     const emoji = result.type === TransactionType.INCOME ? "💰" : "💸"
     const sign = result.type === TransactionType.INCOME ? "+" : "-"
     const typeLabel =
-      result.type === TransactionType.INCOME ? "Income" : "Expense"
+      result.type === TransactionType.INCOME
+        ? t(lang, "voiceHandler.types.income")
+        : t(lang, "voiceHandler.types.expense")
 
     const confirmMsg =
-      `${emoji} *Confirm ${typeLabel}*\n\n` +
-      `Amount: ${sign}${formatMoney(result.amount, defaultCurrency, true)}\n` +
-      `Category: ${result.category}\n` +
-      `Description: ${result.description}\n` +
-      `Confidence: ${(result.confidence * 100).toFixed(0)}%\n\n` +
-      `Is this correct?`
+      `${t(lang, "voiceHandler.confirm.title", {
+        emoji,
+        type: typeLabel,
+      })}\n\n` +
+      `${t(lang, "voiceHandler.confirm.amount", {
+        amount: `${sign}${formatMoney(result.amount, defaultCurrency, true)}`,
+      })}\n` +
+      `${t(lang, "voiceHandler.confirm.category", {
+        category: result.category,
+      })}\n` +
+      `${t(lang, "voiceHandler.confirm.description", {
+        description: result.description,
+      })}\n` +
+      `${t(lang, "voiceHandler.confirm.confidence", {
+        confidence: (result.confidence * 100).toFixed(0),
+      })}\n\n` +
+      `${t(lang, "voiceHandler.confirm.isCorrect")}`
 
     await bot.sendMessage(chatId, confirmMsg, {
       parse_mode: "Markdown",
@@ -202,7 +178,7 @@ export async function handleNLPInput(
     })
   } catch (error) {
     console.error("NLP parsing error:", error)
-    await bot.sendMessage(chatId, "❌ Failed to parse input. Please try again.")
+    await bot.sendMessage(chatId, t(lang, "voiceHandler.failedToParse"))
   }
 }
 
@@ -222,7 +198,7 @@ export async function handleNLPCallback(
 
   try {
     if (data === "nlp_cancel") {
-      await bot.editMessageText("❌ Transaction cancelled", {
+      await bot.editMessageText(t(lang, "voiceHandler.transactionCancelled"), {
         chat_id: chatId,
         message_id: query.message?.message_id,
       })
@@ -236,13 +212,10 @@ export async function handleNLPCallback(
 
       const balances = await db.getBalancesList(userId)
       if (balances.length === 0) {
-        await bot.editMessageText(
-          "❌ No accounts found. Please create a balance account first.",
-          {
-            chat_id: chatId,
-            message_id: query.message?.message_id,
-          }
-        )
+        await bot.editMessageText(t(lang, "voiceHandler.noAccountsFound"), {
+          chat_id: chatId,
+          message_id: query.message?.message_id,
+        })
         await bot.answerCallbackQuery(query.id)
         return
       }
@@ -266,8 +239,11 @@ export async function handleNLPCallback(
       const sign = type === "INCOME" ? "+" : "-"
 
       await bot.editMessageText(
-        `✅ ${emoji} Transaction saved!\n\n` +
-          `${sign}${formatMoney(amount, currency, true)} - ${description}`,
+        t(lang, "voiceHandler.transactionSaved", {
+          emoji,
+          amount: `${sign}${formatMoney(amount, currency, true)}`,
+          description: description || "",
+        }),
         {
           chat_id: chatId,
           message_id: query.message?.message_id,
@@ -281,54 +257,54 @@ export async function handleNLPCallback(
     if (data.startsWith("nlp_edit_category|")) {
       const [, amountStr, type, description] = data.split("|")
 
-      await bot.editMessageText("🏷️ Select category:", {
+      await bot.editMessageText(t(lang, "voiceHandler.selectCategory"), {
         chat_id: chatId,
         message_id: query.message?.message_id,
         reply_markup: {
           inline_keyboard: [
             [
               {
-                text: "🍔 Food",
+                text: t(lang, "buttons.food"),
                 callback_data: `nlp_set_cat|${amountStr}|${type}|Food|${description}`,
               },
               {
-                text: "🚗 Transport",
+                text: t(lang, "buttons.transport"),
                 callback_data: `nlp_set_cat|${amountStr}|${type}|Transport|${description}`,
               },
             ],
             [
               {
-                text: "🛍️ Shopping",
+                text: t(lang, "buttons.shopping"),
                 callback_data: `nlp_set_cat|${amountStr}|${type}|Shopping|${description}`,
               },
               {
-                text: "🎮 Entertainment",
+                text: t(lang, "buttons.entertainment"),
                 callback_data: `nlp_set_cat|${amountStr}|${type}|Entertainment|${description}`,
               },
             ],
             [
               {
-                text: "💡 Bills",
+                text: t(lang, "buttons.bills"),
                 callback_data: `nlp_set_cat|${amountStr}|${type}|Bills|${description}`,
               },
               {
-                text: "🏥 Health",
+                text: t(lang, "buttons.health"),
                 callback_data: `nlp_set_cat|${amountStr}|${type}|Health|${description}`,
               },
             ],
             [
               {
-                text: "💼 Salary",
+                text: t(lang, "buttons.salary"),
                 callback_data: `nlp_set_cat|${amountStr}|${type}|Salary|${description}`,
               },
               {
-                text: "📦 Other",
+                text: t(lang, "buttons.other"),
                 callback_data: `nlp_set_cat|${amountStr}|${type}|Other|${description}`,
               },
             ],
             [
               {
-                text: "⬅️ Back",
+                text: t(lang, "buttons.back"),
                 callback_data: `nlp_confirm|${amountStr}|${type}|Other|${description}`,
               },
             ],

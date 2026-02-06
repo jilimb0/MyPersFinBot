@@ -23,22 +23,27 @@ export async function handleCustomMessagesMenu(
   msg += "\n"
 
   msg += t(state?.lang || "en", "notifications.goalReminder")
-  msg += customMessages.goal || "_Using default template_\n"
+  msg +=
+    customMessages.goal ||
+    t(state?.lang || "en", "notifications.usingDefaultTemplate") + "\n"
   msg += "\n"
 
   msg += t(state?.lang || "en", "notifications.incomeReminder")
-  msg += customMessages.income || "_Using default template_\n"
+  msg +=
+    customMessages.income ||
+    t(state?.lang || "en", "notifications.usingDefaultTemplate") + "\n"
   msg += "\n\n"
 
   msg += t(state?.lang || "en", "notifications.availablePlaceholders") + "\n"
-  msg += "`{name}` - Name\n"
-  msg += "`{amount}` - Amount\n"
-  msg += "`{currency}` - Currency\n"
-  msg += "`{dueDate}` - Due date\n"
-  msg += "`{remaining}` - Remaining amount\n"
-  msg += "`{target}` - Target amount\n"
-  msg += "`{monthlyAmount}` - Monthly payment\n"
-  msg += "`{monthsLeft}` - Months remaining\n"
+  msg += t(state?.lang || "en", "notifications.placeholders.name") + "\n"
+  msg += t(state?.lang || "en", "notifications.placeholders.amount") + "\n"
+  msg += t(state?.lang || "en", "notifications.placeholders.currency") + "\n"
+  msg += t(state?.lang || "en", "notifications.placeholders.dueDate") + "\n"
+  msg += t(state?.lang || "en", "notifications.placeholders.remaining") + "\n"
+  msg += t(state?.lang || "en", "notifications.placeholders.target") + "\n"
+  msg +=
+    t(state?.lang || "en", "notifications.placeholders.monthlyAmount") + "\n"
+  msg += t(state?.lang || "en", "notifications.placeholders.monthsLeft") + "\n"
 
   wizardManager.setState(userId, {
     step: "CUSTOM_MESSAGES_MENU",
@@ -54,7 +59,10 @@ export async function handleCustomMessagesMenu(
         [{ text: t(state?.lang || "en", "notifications.editGoalTemplate") }],
         [{ text: t(state?.lang || "en", "notifications.editIncomeTemplate") }],
         [{ text: t(state?.lang || "en", "notifications.resetToDefaults") }],
-        [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+        [
+          { text: t(state?.lang || "en", "common.back") },
+          { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+        ],
       ],
       resize_keyboard: true,
     },
@@ -80,11 +88,14 @@ export async function handleCustomMessagesAction(
 
     await wizardManager.sendMessage(
       chatId,
-      "📝 *Enter custom debt reminder template:*\n\n" +
-        "Example:\n" +
-        "`💸 Pay {name}: {remaining} {currency} due {dueDate}`\n\n" +
-        "Available placeholders:\n" +
-        "`{name}`, `{amount}`, `{currency}`, `{dueDate}`, `{remaining}`, `{monthlyAmount}`, `{monthsLeft}`",
+      t(state?.lang || "en", "common.enterCustomDebtReminder") +
+        t(state?.lang || "en", "notifications.exampleTitle") +
+        "\n" +
+        t(state?.lang || "en", "notifications.examples.debt") +
+        "\n\n" +
+        t(state?.lang || "en", "notifications.availablePlaceholders") +
+        "\n" +
+        t(state?.lang || "en", "notifications.placeholdersList.debt"),
       {
         parse_mode: "Markdown",
         ...wizardManager.getBackButton(lang),
@@ -102,11 +113,14 @@ export async function handleCustomMessagesAction(
 
     await wizardManager.sendMessage(
       chatId,
-      "📝 *Enter custom goal reminder template:*\n\n" +
-        "Example:\n" +
-        "`🎯 Goal progress: {name} - {remaining} {currency} left (target: {target} {currency})`\n\n" +
-        "Available placeholders:\n" +
-        "`{name}`, `{amount}`, `{currency}`, `{remaining}`, `{target}`",
+      t(state?.lang || "en", "common.enterCustomGoalReminder") +
+        t(state?.lang || "en", "notifications.exampleTitle") +
+        "\n" +
+        t(state?.lang || "en", "notifications.examples.goal") +
+        "\n\n" +
+        t(state?.lang || "en", "notifications.availablePlaceholders") +
+        "\n" +
+        t(state?.lang || "en", "notifications.placeholdersList.goal"),
       {
         parse_mode: "Markdown",
         ...wizardManager.getBackButton(lang),
@@ -124,11 +138,14 @@ export async function handleCustomMessagesAction(
 
     await wizardManager.sendMessage(
       chatId,
-      "📝 *Enter custom income reminder template:*\n\n" +
-        "Example:\n" +
-        "`💰 Expected income: {name} - {amount} {currency} due today`\n\n" +
-        "Available placeholders:\n" +
-        "`{name}`, `{amount}`, `{currency}`",
+      t(state?.lang || "en", "common.enterCustomIncomeReminder") +
+        t(state?.lang || "en", "notifications.exampleTitle") +
+        "\n" +
+        t(state?.lang || "en", "notifications.examples.income") +
+        "\n\n" +
+        t(state?.lang || "en", "notifications.availablePlaceholders") +
+        "\n" +
+        t(state?.lang || "en", "notifications.placeholdersList.income"),
       {
         parse_mode: "Markdown",
         ...wizardManager.getBackButton(lang),
@@ -203,8 +220,10 @@ export async function handleCustomMessageSave(
 
   await wizardManager.sendMessage(
     chatId,
-    `✅ ${type.charAt(0).toUpperCase() + type.slice(1)} template saved!\n\n` +
-      `Template: ${text}`,
+    t(state?.lang || "en", "notifications.templateSaved", {
+      type: t(state?.lang || "en", `notifications.templateTypes.${type}`),
+      template: text,
+    }),
     {
       parse_mode: "Markdown",
       reply_markup: SETTINGS_KEYBOARD,

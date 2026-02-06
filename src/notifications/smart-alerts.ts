@@ -8,6 +8,7 @@ import { Transaction, TransactionCategory, Currency } from "../types"
 import { Notification, SpendingPattern } from "./types"
 import logger from "../logger"
 import { randomUUID } from "crypto"
+import { Language, t } from "../i18n"
 
 export class SmartAlerts {
   /**
@@ -19,6 +20,7 @@ export class SmartAlerts {
   ): Promise<Notification[]> {
     try {
       const userData = await dbStorage.getUserData(userId)
+      const lang = await dbStorage.getUserLanguage(userId)
       const defaultCurrency = userData.defaultCurrency
       const notifications: Notification[] = []
 
@@ -64,7 +66,8 @@ export class SmartAlerts {
               tx,
               average,
               txAmount,
-              defaultCurrency
+              defaultCurrency,
+              lang
             )
           )
         }
@@ -87,6 +90,7 @@ export class SmartAlerts {
     try {
       const notifications: Notification[] = []
       const userData = await dbStorage.getUserData(userId)
+      const lang = await dbStorage.getUserLanguage(userId)
       const defaultCurrency = userData.defaultCurrency
 
       // Get last N days
@@ -110,7 +114,9 @@ export class SmartAlerts {
       )
 
       for (const pattern of categoryPatterns) {
-        notifications.push(this.createFrequentSpendingAlert(userId, pattern))
+        notifications.push(
+          this.createFrequentSpendingAlert(userId, pattern, lang)
+        )
       }
 
       return notifications
@@ -126,6 +132,7 @@ export class SmartAlerts {
   async checkSpendingSpike(userId: string): Promise<Notification | null> {
     try {
       const userData = await dbStorage.getUserData(userId)
+      const lang = await dbStorage.getUserLanguage(userId)
       const defaultCurrency = userData.defaultCurrency
 
       // Get this week vs last week
@@ -169,13 +176,14 @@ export class SmartAlerts {
           userId,
           type: "SPENDING_SPIKE",
           priority: "MEDIUM",
-          title: "📈 Резкий рост расходов",
-          message:
-            `*Расходы выросли на ${percentageIncrease.toFixed(0)}%*\n\n` +
-            `Прошлая неделя: ${lastWeekSpending.toFixed(2)} ${defaultCurrency}\n` +
-            `Эта неделя: ${thisWeekSpending.toFixed(2)} ${defaultCurrency}\n` +
-            `Увеличение: ${increase.toFixed(2)} ${defaultCurrency}\n\n` +
-            `💡 Проверьте последние траты`,
+          title: t(lang, "notifications.alerts.spendingSpike.title"),
+          message: t(lang, "notifications.alerts.spendingSpike.message", {
+            percentage: percentageIncrease.toFixed(0),
+            lastWeek: lastWeekSpending.toFixed(2),
+            thisWeek: thisWeekSpending.toFixed(2),
+            increase: increase.toFixed(2),
+            currency: defaultCurrency,
+          }),
           data: {
             thisWeek: thisWeekSpending,
             lastWeek: lastWeekSpending,
@@ -295,22 +303,29 @@ export class SmartAlerts {
     transaction: Transaction,
     average: number,
     amount: number,
-    currency: Currency
+    currency: Currency,
+    lang: Language
   ): Notification {
     const multiplier = amount / average
+    const description =
+      transaction.description ||
+      t(lang, "notifications.alerts.common.noDescription")
+    const category = transaction.category
 
     return {
       id: randomUUID(),
       userId,
       type: "UNUSUAL_EXPENSE",
       priority: "MEDIUM",
-      title: "⚠️ Необычная трата",
-      message:
-        `*Большая трата в категории ${transaction.category}*\n\n` +
-        `Сумма: ${amount.toFixed(2)} ${currency}\n` +
-        `Средняя: ${average.toFixed(2)} ${currency}\n` +
-        `Превышение: ${multiplier.toFixed(1)}x\n\n` +
-        `📝 ${transaction.description || "Без описания"}`,
+      title: t(lang, "notifications.alerts.unusualExpense.title"),
+      message: t(lang, "notifications.alerts.unusualExpense.message", {
+        category,
+        amount: amount.toFixed(2),
+        average: average.toFixed(2),
+        multiplier: multiplier.toFixed(1),
+        currency,
+        description,
+      }),
       data: {
         transactionId: transaction.id,
         amount,
@@ -328,20 +343,22 @@ export class SmartAlerts {
    */
   private createFrequentSpendingAlert(
     userId: string,
-    pattern: SpendingPattern
+    pattern: SpendingPattern,
+    lang: Language
   ): Notification {
     return {
       id: randomUUID(),
       userId,
       type: "FREQUENT_SPENDING",
       priority: "LOW",
-      title: "📊 Частые траты",
-      message:
-        `*Регулярные траты в категории ${pattern.category}*\n\n` +
-        `Дней подряд: ${pattern.consecutiveDays}\n` +
-        `Общая сумма: ${pattern.totalAmount.toFixed(2)} ${pattern.currency}\n` +
-        `Средний чек: ${pattern.averageDailyAmount.toFixed(2)} ${pattern.currency}\n\n` +
-        `💡 Возможно, стоит пересмотреть расходы`,
+      title: t(lang, "notifications.alerts.frequentSpending.title"),
+      message: t(lang, "notifications.alerts.frequentSpending.message", {
+        category: pattern.category,
+        days: pattern.consecutiveDays,
+        total: pattern.totalAmount.toFixed(2),
+        average: pattern.averageDailyAmount.toFixed(2),
+        currency: pattern.currency,
+      }),
       data: pattern,
       createdAt: new Date(),
       sent: false,

@@ -8,6 +8,8 @@
  */
 
 import TelegramBot from "node-telegram-bot-api"
+import { dbStorage as db } from "./database/storage-db"
+import { t, isValidLanguage, Language } from "./i18n"
 
 // ==========================================
 // CONFIGURATION
@@ -71,16 +73,16 @@ export function isUserAllowed(userId: string): boolean {
 /**
  * Send unauthorized access message
  */
-export function sendUnauthorizedMessage(
+export async function sendUnauthorizedMessage(
   bot: TelegramBot,
   chatId: number,
   userId: string
 ) {
+  const lang = (await db.getUserLanguage(userId)) as Language
+  const safeLang: Language = lang && isValidLanguage(lang) ? lang : "en"
   bot.sendMessage(
     chatId,
-    "🚫 *Access Denied*\n\n" +
-      "You are not authorized to use this bot.\n\n" +
-      `Your ID: ${userId}`,
+    t(safeLang, "security.accessDeniedMessage", { userId }),
     { parse_mode: "Markdown" }
   )
   if (SECURITY_CONFIG.LOG_UNAUTHORIZED_ACCESS) {
@@ -133,7 +135,7 @@ export function isRateLimited(userId: string): boolean {
 /**
  * Send rate limit exceeded message
  */
-export function sendRateLimitMessage(
+export async function sendRateLimitMessage(
   bot: TelegramBot,
   chatId: number,
   userId: string
@@ -143,10 +145,12 @@ export function sendRateLimitMessage(
     ? Math.ceil((entry.resetTime - Date.now()) / 1000)
     : 60
 
+  const lang = (await db.getUserLanguage(userId)) as Language
+  const safeLang: Language = lang && isValidLanguage(lang) ? lang : "en"
+
   bot.sendMessage(
     chatId,
-    "⏱ *Rate Limit Exceeded*\n\n" +
-      `Too many requests.Please wait ${waitSeconds} seconds.`,
+    t(safeLang, "security.rateLimitMessage", { seconds: waitSeconds }),
     { parse_mode: "Markdown" }
   )
 
@@ -175,22 +179,22 @@ if (SECURITY_CONFIG.RATE_LIMIT.enabled) {
  *
  * @returns true if message should be processed, false if blocked
  */
-export function securityCheck(
+export async function securityCheck(
   bot: TelegramBot,
   msg: TelegramBot.Message
-): boolean {
+): Promise<boolean> {
   const chatId = msg.chat.id
   const userId = msg.from?.id.toString() || ""
 
   // Check user access
   if (!isUserAllowed(userId)) {
-    sendUnauthorizedMessage(bot, chatId, userId)
+    await sendUnauthorizedMessage(bot, chatId, userId)
     return false
   }
 
   // Check rate limit
   if (isRateLimited(userId)) {
-    sendRateLimitMessage(bot, chatId, userId)
+    await sendRateLimitMessage(bot, chatId, userId)
     return false
   }
 

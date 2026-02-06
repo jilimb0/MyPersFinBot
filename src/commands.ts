@@ -11,6 +11,7 @@ import {
   getMetrics,
   resetMetrics,
 } from "./fx"
+import { Language, t } from "./i18n"
 
 function resolveExpenseCategory(input: string): ExpenseCategory {
   const normalized = input.toLowerCase()
@@ -75,27 +76,43 @@ function parseAmountAndCategory(
   return null
 }
 
+async function resolveUserLanguage(userId: string): Promise<Language> {
+  try {
+    return await db.getUserLanguage(userId)
+  } catch {
+    return "en"
+  }
+}
+
 export function registerCommands(bot: TelegramBot) {
   bot.onText(/^\/balance(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
 
     const balancesText = await db.getBalances(userId)
-    await bot.sendMessage(chatId, `💳 *Balances*\n\n${balancesText}`, {
-      parse_mode: "Markdown",
-    })
+    await bot.sendMessage(
+      chatId,
+      `${t(lang, "balances.title")}\n\n${balancesText}`,
+      {
+        parse_mode: "Markdown",
+      }
+    )
   })
 
   bot.onText(/^\/templates(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
 
     const templates = await db.getTemplates(userId)
 
     if (templates.length === 0) {
       await bot.sendMessage(
         chatId,
-        '📋 *Templates*\n\nNo templates saved yet.\n\nUse `/expense` or `/income` and click "💾 Save as template?" to create templates.',
+        t(lang, "commands.templates.empty", {
+          saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
+        }),
         { parse_mode: "Markdown" }
       )
       return
@@ -110,37 +127,32 @@ export function registerCommands(bot: TelegramBot) {
             callback_data: `tmpl_use|${tpl.id}`,
           },
           {
-            text: "⚙️ Manage",
+            text: t(lang, "buttons.manage"),
             callback_data: `tmpl_manage|${tpl.id}`,
           },
         ]
       }
     )
 
-    await bot.sendMessage(
-      chatId,
-      `📋 *Templates*\n\nClick to use or ⚙️ to manage:`,
-      {
-        parse_mode: "Markdown",
-        reply_markup: {
-          inline_keyboard: buttons,
-        },
-      }
-    )
+    await bot.sendMessage(chatId, t(lang, "commands.templates.listHint"), {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: buttons,
+      },
+    })
   })
 
   bot.onText(/^\/expense(?:@\w+)?\s+(.+)$/i, async (msg, match) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
     if (!match || !match[1]) return
 
     const parsed = parseAmountAndCategory(match[1])
     if (!parsed) {
-      await bot.sendMessage(
-        chatId,
-        "❌ Invalid format. Use: `/expense 100 coffee` or `/expense coffee 100`",
-        { parse_mode: "Markdown" }
-      )
+      await bot.sendMessage(chatId, t(lang, "commands.expense.invalidFormat"), {
+        parse_mode: "Markdown",
+      })
       return
     }
 
@@ -151,10 +163,7 @@ export function registerCommands(bot: TelegramBot) {
 
     const balances = await db.getBalancesList(userId)
     if (balances.length === 0) {
-      await bot.sendMessage(
-        chatId,
-        "⚠️ No balances found. Add one in 💳 Balances."
-      )
+      await bot.sendMessage(chatId, t(lang, "warnings.noBalancesAdd"))
       return
     }
 
@@ -173,14 +182,16 @@ export function registerCommands(bot: TelegramBot) {
     })
 
     const formatted = formatMoney(amount, currency)
-    const text =
-      `💸 Expense added: *${formatted}* — ${category}\n` +
-      `Account: *${smartAccount}*`
+    const text = t(lang, "commands.expense.added", {
+      amount: formatted,
+      category,
+      account: smartAccount || "",
+    })
 
     const buttons: TelegramBot.InlineKeyboardButton[][] = [
       [
         {
-          text: "💾 Save as template?",
+          text: t(lang, "buttons.saveAsTemplate"),
           callback_data: `tmpl_save|exp|${amount}|${encodeURIComponent(category)}|${currency}|${smartAccount}`,
         },
       ],
@@ -189,7 +200,7 @@ export function registerCommands(bot: TelegramBot) {
     if (balances.length > 1) {
       buttons.push([
         {
-          text: "🔄 Change account",
+          text: t(lang, "buttons.changeAccount"),
           callback_data: `acc_change|${txId}`,
         },
       ])
@@ -206,15 +217,14 @@ export function registerCommands(bot: TelegramBot) {
   bot.onText(/^\/income(?:@\w+)?\s+(.+)$/i, async (msg, match) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
     if (!match || !match[1]) return
 
     const parsed = parseAmountAndCategory(match[1])
     if (!parsed) {
-      await bot.sendMessage(
-        chatId,
-        "❌ Invalid format. Use: `/income 1000 salary` or `/income salary 1000`",
-        { parse_mode: "Markdown" }
-      )
+      await bot.sendMessage(chatId, t(lang, "commands.income.invalidFormat"), {
+        parse_mode: "Markdown",
+      })
       return
     }
 
@@ -225,10 +235,7 @@ export function registerCommands(bot: TelegramBot) {
 
     const balances = await db.getBalancesList(userId)
     if (balances.length === 0) {
-      await bot.sendMessage(
-        chatId,
-        "⚠️ No balances found. Add one in 💳 Balances."
-      )
+      await bot.sendMessage(chatId, t(lang, "warnings.noBalancesAdd"))
       return
     }
 
@@ -247,14 +254,16 @@ export function registerCommands(bot: TelegramBot) {
     })
 
     const formatted = formatMoney(amount, currency)
-    const text =
-      `💰 Income added: *${formatted}* — ${category}\n` +
-      `Account: *${smartAccount}*`
+    const text = t(lang, "commands.income.added", {
+      amount: formatted,
+      category,
+      account: smartAccount || "",
+    })
 
     const buttons: TelegramBot.InlineKeyboardButton[][] = [
       [
         {
-          text: "💾 Save as template?",
+          text: t(lang, "buttons.saveAsTemplate"),
           callback_data: `tmpl_save|inc|${amount}|${encodeURIComponent(category)}|${currency}|${smartAccount}`,
         },
       ],
@@ -263,7 +272,7 @@ export function registerCommands(bot: TelegramBot) {
     if (balances.length > 1) {
       buttons.push([
         {
-          text: "🔄 Change account",
+          text: t(lang, "buttons.changeAccount"),
           callback_data: `acc_change|${txId}`,
         },
       ])
@@ -280,10 +289,11 @@ export function registerCommands(bot: TelegramBot) {
   bot.onText(/\/querystats/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
 
     const ADMIN_IDS = process.env.ADMIN_USERS?.split(",") || []
     if (!ADMIN_IDS.includes(userId)) {
-      await bot.sendMessage(chatId, "❌ Access denied")
+      await bot.sendMessage(chatId, t(lang, "errors.accessDenied"))
       return
     }
 
@@ -292,7 +302,10 @@ export function registerCommands(bot: TelegramBot) {
     await bot.sendMessage(chatId, report, {
       parse_mode: "Markdown",
       reply_markup: {
-        keyboard: [[{ text: "/resetquerystats" }], [{ text: "🏠 Main Menu" }]],
+        keyboard: [
+          [{ text: "/resetquerystats" }],
+          [{ text: t(lang, "mainMenu.mainMenuButton") }],
+        ],
         resize_keyboard: true,
       },
     })
@@ -300,28 +313,30 @@ export function registerCommands(bot: TelegramBot) {
 
   bot.onText(/\/resetquerystats/, async (msg) => {
     const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
 
     queryMonitor.reset()
 
-    await bot.sendMessage(
-      chatId,
-      "✅ Query statistics reset!\n\nAll query counters have been reset to zero.",
-      {
-        reply_markup: {
-          keyboard: [[{ text: "/querystats" }], [{ text: "🏠 Main Menu" }]],
-          resize_keyboard: true,
-        },
-      }
-    )
+    await bot.sendMessage(chatId, t(lang, "success.queryStatsReset"), {
+      reply_markup: {
+        keyboard: [
+          [{ text: "/querystats" }],
+          [{ text: t(lang, "mainMenu.mainMenuButton") }],
+        ],
+        resize_keyboard: true,
+      },
+    })
   })
 
   bot.onText(/\/fxstats/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
 
     const ADMIN_IDS = process.env.ADMIN_USERS?.split(",") || []
     if (!ADMIN_IDS.includes(userId)) {
-      await bot.sendMessage(chatId, "❌ Access denied")
+      await bot.sendMessage(chatId, t(lang, "errors.accessDenied"))
       return
     }
 
@@ -329,34 +344,38 @@ export function registerCommands(bot: TelegramBot) {
     const hitRate = getCacheHitRate()
     const status = getCacheStatus()
 
-    let report = "📊 *FX Cache Statistics*\n\n"
+    let report = `${t(lang, "fxReport.title")}\n\n`
 
     // 💾 Cache Status
-    report += "💾 *Cache Status:*\n"
-    report += `• Valid: ${status.cacheValid ? "✅ Yes" : "❌ No"}\n`
-    report += `• Age: ${status.cacheAge}s\n`
-    report += `• Next update: ${status.nextUpdate}s\n`
-    report += `• Persisted: ${status.isPersisted ? "✅" : "❌"}\n`
-    report += `• Errors: ${status.errorCount}\n\n`
+    report += `${t(lang, "fxReport.cacheStatusTitle")}\n`
+    report += `${t(lang, "fxReport.valid", { value: status.cacheValid ? t(lang, "common.yes") : t(lang, "common.no") })}\n`
+    report += `${t(lang, "fxReport.age", { seconds: status.cacheAge })}\n`
+    report += `${t(lang, "fxReport.nextUpdate", { seconds: status.nextUpdate })}\n`
+    report += `${t(lang, "fxReport.persisted", { value: status.isPersisted ? t(lang, "common.checkYes") : t(lang, "common.checkNo") })}\n`
+    report += `${t(lang, "fxReport.errors", { count: status.errorCount })}\n\n`
 
     // 📈 Performance Metrics
-    report += "📈 *Performance:*\n"
-    report += `• Cache hits: ${metrics.cacheHits}\n`
-    report += `• Cache misses: ${metrics.cacheMisses}\n`
-    report += `• Hit rate: ${hitRate}%\n\n`
+    report += `${t(lang, "fxReport.performanceTitle")}\n`
+    report += `${t(lang, "fxReport.cacheHits", { count: metrics.cacheHits })}\n`
+    report += `${t(lang, "fxReport.cacheMisses", { count: metrics.cacheMisses })}\n`
+    report += `${t(lang, "fxReport.hitRate", { percent: hitRate })}\n\n`
 
     // 🌐 API Metrics
-    report += "🌐 *API Usage:*\n"
-    report += `• Total calls: ${metrics.apiCalls}\n`
-    report += `• Errors: ${metrics.apiErrors}\n`
-    report += `• Retries: ${metrics.retries}\n`
-    report += `• HTTP/2: ${metrics.http2Used ? "✅" : "❌"}\n\n`
+    report += `${t(lang, "fxReport.apiTitle")}\n`
+    report += `${t(lang, "fxReport.totalCalls", { count: metrics.apiCalls })}\n`
+    report += `${t(lang, "fxReport.apiErrors", { count: metrics.apiErrors })}\n`
+    report += `${t(lang, "fxReport.retries", { count: metrics.retries })}\n`
+    report += `${t(lang, "fxReport.http2", { value: metrics.http2Used ? t(lang, "common.checkYes") : t(lang, "common.checkNo") })}\n\n`
 
     // ⏰ Last Update
     if (metrics.lastUpdate > 0) {
       const lastUpdateDate = new Date(metrics.lastUpdate)
       const timeAgo = Math.round((Date.now() - metrics.lastUpdate) / 1000)
-      report += `⏰ Last update: ${lastUpdateDate.toLocaleTimeString()} (${timeAgo}s ago)\n`
+      report += t(lang, "fxReport.lastUpdate", {
+        time: lastUpdateDate.toLocaleTimeString(),
+        seconds: timeAgo,
+      })
+      report += "\n"
     }
 
     await bot.sendMessage(chatId, report, {
@@ -364,7 +383,7 @@ export function registerCommands(bot: TelegramBot) {
       reply_markup: {
         keyboard: [
           [{ text: "/fxreset" }, { text: "/fxclear" }],
-          [{ text: "🏠 Main Menu" }],
+          [{ text: t(lang, "mainMenu.mainMenuButton") }],
         ],
         resize_keyboard: true,
       },
@@ -373,32 +392,38 @@ export function registerCommands(bot: TelegramBot) {
 
   bot.onText(/\/fxreset/, async (msg) => {
     const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
 
     resetMetrics()
 
-    await bot.sendMessage(
-      chatId,
-      "✅ FX metrics reset!\n\nAll counters have been reset to zero.",
-      {
-        reply_markup: {
-          keyboard: [[{ text: "/fxstats" }], [{ text: "🏠 Main Menu" }]],
-          resize_keyboard: true,
-        },
-      }
-    )
+    await bot.sendMessage(chatId, t(lang, "success.metricsReset"), {
+      reply_markup: {
+        keyboard: [
+          [{ text: "/fxstats" }],
+          [{ text: t(lang, "mainMenu.mainMenuButton") }],
+        ],
+        resize_keyboard: true,
+      },
+    })
   })
 
   bot.onText(/\/fxclear/, async (msg) => {
     const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
 
     await clearPersistedCache()
 
     await bot.sendMessage(
       chatId,
-      "✅ Persisted FX cache cleared!\n\nThe cache file has been deleted. Next restart will fetch fresh rates from API.",
+      t(lang, "success.persistedCacheClearedDetails"),
       {
         reply_markup: {
-          keyboard: [[{ text: "/fxstats" }], [{ text: "🏠 Main Menu" }]],
+          keyboard: [
+            [{ text: "/fxstats" }],
+            [{ text: t(lang, "mainMenu.mainMenuButton") }],
+          ],
           resize_keyboard: true,
         },
       }

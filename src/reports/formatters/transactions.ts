@@ -5,6 +5,7 @@
 import { Transaction } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
 import { formatMoney } from "../../utils"
+import { Language, t } from "../../i18n"
 import {
   formatDate,
   getCategoryEmoji,
@@ -18,7 +19,7 @@ import {
  * @param tx - Transaction object
  * @returns Formatted transaction string
  */
-function formatTransactionLine(tx: Transaction): string {
+function formatTransactionLine(lang: Language, tx: Transaction): string {
   const date = new Date(tx.date)
   const dateStr = formatDate(date)
   const emoji = getCategoryEmoji(tx.category)
@@ -26,7 +27,14 @@ function formatTransactionLine(tx: Transaction): string {
   const account = getTransactionAccount(tx)
   const label = getTransactionLabel(tx)
 
-  return `📅 ${dateStr} | ${emoji} ${label} | ${sign}\n${formatMoney(tx.amount, tx.currency)} | 💳 ${account}`
+  return t(lang, "reports.transactions.line", {
+    date: dateStr,
+    emoji,
+    label,
+    sign,
+    amount: formatMoney(tx.amount, tx.currency),
+    account,
+  })
 }
 
 /**
@@ -39,13 +47,14 @@ export async function formatTransactionHistory(
   userId: string,
   limit: number = 10
 ): Promise<string> {
+  const lang = await db.getUserLanguage(userId)
   const transactions = await db.getTransactionHistory(userId, limit)
 
   if (transactions.length === 0) {
-    return "📭 No transactions found yet."
+    return t(lang, "reports.transactions.empty")
   }
 
-  const lines = transactions.map(formatTransactionLine)
+  const lines = transactions.map((tx) => formatTransactionLine(lang, tx))
 
-  return `📋 *Transaction History*\n\n${lines.join("\n")}`
+  return `${t(lang, "reports.transactions.title")}\n\n${lines.join("\n")}`
 }

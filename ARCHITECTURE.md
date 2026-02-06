@@ -756,3 +756,64 @@ When adding new features:
 ---
 
 **Architecture Last Updated:** January 19, 2026
+
+## Testing Architecture
+
+### Test Layout
+- Unit tests: `src/__tests__/unit/*.test.ts`
+- Integration tests: `src/__tests__/integration/*.test.ts`
+
+### E2E Scenarios
+1. Expense flow: amount -> category (inline) -> account
+2. Income flow: amount -> category (inline) -> account
+3. Transfer flow: amount -> from account
+4. Analytics flow: menu -> net worth/history
+5. Export flow: analytics reports -> export CSV
+
+### Mocks and Dependencies
+- Database layer is mocked in unit/integration tests.
+- Telegram bot API is mocked with in-memory handlers.
+- Callback query handling (`tx_cat|`) is covered by unit tests.
+
+## Monitoring
+
+### Health Checks
+- HTTP server provides `/healthz` and `/readyz`
+- Configurable via `HEALTH_HOST` and `HEALTH_PORT`
+
+### Error Tracking (Sentry)
+- Initialized at startup when `SENTRY_DSN` is set
+- Optional: `SENTRY_ENV`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_RELEASE`
+
+
+## Deployment
+
+### systemd
+- Unit file: `systemd/my-pers-fin-bot.service`
+- Runs as non-root user `bot`
+- Logs: `/var/log/my-pers-fin-bot/`
+
+### Health Checks
+- Endpoints: `/healthz`, `/readyz`
+
+### Monitoring
+- Sentry initialized when `SENTRY_DSN` is provided
+
+## Bootstrap Flow
+
+### Startup Sequence
+1. `initObservability()` (Sentry + health server)
+2. `initializeApp()` (DB, cache, bot)
+3. `registerAppServices()` (scheduler, commands, period reports)
+4. `WizardManager` init
+5. `registerRouters()` (message + callback routers)
+6. `setupShutdownHandlers()`
+
+### Bootstrap Modules
+- `src/bootstrap/observability.ts`
+- `src/bootstrap/app-services.ts`
+- `src/bootstrap/routers.ts`
+
+### Health & Monitoring
+- `/healthz` and `/readyz` endpoints
+- Sentry enabled when `SENTRY_DSN` provided

@@ -3,6 +3,8 @@ import TelegramBot from "node-telegram-bot-api"
 import logger from "../../logger"
 import { dbStorage } from "../../database/storage-db"
 import { ReminderJobData, JobResult } from "../types"
+import { Language, t } from "../../i18n"
+import { formatDateDisplay } from "../../utils"
 
 /**
  * Process reminder job
@@ -41,6 +43,13 @@ export async function processReminder(
       }
     }
 
+    let lang: Language = "en"
+    try {
+      lang = await dbStorage.getUserLanguage(userId)
+    } catch {
+      lang = "en"
+    }
+
     // Build reminder message
     let fullMessage = `🔔 *${title}*\n\n${message}`
 
@@ -49,16 +58,33 @@ export async function processReminder(
       const debt = await dbStorage.getDebtById(userId, entityId)
       if (debt) {
         const remaining = debt.amount - debt.paidAmount
-        fullMessage += `\n\n💰 Осталось: ${remaining.toFixed(2)} ${debt.currency}`
-        fullMessage += `\n📅 Срок: ${debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : "Не указан"}`
+        fullMessage += `\n\n${t(lang, "reminders.details.remainingLine", {
+          amount: remaining.toFixed(2),
+          currency: debt.currency,
+        })}`
+        fullMessage += `\n${t(lang, "reminders.details.dueLine", {
+          date: debt.dueDate
+            ? formatDateDisplay(debt.dueDate)
+            : t(lang, "common.notAvailable"),
+        })}`
       }
     } else if (type === "goal" && entityId) {
       const goal = await dbStorage.getGoalById(userId, entityId)
       if (goal) {
         const progress = (goal.currentAmount / goal.targetAmount) * 100
-        fullMessage += `\n\n💰 Прогресс: ${goal.currentAmount.toFixed(2)} / ${goal.targetAmount.toFixed(2)} ${goal.currency}`
-        fullMessage += `\n📊 ${progress.toFixed(1)}%`
-        fullMessage += `\n📅 Срок: ${goal.deadline ? new Date(goal.deadline).toLocaleDateString() : "Не указан"}`
+        fullMessage += `\n\n${t(lang, "reminders.details.progressLine", {
+          current: goal.currentAmount.toFixed(2),
+          target: goal.targetAmount.toFixed(2),
+          currency: goal.currency,
+        })}`
+        fullMessage += `\n${t(lang, "reminders.details.progressPercentLine", {
+          percent: progress.toFixed(1),
+        })}`
+        fullMessage += `\n${t(lang, "reminders.details.deadlineLine", {
+          date: goal.deadline
+            ? formatDateDisplay(goal.deadline)
+            : t(lang, "common.notAvailable"),
+        })}`
       }
     }
 
@@ -67,17 +93,17 @@ export async function processReminder(
       inline_keyboard: [
         [
           {
-            text: "⏰ Напомнить через 1 час",
+            text: t(lang, "reminders.actions.snoozeHour"),
             callback_data: `reminder_snooze|${reminderId}|1h`,
           },
           {
-            text: "📅 Напомнить завтра",
+            text: t(lang, "reminders.actions.snoozeTomorrow"),
             callback_data: `reminder_snooze|${reminderId}|1d`,
           },
         ],
         [
           {
-            text: "✅ Выполнено",
+            text: t(lang, "reminders.actions.done"),
             callback_data: `reminder_done|${reminderId}`,
           },
         ],

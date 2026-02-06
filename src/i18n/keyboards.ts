@@ -1,4 +1,4 @@
-import { t, Language } from "./index"
+import { t, Language, getTranslationValue } from "./index"
 import type TelegramBot from "node-telegram-bot-api"
 
 /**
@@ -150,11 +150,11 @@ export function getLanguageKeyboard(
 ): TelegramBot.ReplyKeyboardMarkup {
   return {
     keyboard: [
-      [{ text: "🇬🇧 English" }],
-      [{ text: "🇷🇺 Русский" }],
-      [{ text: "🇺🇦 Українська" }],
-      [{ text: "🇪🇸 Español" }],
-      [{ text: "🇵🇱 Polski" }],
+      [{ text: t(lang, "languages.en") }],
+      [{ text: t(lang, "languages.ru") }],
+      [{ text: t(lang, "languages.uk") }],
+      [{ text: t(lang, "languages.es") }],
+      [{ text: t(lang, "languages.pl") }],
       [{ text: t(lang, "common.back") }],
     ],
     resize_keyboard: true,
@@ -184,6 +184,31 @@ export function getGoToBalancesKeyboard(
       [{ text: t(lang, "transactions.goToBalances") }],
       [{ text: t(lang, "mainMenu.mainMenuButton") }],
     ],
+    resize_keyboard: true,
+  }
+}
+
+/**
+ * Generate reminder time selection keyboard
+ */
+export function getReminderTimeKeyboard(
+  lang: Language
+): TelegramBot.ReplyKeyboardMarkup {
+  const timeOptions =
+    (getTranslationValue(lang, "reminders.timeOptions") as string[]) || []
+
+  const rows: TelegramBot.KeyboardButton[][] = []
+  for (let i = 0; i < timeOptions.length; i += 3) {
+    rows.push(timeOptions.slice(i, i + 3).map((time) => ({ text: time })))
+  }
+
+  rows.push([
+    { text: t(lang, "common.back") },
+    { text: t(lang, "mainMenu.mainMenuButton") },
+  ])
+
+  return {
+    keyboard: rows,
     resize_keyboard: true,
   }
 }

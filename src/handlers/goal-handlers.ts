@@ -21,7 +21,7 @@ export async function handleGoalInput(
   if (!parsed) {
     await wizard.sendMessage(
       chatId,
-      validators.getValidationErrorMessage("goal"),
+      validators.getValidationErrorMessage(lang, "goal"),
       wizard.getBackButton(lang)
     )
     return true
@@ -36,8 +36,7 @@ export async function handleGoalInput(
   if (existingGoal) {
     await wizard.sendMessage(
       chatId,
-      `❌ *Goal "${parsed.name}" already exists!*\n\n` +
-        `Please choose a different name or manage existing goal in the Goals menu.`,
+      t(lang, "goals.duplicate", { name: parsed.name }),
       {
         parse_mode: "Markdown",
         ...wizard.getBackButton(lang),
@@ -66,9 +65,10 @@ export async function handleGoalInput(
 
   await wizard.sendMessage(
     chatId,
-    `🎯 Goal created: *${parsed.name}*\n\n` +
-      `📅 Set a deadline for this goal?\n\n` +
-      `Enter date (DD.MM.YYYY) or tap Skip to create without reminder.`,
+    t(lang, "goals.createdWithDeadlinePrompt", {
+      name: parsed.name,
+      skipLabel: t(lang, "common.skip"),
+    }),
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -112,7 +112,9 @@ export async function handleGoalDepositAmount(
   if (!parsed) {
     await wizard.sendMessage(
       chatId,
-      `❌ Invalid amount. Try: 100 or 100 ${defaultCurrency}`,
+      t(lang, "validation.invalidAmountExample", {
+        currency: defaultCurrency,
+      }),
       wizard.getBackButton(lang)
     )
     return true
@@ -123,7 +125,7 @@ export async function handleGoalDepositAmount(
   if (parsed.amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      `❌ Amount must be greater than zero.`,
+      t(lang, "errors.amountMustBePositive"),
       wizard.getBackButton(lang)
     )
     return true
@@ -132,7 +134,10 @@ export async function handleGoalDepositAmount(
   if (parsed.amount > remaining) {
     await wizard.sendMessage(
       chatId,
-      `❌ Error: Amount (${formatAmount(parsed.amount)}) exceeds remaining goal target (${formatMoney(remaining, goal.currency)}).`,
+      t(lang, "wizard.goal.amountExceedsRemaining", {
+        amount: formatAmount(parsed.amount),
+        remaining: formatMoney(remaining, goal.currency),
+      }),
       wizard.getBackButton(lang)
     )
     return true
@@ -140,28 +145,19 @@ export async function handleGoalDepositAmount(
 
   const balanceCount = (await db.getBalancesList(userId)).length
   if (balanceCount === 0) {
-    await wizard.sendMessage(
-      chatId,
-      "⚠️ *No Balances Found*\n\n" +
-        "Before depositing to goals, you need at least one balance account.\n\n" +
-        "💡 *Quick Start:*\n" +
-        "1️⃣ Go to 💰 *Balances*\n" +
-        "2️⃣ Tap ✨ *Add Balance*\n" +
-        "3️⃣ Enter account name and amount",
-      {
-        parse_mode: "Markdown",
-        reply_markup: {
-          keyboard: [
-            [{ text: t(state?.lang || "en", "transactions.goToBalances") }],
-            [
-              { text: t(state?.lang || "en", "common.back") },
-              { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
-            ],
+    await wizard.sendMessage(chatId, t(lang, "wizard.goal.noBalances"), {
+      parse_mode: "Markdown",
+      reply_markup: {
+        keyboard: [
+          [{ text: t(state?.lang || "en", "transactions.goToBalances") }],
+          [
+            { text: t(state?.lang || "en", "common.back") },
+            { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
           ],
-          resize_keyboard: true,
-        },
-      }
-    )
+        ],
+        resize_keyboard: true,
+      },
+    })
     return true
   }
 
@@ -208,7 +204,7 @@ export async function handleGoalDepositAccount(
   if (!balance) {
     await wizard.sendMessage(
       chatId,
-      `❌ Error: Account "${accountName}" not found.`,
+      t(lang, "errors.accountNotFound", { account: accountName }),
       wizard.getBackButton(lang)
     )
     return true
@@ -218,6 +214,7 @@ export async function handleGoalDepositAccount(
     await wizard.sendMessage(
       chatId,
       handleInsufficientFunds(
+        lang,
         accountName,
         balance.amount,
         balance.currency,

@@ -1,0 +1,23 @@
+[Unit]
+Description=Personal Finance Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=bot
+Group=bot
+WorkingDirectory=/opt/my-pers-fin-bot
+Environment=NODE_ENV=production
+Environment=HEALTH_HOST=0.0.0.0
+Environment=HEALTH_PORT=3001
+EnvironmentFile=/opt/my-pers-fin-bot/.env
+ExecStart=/usr/bin/node /opt/my-pers-fin-bot/dist/index.js
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=20
+StandardOutput=append:/var/log/my-pers-fin-bot/out.log
+StandardError=append:/var/log/my-pers-fin-bot/err.log
+
+[Install]
+WantedBy=multi-user.target

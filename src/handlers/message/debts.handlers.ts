@@ -3,11 +3,24 @@
  */
 
 import { MessageHandler } from "./types"
-import { t } from "../../i18n"
+import { Language, t } from "../../i18n"
 import { createProgressBar } from "../../reports"
 import { formatMoney } from "../../utils"
 import { Debt } from "../../types"
 import * as menus from "../../menus-i18n"
+import * as helpers from "../../wizards/helpers"
+
+const LOCALES: Record<Language, string> = {
+  en: "en-US",
+  ru: "ru-RU",
+  uk: "uk-UA",
+  es: "es-ES",
+  pl: "pl-PL",
+}
+
+function formatDate(lang: Language, date: Date): string {
+  return date.toLocaleDateString(LOCALES[lang])
+}
 
 /**
  * Handle debts menu button
@@ -16,13 +29,34 @@ export const handleDebtsMenu: MessageHandler = async (context) => {
   const { bot, chatId, userId, lang, wizardManager } = context
 
   wizardManager.setState(userId, {
-    step: "NONE",
+    step: "DEBT_EDIT_SELECT",
     data: {},
     returnTo: "debts",
     lang,
   })
 
   await menus.showDebtsMenu(bot, chatId, userId, lang)
+}
+
+/**
+ * Handle "Add Debt" button
+ */
+export const handleAddDebt: MessageHandler = async (context) => {
+  const { chatId, userId, lang, wizardManager } = context
+
+  wizardManager.setState(userId, {
+    step: "DEBT_TYPE",
+    data: {},
+    returnTo: "debts",
+    lang,
+  })
+
+  await helpers.resendCurrentStepPrompt(
+    wizardManager,
+    chatId,
+    userId,
+    wizardManager.getState(userId)!
+  )
 }
 
 /**
@@ -51,38 +85,50 @@ export const handleDebtSelection: MessageHandler = async (context) => {
   const { amount, paidAmount, type, dueDate, name, currency } = debt
   const remaining = amount - paidAmount
   const progress = createProgressBar(paidAmount, amount)
-  const emoji = type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
-  const action = type === "I_OWE" ? "pay" : "receive"
+  const emoji =
+    type === "I_OWE"
+      ? t(lang, "wizard.debt.payTo")
+      : t(lang, "wizard.debt.getPaidFrom")
+  const action =
+    type === "I_OWE"
+      ? t(lang, "wizard.debt.actionPay")
+      : t(lang, "wizard.debt.actionReceive")
 
   let msg = `${emoji} *${name}*\n`
   msg += `${progress}\n`
 
   if (paidAmount === 0) {
-    msg += `Total: ${formatMoney(amount, currency)}\n`
+    msg += `${t(lang, "wizard.debt.totalLine", {
+      amount: formatMoney(amount, currency),
+    })}\n`
   } else if (remaining > 0) {
-    msg += `Remaining: ${formatMoney(remaining, currency)}\n`
+    msg += `${t(lang, "wizard.debt.remainingLine", {
+      amount: formatMoney(remaining, currency),
+    })}\n`
   } else {
-    msg += `🎉 Debt paid!\n`
+    msg += `${t(lang, "wizard.debt.paidLabel")}\n`
   }
 
   if (dueDate) {
     const deadlineDate = new Date(dueDate)
-    msg += `Due: ${deadlineDate.toLocaleDateString("en-GB")}\n`
+    msg += `${t(lang, "wizard.debt.dueLine", {
+      date: formatDate(lang, deadlineDate),
+    })}\n`
   }
 
-  msg += `\n💡 Enter amount to ${action}`
+  msg += `\n${t(lang, "wizard.debt.enterAmountTo", { action })}`
 
   const deadlineButtons = dueDate
-    ? [[{ text: "⚙️ Advanced" }]]
-    : [[{ text: t(lang, "goals.setDeadlineBtn") }]]
+    ? [[{ text: t(lang, "buttons.advanced") }]]
+    : [[{ text: t(lang, "buttons.setDeadline") }]]
 
   await bot.sendMessage(chatId, msg, {
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: "✏️ Edit Amount" }],
+        [{ text: t(lang, "buttons.editAmount") }],
         ...deadlineButtons,
-        [{ text: "🗑 Delete Debt" }],
+        [{ text: t(lang, "wizard.debt.deleteDebtButton") }],
         [
           { text: t(lang, "common.back") },
           { text: t(lang, "mainMenu.mainMenuButton") },

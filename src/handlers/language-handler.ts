@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
-import { t, languageNames, isValidLanguage, Language } from "../i18n"
+import { t, isValidLanguage, Language } from "../i18n"
 import { getMainMenuKeyboard, getLanguageKeyboard } from "../i18n/keyboards"
 
 /**
@@ -15,7 +15,7 @@ export async function showLanguageMenu(
 
   const message =
     `🌍 *${t(currentLang, "settings.language")}*\n\n` +
-    `${t(currentLang, "settings.currentLanguage")} ${languageNames[currentLang]}\n\n` +
+    `${t(currentLang, "settings.currentLanguage")} ${t(currentLang, `languages.${currentLang}`)}\n\n` +
     `${t(currentLang, "settings.selectLanguage")}`
 
   await bot.sendMessage(chatId, message, {
@@ -33,18 +33,26 @@ export async function handleLanguageSelection(
   userId: string,
   text: string
 ): Promise<boolean> {
+  const currentLang = (await db.getUserLanguage(userId)) as Language
   // Match language by emoji flag
   let selectedLang: Language | null = null
+  const labels: Record<Language, string> = {
+    en: t(currentLang, "languages.en"),
+    ru: t(currentLang, "languages.ru"),
+    uk: t(currentLang, "languages.uk"),
+    es: t(currentLang, "languages.es"),
+    pl: t(currentLang, "languages.pl"),
+  }
 
-  if (text.includes("English") || text.includes("🇬🇧")) {
+  if (text.includes(labels.en) || text.includes("🇬🇧")) {
     selectedLang = "en"
-  } else if (text.includes("Русский") || text.includes("🇷🇺")) {
+  } else if (text.includes(labels.ru) || text.includes("🇷🇺")) {
     selectedLang = "ru"
-  } else if (text.includes("Українська") || text.includes("🇺🇦")) {
+  } else if (text.includes(labels.uk) || text.includes("🇺🇦")) {
     selectedLang = "uk"
-  } else if (text.includes("Español") || text.includes("🇪🇸")) {
+  } else if (text.includes(labels.es) || text.includes("🇪🇸")) {
     selectedLang = "es"
-  } else if (text.includes("Polski") || text.includes("🇵🇱")) {
+  } else if (text.includes(labels.pl) || text.includes("🇵🇱")) {
     selectedLang = "pl"
   }
 
@@ -57,7 +65,7 @@ export async function handleLanguageSelection(
 
   // Send confirmation in NEW language
   const confirmMsg = t(selectedLang, "settings.languageChanged", {
-    language: languageNames[selectedLang],
+    language: t(selectedLang, `languages.${selectedLang}`),
   })
 
   await bot.sendMessage(chatId, confirmMsg, getMainMenuKeyboard(selectedLang))

@@ -17,7 +17,7 @@ export function getLang(state: WizardState | undefined): Language {
  */
 export function getData(state: WizardState): WizardData {
   if (!state?.data) {
-    throw new Error("State data is undefined")
+    throw new Error("STATE_DATA_UNDEFINED")
   }
   return state?.data
 }

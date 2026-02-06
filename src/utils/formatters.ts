@@ -1,6 +1,7 @@
 /**
  * Formatting utilities
  */
+import { Language, t } from "../i18n"
 
 /**
  * Currency symbols map for custom formatting
@@ -70,6 +71,7 @@ export function formatMoney(
  * Handle insufficient funds message
  */
 export function handleInsufficientFunds(
+  lang: Language,
   accountName: string,
   accountBalance: number,
   accountCurrency: string,
@@ -77,15 +79,12 @@ export function handleInsufficientFunds(
   requiredCurrency?: string
 ): string {
   const shortage = requiredAmount - accountBalance
-  const message =
-    `❌ Insufficient funds!\n\n` +
-    `Account: ${accountName}\n` +
-    `Available: ${formatMoney(accountBalance, accountCurrency)}\n` +
-    `Required: ${formatMoney(requiredAmount, requiredCurrency || accountCurrency)}\n\n` +
-    `Shortage: ${formatMoney(shortage, requiredCurrency || accountCurrency)}` +
-    "\n\n💡 You can change the amount or add funds to your account."
-
-  return message
+  return t(lang, "errors.insufficientFundsDetailed", {
+    account: accountName,
+    available: formatMoney(accountBalance, accountCurrency),
+    required: formatMoney(requiredAmount, requiredCurrency || accountCurrency),
+    shortage: formatMoney(shortage, requiredCurrency || accountCurrency),
+  })
 }
 
 /**
@@ -97,6 +96,18 @@ export function formatDate(date: Date): string {
   const day = String(date.getDate()).padStart(2, "0")
 
   return `${year}-${month}-${day}`
+}
+
+/**
+ * Format date to DD.MM.YYYY (user-facing format)
+ */
+export function formatDateDisplay(date: Date | string): string {
+  const value = typeof date === "string" ? new Date(date) : date
+  if (isNaN(value.getTime())) return ""
+  const day = String(value.getDate()).padStart(2, "0")
+  const month = String(value.getMonth() + 1).padStart(2, "0")
+  const year = value.getFullYear()
+  return `${day}.${month}.${year}`
 }
 
 /**

@@ -10,22 +10,32 @@ import {
   CurrencyStats,
   RateHistory,
 } from "./types"
+import { Language, getLocale, t } from "../i18n"
 
 /**
  * Format conversion result
  */
-export function formatConversion(conversion: ConversionResult): string {
+export function formatConversion(
+  conversion: ConversionResult,
+  lang: Language = "ru"
+): string {
   const fromInfo = CURRENCY_INFO[conversion.from]
   const toInfo = CURRENCY_INFO[conversion.to]
 
-  let message = `💱 *Конвертация валют*\n\n`
+  let message = `${t(lang, "currency.formatters.conversionTitle")}\n\n`
 
   message += `${fromInfo.flag} *${conversion.amount.toFixed(2)} ${conversion.from}*\n`
-  message += `⬇️\n`
+  message += `${t(lang, "currency.formatters.arrowDownLine")}\n`
   message += `${toInfo.flag} *${conversion.result.toFixed(2)} ${conversion.to}*\n\n`
 
-  message += `📊 Курс: 1 ${conversion.from} = ${conversion.rate.toFixed(4)} ${conversion.to}\n`
-  message += `⏰ ${conversion.timestamp.toLocaleString("ru-RU")}\n`
+  message += `${t(lang, "currency.formatters.conversionRateLine", {
+    from: conversion.from,
+    rate: conversion.rate.toFixed(4),
+    to: conversion.to,
+  })}\n`
+  message += `${t(lang, "currency.formatters.conversionTimestampLine", {
+    time: conversion.timestamp.toLocaleString(getLocale(lang)),
+  })}\n`
 
   return message
 }
@@ -36,11 +46,16 @@ export function formatConversion(conversion: ConversionResult): string {
 export function formatMultipleConversions(
   conversions: ConversionResult[],
   originalAmount: number,
-  originalCurrency: Currency
+  originalCurrency: Currency,
+  lang: Language = "ru"
 ): string {
   const fromInfo = CURRENCY_INFO[originalCurrency]
 
-  let message = `💱 *Конвертация ${fromInfo.flag} ${originalAmount} ${originalCurrency}*\n\n`
+  let message = `${t(lang, "currency.formatters.conversionMultipleTitle", {
+    flag: fromInfo.flag,
+    amount: originalAmount,
+    currency: originalCurrency,
+  })}\n\n`
 
   conversions.forEach((conv) => {
     const toInfo = CURRENCY_INFO[conv.to]
@@ -53,16 +68,32 @@ export function formatMultipleConversions(
 /**
  * Format exchange rate
  */
-export function formatRate(rate: ExchangeRate): string {
+export function formatRate(rate: ExchangeRate, lang: Language = "ru"): string {
   const fromInfo = CURRENCY_INFO[rate.from]
   const toInfo = CURRENCY_INFO[rate.to]
 
-  let message = `📊 *Курс ${rate.from}/${rate.to}*\n\n`
+  let message = `${t(lang, "currency.formatters.rateTitle", {
+    pair: `${rate.from}/${rate.to}`,
+  })}\n\n`
 
-  message += `${fromInfo.flag} 1 ${rate.from} = ${rate.rate.toFixed(4)} ${rate.to} ${toInfo.flag}\n`
-  message += `${toInfo.flag} 1 ${rate.to} = ${(1 / rate.rate).toFixed(4)} ${rate.from} ${fromInfo.flag}\n\n`
+  message += `${t(lang, "currency.formatters.rateLine", {
+    fromFlag: fromInfo.flag,
+    from: rate.from,
+    rate: rate.rate.toFixed(4),
+    to: rate.to,
+    toFlag: toInfo.flag,
+  })}\n`
+  message += `${t(lang, "currency.formatters.rateLineReverse", {
+    fromFlag: toInfo.flag,
+    from: rate.to,
+    rate: (1 / rate.rate).toFixed(4),
+    to: rate.from,
+    toFlag: fromInfo.flag,
+  })}\n\n`
 
-  message += `⏰ ${rate.timestamp.toLocaleString("ru-RU")}\n`
+  message += `${t(lang, "currency.formatters.conversionTimestampLine", {
+    time: rate.timestamp.toLocaleString(getLocale(lang)),
+  })}\n`
 
   return message
 }
@@ -72,11 +103,15 @@ export function formatRate(rate: ExchangeRate): string {
  */
 export function formatAllRates(
   baseCurrency: Currency,
-  rates: ExchangeRate[]
+  rates: ExchangeRate[],
+  lang: Language = "ru"
 ): string {
   const baseInfo = CURRENCY_INFO[baseCurrency]
 
-  let message = `📊 *Курсы ${baseInfo.flag} ${baseCurrency}*\n\n`
+  let message = `${t(lang, "currency.formatters.ratesTitle", {
+    flag: baseInfo.flag,
+    currency: baseCurrency,
+  })}\n\n`
 
   rates.forEach((rate) => {
     const toInfo = CURRENCY_INFO[rate.to]
@@ -84,7 +119,9 @@ export function formatAllRates(
   })
 
   const timestamp = rates[0]?.timestamp || new Date()
-  message += `\n⏰ ${timestamp.toLocaleString("ru-RU")}`
+  message += `\n${t(lang, "currency.formatters.conversionTimestampLine", {
+    time: timestamp.toLocaleString(getLocale(lang)),
+  })}`
 
   return message
 }
@@ -92,29 +129,49 @@ export function formatAllRates(
 /**
  * Format rate history
  */
-export function formatRateHistory(history: RateHistory): string {
+export function formatRateHistory(
+  history: RateHistory,
+  lang: Language = "ru"
+): string {
   const currencyInfo = CURRENCY_INFO[history.currency]
   const baseInfo = CURRENCY_INFO[history.baseCurrency]
 
-  let message = `📈 *История курса ${currencyInfo.flag} ${history.currency}/${baseInfo.flag} ${history.baseCurrency}*\n\n`
+  let message = `${t(lang, "currency.formatters.rateHistoryTitle", {
+    currencyFlag: currencyInfo.flag,
+    currency: history.currency,
+    baseFlag: baseInfo.flag,
+    baseCurrency: history.baseCurrency,
+  })}\n\n`
 
   // Show changes
   if (history.change24h !== undefined) {
     const emoji = history.change24h >= 0 ? "🟢" : "🔴"
     const sign = history.change24h >= 0 ? "+" : ""
-    message += `${emoji} 24ч: ${sign}${history.change24h.toFixed(2)}%\n`
+    message += `${t(lang, "currency.formatters.rateHistoryChange24hLine", {
+      emoji,
+      sign,
+      value: history.change24h.toFixed(2),
+    })}\n`
   }
 
   if (history.change7d !== undefined) {
     const emoji = history.change7d >= 0 ? "🟢" : "🔴"
     const sign = history.change7d >= 0 ? "+" : ""
-    message += `${emoji} 7д: ${sign}${history.change7d.toFixed(2)}%\n`
+    message += `${t(lang, "currency.formatters.rateHistoryChange7dLine", {
+      emoji,
+      sign,
+      value: history.change7d.toFixed(2),
+    })}\n`
   }
 
   if (history.change30d !== undefined) {
     const emoji = history.change30d >= 0 ? "🟢" : "🔴"
     const sign = history.change30d >= 0 ? "+" : ""
-    message += `${emoji} 30д: ${sign}${history.change30d.toFixed(2)}%\n`
+    message += `${t(lang, "currency.formatters.rateHistoryChange30dLine", {
+      emoji,
+      sign,
+      value: history.change30d.toFixed(2),
+    })}\n`
   }
 
   message += "\n"
@@ -122,7 +179,7 @@ export function formatRateHistory(history: RateHistory): string {
   // Show recent rates (last 5)
   const recentRates = history.rates.slice(-5)
   recentRates.forEach((item) => {
-    const date = item.date.toLocaleDateString("ru-RU")
+    const date = item.date.toLocaleDateString(getLocale(lang))
     message += `${date}: ${item.rate.toFixed(4)}\n`
   })
 
@@ -132,25 +189,45 @@ export function formatRateHistory(history: RateHistory): string {
 /**
  * Format currency stats
  */
-export function formatCurrencyStats(stats: CurrencyStats[]): string {
-  let message = `📊 *Статистика по валютам*\n\n`
+export function formatCurrencyStats(
+  stats: CurrencyStats[],
+  lang: Language = "ru"
+): string {
+  let message = `${t(lang, "currency.formatters.currencyStatsTitle")}\n\n`
 
   if (stats.length === 0) {
-    return message + "Нет данных"
+    return message + t(lang, "currency.formatters.currencyStatsEmpty")
   }
 
   stats.forEach((stat) => {
     const info = CURRENCY_INFO[stat.currency]
     message += `${info.flag} *${stat.currency}*\n`
-    message += `  Транзакций: ${stat.totalTransactions}\n`
-    message += `  Сумма: ${stat.totalAmount.toFixed(2)} ${info.symbol}\n`
+    message += `  ${t(
+      lang,
+      "currency.formatters.currencyStatsTransactionsLine",
+      {
+        count: stat.totalTransactions,
+      }
+    )}\n`
+    message += `  ${t(lang, "currency.formatters.currencyStatsAmountLine", {
+      amount: stat.totalAmount.toFixed(2),
+      symbol: info.symbol,
+    })}\n`
 
     if (stat.averageRate) {
-      message += `  Ср. курс: ${stat.averageRate.toFixed(4)}\n`
+      message += `  ${t(
+        lang,
+        "currency.formatters.currencyStatsAverageRateLine",
+        {
+          rate: stat.averageRate.toFixed(4),
+        }
+      )}\n`
     }
 
     if (stat.lastUsed) {
-      message += `  Посл. исп.: ${stat.lastUsed.toLocaleDateString("ru-RU")}\n`
+      message += `  ${t(lang, "currency.formatters.currencyStatsLastUsedLine", {
+        date: stat.lastUsed.toLocaleDateString(getLocale(lang)),
+      })}\n`
     }
 
     message += "\n"
@@ -162,8 +239,8 @@ export function formatCurrencyStats(stats: CurrencyStats[]): string {
 /**
  * Format currency list
  */
-export function formatCurrencyList(): string {
-  let message = `🌍 *Доступные валюты*\n\n`
+export function formatCurrencyList(lang: Language = "ru"): string {
+  let message = `${t(lang, "currency.formatters.currencyListTitle")}\n\n`
 
   Object.values(CURRENCY_INFO).forEach((info) => {
     message += `${info.flag} *${info.code}* - ${info.name} (${info.symbol})\n`
@@ -179,12 +256,20 @@ export function formatQuickConversion(
   amount: number,
   from: Currency,
   to: Currency,
-  result: number
+  result: number,
+  lang: Language = "ru"
 ): string {
   const fromInfo = CURRENCY_INFO[from]
   const toInfo = CURRENCY_INFO[to]
 
-  return `${fromInfo.flag} ${amount} ${from} = ${toInfo.flag} ${result.toFixed(2)} ${to}`
+  return t(lang, "currency.formatters.quickConversionLine", {
+    fromFlag: fromInfo.flag,
+    fromAmount: amount,
+    fromCurrency: from,
+    toFlag: toInfo.flag,
+    toAmount: result.toFixed(2),
+    toCurrency: to,
+  })
 }
 
 /**

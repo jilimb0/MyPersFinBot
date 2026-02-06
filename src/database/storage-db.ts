@@ -28,7 +28,7 @@ import {
 import { convertSync } from "../fx"
 import { formatMoney, handleInsufficientFunds } from "../utils"
 import { randomUUID } from "crypto"
-import { Language } from "../i18n"
+import { Language, t } from "../i18n"
 import { getCacheManager } from "../services/cache-manager"
 
 export class DatabaseStorage {
@@ -51,6 +51,8 @@ export class DatabaseStorage {
       switch (type) {
         case "user":
           await this.cacheManager.invalidateUserData(userId)
+          await this.cacheManager.invalidateUserSettings(userId)
+          await this.cacheManager.invalidateUserLanguage(userId)
           break
         case "balances":
           await this.cacheManager.invalidateBalances(userId)
@@ -84,6 +86,14 @@ export class DatabaseStorage {
     }
 
     return user
+  }
+
+  private async resolveUserLanguage(userId: string): Promise<Language> {
+    try {
+      return await this.getUserLanguage(userId)
+    } catch {
+      return "en"
+    }
   }
 
   async getUserData(userId: string) {
@@ -155,7 +165,15 @@ export class DatabaseStorage {
       templates: user?.templates ?? [],
     }
 
-    await this.cacheManager.setUserData(userId, result)
+    await Promise.all([
+      this.cacheManager.setUserSettings(userId, {
+        defaultCurrency: user?.defaultCurrency || "USD",
+        language: user?.language ?? undefined,
+        timezone: user?.reminderSettings?.timezone,
+      }),
+      this.cacheManager.setUserLanguage(userId, user?.language || "en"),
+      this.cacheManager.setUserData(userId, result),
+    ])
 
     return result
   }
@@ -201,14 +219,20 @@ export class DatabaseStorage {
   }
 
   async getBalances(userId: string): Promise<string> {
+    const lang = await this.resolveUserLanguage(userId)
     const balances = await this.getBalancesList(userId)
 
     if (balances.length === 0) {
-      return "No balances recorded."
+      return t(lang, "balances.noBalances")
     }
 
     return balances
-      .map((b) => `💳 *${b.accountId}*: ${formatMoney(b.amount, b.currency)}`)
+      .map((b) =>
+        t(lang, "balances.listItem", {
+          account: b.accountId,
+          amount: formatMoney(b.amount, b.currency),
+        })
+      )
       .join("\n")
   }
 
@@ -864,13 +888,14 @@ export class DatabaseStorage {
   // --- Debt Methods ---
 
   async getDebts(userId: string): Promise<string> {
+    const lang = await this.resolveUserLanguage(userId)
     await this.ensureUser(userId)
     const debts = await AppDataSource.getRepository(DebtEntity).find({
       where: { userId, isPaid: false },
     })
 
     if (debts.length === 0) {
-      return "You have no active debts."
+      return t(lang, "debts.noDebts")
     }
 
     const iOwe = debts.filter((d: DebtEntity) => d.type === "I_OWE")
@@ -879,12 +904,16 @@ export class DatabaseStorage {
     let response = ""
 
     if (iOwe.length > 0) {
-      response += `*Your debt${iOwe.length > 1 ? "s" : ""}:*\n`
+      response +=
+        iOwe.length > 1
+          ? t(lang, "debts.yourDebtTitlePlural")
+          : t(lang, "debts.yourDebtTitleSingular")
+      response += "\n"
       response += iOwe
         .map((d: DebtEntity) => {
           let result = `*${d?.counterparty}*: ${formatMoney(d.amount, d.currency)}`
           if (d.paidAmount > 0)
-            result += ` Paid: ${formatMoney(d.paidAmount, d.currency)} Left: ${formatMoney(d.amount - d.paidAmount, d.currency)}`
+            result += ` ${t(lang, "debts.paidLabel")} ${formatMoney(d.paidAmount, d.currency)} ${t(lang, "debts.leftLabel")} ${formatMoney(d.amount - d.paidAmount, d.currency)}`
           return result
         })
         .join("\n")
@@ -892,18 +921,22 @@ export class DatabaseStorage {
     }
 
     if (owesMe.length > 0) {
-      response += `*Debt${owesMe.length > 1 ? "s" : ""} from you:*\n`
+      response +=
+        owesMe.length > 1
+          ? t(lang, "debts.debtsFromYouTitlePlural")
+          : t(lang, "debts.debtsFromYouTitleSingular")
+      response += "\n"
       response += owesMe
         .map((d: DebtEntity) => {
           let result = `*${d?.counterparty}*: ${formatMoney(d.amount, d.currency)}`
           if (d.paidAmount > 0)
-            result += ` Paid: ${formatMoney(d.paidAmount, d.currency)} Left: ${formatMoney(d.amount - d.paidAmount, d.currency)}`
+            result += ` ${t(lang, "debts.paidLabel")} ${formatMoney(d.paidAmount, d.currency)} ${t(lang, "debts.leftLabel")} ${formatMoney(d.amount - d.paidAmount, d.currency)}`
           return result
         })
         .join("\n")
     }
 
-    return response || "No debts found."
+    return response || t(lang, "debts.noDebtsRecorded")
   }
 
   async addDebt(userId: string, debt: Debt) {
@@ -932,19 +965,23 @@ export class DatabaseStorage {
     accountId: string,
     currency: Currency
   ): Promise<{ success: boolean; message?: string }> {
+    const lang = await this.resolveUserLanguage(userId)
     await this.ensureUser(userId)
 
     const debtRepo = AppDataSource.getRepository(DebtEntity)
     const debt = await debtRepo.findOne({ where: { id: debtId, userId } })
 
     if (!debt) {
-      return { success: false, message: "❌ Debt not found." }
+      return { success: false, message: t(lang, "errors.debtNotFound") }
     }
 
     if (debt.currency !== currency) {
       return {
         success: false,
-        message: `❌ Currency mismatch: debt in ${debt.currency}, payment in ${currency}.`,
+        message: t(lang, "errors.debtCurrencyMismatch", {
+          debtCurrency: debt.currency,
+          paymentCurrency: currency,
+        }),
       }
     }
 
@@ -952,7 +989,9 @@ export class DatabaseStorage {
     if (payAmount > remaining) {
       return {
         success: false,
-        message: `❌ Amount exceeds remaining debt (${formatMoney(remaining, debt.currency)}).`,
+        message: t(lang, "errors.debtAmountExceedsRemaining", {
+          remaining: formatMoney(remaining, debt.currency),
+        }),
       }
     }
 
@@ -965,7 +1004,9 @@ export class DatabaseStorage {
       id: randomUUID(),
       date: new Date(),
       currency: currency,
-      description: `Debt Payment ${debt.name}`,
+      description: t(lang, "transactions.debtPaymentDescription", {
+        name: debt.name,
+      }),
       amount: payAmount,
       type: TransactionType.TRANSFER,
       category: InternalCategory.DEBT_REPAYMENT,
@@ -1037,11 +1078,12 @@ export class DatabaseStorage {
     newAmount: number,
     newCurrency?: Currency
   ): Promise<{ success: boolean; message?: string }> {
+    const lang = await this.resolveUserLanguage(userId)
     const debtRepo = AppDataSource.getRepository(DebtEntity)
     const debt = await debtRepo.findOne({ where: { id: debtId, userId } })
 
     if (!debt) {
-      return { success: false, message: "❌ Debt not found." }
+      return { success: false, message: t(lang, "errors.debtNotFound") }
     }
 
     debt.amount = newAmount
@@ -1064,13 +1106,14 @@ export class DatabaseStorage {
   // --- Goal Methods ---
 
   async getGoals(userId: string): Promise<string> {
+    const lang = await this.resolveUserLanguage(userId)
     await this.ensureUser(userId)
     const goals = await AppDataSource.getRepository(GoalEntity).find({
       where: { userId },
     })
 
     if (goals.length === 0) {
-      return "No active financial goals."
+      return t(lang, "goals.noGoals")
     }
 
     return goals
@@ -1082,10 +1125,13 @@ export class DatabaseStorage {
         const bar =
           "▓".repeat(Math.floor(percent / 10)) +
           "░".repeat(10 - Math.floor(percent / 10))
-        return `🎯 *${g.name}*\n${bar} ${percent}%\nTarget: ${formatMoney(
-          g.targetAmount,
-          g.currency
-        )}\nSaved: ${formatMoney(g.currentAmount, g.currency)}`
+        return `🎯 *${g.name}*\n${bar} ${percent}%\n${t(
+          lang,
+          "goals.targetLabel"
+        )} ${formatMoney(g.targetAmount, g.currency)}\n${t(
+          lang,
+          "goals.savedLabel"
+        )} ${formatMoney(g.currentAmount, g.currency)}`
       })
       .join("\n\n")
   }
@@ -1113,18 +1159,22 @@ export class DatabaseStorage {
     accountId: string,
     currency: Currency
   ): Promise<{ success: boolean; message?: string }> {
+    const lang = await this.resolveUserLanguage(userId)
     const goalRepo = AppDataSource.getRepository(GoalEntity)
     const goal = await goalRepo.findOne({ where: { id: goalId, userId } })
 
     if (!goal) {
-      return { success: false, message: "❌ Goal not found" }
+      return { success: false, message: t(lang, "errors.goalNotFound") }
     }
 
     const balances = await this.getBalancesList(userId)
     const balance = balances.find((b) => b.accountId === accountId)
 
     if (!balance) {
-      return { success: false, message: `❌ Account "${accountId}" not found` }
+      return {
+        success: false,
+        message: t(lang, "errors.accountNotFound", { account: accountId }),
+      }
     }
 
     const amountInAccountCurrency = convertSync(
@@ -1137,6 +1187,7 @@ export class DatabaseStorage {
       return {
         success: false,
         message: handleInsufficientFunds(
+          lang,
           accountId,
           balance.amount,
           balance.currency,
@@ -1227,17 +1278,21 @@ export class DatabaseStorage {
     newTarget: number,
     newCurrency?: Currency
   ): Promise<{ success: boolean; message?: string }> {
+    const lang = await this.resolveUserLanguage(userId)
     const goalRepo = AppDataSource.getRepository(GoalEntity)
     const goal = await goalRepo.findOne({ where: { id: goalId, userId } })
 
     if (!goal) {
-      return { success: false, message: "❌ Goal not found." }
+      return { success: false, message: t(lang, "errors.goalNotFound") }
     }
 
     if (newTarget < goal.currentAmount) {
       return {
         success: false,
-        message: `❌ New target (${newTarget}) cannot be less than current amount (${goal.currentAmount}).`,
+        message: t(lang, "errors.goalTargetTooLow", {
+          newTarget,
+          currentAmount: goal.currentAmount,
+        }),
       }
     }
 
@@ -1286,23 +1341,25 @@ export class DatabaseStorage {
   // --- Income Source Methods ---
 
   async getIncomeSources(userId: string): Promise<string> {
+    const lang = await this.resolveUserLanguage(userId)
     await this.ensureUser(userId)
     const sources = await AppDataSource.getRepository(IncomeSourceEntity).find({
       where: { userId },
     })
 
     if (sources.length === 0) {
-      return "No income sources recorded."
+      return t(lang, "incomeSources.noSources")
     }
 
     return sources
-      .map(
-        (i: IncomeSourceEntity) =>
-          `💵 *${i.name}*: ${
+      .map((i: IncomeSourceEntity) =>
+        t(lang, "incomeSources.listItem", {
+          name: i.name,
+          amount:
             i.expectedAmount && i.currency
               ? formatMoney(i.expectedAmount, i.currency)
-              : "N/A"
-          }`
+              : t(lang, "common.notAvailable"),
+        })
       )
       .join("\n")
   }
@@ -1363,7 +1420,20 @@ export class DatabaseStorage {
   // --- Currency Methods ---
 
   async getDefaultCurrency(userId: string): Promise<Currency> {
+    const cachedSettings = await this.cacheManager.getUserSettings(userId)
+    if (cachedSettings?.defaultCurrency) {
+      return cachedSettings.defaultCurrency
+    }
+
     const user = await this.ensureUser(userId)
+    await Promise.all([
+      this.cacheManager.setUserSettings(userId, {
+        defaultCurrency: user.defaultCurrency,
+        language: user.language ?? undefined,
+        timezone: user.reminderSettings?.timezone,
+      }),
+      this.cacheManager.setUserLanguage(userId, user.language ?? "en"),
+    ])
     return user.defaultCurrency
   }
 
@@ -1371,6 +1441,9 @@ export class DatabaseStorage {
     const user = await this.ensureUser(userId)
     user.defaultCurrency = currency
     await AppDataSource.getRepository(User).save(user)
+    await this.cacheManager.updateUserSettings(userId, {
+      defaultCurrency: currency,
+    })
   }
 
   getCurrencyDenominations(currency: Currency): number[] {
@@ -1860,15 +1933,29 @@ export class DatabaseStorage {
 
   // --- Language Methods (i18n) ---
   async getUserLanguage(userId: string): Promise<Language> {
+    const cached = await this.cacheManager.getUserLanguage(userId)
+    if (cached) return cached
+
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
-    return user?.language || "en"
+    const lang = user?.language || "en"
+    await Promise.all([
+      this.cacheManager.setUserLanguage(userId, lang),
+      this.cacheManager.setUserSettings(userId, {
+        defaultCurrency: user?.defaultCurrency || "USD",
+        language: lang,
+        timezone: user?.reminderSettings?.timezone,
+      }),
+    ])
+    return lang
   }
 
   async setUserLanguage(userId: string, language: Language): Promise<void> {
     const userRepo = AppDataSource.getRepository(User)
     await this.ensureUser(userId)
     await userRepo.update({ id: userId }, { language })
+    await this.cacheManager.setUserLanguage(userId, language)
+    await this.cacheManager.updateUserSettings(userId, { language })
     await this.clearCache(userId)
   }
 
@@ -2116,6 +2203,7 @@ export class DatabaseStorage {
       return { deleted: 0, errors: [] }
     }
 
+    const lang = await this.resolveUserLanguage(userId)
     const errors: string[] = []
     let deletedCount = 0
 
@@ -2126,7 +2214,7 @@ export class DatabaseStorage {
       })
 
       if (transactions.length === 0) {
-        errors.push("No transactions found")
+        errors.push(t(lang, "errors.noTransactionsFound"))
         return
       }
 

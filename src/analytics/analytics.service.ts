@@ -63,7 +63,7 @@ export class AnalyticsService {
         .sort((a: Transaction, b: Transaction) => b.amount - a.amount)
         .slice(0, 5)
         .map((tx: Transaction) => ({
-          description: tx.description || "Без описания",
+          description: tx.description || "",
           amount: tx.amount,
           category: tx.category,
           date: new Date(tx.date),
@@ -184,19 +184,9 @@ export class AnalyticsService {
       })
 
       // Convert to array with averages
-      const days = [
-        "Воскресенье",
-        "Понедельник",
-        "Вторник",
-        "Среда",
-        "Четверг",
-        "Пятница",
-        "Суббота",
-      ]
-
       return Array.from(byDay.entries())
         .map(([day, stats]) => ({
-          dayOfWeek: days[day] || "Unknown",
+          dayOfWeek: day,
           averageAmount: stats.total / stats.count,
           transactionCount: stats.count,
         }))

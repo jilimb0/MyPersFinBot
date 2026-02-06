@@ -23,42 +23,46 @@ export const handleSettingsMenu: MessageHandler = async (context) => {
 
     await wizardManager.goToStep(userId, "GOAL_ADVANCED_MENU", state.data)
 
-    await bot.sendMessage(chatId, `⚙️ *Advanced Settings*\n\n${goal.name}`, {
-      parse_mode: "Markdown",
-      reply_markup: {
-        keyboard: deadline
-          ? [
-              [{ text: t(lang, "goals.changeDeadlineBtn") }],
-              [{ text: t(lang, "debts.disableReminders") }],
-              [
-                {
-                  text: autoDeposit?.enabled
-                    ? t(lang, "goals.disableAutoDeposit")
-                    : t(lang, "goals.enableAutoDeposit"),
-                },
+    await bot.sendMessage(
+      chatId,
+      `${t(lang, "advanced.title")}\n\n${goal.name}`,
+      {
+        parse_mode: "Markdown",
+        reply_markup: {
+          keyboard: deadline
+            ? [
+                [{ text: t(lang, "goals.changeDeadlineBtn") }],
+                [{ text: t(lang, "debts.disableReminders") }],
+                [
+                  {
+                    text: autoDeposit?.enabled
+                      ? t(lang, "goals.disableAutoDeposit")
+                      : t(lang, "goals.enableAutoDeposit"),
+                  },
+                ],
+                [
+                  { text: t(lang, "common.back") },
+                  { text: t(lang, "mainMenu.mainMenuButton") },
+                ],
+              ]
+            : [
+                [{ text: t(lang, "goals.setDeadlineBtn") }],
+                [
+                  {
+                    text: autoDeposit?.enabled
+                      ? t(lang, "goals.disableAutoDeposit")
+                      : t(lang, "goals.enableAutoDeposit"),
+                  },
+                ],
+                [
+                  { text: t(lang, "common.back") },
+                  { text: t(lang, "mainMenu.mainMenuButton") },
+                ],
               ],
-              [
-                { text: t(lang, "common.back") },
-                { text: t(lang, "mainMenu.mainMenuButton") },
-              ],
-            ]
-          : [
-              [{ text: t(lang, "goals.setDeadlineBtn") }],
-              [
-                {
-                  text: autoDeposit?.enabled
-                    ? t(lang, "goals.disableAutoDeposit")
-                    : t(lang, "goals.enableAutoDeposit"),
-                },
-              ],
-              [
-                { text: t(lang, "common.back") },
-                { text: t(lang, "mainMenu.mainMenuButton") },
-              ],
-            ],
-        resize_keyboard: true,
-      },
-    })
+          resize_keyboard: true,
+        },
+      }
+    )
     return
   }
 
@@ -69,42 +73,46 @@ export const handleSettingsMenu: MessageHandler = async (context) => {
 
     await wizardManager.goToStep(userId, "DEBT_ADVANCED_MENU", state.data)
 
-    await bot.sendMessage(chatId, `⚙️ *Advanced Settings*\n\n${debt.name}`, {
-      parse_mode: "Markdown",
-      reply_markup: {
-        keyboard: dueDate
-          ? [
-              [{ text: `${t(lang, "debts.changeDueDate")}` }],
-              [{ text: t(lang, "debts.disableReminders") }],
-              [
-                {
-                  text: autoPayment?.enabled
-                    ? t(lang, "debts.disableAutoPayment")
-                    : t(lang, "debts.enableAutoPayment"),
-                },
+    await bot.sendMessage(
+      chatId,
+      `${t(lang, "advanced.title")}\n\n${debt.name}`,
+      {
+        parse_mode: "Markdown",
+        reply_markup: {
+          keyboard: dueDate
+            ? [
+                [{ text: `${t(lang, "debts.changeDueDate")}` }],
+                [{ text: t(lang, "debts.disableReminders") }],
+                [
+                  {
+                    text: autoPayment?.enabled
+                      ? t(lang, "debts.disableAutoPayment")
+                      : t(lang, "debts.enableAutoPayment"),
+                  },
+                ],
+                [
+                  { text: t(lang, "common.back") },
+                  { text: t(lang, "mainMenu.mainMenuButton") },
+                ],
+              ]
+            : [
+                [{ text: `${t(lang, "debts.setDueDate")}` }],
+                [
+                  {
+                    text: autoPayment?.enabled
+                      ? t(lang, "debts.disableAutoPayment")
+                      : t(lang, "debts.enableAutoPayment"),
+                  },
+                ],
+                [
+                  { text: t(lang, "common.back") },
+                  { text: t(lang, "mainMenu.mainMenuButton") },
+                ],
               ],
-              [
-                { text: t(lang, "common.back") },
-                { text: t(lang, "mainMenu.mainMenuButton") },
-              ],
-            ]
-          : [
-              [{ text: `${t(lang, "debts.setDueDate")}` }],
-              [
-                {
-                  text: autoPayment?.enabled
-                    ? t(lang, "debts.disableAutoPayment")
-                    : t(lang, "debts.enableAutoPayment"),
-                },
-              ],
-              [
-                { text: t(lang, "common.back") },
-                { text: t(lang, "mainMenu.mainMenuButton") },
-              ],
-            ],
-        resize_keyboard: true,
-      },
-    })
+          resize_keyboard: true,
+        },
+      }
+    )
     return
   }
 

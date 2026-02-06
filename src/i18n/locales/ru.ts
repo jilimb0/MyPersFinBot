@@ -145,6 +145,7 @@ export const ru = {
     enterAmount: "Введите сумму (например, 100 или 100 {currency}):",
     enterAmountShort: "Введите сумму:",
     selectCategory: "Выберите категорию:",
+    moreCategories: "📋 Ещё...",
     selectAccount: "Выберите счёт:",
     selectDate: "Когда была эта транзакция?",
     enterDescription: "Введите описание (опционально):",
@@ -186,8 +187,28 @@ export const ru = {
     selectDeductAccount: "💸 Выберите счёт для списания:",
     selectAddAccount: "💰 Выберите счёт для добавления:",
     yesRefund: "✅ Да, это возврат",
+    negativeIncomeNotAllowed:
+      "❌ Отрицательный доход не имеет смысла. Введите положительную сумму.",
+    transferAmountPositive: "❌ Сумма перевода должна быть положительной.",
+    refundAdded: '✅ Возврат на сумму {amount} добавлен на счёт "{account}"!',
+    addedDetails:
+      "✅ {emoji} Добавлено: {amount}\nКатегория: {category}\nСчёт: {account}",
+    budgetExceeded:
+      "⚠️ Превышен бюджет для {category}!\n" +
+      "Лимит: {limit} {currency}\n" +
+      "Перерасход: {overspent} {currency}",
+    noEligibleAccounts:
+      "❌ Нет доступных счетов для этого расхода.\n\n" +
+      "Либо на счетах недостаточно средств, либо не совпадает валюта.\n\n" +
+      "💡 Пополните счёт или создайте новый в валюте {currency}.",
+    currencyMismatchSingleAccount:
+      '❌ Несовпадение валюты. Счёт "{account}" в {accountCurrency}, а расход в {transactionCurrency}.\n\n' +
+      "💡 Можно изменить сумму или создать новый счёт в {transactionCurrency}.",
+    refundDescription: "Возврат",
+    transferDescription: "Перевод",
     noPositiveBalance: "❌ Нет счетов с положительным балансом для перевода.",
     cannotTransferSame: "❌ Нельзя переводить на тот же счёт. Выберите другой.",
+    debtPaymentDescription: "Платёж по долгу {name}",
   },
 
   // Балансы
@@ -198,6 +219,7 @@ export const ru = {
     transfer: "↔️ Перевод",
     noBalances: "💡 Балансов пока нет. Добавьте первый счёт!",
     noAccounts: "Нет счетов. Добавьте один.",
+    listItem: "💳 *{account}*: {amount}",
     listTitle: "💳 *Счета*",
     totalNet: "Общая чистая стоимость",
     enterName:
@@ -223,11 +245,44 @@ export const ru = {
     enterNewAmount: "Введите новую сумму:",
     transferToAnother: "🔄 Перевести на другой счёт",
     yesSetZero: "✅ Да, обнулить",
+    setToZero: "🅰️ Обнулить",
     invalidInput:
       "❌ Неверный ввод.\n\n• Введите *число* чтобы изменить сумму (например, 500)\n• Введите *текст* чтобы переименовать (например, МояКарта)",
     selectFromButtons: "❌ Выберите баланс из кнопок.",
     invalidInputEdit: "❌ Неверный ввод.",
     balancesButton: "💳 Балансы",
+    invalidFormatShort: "❌ Неверный формат. Используйте: Имя 100",
+    alreadyExistsMessage:
+      '❌ *Баланс "{accountId}" ({currency}) уже существует!*\n\n' +
+      "Текущая сумма: {amount}\n\n" +
+      "Выберите другое название или отредактируйте существующий баланс.",
+    createdWithAmount: "✅ Баланс создан: *{accountId}* - {amount}",
+    editTitle: "✏️ *{accountId}* ({currency})",
+    balanceLine: "Баланс: {amount}",
+    quickEditTitle: "💡 *Быстрое редактирование:*",
+    quickEditNumber: "• Введите число → изменить сумму",
+    quickEditText: "• Введите текст → переименовать счёт",
+    setToZeroConfirm: "⚪ Обнулить *{accountId}* ({currency})?",
+    currentLine: "Текущее: {amount}",
+    canTransferFirst:
+      "⚡️ Переведите на другой счёт перед очисткой или очистите {amount}.",
+    willBeCleared: "Этот баланс будет очищен.",
+    deleteConfirmTitle: "⚠️ Удалить {accountId}?",
+    currentBalanceLine: "Текущий баланс: {amount}",
+    deleteTransferHint:
+      "⚡️ Переведите на другой счёт перед удалением или очистите {amount}.",
+    deleteClearHint: "{amount} будет очищено.",
+    confirmAmountTitle: "💰 *Подтвердить изменение суммы*",
+    newLine: "Новая: {amount}",
+    confirmYesNo: "✅ Да / ❌ Нет?",
+    renameDuplicate:
+      '❌ Баланс "{name}" уже существует.\n\nВыберите другое имя.',
+    confirmRenameTitle: "✏️ *Подтвердить переименование*",
+    confirmRenameOld: 'Старое: "{name}"',
+    confirmRenameNew: 'Новое: "{name}"',
+    transferToPrompt: "🔄 Перевести {amount} на:",
+    transferDescDelete: "Перевод перед удалением {accountId}",
+    transferDescZero: "Перевод перед обнулением {accountId}",
   },
 
   // Долги
@@ -241,9 +296,19 @@ export const ru = {
     totalIOwe: "Всего я должен",
     totalTheyOwe: "Всего мне должны",
     noDebts: "✅ Нет активных долгов!",
+    noActiveDebts: "✅ Нет активных долгов!",
     noDebtsRecorded: "Долгов не записано.",
+    yourDebtTitleSingular: "*Ваш долг:*",
+    yourDebtTitlePlural: "*Ваши долги:*",
+    debtsFromYouTitleSingular: "*Долг от вас:*",
+    debtsFromYouTitlePlural: "*Долги от вас:*",
+    paidLabel: "Оплачено:",
+    leftLabel: "Осталось:",
     listTitle: "📝 *Долги*",
     netDebt: "📊 Итого:",
+    net: "📊 Итого:",
+    netYouOwe: "вы должны",
+    netTheyOwe: "вам должны",
     youOweNet: "вы должны",
     theyOweNet: "вам должны",
     enterName: "Введите имя должника/кредитора:",
@@ -303,6 +368,32 @@ export const ru = {
     quickStartStep2: "2️⃣ Нажмите ✨ *Добавить баланс*",
     quickStartStep3: "3️⃣ Введите название счёта и сумму",
     changeAmount: "💫 Изменить сумму",
+    invalidCreateFormat:
+      "❌ Неверный формат. Используйте: Имя Сумма [Валюта]\n\n" +
+      "*Примеры:*\n" +
+      "• Иван 1000\n" +
+      "• Мария 5000 {currency}",
+    invalidCreateAmountTry:
+      "❌ Неверный формат. Пример: {name} 100 или {name} 100 {currency}",
+    duplicateName:
+      '❌ *Долг "{name}" уже существует!*\n\n' +
+      "Выберите другое имя или управляйте долгом в меню долгов.",
+    dueDateCreatePrompt:
+      "📅 Установить срок для этого долга?\n\n" +
+      "Долг: *{name}* — {amount}\n\n" +
+      "Введите дату (ДД.ММ.ГГГГ) или нажмите Пропустить, чтобы создать без напоминания.",
+    invalidPaymentFormat: "❌ Неверный формат. Пример: 100 или 100 {currency}",
+    paymentActionPaid: "Оплачено",
+    paymentActionReceived: "Получено",
+    paymentRecordedWithRemaining:
+      "✅ {emoji} {action} {amount}. Осталось: {remaining}",
+    actionOweTo: "Вы должны",
+    actionOwedBy: "Вам должны",
+    dueDateLine: "Срок: {date} 📅",
+    createdMessage:
+      "✅ {emoji} Долг добавлен!\n\n{action} *{name}*: {amount}{dueDateLine}",
+    dueDateUpdated:
+      "✅ Срок обновлён на {date}!\n🔔 Созданы новые напоминания.",
   },
 
   // Цели
@@ -317,6 +408,8 @@ export const ru = {
     target: "Цель:",
     current: "Текущее:",
     remaining: "Осталось",
+    targetLabel: "Цель:",
+    savedLabel: "Сохранено:",
     completed: "✅ Завершённые цели",
     completedTitle: "✅ *Завершённые цели*",
     noCompleted: "💭 Завершённых целей пока нет.",
@@ -332,6 +425,10 @@ export const ru = {
     example2: "• `Отпуск 5000 USD`",
     example3: "• `Резервный фонд 10000` (используется {currency})",
     created: "✅ Цель создана!",
+    duplicate:
+      '❌ *Цель "{name}" уже существует!*\n\nПожалуйста, выберите другое название или управляйте существующей целью в меню «Цели».',
+    createdWithDeadlinePrompt:
+      "🎯 Цель создана: *{name}*\n\n📅 Установить дедлайн для этой цели?\n\nВведите дату (ДД.ММ.ГГГГ) или нажмите {skipLabel}, чтобы создать без напоминаний.",
     updated: "✅ Цель обновлена!",
     deleted: "✅ Цель удалена!",
     addProgress: "📈 Добавить прогресс",
@@ -347,6 +444,8 @@ export const ru = {
     depositTitle: "💰 *Пополнение цели*",
     goalName: "Цель:",
     progressDetailed: "Прогресс: {current} / {target} {currency} ({percent}%)",
+    savedLine: "Сохранено: {current} / {target}",
+    amountLine: "Сумма: {amount}",
     enterDeposit: "Введите сумму пополнения:",
     markCompletedTitle: "🎉 Отметить цель как завершённую?",
     willMarkCompleted: "• Отметит цель как ЗАВЕРШЁННУЮ",
@@ -363,6 +462,8 @@ export const ru = {
     remindersDisabled: "✅ Напоминания отключены и дедлайн удалён.",
     enableAutoDeposit: "✅ Включить автопополнение",
     disableAutoDeposit: "❌ Отключить автопополнение",
+    deadlineWithDaysLeft: "Дедлайн: {date} ({days} дн.)",
+    deadlinePassed: "⚠️ Дедлайн прошёл: {date}",
     completedGoalsTitle: "✅ *Завершённые цели*",
     noCompletedGoals: "💭 Завершённых целей пока нет.",
     errorMissingData: "❌ Ошибка: Данные цели отсутствуют",
@@ -376,6 +477,20 @@ export const ru = {
     advancedSettings: "⚙️ Дополнительно",
     editTarget: "✏️ Изменить цель",
     deleteGoal: "🗑 Удалить цель",
+    deadlineUpdated:
+      "✅ Дедлайн обновлён на {date}!\n🔔 Созданы новые напоминания.",
+    deadlineSetMessage: "✅ Дедлайн для *{name}*: {date} 🎯",
+    createdWithoutDeadline: "✅ Цель *{name}* создана без дедлайна.",
+  },
+
+  // Источники дохода
+  incomeSources: {
+    addSource: "✨ Добавить источник дохода",
+    noSources: "Источников дохода нет.",
+    listItem: "💵 *{name}*: {amount}",
+    reminderSet: "✅ Напоминание для *{name}*: день {day} каждого месяца 📅",
+    createdWithoutReminder:
+      "✅ Источник дохода *{name}* создан без напоминания.",
   },
 
   // Настройки
@@ -407,11 +522,44 @@ export const ru = {
     yesChange: "✅ Да, изменить",
     currencySet: "✅ Валюта по умолчанию установлена: {currency}",
     balancesConverted: "🔄 {count} баланс(ов) конвертировано в {currency}",
+    clearDataWarning:
+      "⚠️ *ВНИМАНИЕ*\n\nЭто навсегда удалит:\n" +
+      "• Все транзакции\n" +
+      "• Все балансы\n" +
+      "• Все долги\n" +
+      "• Все цели\n" +
+      "• Все источники дохода\n" +
+      "• Все настройки\n\n" +
+      "❗ Это действие НЕЛЬЗЯ отменить!\n\n" +
+      "Вы уверены, что хотите продолжить?",
+    currencyAlreadyCurrent: "ℹ️ {currency} уже является текущей валютой.",
+    currencyChangeConfirmWithBalances:
+      "⚠️ *Подтверждение смены валюты*\n\n" +
+      "Сменить *{oldCurrency}* на *{newCurrency}*?\n\n" +
+      "Это повлияет на:\n" +
+      "• {balancesCount} баланс(ов) будет конвертировано в {newCurrency}\n" +
+      "• Отображение статистики\n\n" +
+      "Вы уверены?",
+    currencyChangeConfirmNoBalances:
+      "⚠️ *Подтверждение смены валюты*\n\n" +
+      "Сменить *{oldCurrency}* на *{newCurrency}*?\n\n" +
+      "Это повлияет на:\n" +
+      "• Отображение статистики\n\n" +
+      "Вы уверены?",
+    currencyOptions: {
+      usd: "USD 🇺🇸",
+      eur: "EUR 🇪🇺",
+      gel: "GEL 🇬🇪",
+      rub: "RUB 🇷🇺",
+      uah: "UAH 🇺🇦",
+      pln: "PLN 🇵🇱",
+    },
   },
 
   // Аналитика
   analytics: {
     title: "📊 *Аналитика*",
+    viewInsights: "📊 *Аналитика*\n\nПосмотрите свои финансовые инсайты:",
     exportCSV: "📅 Экспорт CSV",
     filters: "🔎 Фильтры",
     trends: "📈 Тренды",
@@ -419,12 +567,78 @@ export const ru = {
     reports: "📈 Отчёты",
     history: "📋 История",
     netWorth: "💎 Чистая стоимость",
+    formatters: {
+      summaryTitle: "📊 *Аналитика*",
+      summaryPeriodLine: "📅 {range}",
+      summaryStatsTitle: "*Общая статистика:*",
+      summaryIncomeLine: "🟢 Доходы: {amount}",
+      summaryExpenseLine: "🔴 Расходы: {amount}",
+      summaryBalanceLine: "{emoji} Баланс: {amount}",
+      summaryTransactionsLine: "📈 Транзакций: {count}",
+      summaryByCategoryTitle: "*По категориям:*",
+      summaryTopExpensesTitle: "*💸 Топ трат:*",
+      summaryInsightsTitle: "*💡 Инсайты:*",
+      comparisonTitle: "🔄 *Сравнение периодов*",
+      comparisonIncomeTitle: "*🟢 Доходы:*",
+      comparisonExpenseTitle: "*🔴 Расходы:*",
+      comparisonBalanceTitle: "*📊 Баланс:*",
+      comparisonCurrentLine: "Текущий: {amount}",
+      comparisonPreviousLine: "Предыдущий: {amount}",
+      comparisonChangeLine: "Изменение: {amount}",
+      patternsTitle: "📈 *Паттерны трат*",
+      patternsAverageLine: "Среднее: {amount}",
+      patternsTransactionsLine: "Транзакций: {count}",
+      monthlyTrendTitle: "📉 *Тренд по месяцам*",
+      monthlyTrendIncomeLine: "🟢 Доход: {amount}",
+      monthlyTrendExpenseLine: "🔴 Расход: {amount}",
+      monthlyTrendBalanceLine: "{emoji} Баланс: {amount}",
+      categoriesTitle: "🏷️ *Категории расходов*",
+      categoriesEmpty: "Нет данных за этот период",
+      categoriesAmountLine: "Сумма: {amount}",
+      categoriesShareLine: "Доля: {percent}%",
+      categoriesTransactionsLine: "Транзакций: {count}",
+      quickStatsTitle: "📊 *Быстрая статистика*",
+      quickStatsIncomeLine: "🟢 Доход: {amount}",
+      quickStatsExpenseLine: "🔴 Расход: {amount}",
+      quickStatsBalanceLine: "{emoji} Баланс: {amount}",
+    },
+  },
+
+  currency: {
+    formatters: {
+      conversionTitle: "💱 *Конвертация валют*",
+      arrowDownLine: "⬇️",
+      conversionRateLine: "📊 Курс: 1 {from} = {rate} {to}",
+      conversionTimestampLine: "⏰ {time}",
+      conversionMultipleTitle: "💱 *Конвертация {flag} {amount} {currency}*",
+      rateTitle: "📊 *Курс {pair}*",
+      rateLine: "{fromFlag} 1 {from} = {rate} {to} {toFlag}",
+      rateLineReverse: "{fromFlag} 1 {from} = {rate} {to} {toFlag}",
+      ratesTitle: "📊 *Курсы {flag} {currency}*",
+      rateHistoryTitle:
+        "📈 *История курса {currencyFlag} {currency}/{baseFlag} {baseCurrency}*",
+      rateHistoryChange24hLine: "{emoji} 24ч: {sign}{value}%",
+      rateHistoryChange7dLine: "{emoji} 7д: {sign}{value}%",
+      rateHistoryChange30dLine: "{emoji} 30д: {sign}{value}%",
+      currencyStatsTitle: "📊 *Статистика по валютам*",
+      currencyStatsEmpty: "Нет данных",
+      currencyStatsTransactionsLine: "Транзакций: {count}",
+      currencyStatsAmountLine: "Сумма: {amount} {symbol}",
+      currencyStatsAverageRateLine: "Ср. курс: {rate}",
+      currencyStatsLastUsedLine: "Посл. исп.: {date}",
+      currencyListTitle: "🌍 *Доступные валюты*",
+      quickConversionLine:
+        "{fromFlag} {fromAmount} {fromCurrency} = {toFlag} {toAmount} {toCurrency}",
+    },
   },
 
   // Бюджет
   budget: {
     title: "🔮 *Планировщик бюджета*",
     addBudget: "✨ Добавить бюджет",
+    addEditBudget: "✨ Добавить / Изменить бюджет",
+    noBudgetsCategories: "💡 Пока нет бюджетов по категориям.",
+    summary: "Итог: {spent}/{total} ({percent}%)",
     noBudgets: "💡 Бюджетов пока нет. Создайте первый!",
     monthly: "Ежемесячно",
     weekly: "Еженедельно",
@@ -432,6 +646,15 @@ export const ru = {
     limit: "Лимит",
     spent: "Потрачено",
     remaining: "Осталось",
+  },
+
+  // Языки
+  languages: {
+    en: "🇬🇧 English",
+    ru: "🇷🇺 Русский",
+    uk: "🇺🇦 Українська",
+    es: "🇪🇸 Español",
+    pl: "🇵🇱 Polski",
   },
 
   // Общее (ОБНОВЛЕНО)
@@ -446,13 +669,17 @@ export const ru = {
     done: "✅ Готово",
     yes: "✅ Да",
     no: "❌ Нет",
+    checkYes: "✅",
+    checkNo: "❌",
     today: "📆 Сегодня",
     yesterday: "🗓️ Вчера",
     custom: "📅 Своя дата",
     selectDate: "Выберите дату:",
     enterDate: "Введите дату (ДД.ММ.ГГГГ):",
     or: "или",
+    of: "из",
     amount: "Сумма:",
+    current: "Текущее:",
     continue: "Продолжить?",
     remove: "🗑 Убрать",
     total: "Итого:",
@@ -461,6 +688,9 @@ export const ru = {
     next: "Вперёд ▶️",
     noCancel: "❌ Нет, отменить",
     cancelled: "✅ Отменено.",
+    notAvailable: "Н/Д",
+    noDescription: "Без описания",
+    featureInDevelopmentSuffix: "(функция в разработке)",
 
     // Действия редактирования
     editAmount: "💰 Изменить сумму",
@@ -580,6 +810,13 @@ export const ru = {
     incomeSourceNotFound: "❌ Источник дохода не найден.",
     templateNotFound: "❌ Шаблон не найден.",
     goalDataNotFound: "❌ Данные цели не найдены.",
+    cannotSave: "❌ Не удалось сохранить. Попробуйте ещё раз.",
+    cannotTransferSameAccount: "❌ Нельзя перевести на тот же счёт.",
+    clearingData: "❌ Ошибка очистки данных. Попробуйте ещё раз.",
+    missingGoalData: "❌ Не хватает данных цели. Попробуйте ещё раз.",
+    missingIncomeData: "❌ Не хватает данных дохода. Попробуйте ещё раз.",
+    noAccountsFound: "❌ Счета не найдены.",
+    notFound: "❌ Не найдено.",
 
     // Неверный ввод
     invalidData: "❌ Неверные данные. Проверьте ввод.",
@@ -589,11 +826,60 @@ export const ru = {
     invalidDateFormat:
       "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например, 31.12.2026)",
     invalidTimezone: "❌ Неверный часовой пояс. Выберите из предложенных.",
+    invalidTimeFormat:
+      "❌ Неверный формат времени. Выберите из вариантов или введите HH:MM (например, 09:00).",
     invalidCategory: "❌ Неверная категория. Выберите из списка.",
     invalidDay: "❌ Неверный день. Выберите из списка.",
     invalidAmount: "❌ Неверная сумма. Введите корректное число.",
+    amountMustBePositive: "❌ Сумма должна быть больше нуля.",
+    validationMessage: "❌ {message}",
+    unknown: "Неизвестная ошибка",
     invalidPeriod:
       "❌ Неверный период (конец раньше начала или неверные даты).",
+    accountNotFound: '❌ Счёт "{account}" не найден.',
+    debtCurrencyMismatch:
+      "❌ Несоответствие валют: долг в {debtCurrency}, платёж в {paymentCurrency}.",
+    debtAmountExceedsRemaining:
+      "❌ Сумма превышает оставшийся долг ({remaining}).",
+    currencyMismatchAccount:
+      '❌ Несоответствие валют. Счёт "{account}" в {accountCurrency}, а транзакция в {transactionCurrency}.',
+    goalTargetTooLow:
+      "❌ Новая цель ({newTarget}) не может быть меньше текущей суммы ({currentAmount}).",
+
+    // Ошибки Telegram
+    telegramInvalidRequest:
+      "❌ Неверный запрос. Пожалуйста, попробуйте ещё раз.",
+    telegramGeneric: "❌ Ошибка Telegram. Пожалуйста, попробуйте ещё раз.",
+
+    // Ошибки базы данных
+    databaseBusy: "⏳ База данных занята. Пожалуйста, попробуйте ещё раз.",
+    databaseLocked:
+      "🔒 База данных заблокирована. Пожалуйста, попробуйте ещё раз.",
+    databaseGeneric: "❌ Ошибка базы данных. Пожалуйста, попробуйте позже.",
+
+    // Лимиты
+    rateLimitExceeded:
+      "⏱ Слишком много запросов. Пожалуйста, подождите {retryAfter} секунд.",
+    rateLimitExceededShort:
+      "⏱ Слишком много запросов. Пожалуйста, подождите немного.",
+
+    // Транзакции
+    transactionFailed:
+      "❌ Операция не выполнена. Пожалуйста, попробуйте ещё раз.",
+    insufficientFunds:
+      "❌ Недостаточно средств на счёте {account}\n\nТекущий: {current}\nТребуется: {required}",
+    insufficientFundsDetailed:
+      "❌ Недостаточно средств!\n\nСчёт: {account}\nДоступно: {available}\nТребуется: {required}\n\nНедостаток: {shortage}\n\n💡 Можно изменить сумму или пополнить счёт.",
+
+    // AssemblyAI
+    assemblyQuota:
+      "⏱ Лимит распознавания голоса исчерпан. Попробуйте позже или обновите план.",
+    assemblyPayment:
+      "💳 Требуется оплата AssemblyAI. Пожалуйста, проверьте аккаунт.",
+
+    // Неизвестная ошибка
+    genericUnknown: "⚠️ Что-то пошло не так. Пожалуйста, попробуйте ещё раз.",
+    noTransactionsFound: "Транзакции не найдены.",
 
     // Неверный формат
     wrongDates: "❌ Неверные даты!",
@@ -680,6 +966,20 @@ export const ru = {
     differentAmount: "❌ Нет, другой amount",
   },
 
+  // Валидация
+  validation: {
+    invalidFormat: {
+      amount:
+        "❌ Неверный формат!\n\nИспользуйте: `сумма ВАЛЮТА`\nПример: `100 USD`\n\nПоддерживаемые валюты: {validCurrencies}",
+      balance:
+        "❌ Неверный формат!\n\nИспользуйте: `НазваниеСчёта сумма ВАЛЮТА`\nПример: `Наличные 150 USD`\n\nПоддерживаемые валюты: {validCurrencies}",
+      debt: "❌ Неверный формат!\n\nИспользуйте: `Имя сумма ВАЛЮТА тип`\nПример: `Алиса 50 USD me` (она должна мне)\nПример: `Боб 100 USD owe` (я должен ему)\n\nПоддерживаемые валюты: {validCurrencies}",
+      goal: "❌ Неверный формат!\n\nИспользуйте: `НазваниеЦели сумма` или `НазваниеЦели сумма ВАЛЮТА`\nПример: `Ноутбук 2000` или `Ноутбук 2000 USD`\n\nПоддерживаемые валюты: {validCurrencies}",
+      default: "❌ Неверный формат ввода. Пожалуйста, попробуйте ещё раз.",
+    },
+    invalidAmountExample: "❌ Неверная сумма. Пример: 100 или 100 {currency}",
+  },
+
   // Успех (НОВАЯ СЕКЦИЯ)
   success: {
     // FX
@@ -689,6 +989,8 @@ export const ru = {
       "✅ Используются сохранённые курсы валют (без обращения к API)",
     ratesPreloaded: "✅ Курсы валют предзагружены успешно",
     persistedCacheCleared: "✅ Кэш валют очищен",
+    persistedCacheClearedDetails:
+      "✅ Кэш валют очищен!\n\nФайл кэша удалён. При следующем запуске курсы будут загружены из API.",
     usingPersistedCache: "✅ Используется кэш валют (без обращения к API)",
 
     // Запросы
@@ -738,6 +1040,234 @@ export const ru = {
     done: "✅ Готово",
   },
 
+  // Команды
+  commands: {
+    templates: {
+      empty:
+        '📋 *Шаблоны*\n\nШаблонов пока нет.\n\nИспользуйте `/expense` или `/income` и нажмите "{saveAsTemplate}", чтобы создать шаблон.',
+      listHint:
+        "📋 *Шаблоны*\n\nНажмите, чтобы использовать, или ⚙️ для управления:",
+    },
+    expense: {
+      invalidFormat:
+        "❌ Неверный формат. Используйте: `/expense 100 coffee` или `/expense coffee 100`",
+      added: "💸 Расход добавлен: *{amount}* — {category}\nСчёт: *{account}*",
+    },
+    income: {
+      invalidFormat:
+        "❌ Неверный формат. Используйте: `/income 1000 salary` или `/income salary 1000`",
+      added: "💰 Доход добавлен: *{amount}* — {category}\nСчёт: *{account}*",
+    },
+  },
+
+  // Шаблоны
+  templates: {
+    editAmount: "✏️ *Редактировать сумму шаблона*",
+    enterNewAmount: "Введите новую сумму",
+    saved: "✅ Шаблон сохранён.",
+    deleted: "✅ Шаблон удалён.",
+    transactionAdded: "✅ Транзакция из шаблона добавлена.",
+    accountUpdated: "✅ Счёт шаблона обновлён.",
+    failedToUpdate: "❌ Не удалось обновить шаблон.",
+    selectDefaultAccount: "Выберите счёт по умолчанию:",
+    manageTitle: "⚙️ *Управление шаблоном*",
+    nameLine: "*{name}*",
+    amountLine: "Сумма: {amount}",
+    accountLine: "Счёт: *{account}*",
+    noDefaultAccount: "Нет счёта по умолчанию",
+    selectAction: "Выберите действие:",
+    balanceOption: "💳 {account} — {amount}",
+    useMessage: "{emoji} {amount} — {category}\nСчёт: *{account}*",
+  },
+
+  // FX Отчёт
+  fxReport: {
+    title: "📊 *Статистика FX кэша*",
+    cacheStatusTitle: "💾 *Статус кэша:*",
+    valid: "• Валиден: {value}",
+    age: "• Возраст: {seconds}с",
+    nextUpdate: "• Следующее обновление: {seconds}с",
+    persisted: "• Сохранён: {value}",
+    errors: "• Ошибки: {count}",
+    performanceTitle: "📈 *Производительность:*",
+    cacheHits: "• Попадания в кэш: {count}",
+    cacheMisses: "• Промахи кэша: {count}",
+    hitRate: "• Доля попаданий: {percent}%",
+    apiTitle: "🌐 *Использование API:*",
+    totalCalls: "• Всего вызовов: {count}",
+    apiErrors: "• Ошибки: {count}",
+    retries: "• Повторы: {count}",
+    http2: "• HTTP/2: {value}",
+    lastUpdate: "⏰ Последнее обновление: {time} ({seconds}с назад)",
+  },
+
+  // Экспорт
+  export: {
+    result: {
+      title: "✅ *Экспорт завершён*",
+      file: "📄 Файл: `{filename}`",
+      records: "📊 Записей: {count}",
+      size: "📦 Размер: {size}",
+    },
+    menu: {
+      title: "📤 *Экспорт данных*",
+      chooseFormat: "Выберите формат:",
+      csvTitle: "📄 *CSV* - Таблица (Excel, Google Sheets)",
+      csvAll: "  • Все транзакции",
+      csvExpenses: "  • Только расходы",
+      csvIncome: "  • Только доходы",
+      xlsxTitle: "📊 *XLSX* - Excel с формулами",
+      xlsxCategories: "  • Разбивка по категориям",
+      xlsxAutoSum: "  • Автосуммы",
+      jsonTitle: "💾 *JSON* - Полный backup",
+      jsonAll: "  • Все данные",
+      jsonRestore: "  • Для восстановления",
+      commands: "Команды:",
+      commandCsv: "`/export csv` - CSV экспорт",
+      commandXlsx: "`/export xlsx` - Excel экспорт",
+      commandJson: "`/export json` - JSON backup",
+    },
+    presets: {
+      title: "📋 *Быстрый экспорт*",
+      all: "1️⃣ `/export_all` - Все транзакции",
+      expenses: "2️⃣ `/export_expenses` - Только расходы",
+      income: "3️⃣ `/export_income` - Только доходы",
+      month: "4️⃣ `/export_month` - Текущий месяц",
+      lastMonth: "5️⃣ `/export_last_month` - Прошлый месяц",
+      backup: "6️⃣ `/backup` - Полный backup",
+    },
+    size: {
+      bytes: "{count} B",
+      kb: "{count} KB",
+      mb: "{count} MB",
+    },
+    error: {
+      title: "❌ *Ошибка экспорта*",
+      noTransactions:
+        "Нет транзакций для экспорта.\nДобавьте транзакции и попробуйте снова.",
+      generic: "Произошла ошибка: {error}",
+    },
+    backup: {
+      title: "💾 *Создание backup*",
+      records: "📊 Транзакций: {count}",
+      balances: "✅ Балансы",
+      debts: "✅ Долги",
+      goals: "✅ Цели",
+      budgets: "✅ Бюджеты",
+      incomeSources: "✅ Источники дохода",
+      keepSafe: "⚠️ Сохраните файл в надёжном месте!",
+    },
+    restore: {
+      title: "⚠️ *Восстановление из backup*",
+      date: "📅 Дата backup: {date}",
+      records: "📊 Транзакций: {count}",
+      warningTitle: "⚠️ *ВНИМАНИЕ!*",
+      warningReplace: "Текущие данные будут заменены.",
+      warningIrreversible: "Это действие необратимо.",
+      confirmPrompt: "Подтвердите восстановление:",
+    },
+  },
+
+  // Лимиты
+  rateLimiter: {
+    minutesLabel: "мин",
+    tooManyMessages:
+      "⚠️ Вы отправляете слишком много сообщений.\n\nПожалуйста, подождите {minutes} {minutesLabel} перед следующей командой.\n\nЭто помогает предотвратить спам и защищает бота от перегрузки.",
+    tooManyActions:
+      "⚠️ Слишком много действий. Подождите {minutes} {minutesLabel}.",
+    blocked:
+      "🚫 Вы временно заблокированы за превышение лимита.\n⏰ Осталось: {minutes} {minutesLabel}",
+    status:
+      "📊 Статус лимита:\n\n✅ Доступно команд: {remaining}/{max}\n⏰ Сброс через: {minutes} {minutesLabel}",
+    statusError: "❌ Не удалось получить информацию о лимите.",
+  },
+
+  // Отчёты
+  reports: {
+    analyticsReport: {
+      title: "📊 *Отчёт по аналитике*",
+      periodLast7Days: "Последние 7 дней",
+      periodLast30Days: "Последние 30 дней",
+      periodCustomRange: "{start} - {end}",
+      periodLine: "📅 *Период:* {period}",
+      transactionsLine: "📝 *Транзакций:* {count}",
+      noTransactions: "📭 Нет транзакций за этот период.",
+      incomeLine: "💰 *Доход:* {amount}",
+      expensesLine: "💸 *Расходы:* {amount}",
+      netLine: "💎 *Итог:* {amount} {emoji}",
+      topExpenseCategoriesTitle: "💸 *Топ категорий расходов*",
+      incomeSourcesTitle: "💰 *Источники дохода*",
+      dailyAveragesTitle: "📊 *Средние за день*",
+      dailyIncomeLine: "💰 Доход: {amount}/день",
+      dailyExpensesLine: "💸 Расходы: {amount}/день",
+      transfersLine: "↔️ Переводы: {count}",
+    },
+    trends: {
+      title: "📈 *Тренды (по сравнению с прошлым месяцем)*",
+      income: "💰 *Доход:* {amount}",
+      expenses: "📉 *Расходы:* {amount}",
+      transactions: "*Транзакции:* {count}",
+    },
+    stats: {
+      noTransactionsThisMonth: "📊 Нет транзакций в этом месяце.",
+      noIncomeOrExpenseOnlyTransfers:
+        "📊 Нет доходов или расходов в этом месяце (только переводы).",
+      monthlyTitle: "📈 *Ежемесячный отчёт ({month}/{year})*",
+      incomePlanTitle: "💵 *План доходов vs факт*",
+      expectedTitle: "План:",
+      actualTitle: "Факт:",
+      total: "Итого: {amount}",
+      noIncomeYet: "• Доходов пока нет",
+      progress: "📈 Прогресс: {bar} {percent}%",
+      goalReached: "✅ Цель достигнута! +{amount}",
+      shortBy: "⚠️ Не хватает: {amount}",
+      daysLeft: "⏰ Осталось дней: {days}",
+      dailyTarget: "📈 Дневная цель: ~{amount}",
+      incomeTitle: "💰 *Доход*",
+      expensesTitle: "📉 *Расходы*",
+      categoryLine: "• {emoji} {category}: {amount}",
+      lineItem: "• {name}: {amount}",
+      vsLastMonth: "\n📊 *По сравнению с прошлым месяцем*",
+      vsIncomePositive: "💰 Доход: +{amount} (+{percent}%)",
+      vsIncomeNegative: "💰 Доход: {amount} ({percent}%)",
+      vsIncomeNoChange: "💰 Доход: без изменений",
+      vsExpensesPositive: "📉 Расходы: +{amount} (+{percent}%)",
+      vsExpensesNegative: "📉 Расходы: {amount} ({percent}%)",
+      vsExpensesNoChange: "📉 Расходы: без изменений",
+    },
+    topExpenses: {
+      none: "📉 *Топ расходов*\n\nНет расходов в этом месяце.",
+      title: "📉 *Топ {count} расходов ({month}/{year})*",
+      itemAmount: "{amount} ({percent}%)",
+      total: "Итого: {amount}",
+    },
+    transactions: {
+      empty: "📭 Транзакций пока нет.",
+      title: "📋 *История транзакций*",
+      line: "📅 {date} | {emoji} {label} | {sign}\n{amount} | 💳 {account}",
+    },
+    netWorth: {
+      title: "💎 *Чистая стоимость:* `{amount}`",
+      empty: "Чистая стоимость: 0 {currency}",
+      balancesTitle: "💳 *Балансы:*",
+      balanceLine: "  • {account}: {amount}{approx}",
+      approx: " _(≈{amount})_",
+      totalBalances: "  💰 Итого: *{amount}*",
+      owedToMe: "📗 *Мне должны:* +{amount}",
+      iOwe: "📕 *Я должен:* -{amount}",
+      debtLine: "  • {counterparty}: {amount}",
+    },
+    goals: {
+      empty:
+        "🎯 *Цели*\n\nАктивных целей нет. Создайте цель, чтобы начать копить!",
+      title: "🎯 *Ваши финансовые цели*",
+      target: "Цель: {amount}",
+      remaining: "📈 Осталось: {amount}",
+      achieved: "🎉 Цель достигнута!",
+      deadline: "Дедлайн: {date}",
+    },
+  },
+
   // Предупреждения (НОВАЯ СЕКЦИЯ)
   warnings: {
     noBalancesAdd: "⚠️ Балансы не найдены. Добавьте один в 💳 Балансы.",
@@ -770,6 +1300,82 @@ export const ru = {
       "🛠️ *Дополнительные настройки*\n\nПродвинутые функции и управление данными:",
     goalsNoActive:
       "🎯 *Цели*\n\nНет активных целей. Установите одну, чтобы начать копить!",
+    userGuide:
+      "❓ *Personal Finance Bot — руководство пользователя*\n\n" +
+      "===================\n\n" +
+      "📊 *Основные функции*\n\n" +
+      "💸 *Расходы и доходы*\n" +
+      "• Учёт расходов и доходов\n" +
+      "• Быстрый ввод кнопками сумм\n" +
+      "• Категоризация транзакций\n" +
+      "• Поддержка мультивалютности\n" +
+      '• Естественный язык: "50 coffee"\n\n' +
+      "💳 *Балансы*\n" +
+      "• Управление несколькими счетами\n" +
+      '• Формат: "Cash 1000 USD" или просто "Cash"\n' +
+      "• Редактирование и переводы между счетами\n" +
+      "• Автоконвертация валют\n\n" +
+      "📉 *Долги*\n" +
+      "• Учёт долгов, которые вы должны или вам должны\n" +
+      '• Формат: "John 500 USD"\n' +
+      "• Сроки и напоминания\n" +
+      "• Частичные платежи\n\n" +
+      "🎯 *Цели*\n" +
+      "• Накопительные цели\n" +
+      '• Формат: "Laptop 2000 USD"\n' +
+      "• Прогресс с визуальными барами\n" +
+      "• Автопополнение\n\n" +
+      "📊 *Аналитика*\n" +
+      "• Недельная/месячная статистика\n" +
+      "• Тренды и топ-категории\n" +
+      "• Отчёты за период\n" +
+      "• Экспорт CSV\n" +
+      "• Учёт чистого капитала\n\n" +
+      "===================\n\n" +
+      "🤖 *Автоматизация*\n\n" +
+      "🔁 *Регулярные платежи*\n" +
+      "• Автотранзакции\n" +
+      "• Дневные/недельные/месячные расписания\n" +
+      "• Автокатегоризация\n\n" +
+      "🔔 *Уведомления*\n" +
+      "• Напоминания по долгам/целям\n" +
+      "• Пользовательский часовой пояс\n" +
+      "• Отложить и отметить выполненным\n\n" +
+      "===================\n\n" +
+      "👥 *Расширенное*\n\n" +
+      "📅 *История и фильтры*\n" +
+      "• Просмотр всех транзакций\n" +
+      "• Фильтры по дате/категории/типу\n" +
+      "• Редактирование и удаление\n\n" +
+      "📊 *Планировщик бюджета*\n" +
+      "• Лимиты по категориям\n" +
+      "• Визуальный прогресс\n" +
+      "• Бюджетные оповещения\n\n" +
+      "💱 *Мультивалютность*\n" +
+      "• USD, EUR, GEL, RUB, UAH, PLN\n" +
+      "• Автоконвертация\n" +
+      "• Актуальные курсы\n\n" +
+      "📝 *Пользовательские сообщения*\n" +
+      "• Персонализация подтверждений\n" +
+      "• Мотивирующие тексты для целей\n\n" +
+      "📥 *Загрузка выписок*\n" +
+      "• Tinkoff, Monobank, Revolut, Wise\n" +
+      "• Автоимпорт транзакций\n\n" +
+      "===================\n\n" +
+      "💡 *Быстрые советы*\n\n" +
+      "• Используйте шаблоны для частых операций\n" +
+      "• Настройте напоминания по счетам\n" +
+      "• Включите автопополнение для накоплений\n" +
+      "• Проверяйте аналитику еженедельно\n" +
+      "• Экспортируйте CSV для анализа\n\n" +
+      "===================\n\n" +
+      "🆘 *Примеры формата*\n\n" +
+      "*Балансы:* Cash 1000 | Wallet 500 USD\n" +
+      "*Долги:* John 500 | Maria 200 EUR\n" +
+      "*Цели:* Laptop 2000 | Vacation 5000 USD\n" +
+      "*Естественный:* 50 coffee | spent 100 lunch\n\n" +
+      "Версия: 0.2 | Поддержка мультивалютности\n" +
+      "Сделано с ❤️ для управления личными финансами",
   },
 
   // Автоматические функции
@@ -810,8 +1416,11 @@ export const ru = {
       "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например, 31.12.2026)",
     invalidFormatExampleShort:
       "❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ (например 31.12.2026) или нажмите Пропустить.",
+    invalidDayWithSkip:
+      "❌ Неверный день. Введите 1-31 или нажмите Пропустить.",
     deadlineCannotBePast: "❌ Дедлайн не может быть в прошлом.",
     dueDateCannotBePast: "❌ Срок не может быть в прошлом.",
+    pastDateConfirm: "⚠️ Дата в прошлом. Продолжить?",
   },
 
   // Голос
@@ -819,6 +1428,248 @@ export const ru = {
     transcribing: "🎤 Транскрипция голосового сообщения...",
     recognized: "🎤 Голосовое сообщение распознано:",
     failed: "❌ Не удалось распознать голос. Попробуйте ввести текстом.",
+  },
+
+  // Рекуррентные
+  recurring: {
+    title: "🔁 *Регулярные операции*",
+    noTransactions: "Пока нет регулярных операций.",
+    setupInfo: "Примеры регулярных операций:",
+    setupExamples:
+      "• Ежемесячная аренда\n" +
+      "• Подписки (Netflix, Spotify)\n" +
+      "• Коммунальные платежи (свет, интернет)\n" +
+      "• Зарплата",
+    tapToStart: "Нажмите ✨ Добавить регулярную, чтобы создать.",
+    yourTransactions: "Ваши регулярные операции:",
+    listItemAmountLine: "{amount} {currency} — {frequency}",
+    listItemNextLine: "Следующий: {date}",
+    tapToManage: "Нажмите операцию, чтобы управлять ею.",
+    unnamed: "Без названия",
+    statusActive: "▶️ Активно",
+    statusPaused: "⏸ На паузе",
+    frequency: {
+      monthly: "ежемесячно",
+      weekly: "еженедельно",
+      daily: "ежедневно",
+      yearly: "ежегодно",
+    },
+    detailsTitle: "{emoji} *{name}*",
+    statusLine: "Статус: {status}",
+    amountLine: "Сумма: {amount} {currency}",
+    accountLine: "Счет: {account}",
+    frequencyLine: "Частота: {frequency}",
+    dayLine: "День: {day}",
+    nextExecutionLine: "Следующее выполнение: {date}",
+    pauseButton: "⏸ Пауза",
+    resumeButton: "▶️ Возобновить",
+    deleteConfirmTitle: "⚠️ *Удалить регулярную операцию?*",
+    deleteConfirmBody:
+      "Будет удалено: *{name}*\n" +
+      "Сумма: {amount} {currency}\n\n" +
+      "Вы уверены?",
+    deleted: "✅ Регулярная операция удалена.",
+    paused: "⏸ Регулярная операция приостановлена.",
+    resumed: "▶️ Регулярная операция возобновлена.",
+    newTransaction: "🆕 *Новая регулярная операция*",
+    enterDescription: "Введите описание:",
+    descriptionExamples:
+      "*Примеры:*\n" +
+      "• Аренда\n" +
+      "• Подписка Netflix\n" +
+      "• Зарплата\n" +
+      "• Коммунальные платежи",
+    selectType: "Выберите тип операции:",
+    expense: "💸 Расход",
+    income: "💰 Доход",
+    enterAmountPrompt: "💵 Введите сумму:\n\nПримеры: 1000, 1000 {currency}",
+    noAccountsCreate:
+      "⚠️ Счета не найдены. Сначала создайте счет в разделе балансов.",
+    selectCategory: "Выберите категорию:",
+    enterDayPrompt: "📅 Укажите день месяца (1–31):",
+    dayExamples:
+      "Примеры:\n" +
+      "• 1 (первый день месяца)\n" +
+      "• 15 (середина месяца)\n" +
+      "• 28 (безопасно для всех месяцев)",
+    createdTitle: "✅ *Регулярная операция создана!*",
+    dayOfMonthLine: "День: {day} каждого месяца",
+    nextLine: "Далее: {date}",
+  },
+
+  // Авто-пополнение
+  autoDeposit: {
+    setupTitle: "🤖 *Автопополнение*",
+    goalLine: "Цель: *{name}*",
+    selectAccountPrompt: "Выберите счет для списания:",
+    disabledMessage: "✅ Автопополнение отключено для *{name}*.",
+    amountTitle: "💰 *Сумма автопополнения*",
+    fromLine: "Откуда: *{account}*",
+    amountPrompt: "Введите сумму автопополнения:\nПример: 100",
+    amountLine: "Сумма: *{amount} {currency}*",
+    frequencyTitle: "📅 *Частота автопополнения*",
+    frequencyPrompt: "Выберите частоту:",
+    selectDayOfWeekTitle: "📆 *Выберите день недели*",
+    selectDayOfWeekPrompt: "Выберите день для автопополнения:",
+    selectDayOfMonthTitle: "📅 *Выберите день месяца*",
+    selectDayOfMonthPrompt:
+      "Введите день месяца (1-31) для автопополнения:\n" +
+      "Пример: 25 (25-го числа каждого месяца)",
+    enabledTitle: "✅ *Автопополнение включено!*",
+    frequencyLine: "Частота: {frequency}",
+    frequencyWeekly: "каждый *{day}*",
+    frequencyMonthly: "*{day}* числа каждого месяца",
+    noteWeekly: "🤖 Бот будет автоматически пополнять цель каждую {day}.",
+    noteMonthly:
+      "🤖 Бот будет автоматически пополнять цель {day}-го числа каждого месяца.",
+  },
+
+  // Авто-доход
+  autoIncome: {
+    setupTitle: "🤖 *Автодоход*",
+    sourceLine: "Источник: *{name}*",
+    selectAccountPrompt: "Выберите счет для зачисления:",
+    disabledMessage: "✅ Автодоход отключен для *{name}*.",
+    amountTitle: "💰 *Сумма автодохода*",
+    toLine: "Куда: *{account}*",
+    amountPrompt: "Введите сумму дохода:\nПример: 5000",
+    amountLine: "Сумма: *{amount} {currency}*",
+    selectDayTitle: "📅 *Выберите день месяца*",
+    selectDayPrompt:
+      "Введите день месяца (1-31) для автодохода:\n" +
+      "Пример: 25 (25-го числа каждого месяца)",
+    lastDay: "Последний день",
+    enabledTitle: "✅ *Автодоход включен!*",
+    dayLine: "День: *{day}*",
+    lastDayOfMonth: "Последний день месяца",
+    dayOfMonth: "{day}-е",
+    noteMonthly:
+      "🤖 Бот будет автоматически добавлять доход {day}-го числа каждого месяца.",
+  },
+
+  // Авто-платеж
+  autoPayment: {
+    setupTitle: "🤖 *Автоплатеж*",
+    debtLine: "Долг: *{name}* ({counterparty})",
+    selectAccountPrompt: "Выберите счет для списания:",
+    disabledMessage: "✅ Автоплатеж отключен для *{name}*.",
+    amountTitle: "💸 *Сумма автоплатежа*",
+    fromLine: "Откуда: *{account}*",
+    remainingLine: "Осталось: *{remaining}*",
+    amountPrompt: "Введите сумму ежемесячного платежа:\nПример: 1000",
+    amountLine: "Сумма: *{amount} {currency}*",
+    selectDayTitle: "📅 *Выберите день платежа*",
+    selectDayPrompt:
+      "Введите день (1-31) для ежемесячного платежа:\n" +
+      "Пример: 15 (15-го числа каждого месяца)",
+    enabledTitle: "✅ *Автоплатеж включен!*",
+    dayLine: "День: *{day}*",
+    dayOfMonth: "{day}-го числа каждого месяца",
+    noteMonthly:
+      "🤖 Бот будет автоматически платить по долгу {day}-го числа каждого месяца.",
+    onlyOweWarning:
+      "⚠️ Автоплатеж доступен только для долгов, которые вы должны.",
+  },
+
+  // Напоминания
+  reminders: {
+    title: "📝 *Напоминания*",
+    debtsSection: "💸 Долги:",
+    goalsSection: "🎯 Цели:",
+    noReminders: "💭 Нет напоминаний",
+    settingsTitle: "🔔 *Настройки уведомлений*",
+    statusLine: "Статус: {status}",
+    timeLine: "Время: {time}",
+    timezoneLine: "Часовой пояс: {timezone}",
+    notifyBeforeTitle: "*За сколько дней напоминать:*",
+    notifyBeforeDebts: "• Долги: {days} дн.",
+    notifyBeforeGoals: "• Цели: {days} дн.",
+    notifyBeforeIncome: "• Доход: {days} дн.",
+    changePrompt: "Что вы хотите изменить?",
+    toggledMessage: "✅ Уведомления {status}!",
+    changeTimeTitle: "⏰ *Изменить время напоминаний*",
+    currentTimeLine: "Текущее: {time}",
+    selectTimePrompt: "Выберите время для ежедневных уведомлений:",
+    timeUpdatedMessage:
+      "✅ Время напоминаний обновлено на {time}!\n\n" +
+      "Вы будете получать ежедневные уведомления в это время.",
+    changeTimezoneTitle: "🌍 *Изменить часовой пояс*",
+    currentTimezoneLine: "Текущий: {timezone}",
+    selectTimezonePrompt: "Выберите часовой пояс:",
+    timezoneUpdatedMessage:
+      "✅ Часовой пояс обновлен на {timezone}!\n\n" +
+      "Время напоминаний ({time}) будет рассчитываться по этому поясу.",
+    timezoneOptions: {
+      tbilisi: "🇬🇪 Asia/Tbilisi (GMT+4)",
+      kyiv: "🇺🇦 Europe/Kyiv (GMT+2)",
+      warsaw: "🇵🇱 Europe/Warsaw (GMT+1)",
+      london: "🇬🇧 Europe/London (GMT+0)",
+      newYork: "🇺🇸 America/New_York (GMT-5)",
+      losAngeles: "🇺🇸 America/Los_Angeles (GMT-8)",
+    },
+    timeOptions: [
+      "06:00",
+      "07:00",
+      "08:00",
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "14:00",
+      "16:00",
+      "18:00",
+      "20:00",
+      "21:00",
+    ],
+    messages: {
+      debtMonthlyTitle: "{emoji} *Ежемесячное напоминание о долге*",
+      debtFinalTitle: "{emoji} *Долг истекает завтра!*",
+      goalMonthlyTitle: "🎯 *Ежемесячное напоминание о цели*",
+      goalFinalTitle: "⏰ *Срок цели приближается!*",
+      incomeTitle: "💰 *Напоминание о доходе*",
+      debtLine: "Долг: {name}",
+      goalLine: "Цель: {name}",
+      sourceLine: "Источник: {name}",
+      totalRemainingLine: "Осталось всего: {amount} {currency}",
+      remainingLine: "Осталось: {amount} {currency}",
+      monthsLeftLine: "Осталось месяцев: {months}",
+      suggestedMonthlyPaymentLine:
+        "Рекомендуемый платеж в месяц: {amount} {currency}",
+      suggestedMonthlySavingLine:
+        "Рекомендуемое накопление в месяц: {amount} {currency}",
+      dueLine: "Срок: {date}",
+      deadlineLine: "Дедлайн: {date}",
+      deadlineCountdownLine: "Дедлайн: {date} (через {days} дн.)",
+      amountLine: "Сумма: {amount} {currency}",
+      expectedAmountLine: "Ожидаемая сумма: {amount} {currency}",
+      expectedDateLine: "Ожидаемая дата: {day}-го числа этого месяца",
+    },
+    actions: {
+      snoozeHour: "⏰ Напомнить через 1 час",
+      snoozeTomorrow: "📅 Напомнить завтра",
+      done: "✅ Выполнено",
+    },
+    details: {
+      remainingLine: "💰 Осталось: {amount} {currency}",
+      dueLine: "📅 Срок: {date}",
+      progressLine: "💰 Прогресс: {current} / {target} {currency}",
+      progressPercentLine: "📊 {percent}%",
+      deadlineLine: "📅 Срок: {date}",
+    },
+  },
+
+  // Очередь
+  queue: {
+    recurring: {
+      missingCategory: "Для регулярной операции нужна категория.",
+      notFound: "Регулярная операция не найдена.",
+      inactive: "Регулярная операция неактивна.",
+      accountRequired: "Нужен счет для {type}.",
+      balanceNotFound: "Баланс для счета {account} не найден.",
+      insufficientFunds: "Недостаточно средств: {available} < {required}.",
+      recurringSuffix: "(Регулярно)",
+      created: "Транзакция успешно создана.",
+    },
   },
 
   // Импорт
@@ -829,18 +1680,36 @@ export const ru = {
       "*Поддерживаемые банки:*\n• Тинькофф\n• Монобанк\n• Revolut\n• Wise",
     processing: "📥 Скачивание и обработка файла...",
     preview: "📊 *Предпросмотр выписки*",
+    bankLine: "Банк: {bank}",
+    totalTransactions: "Всего транзакций: {count}",
+    incomeExpenseLine: "Доход: {income} | Расход: {expense}",
+    totalsTitle: "*Итого:*",
+    firstTransactionsTitle: "*Первые транзакции:*",
+    moreTransactions: "...и ещё {count}",
     importAll: "✅ Импортировать всё",
     editImport: "✏️ Изменить и импортировать",
     review: "🔍 Проверить транзакции",
     completed: "✅ *Импорт завершён!*",
+    cancelled: "❌ Импорт отменён",
     imported: "Импортировано: {count}",
     skipped: "Пропущено (неверные): {count}",
     errors: "Ошибки: {count}",
     time: "⚡ Время: {ms}мс",
+    noAccounts:
+      "⚠️ Счета не найдены. Сначала создайте счет в разделе балансов.",
+    failed: "❌ Ошибка импорта: {error}",
     unsupportedFormat:
       "⚠️ *Неподдерживаемый формат файла*\n\nПоддерживаемые форматы:\n• CSV (Тинькофф, Монобанк, Revolut)\n• TXT (Wise)\n• JSON (Монобанк)",
     noTransactions: "❌ Транзакции не найдены в файле",
     parsingErrors: "⚠️ *Ошибки обработки:*",
+    invalidFile: "❌ Пожалуйста, загрузите корректный файл выписки.",
+    editorTitle: "*Редактирование транзакции {index}/{total}*",
+    editorDateLine: "Дата: {date}",
+    editorCategoryLine: "Категория: {category}",
+    editorDescriptionLine: "Описание: {description}",
+    saveAll: "✅ Сохранить всё",
+    allTransactionsTitle: "📋 *Все транзакции ({count})*",
+    listItemLine: "{description} | {category}",
   },
 
   // Чистая стоимость
@@ -850,6 +1719,651 @@ export const ru = {
     viewDebts: "💰 Долги",
     fullReport: "📋 Полный отчёт",
     summary: "📊 Сводка",
+    accounts: "счёта",
+    debtsCount: "долги",
+    assets: "💳 Активы:",
+    debts: "💰 Долги:",
+    net: "💎 Итог:",
+    assetsDetail: "💳 *Активы:*",
+    debtsDetail: "💰 *Долги:*",
+    netDebts: "💎 Чистые долги:",
+  },
+
+  history: {
+    title: "📋 *История транзакций*",
+    filters: "🔎 Фильтры",
+    filter: "Фильтр:",
+    last7days: "📅 Последние 7 дней",
+    last30days: "📅 Последние 30 дней",
+    expensesOnly: "💸 Только расходы",
+    incomeOnly: "💰 Только доходы",
+    noFilteredTransactions: "📬 Нет транзакций по фильтру.",
+    noTransactions: "📭 Транзакций пока нет.",
+  },
+
+  // Уведомления
+  notifications: {
+    customMessagesTitle: "📝 *Пользовательские сообщения*",
+    customizeReminders: "Настройте шаблоны напоминаний:",
+    debtReminder: "*Напоминание по долгу:* ",
+    goalReminder: "*Напоминание по цели:* ",
+    incomeReminder: "*Напоминание по доходу:* ",
+    usingDefaultTemplate: "_Используется шаблон по умолчанию_",
+    availablePlaceholders: "*Доступные плейсхолдеры:*",
+    exampleTitle: "Пример:",
+    examples: {
+      debt: "`💸 Оплатить {name}: {remaining} {currency} до {dueDate}`",
+      goal: "`🎯 Прогресс цели: {name} - осталось {remaining} {currency} (цель: {target} {currency})`",
+      income: "`💰 Ожидаемый доход: {name} - {amount} {currency} сегодня`",
+    },
+    placeholders: {
+      name: "`{name}` - Имя",
+      amount: "`{amount}` - Сумма",
+      currency: "`{currency}` - Валюта",
+      dueDate: "`{dueDate}` - Срок",
+      remaining: "`{remaining}` - Остаток",
+      target: "`{target}` - Цель",
+      monthlyAmount: "`{monthlyAmount}` - Ежемесячный платёж",
+      monthsLeft: "`{monthsLeft}` - Осталось месяцев",
+    },
+    placeholdersList: {
+      debt: "`{name}`, `{amount}`, `{currency}`, `{dueDate}`, `{remaining}`, `{monthlyAmount}`, `{monthsLeft}`",
+      goal: "`{name}`, `{amount}`, `{currency}`, `{remaining}`, `{target}`",
+      income: "`{name}`, `{amount}`, `{currency}`",
+    },
+    editDebtTemplate: "✏️ Редактировать шаблон долга",
+    editGoalTemplate: "✏️ Редактировать шаблон цели",
+    editIncomeTemplate: "✏️ Редактировать шаблон дохода",
+    resetToDefaults: "♻️ Сбросить к умолчанию",
+    templatesReset: "✅ Шаблоны сброшены по умолчанию.",
+    templatePlaceholderWarning:
+      "⚠️ Шаблон должен содержать хотя бы один плейсхолдер, например `{name}`.",
+    templateSaved: "✅ Шаблон {type} сохранён!\n\nШаблон: {template}",
+    templateTypes: {
+      debt: "долга",
+      goal: "цели",
+      income: "дохода",
+    },
+    status: {
+      enabled: "✅ Включены",
+      disabled: "❌ Выключены",
+    },
+    settings: {
+      title: "🔔 *Настройки уведомлений*",
+      statusLine: "Статус: {status}",
+      enabledLine: "{icon} Включено",
+      budget: {
+        title: "💰 *Бюджетные уведомления*",
+        warningThreshold: "  • Предупреждение: при {threshold}%",
+        exceededAlert: "  • Превышение: {icon}",
+      },
+      smart: {
+        title: "🧠 *Умные уведомления*",
+        unusualExpenseMultiplier:
+          "  • Необычные траты: x{multiplier} от среднего",
+        frequentSpendingDays: "  • Частые траты: {days} дней подряд",
+      },
+      analytics: {
+        title: "📊 *Аналитические уведомления*",
+        monthlyComparison: "  • Сравнение месяцев: {icon}",
+        goalRiskDays: "  • Риск для целей: за {days} дней",
+      },
+      reports: {
+        title: "📅 *Плановые отчёты*",
+        weeklyEnabled: "  • Еженедельный: {icon}",
+        monthlyEnabled: "  • Ежемесячный: {icon}",
+      },
+    },
+    list: {
+      empty: "🔔 *Уведомления*\n\nНет новых уведомлений",
+      titleWithCount: "🔔 *Уведомления* ({count})\n\n",
+      priority: {
+        urgent: "🔴 *Срочно*",
+        high: "🟠 *Важно*",
+        medium: "🟡 *Среднее*",
+        low: "⚪ *Низкое*",
+      },
+    },
+    dailyDigest: {
+      title: "🌅 *Ежедневная сводка*",
+      importantTitle: "⚠️ *Важные уведомления:*",
+      moreCount: "И ещё {count} уведомлений...",
+    },
+    weekly: {
+      title: "📅 *Еженедельная сводка*",
+      expensesLine: "💸 Расходы: {amount} {currency}",
+      incomeLine: "💰 Доходы: {amount} {currency}",
+      balanceLine: "📊 Баланс: {amount} {currency}",
+      transactionsLine: "📋 Транзакций: {count}",
+      topCategoryLine: "🎯 Топ категория: {category} ({amount} {currency})",
+      positiveBalance: "✅ Положительный баланс за неделю!",
+      negativeBalance: "⚠️ Расходы превысили доходы",
+    },
+    monthly: {
+      title: "📆 *Ежемесячная сводка*",
+      expensesLine: "💸 Расходы: {amount} {currency}",
+      incomeLine: "💰 Доходы: {amount} {currency}",
+      balanceLine: "📊 Баланс: {amount} {currency}",
+      transactionsLine: "📋 Транзакций: {count}",
+      budgetUtilizationLine: "🎯 Использование бюджета: {percent}%",
+      topCategoriesTitle: "📈 *Топ-3 категории:*",
+      topCategoryItem: "{index}. {category}: {amount} {currency}",
+    },
+    menu: {
+      title: "⚙️ *Настройки уведомлений*",
+      prompt: "Выберите тип уведомлений:",
+      budgetItem: "💰 Бюджетные - превышение лимитов",
+      smartItem: "🧠 Умные - необычные траты",
+      analyticsItem: "📊 Аналитические - тренды и паттерны",
+      reportsItem: "📅 Плановые - еженедельные/месячные отчёты",
+    },
+    keyboard: {
+      viewBudget: "📊 Посмотреть бюджет",
+      viewExpenses: "💸 Посмотреть расходы",
+      viewTransaction: "📝 Посмотреть транзакцию",
+      weeklyStats: "📊 Статистика недели",
+      dismiss: "✅ Понятно",
+    },
+    dailySummary: {
+      title: "📅 *Итоги дня*",
+      expensesLine: "💸 Расходы: {amount} {currency}",
+      incomeLine: "💰 Доходы: {amount} {currency}",
+      balanceLine: "📊 Баланс: {amount} {currency}",
+      remainingTodayLine: "🎯 Осталось сегодня: {amount} {currency}",
+      transactionsLine: "📋 Транзакций: {count}",
+      error: "❌ Ошибка генерации сводки",
+    },
+    alerts: {
+      common: {
+        generalBudget: "Общий",
+        noDescription: "Без описания",
+      },
+      budgetExceeded: {
+        title: "🚨 Бюджет превышен!",
+        message:
+          "*{category} бюджет превышен!*\n\n" +
+          "Лимит: {limit} {currency}\n" +
+          "Потрачено: {spent} {currency}\n" +
+          "Превышение: {overspent} {currency} ({percentage}%)\n\n" +
+          "⚠️ Рекомендуем сократить расходы в этой категории!",
+      },
+      budgetWarning: {
+        title: "⚠️ Предупреждение о бюджете",
+        message:
+          "*{category} бюджет*\n\n" +
+          "Лимит: {limit} {currency}\n" +
+          "Потрачено: {spent} {currency} ({percentage}%)\n" +
+          "Осталось: {remaining} {currency}\n\n" +
+          "💡 Вы использовали {percentage}% бюджета",
+      },
+      unusualExpense: {
+        title: "⚠️ Необычная трата",
+        message:
+          "*Большая трата в категории {category}*\n\n" +
+          "Сумма: {amount} {currency}\n" +
+          "Средняя: {average} {currency}\n" +
+          "Превышение: {multiplier}x\n\n" +
+          "📝 {description}",
+      },
+      frequentSpending: {
+        title: "📊 Частые траты",
+        message:
+          "*Регулярные траты в категории {category}*\n\n" +
+          "Дней подряд: {days}\n" +
+          "Общая сумма: {total} {currency}\n" +
+          "Средний чек: {average} {currency}\n\n" +
+          "💡 Возможно, стоит пересмотреть расходы",
+      },
+      spendingSpike: {
+        title: "📈 Резкий рост расходов",
+        message:
+          "*Расходы выросли на {percentage}%*\n\n" +
+          "Прошлая неделя: {lastWeek} {currency}\n" +
+          "Эта неделя: {thisWeek} {currency}\n" +
+          "Увеличение: {increase} {currency}\n\n" +
+          "💡 Проверьте последние траты",
+      },
+    },
+  },
+
+  // Безопасность
+  security: {
+    accessDeniedMessage:
+      "🚫 *Доступ запрещён*\n\nВы не авторизованы для использования бота.\n\nВаш ID: {userId}",
+    rateLimitMessage:
+      "⏱ *Лимит запросов превышен*\n\nСлишком много запросов. Подождите {seconds} секунд.",
+  },
+
+  // Голосовой ввод
+  voiceHandler: {
+    processing: "🎙️ Обрабатываю голосовое сообщение...",
+    ffmpegNotInstalledMessage:
+      "⚠️ Для обработки голоса нужен FFmpeg.\n\n" +
+      "**Администратор должен установить FFmpeg:**\n" +
+      "• macOS: `brew install ffmpeg`\n" +
+      "• Linux: `apt-get install ffmpeg`\n\n" +
+      "**Пока можно ввести текст:**\n" +
+      "• `50 coffee` ☕\n" +
+      "• `100 taxi` 🚕\n" +
+      "• `потратил 200 на еду` 🍔",
+    conversionFailed: "❌ Не удалось конвертировать голосовое сообщение.",
+    conversionFailedLong:
+      "❌ Не удалось конвертировать голосовое сообщение.\n\nПримеры: `50 coffee`, `100 taxi`, `потратил 200 на еду`",
+    notConfiguredMessage:
+      "⚠️ Распознавание голоса не настроено.\n\n" +
+      "Чтобы включить голосовые сообщения, администратор должен задать ASSEMBLYAI_API_KEY.\n\n" +
+      "**Пока можно:**\n\n" +
+      "**Вариант 1: использовать расшифровку Telegram** 📝\n" +
+      "1. Зажмите голосовое сообщение\n" +
+      "2. Выберите «Расшифровать»\n" +
+      "3. Скопируйте текст и отправьте мне\n\n" +
+      "**Вариант 2: просто напишите** ⌨️\n" +
+      "Примеры:\n" +
+      "• `50 coffee` ☕\n" +
+      "• `100 taxi` 🚕\n" +
+      "• `потратил 200 на еду` 🍔\n" +
+      "• `витратив полтинник на каву` ☕\n" +
+      "• `зарплата пришла` 💰",
+    recognized: '📝 Распознано: "{text}"',
+    processingFailed: "❌ Не удалось обработать голосовое сообщение.",
+    ffmpegMissingMessage:
+      "⚠️ Для обработки голоса нужен FFmpeg.\n\n" +
+      "**Администратор: установите FFmpeg**\n" +
+      "• macOS: `brew install ffmpeg`\n" +
+      "• Linux: `apt-get install ffmpeg`\n\n" +
+      "**Можно использовать текст:**\n" +
+      "• `50 coffee` ☕️\n" +
+      "• `100 taxi` 🚕",
+    tryTextInput: "Пожалуйста, попробуйте текстовый ввод.",
+    couldNotUnderstandMessage:
+      "❌ Не удалось понять сообщение.\n\n" +
+      '• "50 coffee"\n' +
+      '• "потратил 100 на такси"\n' +
+      '• "зарплата пришла 5000"\n' +
+      '• "витратив полтинник на каву"',
+    types: {
+      income: "Доход",
+      expense: "Расход",
+    },
+    confirm: {
+      title: "{emoji} *Подтвердить {type}*",
+      amount: "Сумма: {amount}",
+      category: "Категория: {category}",
+      description: "Описание: {description}",
+      confidence: "Уверенность: {confidence}%",
+      isCorrect: "Все верно?",
+    },
+    failedToParse: "❌ Не удалось разобрать ввод. Попробуйте ещё раз.",
+    transactionCancelled: "❌ Транзакция отменена",
+    noAccountsFound: "❌ Счета не найдены. Сначала создайте баланс.",
+    transactionSaved:
+      "✅ {emoji} Транзакция сохранена!\n\n{amount} - {description}",
+    selectCategory: "🏷️ Выберите категорию:",
+  },
+
+  // Отчёт за период
+  periodReport: {
+    noTransactions: "📊 Нет транзакций за период\n{start} - {end}",
+    title: "📊 *Отчет за период*",
+    dateRange: "📅 {start} - {end}",
+    typeLine: "📌 Тип: {emoji} {type}",
+    types: {
+      income: "Доход",
+      expense: "Расход",
+      transfer: "Перевод",
+    },
+    totalsHeader: "*Итого:*",
+    totalLine: "{currency}: {total} ({count} тр.)",
+    topCategoriesHeader: "*Топ категории:*",
+    topCategoryLine: "{category}: {amount}",
+    prompt:
+      "📊 *Отчет за период*\n\n" +
+      "Введите даты в формате:\n" +
+      "`ГГГГ-ММ-ДД ГГГГ-ММ-ДД`\n\n" +
+      "Пример: `2024-01-01 2024-03-31`\n\n" +
+      "Опционально добавьте тип:\n" +
+      "`2024-01-01 2024-03-31 EXPENSE`\n" +
+      "`2024-01-01 2024-03-31 INCOME`\n" +
+      "`2024-01-01 2024-03-31 TRANSFER`",
+    invalidDateFormat: "❌ Неверный формат даты. Используйте ГГГГ-ММ-ДД",
+    startAfterEnd: "❌ Начальная дата не может быть позже конечной",
+    generationError: "❌ Ошибка при создании отчета",
+    quarterTitle: "📊 *Отчет за Q{quarter} {year}*",
+    yearTitle: "📊 *Отчет за {year} год*",
+    monthsHeader: "*По месяцам:*",
+    monthLine: "{month}: {amount}",
+  },
+
+  // Wizard
+  wizard: {
+    common: {
+      skip: "⏩ Пропустить",
+      error: "⚠️ Произошла ошибка. Попробуйте ещё раз.",
+    },
+    tx: {
+      selectSourceAccount: "📤 Выберите счет списания:",
+      selectDestinationAccount: "📥 Выберите счет назначения:",
+      selectRefundAccount: "📥 Выберите счет для возврата:",
+      refundConfirmMessage:
+        "⚠️ Обнаружена отрицательная сумма: -{amount} {currency}\n\n" +
+        "Это означает возврат (деньги вернулись вам).\n\n" +
+        "Баланс будет увеличен. Продолжить?",
+      selectPeriod: "Выберите период:",
+      periodAllTime: "За всё время",
+      selectTransactionToEdit: "Выберите транзакцию для редактирования:",
+      selectTransactionFromList: "❌ Выберите транзакцию из списка.",
+      detailsTitle: "📋 *Детали транзакции*",
+      detailsType: "Тип: {type}",
+      detailsCategory: "Категория: {category}",
+      detailsAmount: "Сумма: {amount}",
+      detailsAccount: "Счет: {account}",
+      detailsDate: "Дата: {date}",
+      detailsPrompt: "Что вы хотите сделать?",
+      deleteTransactionButton: "🗑️ Удалить транзакцию",
+      transactionDeleted: "✅ Транзакция удалена!",
+      deleteError: "❌ Ошибка удаления транзакции",
+      noMoreToEdit: "💭 Больше нет транзакций для редактирования.",
+      editTransactionsTitle:
+        "✏️ *Редактирование транзакций*\n\nВыберите другую транзакцию:",
+      editAmountTitle: "✏️ *Изменить сумму*",
+      currentAmount: "Текущая: {amount}",
+      enterNewAmount: "Введите новую сумму (например 100 или 100 {currency}):",
+      editCategoryExpenseTitle: "📝 *Изменить категорию (Расход)*",
+      editCategoryIncomeTitle: "📝 *Изменить категорию (Доход)*",
+      currentCategory: "Текущая: {category}",
+      selectNewCategory: "Выберите новую категорию:",
+      editAccountTitle: "💳 *Изменить счет*",
+      currentAccount: "Текущий: {account}",
+      selectNewAccount: "Выберите новый счет:",
+      customPeriodPrompt:
+        "📅 *Период*\n\n1️⃣ ДД.ММ.ГГГГ-ДД.ММ.ГГГГ\nПример: `01.01.2026-13.01.2026`",
+      customPeriodWrongFormat:
+        "❌ *Неверный формат!*\n\n✅ Пример: `01.01.2026-13.01.2026`\n\n📋 День: 01-31, Месяц: 01-12, Год: 2026",
+      customPeriodInvalid: "❌ Неверный формат даты!",
+      customPeriodWrongDates: "❌ Неверные даты!",
+      customPeriodEndBeforeStart: "❌ Конечная дата раньше начальной!",
+      customPeriodNoTransactions: "📭 *Нет транзакций*\n\nЗа период {period}",
+      noTransactionsForFilter: "📬 Нет транзакций по этому фильтру.",
+      customPeriodTitle: "📋 *Произвольный период: {period}*",
+      foundTransactions: "Найдено транзакций: {count}",
+      noMoreTransactions: "📭 Больше нет транзакций",
+      nextBatchTitle: "📋 *Следующая партия* ({period})",
+      previousBatchTitle: "📋 *Предыдущая партия* ({period})",
+      showingRange: "Показаны {start}-{end} из {total}",
+      invalidAmount: "❌ Неверная сумма. Пример: 100 или 100 {currency}",
+      amountUpdated: "✅ Сумма обновлена: {amount} {currency}!",
+      updateError: "❌ Ошибка обновления транзакции.",
+      invalidCategory: "❌ Выберите категорию из списка.",
+      categoryUpdated: '✅ Категория обновлена на "{category}"!',
+      invalidAccount: "❌ Неверное название счета.",
+      accountUpdated: '✅ Счет обновлен на "{account}"!',
+    },
+    debt: {
+      selectType: "Выберите тип долга:",
+      enterAmount: "💰 Введите сумму (например 100 или 100 {currency}):",
+      partialPaymentPrompt:
+        '📉 Погашение "{name}"\nОсталось: {remaining}\n\nВведите сумму к оплате:',
+      selectPaymentAccount: "💳 Выберите счет для оплаты:",
+      selectToEdit: "Выберите долг для редактирования:",
+      editAmountPrompt:
+        "💰 Текущая: {current}\nОплачено: {paid}\n\n✏️ Введите новую общую сумму:",
+      payTo: "💸 Заплатить",
+      getPaidFrom: "💰 Получить от",
+      actionPay: "платить",
+      actionReceive: "получить",
+      totalLine: "Итого: {amount}",
+      remainingLine: "Осталось: {amount}",
+      paidLabel: "🎉 Долг погашен!",
+      dueLine: "Срок: {date}",
+      enterAmountTo: "💡 Введите сумму, чтобы {action}",
+      enableAutoPayment: "✅ Включить авто-платёж",
+      disableAutoPayment: "❌ Отключить авто-платёж",
+      deleteDebtButton: "🗑 Удалить долг",
+      actionOweTo: "должны",
+      actionLentTo: "одолжили",
+      createDetails:
+        "{emoji} Введите имя и сумму, которую вы {action}:\n\n" +
+        "💡 *Формат:* Имя Сумма [Валюта]\n\n" +
+        "*Примеры:*\n" +
+        "• Иван 1000\n" +
+        "• Мария 5000 USD\n" +
+        "• Алекс 50000 {currency}",
+      selectFromListError: "❌ Выберите долг из списка.",
+      notFound: "❌ Долг не найден.",
+      invalidAmount: "❌ Неверная сумма. Пример: 500 или 500 {currency}",
+      fullyPaidLabel: "💸 Долг полностью погашен!",
+      fullyReceivedLabel: "💰 Долг полностью получен!",
+      fullySettledMessage: "✅ {status}\n\nИтого: {total}\nОплачено: {paid}",
+      amountLessThanPaid:
+        "❌ Новая сумма долга {amount} меньше уже оплаченной {paid}.",
+      amountUpdated: "✅ Сумма долга обновлена!",
+      editTotalPrompt:
+        "✏️ *Изменить общую сумму долга*\n\n" +
+        "Текущая: {current}\n" +
+        "Оплачено: {paid}\n\n" +
+        "Введите новую общую сумму (например 1000 или 1000 {currency}):",
+      deletedMessage: '✅ Долг "{name}" удален.',
+      amountExceedsRemaining:
+        "❌ Сумма {amount} превышает оставшийся долг {remaining}.",
+      dueDateSetTitle: "Установить срок",
+      dueDateChangeTitle: "Изменить срок",
+      dueDatePrompt:
+        "📅 {mode}\n\nВведите новый срок (ДД.ММ.ГГГГ)\n" +
+        "Пример: 31.12.2026\n\n" +
+        "Или нажмите Удалить, чтобы убрать срок.\n" +
+        "Или нажмите Пропустить для отмены.",
+      remindersRemoved: "✅ Напоминания отключены и срок удален.",
+      dueDateRemoved: "✅ Срок и напоминания удалены.",
+    },
+    goal: {
+      addPrompt:
+        "🎯 *Добавить цель*\n\n" +
+        "Введите цель в формате:\n" +
+        "`Название сумма ВАЛЮТА`\n\n" +
+        "*Примеры:*\n" +
+        "• `Ноутбук 2000 {currency}`\n" +
+        "• `Отпуск 5000 USD`\n" +
+        "• `Подушка 10000` (использует {currency})",
+      depositAmountPrompt:
+        '🎯 "{name}"\nЦель: {target}\nТекущее: {current}\n\nВведите сумму пополнения:',
+      selectWithdrawAccount: "💳 Выберите счет списания:",
+      targetLine: "Цель: {amount}",
+      remainingLine: "📈 Осталось: {amount}",
+      achievedLine: "🎉 Цель достигнута!",
+      deadlineLine: "Дедлайн: {date}",
+      enterDepositAmount: "💡 Введите сумму пополнения:",
+      enableAutoDeposit: "✅ Включить автопополнение",
+      disableAutoDeposit: "❌ Отключить автопополнение",
+      deleteGoalButton: "🗑 Удалить цель",
+      completedItem: "✅ Цель: {name}",
+      completedSelect: "🎉 *Завершенные цели*\n\nВыберите цель:",
+      completedDeleteMessage:
+        '✅ Достигнута цель: "{name}"\n\nЦель: {target}\nДостигнуто: {achieved}\n\n🎉 Поздравляем с достижением!',
+      completedDeleted: '✅ Завершенная цель "{name}" удалена.',
+      selectFromListError: "❌ Выберите цель из списка.",
+      deleted: "✅ Цель удалена.",
+      noBalances:
+        "⚠️ *Балансы не найдены*\n\n" +
+        "Перед пополнением цели нужен хотя бы один счет.\n\n" +
+        "💡 *Быстрый старт:*\n" +
+        "1️⃣ Перейдите в 💰 *Балансы*\n" +
+        "2️⃣ Нажмите ✨ *Добавить баланс*\n" +
+        "3️⃣ Введите имя счета и сумму",
+      noBalancesComplete:
+        "⚠️ *Балансы не найдены*\n\n" +
+        "Перед завершением цели нужен хотя бы один счет.\n\n" +
+        "💡 *Быстрый старт:*\n" +
+        "1️⃣ Перейдите в 💰 *Балансы*\n" +
+        "2️⃣ Нажмите ✨ *Добавить баланс*\n" +
+        "3️⃣ Введите имя счета и сумму",
+      selectDepositAccount: "💳 Выберите счет для пополнения:",
+      selectDepositRemainingAccount: "💳 Выберите счет для внесения остатка:",
+      notFound: "❌ Цель не найдена.",
+      invalidAmount: "❌ Неверная сумма. Пример: 2000 или 2000 {currency}",
+      amountExceedsRemaining:
+        "❌ Сумма {amount} превышает оставшуюся цель {remaining}.",
+      confirmCompleteNoAlt: "❌ Нет, ввести другую сумму",
+      targetLessThanProgress:
+        "❌ Новая цель *{amount}* меньше текущего прогресса *{progress}*.\n\n" +
+        "💡 Можно отметить цель как выполненную.",
+      targetUpdated: "✅ Цель обновлена!",
+      dataNotFound: "❌ Данные цели не найдены.",
+      completedNow: '🎉 *Цель "{name}" выполнена!*\n\nИтоговая сумма: {amount}',
+      enterNewTargetPrompt:
+        "Введите новую сумму цели для *{name}*:\n\n" +
+        "Текущая цель: {target}\n" +
+        "Текущий прогресс: {progress}",
+      deadlineSetTitle: "Установить дедлайн",
+      deadlineChangeTitle: "Изменить дедлайн",
+      deadlinePrompt:
+        "📅 {mode}\n\nВведите новый дедлайн (ДД.ММ.ГГГГ)\n" +
+        "Пример: 31.12.2026\n\n" +
+        "Или нажмите Удалить, чтобы убрать дедлайн.\n" +
+        "Или нажмите Пропустить для отмены.",
+      deadlineRemoved: "✅ Дедлайн и напоминания удалены.",
+      editTargetPrompt:
+        "✏️ *Изменить цель*\n\nТекущее: {current}\n\nВведите новую сумму цели:",
+      completeConfirmMessage:
+        "🎯 Новая цель *{amount}* равна текущему прогрессу.\n\n" +
+        "Обновить цель и отметить как выполненную?",
+      confirmCompleteYes: "✅ Да, завершить цель",
+      confirmCompleteNo: "❌ Нет, изменить сумму",
+      autoDepositWeekly: "каждый {day}",
+      autoDepositMonthly: "в {day} день каждого месяца",
+      autoDepositLine: "🤖 Автопополнение: {amount} с {accountId} {schedule}",
+    },
+    income: {
+      enterAmount:
+        '💰 Введите ожидаемую сумму в месяц для "{name}":\n\nПример: 1000 или 1000 {currency}',
+      enterName:
+        "💼 Введите название источника дохода:\n\nПример: Зарплата, Фриланс",
+      deleteConfirm: '🗑 Удалить источник дохода "{name}"?',
+      confirmDeleteButton: "✅ Подтвердить удаление",
+      addPrompt:
+        "💼 *Добавить источник дохода*\n\n" +
+        "Формат: `Название Сумма [Валюта]`\n\n" +
+        "*Примеры:*\n" +
+        "• Зарплата 1500\n" +
+        "• Фриланс 800 {currency}",
+      selectFromListError:
+        "❌ Выберите источник дохода из списка или используйте ✨ Добавить источник дохода.",
+      menuMessage:
+        "💼 *Источник дохода:* {name}\n\n" +
+        "Ожидается: {amount}\n\n" +
+        "Можно изменить имя, удалить или ввести новую сумму.",
+      enableAutoIncome: "✅ Включить авто-доход",
+      disableAutoIncome: "❌ Отключить авто-доход",
+      deleteIncomeButton: "🗑️ Удалить доход",
+      deletedMessage: '✅ Источник дохода "{name}" удален.',
+      noSourceSelected: "❌ Источник дохода не выбран.",
+      deleteCancelled: "❌ Удаление отменено.",
+      invalidFormat:
+        "❌ Неверный формат.\n\nИспользуйте: Название Сумма [Валюта]\n" +
+        "Пример: Зарплата 1500 или Зарплата 1500 {currency}",
+      invalidAmount: "❌ Неверная сумма. Пример: 1000 или 1000 {currency}",
+      addedMessage: '✅ Источник дохода "{name}" добавлен: {amount}.',
+      notFound: "❌ Источник дохода не найден.",
+      nameEmpty: "❌ Имя не может быть пустым.",
+      renamedMessage: '✅ Источник дохода переименован с "{from}" на "{to}".',
+      editNamePrompt: '✏️ Введите новое имя для "{name}":',
+      amountUpdated: '✅ Сумма обновлена для "{name}": {amount}',
+      selectOptionError: "❌ Выберите опцию или введите корректную сумму.",
+    },
+    balance: {
+      enterName: "Введите название счета (например, 'Наличные' или 'Карта'):",
+      enterAmount: "Введите сумму (например 100 или 100 {currency}):",
+      deleteTransferPrompt:
+        '⚠️ Баланс "{accountId}" содержит {amount}.\n\nЧто вы хотите сделать?',
+      deleteAndClear: "🗑️ Удалить и очистить все",
+      transferToPrompt: "↔️ Перевести {amount} на:",
+      currencyChoicePrompt:
+        "💱 Вы ввели {inputAmount} {inputCurrency}, но счет в {balanceCurrency}.\n\nВыберите действие:",
+      convertTo: "🔄 Конвертировать в {amount}",
+      changeTo: "💱 Изменить на {amount} {currency}",
+      setToZero: "🅰️ Обнулить",
+      deleteBalance: "🗑️ Удалить баланс",
+      editTitle: "✏️ *{accountId}* ({currency})",
+      editBalanceLine: "Баланс: {amount}",
+      quickEditTitle: "💡 *Быстрое редактирование:*",
+      quickEditNumber: "• Введите число → изменить сумму",
+      quickEditText: "• Введите текст → переименовать счет",
+      addNewPrompt:
+        "✨ *Добавить баланс*\n\n" +
+        "Введите данные счета одним сообщением:\n\n" +
+        "*Формат:* Название Сумма [Валюта]\n\n" +
+        "*Примеры:*\n" +
+        "• Наличные 1000\n" +
+        "• Карта 500 {currency}\n" +
+        "• Сбережения 2500 USD",
+      nameEmpty: "❌ Название счета не может быть пустым.",
+      nameExists: '❌ Счет "{accountId}" уже существует. Выберите другое имя.',
+      invalidAmount: "❌ Неверная сумма. Пример: 100 или 100 {currency}",
+      nameMissing: "❌ Отсутствует название счета. Начните заново.",
+      deletedAndCleared: '✅ Баланс "{accountId}" удален и {amount} очищено.',
+      selectOptionError: "❌ Выберите вариант на кнопках.",
+      converted:
+        '✅ Баланс "{accountId}" сконвертирован: {inputAmount} {inputCurrency} → {converted}!',
+      changed: '✅ Баланс "{accountId}" изменен на {amount}!',
+    },
+    analytics: {
+      filtersTitle: "📊 *Фильтры отчётов*",
+      selectPeriod: "Выберите период:",
+      menuTitle: "📊 *Аналитика*\n\nВыберите, что показать:",
+      exportSuccess: "✅ CSV успешно экспортирован!",
+      exportNoTransactions: "❌ Нет транзакций для экспорта.",
+      reportError: "❌ Ошибка генерации отчета. Попробуйте ещё раз.",
+      startDatePrompt:
+        "📅 *Дата начала*\n\nВведите дату в формате ДД.ММ.ГГГГ\nПример: `01.01.2026`",
+      endDatePrompt:
+        "📅 *Дата конца*\n\nВведите дату в формате ДД.ММ.ГГГГ\nПример: `13.01.2026`",
+      selectFilterError: "❌ Выберите один из фильтров.",
+      dateFormatErrorStart:
+        "❌ Неверный формат! Используйте ДД.ММ.ГГГГ (например 01.01.2026)",
+      dateFormatErrorEnd:
+        "❌ Неверный формат! Используйте ДД.ММ.ГГГГ (например 13.01.2026)",
+      invalidPeriod:
+        "❌ Некорректный период (конец раньше начала или неверные даты).",
+      periodSelected: "📊 Период выбран. Нажмите `📊 Показать отчёт`.",
+      tapShowReport: "❌ Нажмите кнопку «📊 Показать отчёт».",
+    },
+    budget: {
+      title: "🔮 *Планировщик бюджета*",
+      selectCategory: "Выберите категорию для лимита:",
+      categoryTitle: "💳 *{category}*",
+      limitLine: "Лимит: {amount} {currency}",
+      spentLine: "Потрачено: {amount} {currency}",
+      enterNewLimit:
+        "Введите новый лимит (например 500 или 500 USD) или используйте кнопки.",
+      editOrClearHint:
+        "Можно изменить лимит, очистить его или ввести новый напрямую.",
+      selectCategoryError:
+        "❌ Выберите категорию из списка или используйте ✨ Добавить/изменить бюджет.",
+      invalidCategory: "❌ Выберите категорию из списка.",
+      categoryMissing: "❌ Категория не выбрана.",
+      invalidAmount: "❌ Введите корректную сумму или используйте кнопки.",
+    },
+    days: {
+      Sunday: "Воскресенье",
+      Monday: "Понедельник",
+      Tuesday: "Вторник",
+      Wednesday: "Среда",
+      Thursday: "Четверг",
+      Friday: "Пятница",
+      Saturday: "Суббота",
+    },
+    template: {
+      idMissing: "❌ Не найден ID шаблона.",
+      notFound: "❌ Шаблон не найден.",
+      invalidAmount: "❌ Неверная сумма. Введите корректное число.",
+      cancel: "❌ Отменить",
+      updateFailed: "❌ Не удалось обновить шаблон.",
+      amountUpdated: "✅ Сумма обновлена до {amount}",
+    },
+    notifications: {
+      enable: "✅ Включить уведомления",
+      disable: "❌ Отключить уведомления",
+      changeTime: "⏰ Изменить время",
+    },
   },
 
   // Автоматизация

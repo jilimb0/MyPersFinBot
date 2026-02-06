@@ -64,7 +64,10 @@ export const handleExpenseStart: MessageHandler = async (context) => {
 
   await bot.sendMessage(
     chatId,
-    `💸 *Expense*\n\nSelect amount or enter custom:\n\nCurrency: ${currency}`,
+    `${t(lang, "transactions.expenseTitle")}\n\n${t(
+      lang,
+      "transactions.selectAmount"
+    )}\n\n${t(lang, "transactions.currency")} ${currency}`,
     {
       parse_mode: "Markdown",
       reply_markup: {

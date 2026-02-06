@@ -3,13 +3,19 @@
  */
 
 import { MessageHandler } from "./types"
-import * as menus from "../../menus-i18n"
 
 /**
  * Handle analytics menu button
  */
 export const handleAnalyticsMenu: MessageHandler = async (context) => {
-  const { bot, chatId, lang } = context
+  const { chatId, userId, lang, wizardManager } = context
 
-  await menus.showStatsMenu(bot, chatId, lang)
+  wizardManager.setState(userId, {
+    step: "ANALYTICS_MENU",
+    data: {},
+    returnTo: "analytics",
+    lang,
+  })
+
+  await wizardManager.handleWizardInput(chatId, userId, "")
 }

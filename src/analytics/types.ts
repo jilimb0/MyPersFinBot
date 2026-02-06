@@ -66,7 +66,7 @@ export interface ComparisonResult {
 }
 
 export interface SpendingPattern {
-  dayOfWeek: string
+  dayOfWeek: number
   averageAmount: number
   transactionCount: number
 }

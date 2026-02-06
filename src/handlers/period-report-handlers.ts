@@ -1,16 +1,33 @@
 import TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
 import { Transaction, TransactionType } from "../types"
+import { Language, t } from "../i18n"
+
+const LOCALES: Record<Language, string> = {
+  en: "en-US",
+  ru: "ru-RU",
+  uk: "uk-UA",
+  es: "es-ES",
+  pl: "pl-PL",
+}
+
+function formatDate(lang: Language, date: Date): string {
+  return date.toLocaleDateString(LOCALES[lang])
+}
 
 // Helper функция для форматирования отчета
 function formatPeriodReport(
   transactions: Transaction[],
   startDate: Date,
   endDate: Date,
+  lang: Language,
   type?: TransactionType
 ): string {
   if (transactions.length === 0) {
-    return `📊 Нет транзакций за период\n${startDate.toLocaleDateString("ru")} - ${endDate.toLocaleDateString("ru")}`
+    return t(lang, "periodReport.noTransactions", {
+      start: formatDate(lang, startDate),
+      end: formatDate(lang, endDate),
+    })
   }
 
   const typeEmoji = {
@@ -19,11 +36,23 @@ function formatPeriodReport(
     [TransactionType.TRANSFER]: "↔️",
   }
 
-  let report = `📊 *Отчет за период*\n`
-  report += `📅 ${startDate.toLocaleDateString("ru")} - ${endDate.toLocaleDateString("ru")}\n`
+  let report = `${t(lang, "periodReport.title")}\n`
+  report += `${t(lang, "periodReport.dateRange", {
+    start: formatDate(lang, startDate),
+    end: formatDate(lang, endDate),
+  })}\n`
 
   if (type) {
-    report += `📌 Тип: ${typeEmoji[type]} ${type}\n`
+    const typeLabel =
+      type === TransactionType.INCOME
+        ? t(lang, "periodReport.types.income")
+        : type === TransactionType.EXPENSE
+          ? t(lang, "periodReport.types.expense")
+          : t(lang, "periodReport.types.transfer")
+    report += `${t(lang, "periodReport.typeLine", {
+      emoji: typeEmoji[type],
+      type: typeLabel,
+    })}\n`
   }
   report += `\n`
 
@@ -38,9 +67,13 @@ function formatPeriodReport(
     byCurrency[tx.currency]!.count++
   })
 
-  report += `*Итого:*\n`
+  report += `${t(lang, "periodReport.totalsHeader")}\n`
   Object.entries(byCurrency).forEach(([currency, data]) => {
-    report += `${currency}: ${data.total.toFixed(2)} (${data.count} тр.)\n`
+    report += `${t(lang, "periodReport.totalLine", {
+      currency,
+      total: data.total.toFixed(2),
+      count: data.count,
+    })}\n`
   })
 
   // Группировка по категориям (топ-5)
@@ -57,9 +90,12 @@ function formatPeriodReport(
     .slice(0, 5)
 
   if (topCategories.length > 0) {
-    report += `\n*Топ категории:*\n`
+    report += `\n${t(lang, "periodReport.topCategoriesHeader")}\n`
     topCategories.forEach(([category, amount]) => {
-      report += `${category}: ${amount.toFixed(2)}\n`
+      report += `${t(lang, "periodReport.topCategoryLine", {
+        category,
+        amount: amount.toFixed(2),
+      })}\n`
     })
   }
 
@@ -70,18 +106,11 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
   // Команда: Отчет за произвольный период
   bot.onText(/^\/report_period(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
-    await bot.sendMessage(
-      chatId,
-      "📊 *Отчет за период*\n\n" +
-        "Введите даты в формате:\n" +
-        "`ГГГГ-ММ-ДД ГГГГ-ММ-ДД`\n\n" +
-        "Пример: `2024-01-01 2024-03-31`\n\n" +
-        "Опционально добавьте тип:\n" +
-        "`2024-01-01 2024-03-31 EXPENSE`\n" +
-        "`2024-01-01 2024-03-31 INCOME`\n" +
-        "`2024-01-01 2024-03-31 TRANSFER`",
-      { parse_mode: "Markdown" }
-    )
+    const userId = chatId.toString()
+    const lang = await db.getUserLanguage(userId)
+    await bot.sendMessage(chatId, t(lang, "periodReport.prompt"), {
+      parse_mode: "Markdown",
+    })
   })
 
   // Обработчик ввода дат для периода
@@ -92,6 +121,7 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
 
       const chatId = msg.chat.id
       const userId = chatId.toString()
+      const lang = await db.getUserLanguage(userId)
 
       const startDate = new Date(match[1]!)
       const endDate = new Date(match[2]!)
@@ -101,15 +131,12 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return bot.sendMessage(
           chatId,
-          "❌ Неверный формат даты. Используйте ГГГГ-ММ-ДД"
+          t(lang, "periodReport.invalidDateFormat")
         )
       }
 
       if (startDate > endDate) {
-        return bot.sendMessage(
-          chatId,
-          "❌ Начальная дата не может быть позже конечной"
-        )
+        return bot.sendMessage(chatId, t(lang, "periodReport.startAfterEnd"))
       }
 
       try {
@@ -124,12 +151,13 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
           transactions,
           startDate,
           endDate,
+          lang,
           type
         )
         await bot.sendMessage(chatId, report, { parse_mode: "Markdown" })
       } catch (error) {
         console.error("Error generating period report:", error)
-        await bot.sendMessage(chatId, "❌ Ошибка при создании отчета")
+        await bot.sendMessage(chatId, t(lang, "periodReport.generationError"))
       }
     }
   )
@@ -138,6 +166,7 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
   bot.onText(/^\/report_quarter(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
+    const lang = await db.getUserLanguage(userId)
     const now = new Date()
     const currentQuarter = Math.floor(now.getMonth() / 3)
     const startMonth = currentQuarter * 3
@@ -152,13 +181,16 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
         endDate
       )
 
-      let report = `📊 *Отчет за Q${currentQuarter + 1} ${now.getFullYear()}*\n\n`
-      report += formatPeriodReport(transactions, startDate, endDate)
+      let report = `${t(lang, "periodReport.quarterTitle", {
+        quarter: currentQuarter + 1,
+        year: now.getFullYear(),
+      })}\n\n`
+      report += formatPeriodReport(transactions, startDate, endDate, lang)
 
       await bot.sendMessage(chatId, report, { parse_mode: "Markdown" })
     } catch (error) {
       console.error("Error generating quarter report:", error)
-      await bot.sendMessage(chatId, "❌ Ошибка при создании отчета")
+      await bot.sendMessage(chatId, t(lang, "periodReport.generationError"))
     }
   })
 
@@ -166,6 +198,7 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
   bot.onText(/^\/report_year(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
+    const lang = await db.getUserLanguage(userId)
     const now = new Date()
 
     const startDate = new Date(now.getFullYear(), 0, 1)
@@ -178,8 +211,10 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
         endDate
       )
 
-      let report = `📊 *Отчет за ${now.getFullYear()} год*\n\n`
-      report += formatPeriodReport(transactions, startDate, endDate)
+      let report = `${t(lang, "periodReport.yearTitle", {
+        year: now.getFullYear(),
+      })}\n\n`
+      report += formatPeriodReport(transactions, startDate, endDate, lang)
 
       // Добавляем сравнение по месяцам
       const byMonth: Record<number, number> = {}
@@ -189,22 +224,25 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
       })
 
       if (Object.keys(byMonth).length > 0) {
-        report += `\n*По месяцам:*\n`
+        report += `\n${t(lang, "periodReport.monthsHeader")}\n`
         Object.entries(byMonth)
           .sort(([a], [b]) => Number(a) - Number(b))
           .forEach(([month, amount]) => {
             const monthName = new Date(2024, Number(month)).toLocaleString(
-              "ru",
+              LOCALES[lang],
               { month: "long" }
             )
-            report += `${monthName}: ${amount.toFixed(2)}\n`
+            report += `${t(lang, "periodReport.monthLine", {
+              month: monthName,
+              amount: amount.toFixed(2),
+            })}\n`
           })
       }
 
       await bot.sendMessage(chatId, report, { parse_mode: "Markdown" })
     } catch (error) {
       console.error("Error generating year report:", error)
-      await bot.sendMessage(chatId, "❌ Ошибка при создании отчета")
+      await bot.sendMessage(chatId, t(lang, "periodReport.generationError"))
     }
   })
 }

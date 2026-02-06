@@ -6,6 +6,8 @@ import TelegramBot from "node-telegram-bot-api"
 import { rateLimiter } from "./rate-limiter.service"
 import logger from "../logger"
 import { RateLimitResult } from "./types"
+import { dbStorage as db } from "../database/storage-db"
+import { Language, t } from "../i18n"
 
 /**
  * Rate limiter middleware
@@ -40,7 +42,8 @@ export function rateLimiterMiddleware(
       const result = await rateLimiter.checkLimit(userId, isAdmin)
 
       if (!result.allowed) {
-        await handleRateLimitExceeded(bot, msg, result)
+        const lang = await resolveUserLanguage(userId)
+        await handleRateLimitExceeded(bot, msg, result, lang)
 
         // Log the event
         logger.warn("Rate limit exceeded for user", {
@@ -67,7 +70,8 @@ export function rateLimiterMiddleware(
       const result = await rateLimiter.checkLimit(userId, isAdmin)
 
       if (!result.allowed) {
-        await handleCallbackQueryRateLimit(bot, query, result)
+        const lang = await resolveUserLanguage(userId)
+        await handleCallbackQueryRateLimit(bot, query, result, lang)
 
         logger.warn("Rate limit exceeded for callback query", {
           userId,
@@ -94,15 +98,16 @@ export function rateLimiterMiddleware(
 async function handleRateLimitExceeded(
   bot: TelegramBot,
   msg: TelegramBot.Message,
-  result: RateLimitResult
+  result: RateLimitResult,
+  lang: Language
 ): Promise<void> {
   const retryAfter = result.retryAfter || 60
   const minutes = Math.ceil(retryAfter / 60)
 
-  const message =
-    `⚠️ Вы отправляете слишком много сообщений.\n\n` +
-    `Пожалуйста, подождите ${minutes} ${getMinutesWord(minutes)} перед следующей командой.\n\n` +
-    `Это помогает предотвратить спам и защищает бота от перегрузки.`
+  const message = t(lang, "rateLimiter.tooManyMessages", {
+    minutes,
+    minutesLabel: t(lang, "rateLimiter.minutesLabel"),
+  })
 
   try {
     await bot.sendMessage(msg.chat.id, message)
@@ -119,12 +124,16 @@ async function handleRateLimitExceeded(
 async function handleCallbackQueryRateLimit(
   bot: TelegramBot,
   query: TelegramBot.CallbackQuery,
-  result: RateLimitResult
+  result: RateLimitResult,
+  lang: Language
 ): Promise<void> {
   const retryAfter = result.retryAfter || 60
   const minutes = Math.ceil(retryAfter / 60)
 
-  const message = `⚠️ Слишком много действий. Подождите ${minutes} ${getMinutesWord(minutes)}.`
+  const message = t(lang, "rateLimiter.tooManyActions", {
+    minutes,
+    minutesLabel: t(lang, "rateLimiter.minutesLabel"),
+  })
 
   try {
     await bot.answerCallbackQuery(query.id, {
@@ -141,16 +150,19 @@ async function handleCallbackQueryRateLimit(
 /**
  * Get correct word form for minutes in Russian
  */
-function getMinutesWord(minutes: number): string {
-  if (minutes === 1) return "минуту"
-  if (minutes >= 2 && minutes <= 4) return "минуты"
-  return "минут"
+async function resolveUserLanguage(userId: string): Promise<Language> {
+  try {
+    return await db.getUserLanguage(userId)
+  } catch {
+    return "en"
+  }
 }
 
 /**
  * Create rate limit status message
  */
 export async function getRateLimitStatus(userId: string): Promise<string> {
+  const lang = await resolveUserLanguage(userId)
   try {
     const info = await rateLimiter.getInfo(userId)
     const config = rateLimiter.getConfig()
@@ -159,22 +171,23 @@ export async function getRateLimitStatus(userId: string): Promise<string> {
       const minutesLeft = Math.ceil(
         (info.blockedUntil!.getTime() - Date.now()) / 60000
       )
-      return (
-        `🚫 Вы временно заблокированы за превышение лимита.\n` +
-        `⏰ Осталось: ${minutesLeft} ${getMinutesWord(minutesLeft)}`
-      )
+      return t(lang, "rateLimiter.blocked", {
+        minutes: minutesLeft,
+        minutesLabel: t(lang, "rateLimiter.minutesLabel"),
+      })
     }
 
     const remaining = config.maxRequests - info.count
     const resetIn = Math.ceil((info.resetAt.getTime() - Date.now()) / 60000)
 
-    return (
-      `📊 Статус лимита:\n\n` +
-      `✅ Доступно команд: ${remaining}/${config.maxRequests}\n` +
-      `⏰ Сброс через: ${resetIn} ${getMinutesWord(resetIn)}`
-    )
+    return t(lang, "rateLimiter.status", {
+      remaining,
+      max: config.maxRequests,
+      minutes: resetIn,
+      minutesLabel: t(lang, "rateLimiter.minutesLabel"),
+    })
   } catch (error) {
     logger.error("Error getting rate limit status", error, { userId })
-    return "❌ Не удалось получить информацию о лимите."
+    return t(lang, "rateLimiter.statusError")
   }
 }

@@ -5,7 +5,8 @@
 
 import TelegramBot from "node-telegram-bot-api"
 import logger from "../logger"
-import { MESSAGES } from "../constants/messages"
+import { dbStorage as db } from "../database/storage-db"
+import { Language, t } from "../i18n"
 
 /**
  * Custom error types
@@ -40,23 +41,19 @@ export class InsufficientFundsError extends AppError {
     public current: number,
     public required: number
   ) {
-    super(
-      MESSAGES.ERRORS.INSUFFICIENT_FUNDS(account, current, required),
-      400,
-      true
-    )
+    super("INSUFFICIENT_FUNDS", 400, true)
   }
 }
 
 export class DatabaseError extends AppError {
-  constructor(message: string = MESSAGES.ERRORS.DATABASE_ERROR) {
+  constructor(message: string = "DATABASE_ERROR") {
     super(message, 500, false)
   }
 }
 
 export class RateLimitError extends AppError {
   constructor(public retryAfter: number) {
-    super(MESSAGES.ERRORS.RATE_LIMIT_EXCEEDED(retryAfter), 429, true)
+    super("RATE_LIMIT_EXCEEDED", 429, true)
   }
 }
 
@@ -70,6 +67,19 @@ interface ErrorContext {
   messageId?: number
   command?: string
   data?: any
+}
+
+async function resolveUserLanguage(userId?: number): Promise<Language> {
+  if (userId === undefined) return "en"
+  try {
+    return await db.getUserLanguage(String(userId))
+  } catch (error) {
+    logger.warn("Failed to resolve user language", {
+      userId: String(userId),
+      error: (error as Error).message,
+    })
+    return "en"
+  }
 }
 
 /**
@@ -90,25 +100,32 @@ export async function handleError(
   })
 
   // Determine user-friendly message
+  const lang = await resolveUserLanguage(context?.userId)
   let userMessage: string
 
   if (error instanceof InsufficientFundsError) {
-    userMessage = error.message
+    userMessage = t(lang, "errors.insufficientFunds", {
+      account: error.account,
+      current: error.current,
+      required: Math.abs(error.required),
+    })
   } else if (error instanceof ValidationError) {
     userMessage = error.message
   } else if (error instanceof NotFoundError) {
     userMessage = error.message
   } else if (error instanceof RateLimitError) {
-    userMessage = error.message
+    userMessage = t(lang, "errors.rateLimitExceeded", {
+      retryAfter: error.retryAfter,
+    })
   } else if (error instanceof DatabaseError) {
-    userMessage = MESSAGES.ERRORS.DATABASE_ERROR
+    userMessage = t(lang, "errors.databaseGeneric")
   } else if (error.message.includes("SQLITE_CONSTRAINT")) {
-    userMessage = MESSAGES.ERRORS.TRANSACTION_FAILED
+    userMessage = t(lang, "errors.transactionFailed")
   } else if (error.message.includes("Foreign key")) {
-    userMessage = MESSAGES.ERRORS.TRANSACTION_FAILED
+    userMessage = t(lang, "errors.transactionFailed")
   } else {
     // Unknown error - don't expose details
-    userMessage = "⚠️ Something went wrong. Please try again."
+    userMessage = t(lang, "errors.genericUnknown")
 
     // Log unknown errors with more details
     logger.error("Unknown error type", {

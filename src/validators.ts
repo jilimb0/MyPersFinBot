@@ -4,6 +4,7 @@ import {
   IncomeCategory,
   TransactionCategory,
 } from "./types"
+import { Language, t } from "./i18n"
 
 const VALID_CURRENCIES = ["USD", "EUR", "GEL", "RUB", "UAH", "PLN"]
 
@@ -143,25 +144,26 @@ export function parseGoalInput(
 }
 
 export function getValidationErrorMessage(
+  lang: Language,
   inputType: "amount" | "balance" | "debt" | "goal"
 ): string {
   const validCurrencies = VALID_CURRENCIES.join(", ")
 
   switch (inputType) {
     case "amount":
-      return `❌ Invalid format!\n\nPlease use: \`amount CURRENCY\`\nExample: \`100 USD\`\n\nSupported currencies: ${validCurrencies}`
+      return t(lang, "validation.invalidFormat.amount", { validCurrencies })
 
     case "balance":
-      return `❌ Invalid format!\n\nPlease use: \`AccountName amount CURRENCY\`\nExample: \`Cash 150 USD\`\n\nSupported currencies: ${validCurrencies}`
+      return t(lang, "validation.invalidFormat.balance", { validCurrencies })
 
     case "debt":
-      return `❌ Invalid format!\n\nPlease use: \`Name amount CURRENCY type\`\nExample: \`Alice 50 USD me\` (she owes me)\nExample: \`Bob 100 USD owe\` (I owe him)\n\nSupported currencies: ${validCurrencies}`
+      return t(lang, "validation.invalidFormat.debt", { validCurrencies })
 
     case "goal":
-      return `❌ Invalid format!\n\nPlease use: \`GoalName amount\` or \`GoalName amount CURRENCY\`\nExample: \`Laptop 2000\` or \`Laptop 2000 USD\`\n\nSupported currencies: ${validCurrencies}`
+      return t(lang, "validation.invalidFormat.goal", { validCurrencies })
 
     default:
-      return "❌ Invalid input format. Please try again."
+      return t(lang, "validation.invalidFormat.default")
   }
 }
 

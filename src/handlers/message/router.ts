@@ -46,7 +46,7 @@ export class MessageRouter {
     this.bot.on("message", async (msg) => {
       try {
         // Security check
-        if (!securityCheck(this.bot, msg)) {
+        if (!(await securityCheck(this.bot, msg))) {
           return
         }
 
@@ -75,7 +75,7 @@ export class MessageRouter {
         const handled = await this.matchAndHandle(context)
 
         if (!handled) {
-          logger.warn("Unhandled message", { userId, text })
+          logger.warn("Unhandled message", { userId, text, lang })
         }
       } catch (error) {
         logger.error("Message router error", error, {
@@ -109,6 +109,14 @@ export class MessageRouter {
           // Continue to next route on error
         }
       }
+    }
+
+    if (this.wizardManager.isInWizard(context.userId)) {
+      return await this.wizardManager.handleWizardInput(
+        context.chatId,
+        context.userId,
+        context.text
+      )
     }
 
     return false

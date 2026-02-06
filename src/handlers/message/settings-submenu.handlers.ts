@@ -47,96 +47,18 @@ export const handleHelp: MessageHandler = async (context) => {
     lang,
   })
 
-  await bot.sendMessage(
-    chatId,
-    "❓ *Personal Finance Bot - User Guide*\n\n" +
-      "===================\n\n" +
-      "📊 *Core Features*\n\n" +
-      "💸 *Expense & Income*\n" +
-      "• Track expenses and income\n" +
-      "• Quick entry with amount buttons\n" +
-      "• Categorize transactions\n" +
-      "• Multi-currency support\n" +
-      '• Natural language: "50 coffee"\n\n' +
-      "💳 *Balances*\n" +
-      "• Manage multiple accounts\n" +
-      '• Format: "Cash 1000 USD" or just "Cash"\n' +
-      "• Edit and transfer between accounts\n" +
-      "• Auto currency conversion\n\n" +
-      "📉 *Debts*\n" +
-      "• Track money you owe or are owed\n" +
-      '• Format: "John 500 USD"\n' +
-      "• Set due dates and reminders\n" +
-      "• Partial payments supported\n\n" +
-      "🎯 *Goals*\n" +
-      "• Set savings targets\n" +
-      '• Format: "Laptop 2000 USD"\n' +
-      "• Track progress with visual bars\n" +
-      "• Auto-deposit automation\n\n" +
-      "📊 *Analytics*\n" +
-      "• Monthly/weekly stats\n" +
-      "• Trends and top categories\n" +
-      "• Custom period reports\n" +
-      "• CSV export\n" +
-      "• Net worth tracking\n\n" +
-      "===================\n\n" +
-      "🤖 *Automation Features*\n\n" +
-      "🔁 *Recurring Payments*\n" +
-      "• Set up auto transactions\n" +
-      "• Daily/weekly/monthly schedules\n" +
-      "• Auto-categorization\n\n" +
-      "🔔 *Notifications*\n" +
-      "• Debt/goal reminders\n" +
-      "• Custom timezone\n" +
-      "• Snooze and mark as done\n\n" +
-      "===================\n\n" +
-      "👥 *Advanced*\n\n" +
-      "📅 *History & Filters*\n" +
-      "• Browse all transactions\n" +
-      "• Filter by date/category/type\n" +
-      "• Edit or delete past entries\n\n" +
-      "📊 *Budget Planner*\n" +
-      "• Set category limits\n" +
-      "• Visual spending progress\n" +
-      "• Budget alerts\n\n" +
-      "💱 *Multi-Currency*\n" +
-      "• USD, EUR, GEL, RUB, UAH, PLN\n" +
-      "• Auto conversion\n" +
-      "• Live exchange rates\n\n" +
-      "📝 *Custom Messages*\n" +
-      "• Personalize transaction confirmations\n" +
-      "• Motivational messages for goals\n\n" +
-      "📥 *Upload Bank Statements*\n" +
-      "• Tinkoff, Monobank, Revolut, Wise\n" +
-      "• Auto-import transactions\n\n" +
-      "===================\n\n" +
-      "💡 *Quick Tips*\n\n" +
-      "• Use templates to save common transactions\n" +
-      "• Set reminders for bills and payments\n" +
-      "• Enable auto-deposit for consistent savings\n" +
-      "• Check Analytics weekly for insights\n" +
-      "• Export CSV for external analysis\n\n" +
-      "===================\n\n" +
-      "🆘 *Format Examples*\n\n" +
-      "*Balances:* Cash 1000 | Wallet 500 USD\n" +
-      "*Debts:* John 500 | Maria 200 EUR\n" +
-      "*Goals:* Laptop 2000 | Vacation 5000 USD\n" +
-      "*Natural:* 50 coffee | spent 100 lunch\n\n" +
-      "Version: 0.2 | Multi-currency support\n" +
-      "Built with ❤️ for personal finance management",
-    {
-      parse_mode: "Markdown",
-      reply_markup: {
-        keyboard: [
-          [
-            { text: t(lang, "common.back") },
-            { text: t(lang, "mainMenu.mainMenuButton") },
-          ],
+  await bot.sendMessage(chatId, t(lang, "messages.userGuide"), {
+    parse_mode: "Markdown",
+    reply_markup: {
+      keyboard: [
+        [
+          { text: t(lang, "common.back") },
+          { text: t(lang, "mainMenu.mainMenuButton") },
         ],
-        resize_keyboard: true,
-      },
-    }
-  )
+      ],
+      resize_keyboard: true,
+    },
+  })
 }
 
 /**
@@ -168,52 +90,33 @@ export const handleClearDataConfirm: MessageHandler = async (context) => {
     lang,
   })
 
-  await bot.sendMessage(
-    chatId,
-    "⚠️ *WARNING*\n\nThis will permanently delete:\n" +
-      "• All transactions\n" +
-      "• All balances\n" +
-      "• All debts\n" +
-      "• All goals\n" +
-      "• All income sources\n" +
-      "• All settings\n\n" +
-      "❗ This action CANNOT be undone!\n\n" +
-      "Are you sure you want to continue?",
-    {
-      parse_mode: "Markdown",
-      reply_markup: {
-        keyboard: [
-          [{ text: t(lang, "settings.yesDeleteEverything") }],
-          [{ text: t(lang, "common.noCancel") }],
-        ],
-        resize_keyboard: true,
-      },
-    }
-  )
+  await bot.sendMessage(chatId, t(lang, "settings.clearDataWarning"), {
+    parse_mode: "Markdown",
+    reply_markup: {
+      keyboard: [
+        [{ text: t(lang, "settings.yesDeleteEverything") }],
+        [{ text: t(lang, "common.noCancel") }],
+      ],
+      resize_keyboard: true,
+    },
+  })
 }
 
 /**
  * Handle Clear Data execution
  */
 export const handleClearDataExecute: MessageHandler = async (context) => {
-  const { bot, chatId, userId } = context
+  const { bot, chatId, userId, lang } = context
 
   try {
     await context.db.clearAllUserData(userId)
     await bot.sendMessage(
       chatId,
-      "👋 *Welcome to Personal Finance Bot!*\n\n" +
-        "📊 Track your money with ease:\n" +
-        "• 💸 Record expenses and income\n" +
-        "• 💰 Manage multiple accounts\n" +
-        "• 📉 Track debts\n" +
-        "• 🎯 Set financial goals\n" +
-        "• 📈 View statistics\n\n" +
-        "Ready to take control of your finances?",
+      `${t(lang, "mainMenu.welcome")}\n\n${t(lang, "mainMenu.welcomeIntro")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
-          keyboard: [[{ text: "💰 Start tracking" }]],
+          keyboard: [[{ text: t(lang, "buttons.startTracking") }]],
           resize_keyboard: true,
         },
       }
@@ -273,13 +176,10 @@ export const handleUploadStatement: MessageHandler = async (context) => {
 
   await bot.sendMessage(
     chatId,
-    "📥 *Upload Bank Statement*\n\n" +
-      "**Supported formats:**\n" +
-      "• Tinkoff - CSV\n" +
-      "• Monobank - CSV/JSON\n" +
-      "• Revolut - CSV\n" +
-      "• Wise - TXT\n\n" +
-      "Please upload your statement file:",
+    `${t(lang, "import.title")}\n\n${t(
+      lang,
+      "import.supported"
+    )}\n\n${t(lang, "import.upload")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -312,14 +212,26 @@ export const handleChangeCurrency: MessageHandler = async (context) => {
 
   await bot.sendMessage(
     chatId,
-    `💱 *Currency Settings*\n\nCurrent: ${currentCurr}\n\nSelect your default currency:`,
+    `${t(lang, "settings.changeCurrencyTitle")}\n\n${t(
+      lang,
+      "settings.currentCurrency"
+    )} ${currentCurr}\n\n${t(lang, "settings.selectNewCurrency")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: "USD 🇺🇸" }, { text: "EUR 🇪🇺" }],
-          [{ text: "GEL 🇬🇪" }, { text: "RUB 🇷🇺" }],
-          [{ text: "UAH 🇺🇦" }, { text: "PLN 🇵🇱" }],
+          [
+            { text: t(lang, "settings.currencyOptions.usd") },
+            { text: t(lang, "settings.currencyOptions.eur") },
+          ],
+          [
+            { text: t(lang, "settings.currencyOptions.gel") },
+            { text: t(lang, "settings.currencyOptions.rub") },
+          ],
+          [
+            { text: t(lang, "settings.currencyOptions.uah") },
+            { text: t(lang, "settings.currencyOptions.pln") },
+          ],
           [
             { text: t(lang, "common.back") },
             { text: t(lang, "mainMenu.mainMenuButton") },
@@ -354,20 +266,22 @@ export const handleCurrencyChangeConfirm: MessageHandler = async (context) => {
 
     await bot.sendMessage(
       chatId,
-      `⚠️ *Currency Change Confirmation*\n\n` +
-        `Change from *${oldCurrency}* to *${currency}*?\n\n` +
-        `This will affect:\n` +
-        (balancesCount > 0
-          ? `• ${balancesCount} balance(s) will be converted to ${currency}\n`
-          : "") +
-        `• Statistics display\n\n` +
-        `Are you sure?`,
+      balancesCount > 0
+        ? t(lang, "settings.currencyChangeConfirmWithBalances", {
+            oldCurrency,
+            newCurrency: currency,
+            balancesCount,
+          })
+        : t(lang, "settings.currencyChangeConfirmNoBalances", {
+            oldCurrency,
+            newCurrency: currency,
+          }),
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
             [{ text: t(lang, "settings.yesChange") }],
-            [{ text: "❌ Cancel" }],
+            [{ text: t(lang, "common.cancel") }],
           ],
           resize_keyboard: true,
         },
@@ -376,7 +290,7 @@ export const handleCurrencyChangeConfirm: MessageHandler = async (context) => {
   } else {
     await bot.sendMessage(
       chatId,
-      `ℹ️ ${currency} is already your current currency.`,
+      t(lang, "settings.currencyAlreadyCurrent", { currency }),
       {
         reply_markup: getSettingsKeyboard(lang),
       }
@@ -405,15 +319,23 @@ export const handleCurrencyChangeExecute: MessageHandler = async (context) => {
     await db.convertAllBalancesToCurrency(userId, newCurrency)
     await bot.sendMessage(
       chatId,
-      `✅ Default currency set to ${newCurrency}\n🔄 ${balancesCount} balance(s) converted to ${newCurrency}`,
+      `${t(lang, "settings.currencySet", { currency: newCurrency })}\n${t(
+        lang,
+        "settings.balancesConverted",
+        { count: balancesCount, currency: newCurrency }
+      )}`,
       {
         reply_markup: getSettingsKeyboard(lang),
       }
     )
   } else {
-    await bot.sendMessage(chatId, `✅ Default currency set to ${newCurrency}`, {
-      reply_markup: getSettingsKeyboard(lang),
-    })
+    await bot.sendMessage(
+      chatId,
+      t(lang, "settings.currencySet", { currency: newCurrency }),
+      {
+        reply_markup: getSettingsKeyboard(lang),
+      }
+    )
   }
 
   wizardManager.clearState(userId)

@@ -10,7 +10,7 @@ import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
 import { Goal as GoalEntity } from "../database/entities/Goal"
 import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
-import { formatMoney } from "../utils"
+import { formatDateDisplay, formatMoney } from "../utils"
 import { randomUUID } from "crypto"
 import dayjs from "dayjs"
 import { t } from "../i18n"
@@ -61,8 +61,11 @@ export async function handleDebtDueDate(
       await wizard.sendMessage(chatId, t(lang, "errors.invalidDateFormat"), {
         reply_markup: {
           keyboard: [
-            [{ text: "⏩ Skip" }],
-            [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+            [{ text: t(lang, "common.skip") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -74,7 +77,7 @@ export async function handleDebtDueDate(
     if (!day || !month || !year) {
       await wizard.sendMessage(
         chatId,
-        t(lang, "errors.invalidDateShort"),
+        t(lang, "errors.invalidDateFormat"),
         wizard.getBackButton(lang)
       )
       return true
@@ -86,7 +89,7 @@ export async function handleDebtDueDate(
     if (isNaN(dueDate.getTime())) {
       await wizard.sendMessage(
         chatId,
-        t(lang, "errors.invalidDateShort"),
+        t(lang, "errors.invalidDateFormat"),
         wizard.getBackButton(lang)
       )
       return true
@@ -94,11 +97,11 @@ export async function handleDebtDueDate(
 
     // Check if date is in the past
     if (dueDate < new Date()) {
-      await wizard.sendMessage(chatId, t(lang, "errors.pastDateWarning"), {
+      await wizard.sendMessage(chatId, t(lang, "dates.pastDateConfirm"), {
         reply_markup: {
           keyboard: [
             [{ text: t(lang, "common.yes") }, { text: t(lang, "common.no") }],
-            [{ text: "⬅️ Back" }],
+            [{ text: t(lang, "common.back") }],
           ],
           resize_keyboard: true,
         },
@@ -143,15 +146,25 @@ export async function handleDebtDueDate(
   }
 
   const emoji = debtType === "I_OWE" ? "🔴" : "🟢"
-  const action = debtType === "I_OWE" ? "owe to" : "are owed by"
+  const action =
+    debtType === "I_OWE"
+      ? t(lang, "debts.actionOweTo")
+      : t(lang, "debts.actionOwedBy")
   const dueDateText = dueDate
-    ? `\nDue: ${dueDate.toLocaleDateString("en-GB")} 📅`
+    ? `\n${t(lang, "debts.dueDateLine", {
+        date: formatDateDisplay(dueDate),
+      })}`
     : ""
 
   await wizard.sendMessage(
     chatId,
-    `✅ ${emoji} Debt added!\n\n` +
-      `You ${action} *${name}*: ${formatMoney(amount, currency)}${dueDateText}`,
+    t(lang, "debts.createdMessage", {
+      emoji,
+      action,
+      name,
+      amount: formatMoney(amount, currency),
+      dueDateLine: dueDateText,
+    }),
     { parse_mode: "Markdown" }
   )
 
@@ -183,7 +196,7 @@ export async function handleDebtDueDateEdit(
   }
 
   if (dayjs(parsed).isBefore(dayjs(), "day")) {
-    await wizard.sendMessage(chatId, t(lang, "dates.pastDateWarningAlt"), {
+    await wizard.sendMessage(chatId, t(lang, "dates.pastDateConfirm"), {
       reply_markup: {
         keyboard: [
           [{ text: t(lang, "common.yes") }, { text: t(lang, "common.no") }],
@@ -209,7 +222,9 @@ export async function handleDebtDueDateEdit(
 
   await wizard.sendMessage(
     chatId,
-    `✅ Due date updated to ${dayjs(parsed).format("DD.MM.YYYY")}!\n🔔 New reminders created.`
+    t(lang, "debts.dueDateUpdated", {
+      date: formatDateDisplay(parsed),
+    })
   )
   wizard.clearState(userId)
   await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
@@ -231,7 +246,7 @@ export async function handleGoalDeadlineEdit(
   if (!parsed) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
+      t(lang, "dates.invalidFormatExample"),
       wizard.getBackButton(lang)
     )
     return true
@@ -257,7 +272,9 @@ export async function handleGoalDeadlineEdit(
 
   await wizard.sendMessage(
     chatId,
-    `✅ Deadline updated to ${dayjs(parsed).format("DD.MM.YYYY")}!\n🔔 New reminders created.`
+    t(lang, "goals.deadlineUpdated", {
+      date: formatDateDisplay(parsed),
+    })
   )
   wizard.clearState(userId)
   await showGoalsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
@@ -285,7 +302,7 @@ export async function handleGoalDeadline(
 
   let deadline: Date | undefined
 
-  if (text === "⏩ Skip") {
+  if (text === t(lang, "common.skip")) {
     deadline = undefined
   } else {
     const match = text.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
@@ -296,8 +313,11 @@ export async function handleGoalDeadline(
         {
           reply_markup: {
             keyboard: [
-              [{ text: "⏩ Skip" }],
-              [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+              [{ text: t(lang, "common.skip") }],
+              [
+                { text: t(lang, "common.back") },
+                { text: t(lang, "mainMenu.mainMenuButton") },
+              ],
             ],
             resize_keyboard: true,
           },
@@ -310,7 +330,7 @@ export async function handleGoalDeadline(
     if (!day || !month || !year) {
       await wizard.sendMessage(
         chatId,
-        t(lang, "errors.invalidDateShort"),
+        t(lang, "errors.invalidDateFormat"),
         wizard.getBackButton(lang)
       )
       return true
@@ -322,7 +342,7 @@ export async function handleGoalDeadline(
     if (isNaN(deadline.getTime())) {
       await wizard.sendMessage(
         chatId,
-        t(lang, "errors.invalidDateShort"),
+        t(lang, "errors.invalidDateFormat"),
         wizard.getBackButton(lang)
       )
       return true
@@ -331,7 +351,7 @@ export async function handleGoalDeadline(
     if (deadline < new Date()) {
       await wizard.sendMessage(
         chatId,
-        t(lang, "errors.deadlinePastWarning"),
+        t(lang, "dates.deadlineCannotBePast"),
         wizard.getBackButton(lang)
       )
       return true
@@ -357,13 +377,16 @@ export async function handleGoalDeadline(
 
     await wizard.sendMessage(
       chatId,
-      `✅ Deadline set for *${name}*: ${deadline.toLocaleDateString("en-GB")} 🎯`,
+      t(lang, "goals.deadlineSetMessage", {
+        name,
+        date: formatDateDisplay(deadline),
+      }),
       { parse_mode: "Markdown" }
     )
   } else {
     await wizard.sendMessage(
       chatId,
-      `✅ Goal *${name}* created without deadline.`,
+      t(lang, "goals.createdWithoutDeadline", { name }),
       { parse_mode: "Markdown" }
     )
   }
@@ -399,7 +422,7 @@ export async function handleIncomeExpectedDate(
 
   let expectedDate: number | undefined
 
-  if (text === "⏩ Skip") {
+  if (text === t(lang, "common.skip")) {
     expectedDate = undefined
   } else {
     const day = parseInt(text)
@@ -407,8 +430,11 @@ export async function handleIncomeExpectedDate(
       await wizard.sendMessage(chatId, t(lang, "dates.invalidDayWithSkip"), {
         reply_markup: {
           keyboard: [
-            [{ text: "⏩ Skip" }],
-            [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+            [{ text: t(lang, "common.skip") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -440,13 +466,16 @@ export async function handleIncomeExpectedDate(
 
     await wizard.sendMessage(
       chatId,
-      `✅ Reminder set for *${name}*: day ${expectedDate} of each month 📅`,
+      t(lang, "incomeSources.reminderSet", {
+        name,
+        day: expectedDate,
+      }),
       { parse_mode: "Markdown" }
     )
   } else {
     await wizard.sendMessage(
       chatId,
-      `✅ Income source *${name}* created without reminder.`,
+      t(lang, "incomeSources.createdWithoutReminder", { name }),
       { parse_mode: "Markdown" }
     )
   }

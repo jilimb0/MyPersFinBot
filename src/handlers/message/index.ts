@@ -12,8 +12,16 @@ import { handleExpenseStart } from "./expense.handlers"
 import { handleIncomeStart } from "./income.handlers"
 import { handleBalancesMenu, handleAddBalance } from "./balances.handlers"
 import { handleBudgetMenu } from "./budget.handlers"
-import { handleDebtsMenu, handleDebtSelection } from "./debts.handlers"
-import { handleGoalsMenu, handleGoalSelection } from "./goals.handlers"
+import {
+  handleDebtsMenu,
+  handleDebtSelection,
+  handleAddDebt,
+} from "./debts.handlers"
+import {
+  handleGoalsMenu,
+  handleGoalSelection,
+  handleAddGoal,
+} from "./goals.handlers"
 import { handleAnalyticsMenu } from "./analytics.handlers"
 import { handleSettingsMenu } from "./settings.handlers"
 import { isNLPInput, handleNLPInput } from "./nlp.handlers"
@@ -80,10 +88,13 @@ function registerAllRoutes(router: MessageRouter): void {
 
   // Language selection handler
   router.register(
-    () => false, // Will be checked inside handler
+    () => true, // Handle inside, return false to continue routing
     async (context) => {
       const { bot, chatId, userId, text } = context
       const handled = await handleLanguageSelection(bot, chatId, userId, text)
+      if (handled) {
+        context.wizardManager.clearState(userId)
+      }
       return handled
     },
     "Language selection"
@@ -276,6 +287,26 @@ function registerAllRoutes(router: MessageRouter): void {
     (text, lang) => text === t(lang, "balances.addBalance"),
     handleAddBalance,
     "Balances: Add"
+  )
+
+  // ============================================
+  // DEBTS/GOALS SUB-MENU
+  // ============================================
+
+  // Add Debt
+  router.register(
+    (text, lang) =>
+      text === t(lang, "debts.addDebt") || text === t(lang, "buttons.addDebt"),
+    handleAddDebt,
+    "Debts: Add"
+  )
+
+  // Add Goal
+  router.register(
+    (text, lang) =>
+      text === t(lang, "goals.addGoal") || text === t(lang, "buttons.addGoal"),
+    handleAddGoal,
+    "Goals: Add"
   )
 
   // ============================================

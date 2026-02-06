@@ -3,11 +3,24 @@
  */
 
 import { MessageHandler } from "./types"
-import { t } from "../../i18n"
+import { Language, t } from "../../i18n"
 import { createProgressBar } from "../../reports"
 import { formatMoney } from "../../utils"
 import { Goal } from "../../types"
 import * as menus from "../../menus-i18n"
+import * as helpers from "../../wizards/helpers"
+
+const LOCALES: Record<Language, string> = {
+  en: "en-US",
+  ru: "ru-RU",
+  uk: "uk-UA",
+  es: "es-ES",
+  pl: "pl-PL",
+}
+
+function formatDate(lang: Language, date: Date): string {
+  return date.toLocaleDateString(LOCALES[lang])
+}
 
 /**
  * Handle goals menu button
@@ -23,6 +36,27 @@ export const handleGoalsMenu: MessageHandler = async (context) => {
   })
 
   await menus.showGoalsMenu(bot, chatId, userId, lang)
+}
+
+/**
+ * Handle "Add Goal" button
+ */
+export const handleAddGoal: MessageHandler = async (context) => {
+  const { chatId, userId, lang, wizardManager } = context
+
+  wizardManager.setState(userId, {
+    step: "GOAL_INPUT",
+    data: {},
+    returnTo: "goals",
+    lang,
+  })
+
+  await helpers.resendCurrentStepPrompt(
+    wizardManager,
+    chatId,
+    userId,
+    wizardManager.getState(userId)!
+  )
 }
 
 /**
@@ -59,13 +93,22 @@ export const handleGoalSelection: MessageHandler = async (context) => {
   msg += `${progress} ${progressPercent}%\n\n`
 
   if (currentAmount === 0) {
-    msg += `Target: ${formatMoney(targetAmount, currency)}\n`
+    msg += `${t(lang, "wizard.goal.targetLine", {
+      amount: formatMoney(targetAmount, currency),
+    })}\n`
   } else if (remaining > 0) {
-    msg += `Remaining: ${formatMoney(remaining, currency)}\n`
-    msg += `Saved: ${formatMoney(currentAmount, currency)} / ${formatMoney(targetAmount, currency)}\n`
+    msg += `${t(lang, "wizard.goal.remainingLine", {
+      amount: formatMoney(remaining, currency),
+    })}\n`
+    msg += `${t(lang, "goals.savedLine", {
+      current: formatMoney(currentAmount, currency),
+      target: formatMoney(targetAmount, currency),
+    })}\n`
   } else {
-    msg += `🎉 Goal completed!\n`
-    msg += `Amount: ${formatMoney(currentAmount, currency)}\n`
+    msg += `${t(lang, "wizard.goal.achievedLine")}\n`
+    msg += `${t(lang, "goals.amountLine", {
+      amount: formatMoney(currentAmount, currency),
+    })}\n`
   }
 
   if (deadline) {
@@ -76,25 +119,30 @@ export const handleGoalSelection: MessageHandler = async (context) => {
     )
 
     if (daysLeft > 0) {
-      msg += `Deadline: ${deadlineDate.toLocaleDateString("en-GB")} (${daysLeft} days)\n`
+      msg += `${t(lang, "goals.deadlineWithDaysLeft", {
+        date: formatDate(lang, deadlineDate),
+        days: daysLeft,
+      })}\n`
     } else {
-      msg += `⚠️ Deadline passed: ${deadlineDate.toLocaleDateString("en-GB")}\n`
+      msg += `${t(lang, "goals.deadlinePassed", {
+        date: formatDate(lang, deadlineDate),
+      })}\n`
     }
   }
 
-  msg += `\n💡 Enter amount to contribute`
+  msg += `\n${t(lang, "wizard.goal.enterDepositAmount")}`
 
   const deadlineButtons = deadline
-    ? [[{ text: "⚙️ Advanced" }]]
+    ? [[{ text: t(lang, "buttons.advanced") }]]
     : [[{ text: t(lang, "goals.setDeadlineBtn") }]]
 
   await bot.sendMessage(chatId, msg, {
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: "✏️ Edit Target" }],
+        [{ text: t(lang, "buttons.editTarget") }],
         ...deadlineButtons,
-        [{ text: "🗑 Delete Goal" }],
+        [{ text: t(lang, "wizard.goal.deleteGoalButton") }],
         [
           { text: t(lang, "common.back") },
           { text: t(lang, "mainMenu.mainMenuButton") },

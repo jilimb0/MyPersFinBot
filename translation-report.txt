@@ -1,0 +1,25 @@
+=== Translation Coverage Report ===
+
+✓ en.ts (reference): 1529 keys
+
+ru.ts:
+  ✓ Complete: 1529/1529 keys
+
+uk.ts:
+  ✓ Complete: 1529/1529 keys
+
+es.ts:
+  ✓ Complete: 1529/1529 keys
+
+pl.ts:
+  ✓ Complete: 1529/1529 keys
+
+=== Hardcoded Strings Report ===
+
+No hardcoded strings found.
+
+=== Used Keys Report ===
+
+No missing keys used in code.
+
+Total issues: 0 missing keys, 0 extra keys, 0 missing used keys, 0 hardcoded strings

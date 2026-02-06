@@ -3,6 +3,7 @@
  */
 
 import TelegramBot, { AnswerCallbackQueryOptions } from "node-telegram-bot-api"
+import { Language, t } from "../i18n"
 
 /**
  * Safely answer callback query (ignores outdated queries)
@@ -40,6 +41,7 @@ export function createListButtons(options: {
   beforeItemsButtons?: TelegramBot.KeyboardButton[][]
   afterItemsButtons?: string[]
   itemsPerRowCustom?: number
+  lang: Language
 }): TelegramBot.KeyboardButton[][] {
   const {
     items,
@@ -47,6 +49,7 @@ export function createListButtons(options: {
     beforeItemsButtons = [],
     afterItemsButtons = [],
     itemsPerRowCustom = 2,
+    lang,
   } = options
 
   const buttons: TelegramBot.KeyboardButton[][] = beforeItemsButtons
@@ -67,8 +70,12 @@ export function createListButtons(options: {
     }
   }
 
-  if (withoutBack) buttons.push([{ text: "🏠 Main Menu" }])
-  else buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+  if (withoutBack) buttons.push([{ text: t(lang, "mainMenu.mainMenuButton") }])
+  else
+    buttons.push([
+      { text: t(lang, "buttons.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ])
 
   return buttons
 }

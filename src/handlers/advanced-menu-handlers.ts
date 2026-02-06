@@ -30,13 +30,12 @@ export async function handleDebtAdvancedMenu(
     await wizard.goToStep(userId, "DEBT_EDIT_DUE_DATE", state?.data)
     await wizard.sendMessage(
       chatId,
-      `📅 ${text === t(state?.lang || "en", "debts.setDueDate") ? "Set" : "Change"} Due Date\n\n` +
-        `Enter new due date (DD.MM.YYYY)\n\n` +
-        `Example: 31.12.2026\n\n` +
-        (text === t(state?.lang || "en", "debts.changeDueDate")
-          ? "Or tap 🗑 Remove to delete due date.\n\n"
-          : "") +
-        "Or tap ⏭ Skip to cancel.",
+      t(state?.lang || "en", "wizard.debt.dueDatePrompt", {
+        mode:
+          text === t(state?.lang || "en", "debts.setDueDate")
+            ? t(state?.lang || "en", "wizard.debt.dueDateSetTitle")
+            : t(state?.lang || "en", "wizard.debt.dueDateChangeTitle"),
+      }),
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -44,7 +43,7 @@ export async function handleDebtAdvancedMenu(
             text === t(state?.lang || "en", "debts.changeDueDate")
               ? [{ text: t(state?.lang || "en", "common.removeDate") }]
               : [],
-            [{ text: "⏭ Skip" }],
+            [{ text: t(state?.lang || "en", "common.skip") }],
             [
               { text: t(state?.lang || "en", "common.back") },
               { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
@@ -57,12 +56,12 @@ export async function handleDebtAdvancedMenu(
     return true
   }
 
-  if (text === t(state?.lang || "en", "autoFeatures.disableReminders")) {
+  if (text === t(state?.lang || "en", "debts.disableReminders")) {
     // Логика отключения напоминаний
     await db.updateDebtDueDate(userId, debt.id, null)
     await wizard.sendMessage(
       chatId,
-      t(state?.lang || "en", "autoFeatures.remindersDisabled")
+      t(state?.lang || "en", "wizard.debt.remindersRemoved")
     )
     wizard.clearState(userId)
     await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
@@ -78,7 +77,7 @@ export async function handleDebtAdvancedMenu(
     // TODO: Implement auto-payment logic
     await wizard.sendMessage(
       chatId,
-      `${enable ? t(state?.lang || "en", "autoFeatures.autoPaymentEnabled") : t(state?.lang || "en", "autoFeatures.autoPaymentDisabled")} (feature in development)`
+      `${enable ? t(state?.lang || "en", "autoFeatures.autoPaymentEnabled") : t(state?.lang || "en", "autoFeatures.autoPaymentDisabled")} ${t(state?.lang || "en", "common.featureInDevelopmentSuffix")}`
     )
     return true
   }
@@ -118,13 +117,12 @@ export async function handleGoalAdvancedMenu(
     await wizard.goToStep(userId, "GOAL_EDIT_DEADLINE", state?.data)
     await wizard.sendMessage(
       chatId,
-      `📅 ${text === t(state?.lang || "en", "autoFeatures.setDeadline") ? "Set" : "Change"} Deadline\n\n` +
-        `Enter new deadline (DD.MM.YYYY)\n\n` +
-        `Example: 31.12.2026\n\n` +
-        (text === t(state?.lang || "en", "autoFeatures.changeDeadline")
-          ? "Or tap 🗑 Remove to delete deadline.\n\n"
-          : "") +
-        "Or tap ⏭ Skip to cancel.",
+      t(state?.lang || "en", "wizard.goal.deadlinePrompt", {
+        mode:
+          text === t(state?.lang || "en", "autoFeatures.setDeadline")
+            ? t(state?.lang || "en", "wizard.goal.deadlineSetTitle")
+            : t(state?.lang || "en", "wizard.goal.deadlineChangeTitle"),
+      }),
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -132,7 +130,7 @@ export async function handleGoalAdvancedMenu(
             text === t(state?.lang || "en", "autoFeatures.changeDeadline")
               ? [{ text: t(state?.lang || "en", "common.removeDate") }]
               : [],
-            [{ text: "⏭ Skip" }],
+            [{ text: t(state?.lang || "en", "common.skip") }],
             [
               { text: t(state?.lang || "en", "common.back") },
               { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
@@ -145,12 +143,12 @@ export async function handleGoalAdvancedMenu(
     return true
   }
 
-  if (text === "🔕 Disable Reminders") {
+  if (text === t(state?.lang || "en", "goals.disableReminders")) {
     // Логика отключения напоминаний
     await db.updateGoalDeadline(userId, goal.id, null)
     await wizard.sendMessage(
       chatId,
-      "✅ Reminders disabled and deadline removed."
+      t(state?.lang || "en", "wizard.goal.deadlineRemoved")
     )
     wizard.clearState(userId)
     await showGoalsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
@@ -166,7 +164,7 @@ export async function handleGoalAdvancedMenu(
     // TODO: Implement auto-deposit logic
     await wizard.sendMessage(
       chatId,
-      `${enable ? t(state?.lang || "en", "autoFeatures.autoDepositEnabled") : t(state?.lang || "en", "autoFeatures.autoDepositDisabled")} (feature in development)`
+      `${enable ? t(state?.lang || "en", "autoFeatures.autoDepositEnabled") : t(state?.lang || "en", "autoFeatures.autoDepositDisabled")} ${t(state?.lang || "en", "common.featureInDevelopmentSuffix")}`
     )
     return true
   }

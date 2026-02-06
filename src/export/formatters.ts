@@ -3,16 +3,41 @@
  */
 
 import { ExportResult, ExportFormat } from "./types"
+import { Language, t } from "../i18n"
+
+function getLocale(lang: Language): string {
+  switch (lang) {
+    case "ru":
+      return "ru-RU"
+    case "uk":
+      return "uk-UA"
+    case "es":
+      return "es-ES"
+    case "pl":
+      return "pl-PL"
+    default:
+      return "en-US"
+  }
+}
 
 /**
  * Format export result message
  */
-export function formatExportResult(result: ExportResult): string {
-  let message = "✅ *Экспорт завершён*\n\n"
+export function formatExportResult(
+  lang: Language,
+  result: ExportResult
+): string {
+  let message = t(lang, "export.result.title") + "\n\n"
 
-  message += `📄 Файл: \`${result.filename}\`\n`
-  message += `📊 Записей: ${result.recordCount}\n`
-  message += `📦 Размер: ${formatFileSize(result.data)}\n`
+  message += t(lang, "export.result.file", { filename: result.filename }) + "\n"
+  message +=
+    t(lang, "export.result.records", {
+      count: result.recordCount,
+    }) + "\n"
+  message +=
+    t(lang, "export.result.size", {
+      size: formatFileSize(lang, result.data),
+    }) + "\n"
 
   return message
 }
@@ -20,28 +45,28 @@ export function formatExportResult(result: ExportResult): string {
 /**
  * Format export menu
  */
-export function formatExportMenu(): string {
-  let message = "📤 *Экспорт данных*\n\n"
+export function formatExportMenu(lang: Language): string {
+  let message = t(lang, "export.menu.title") + "\n\n"
 
-  message += "Выберите формат:\n\n"
+  message += t(lang, "export.menu.chooseFormat") + "\n\n"
 
-  message += "📄 *CSV* - Таблица (Excel, Google Sheets)\n"
-  message += "  • Все транзакции\n"
-  message += "  • Только расходы\n"
-  message += "  • Только доходы\n\n"
+  message += t(lang, "export.menu.csvTitle") + "\n"
+  message += t(lang, "export.menu.csvAll") + "\n"
+  message += t(lang, "export.menu.csvExpenses") + "\n"
+  message += t(lang, "export.menu.csvIncome") + "\n\n"
 
-  message += "📊 *XLSX* - Excel с формулами\n"
-  message += "  • Разбивка по категориям\n"
-  message += "  • Автосуммы\n\n"
+  message += t(lang, "export.menu.xlsxTitle") + "\n"
+  message += t(lang, "export.menu.xlsxCategories") + "\n"
+  message += t(lang, "export.menu.xlsxAutoSum") + "\n\n"
 
-  message += "💾 *JSON* - Полный backup\n"
-  message += "  • Все данные\n"
-  message += "  • Для восстановления\n\n"
+  message += t(lang, "export.menu.jsonTitle") + "\n"
+  message += t(lang, "export.menu.jsonAll") + "\n"
+  message += t(lang, "export.menu.jsonRestore") + "\n\n"
 
-  message += "Команды:\n"
-  message += "`/export csv` - CSV экспорт\n"
-  message += "`/export xlsx` - Excel экспорт\n"
-  message += "`/export json` - JSON backup\n"
+  message += t(lang, "export.menu.commands") + "\n"
+  message += t(lang, "export.menu.commandCsv") + "\n"
+  message += t(lang, "export.menu.commandXlsx") + "\n"
+  message += t(lang, "export.menu.commandJson")
 
   return message
 }
@@ -49,15 +74,15 @@ export function formatExportMenu(): string {
 /**
  * Format export presets
  */
-export function formatPresets(): string {
-  let message = "📋 *Быстрый экспорт*\n\n"
+export function formatPresets(lang: Language): string {
+  let message = t(lang, "export.presets.title") + "\n\n"
 
-  message += "1️⃣ `/export_all` - Все транзакции\n"
-  message += "2️⃣ `/export_expenses` - Только расходы\n"
-  message += "3️⃣ `/export_income` - Только доходы\n"
-  message += "4️⃣ `/export_month` - Текущий месяц\n"
-  message += "5️⃣ `/export_last_month` - Прошлый месяц\n"
-  message += "6️⃣ `/backup` - Полный backup\n"
+  message += t(lang, "export.presets.all") + "\n"
+  message += t(lang, "export.presets.expenses") + "\n"
+  message += t(lang, "export.presets.income") + "\n"
+  message += t(lang, "export.presets.month") + "\n"
+  message += t(lang, "export.presets.lastMonth") + "\n"
+  message += t(lang, "export.presets.backup")
 
   return message
 }
@@ -65,30 +90,31 @@ export function formatPresets(): string {
 /**
  * Format file size
  */
-function formatFileSize(data: Buffer | string): string {
+function formatFileSize(lang: Language, data: Buffer | string): string {
   const bytes =
     typeof data === "string" ? Buffer.byteLength(data, "utf8") : data.length
 
   if (bytes < 1024) {
-    return `${bytes} B`
+    return t(lang, "export.size.bytes", { count: bytes })
   } else if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`
+    return t(lang, "export.size.kb", { count: (bytes / 1024).toFixed(1) })
   } else {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    return t(lang, "export.size.mb", {
+      count: (bytes / (1024 * 1024)).toFixed(1),
+    })
   }
 }
 
 /**
  * Format export error
  */
-export function formatExportError(error: Error): string {
-  let message = "❌ *Ошибка экспорта*\n\n"
+export function formatExportError(lang: Language, error: Error): string {
+  let message = t(lang, "export.error.title") + "\n\n"
 
   if (error.message.includes("No transactions")) {
-    message += "Нет транзакций для экспорта.\n"
-    message += "Добавьте транзакции и попробуйте снова."
+    message += t(lang, "export.error.noTransactions")
   } else {
-    message += `Произошла ошибка: ${error.message}`
+    message += t(lang, "export.error.generic", { error: error.message })
   }
 
   return message
@@ -97,17 +123,17 @@ export function formatExportError(error: Error): string {
 /**
  * Format backup info
  */
-export function formatBackupInfo(recordCount: number): string {
-  let message = "💾 *Создание backup*\n\n"
+export function formatBackupInfo(lang: Language, recordCount: number): string {
+  let message = t(lang, "export.backup.title") + "\n\n"
 
-  message += `📊 Транзакций: ${recordCount}\n`
-  message += "✅ Балансы\n"
-  message += "✅ Долги\n"
-  message += "✅ Цели\n"
-  message += "✅ Бюджеты\n"
-  message += "✅ Источники дохода\n\n"
+  message += t(lang, "export.backup.records", { count: recordCount }) + "\n"
+  message += t(lang, "export.backup.balances") + "\n"
+  message += t(lang, "export.backup.debts") + "\n"
+  message += t(lang, "export.backup.goals") + "\n"
+  message += t(lang, "export.backup.budgets") + "\n"
+  message += t(lang, "export.backup.incomeSources") + "\n\n"
 
-  message += "⚠️ Сохраните файл в надёжном месте!"
+  message += t(lang, "export.backup.keepSafe")
 
   return message
 }
@@ -116,19 +142,23 @@ export function formatBackupInfo(recordCount: number): string {
  * Format restore confirmation
  */
 export function formatRestoreConfirmation(
+  lang: Language,
   backupDate: Date,
   recordCount: number
 ): string {
-  let message = "⚠️ *Восстановление из backup*\n\n"
+  let message = t(lang, "export.restore.title") + "\n\n"
 
-  message += `📅 Дата backup: ${backupDate.toLocaleDateString("ru-RU")}\n`
-  message += `📊 Транзакций: ${recordCount}\n\n`
+  message +=
+    t(lang, "export.restore.date", {
+      date: backupDate.toLocaleDateString(getLocale(lang)),
+    }) + "\n"
+  message += t(lang, "export.restore.records", { count: recordCount }) + "\n\n"
 
-  message += "⚠️ *ВНИМАНИЕ!*\n"
-  message += "Текущие данные будут заменены.\n"
-  message += "Это действие необратимо.\n\n"
+  message += t(lang, "export.restore.warningTitle") + "\n"
+  message += t(lang, "export.restore.warningReplace") + "\n"
+  message += t(lang, "export.restore.warningIrreversible") + "\n\n"
 
-  message += "Подтвердите восстановление:"
+  message += t(lang, "export.restore.confirmPrompt")
 
   return message
 }

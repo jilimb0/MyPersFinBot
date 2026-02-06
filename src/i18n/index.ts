@@ -15,16 +15,27 @@ const translations: Record<Language, TranslationKey> = {
   pl,
 }
 
-/**
- * Language names for display
- */
-export const languageNames: Record<Language, string> = {
-  en: "🇬🇧 English",
-  ru: "🇷🇺 Русский",
-  uk: "🇺🇦 Українська",
-  es: "🇪🇸 Español",
-  pl: "🇵🇱 Polski",
+export const LOCALE_BY_LANG: Record<Language, string> = {
+  en: "en-US",
+  ru: "ru-RU",
+  uk: "uk-UA",
+  es: "es-ES",
+  pl: "pl-PL",
 }
+
+export function getLocale(lang: Language): string {
+  return LOCALE_BY_LANG[lang] || "en-US"
+}
+
+export const DAY_KEYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const
 
 /**
  * Check if language code is valid
@@ -75,6 +86,31 @@ export function t(
   }
 
   return result
+}
+
+/**
+ * Get raw translation value (string, array, object) by key path
+ */
+export function getTranslationValue(lang: Language, path: string): any {
+  const keys = path.split(".")
+  let value: any = translations[lang]
+
+  for (const key of keys) {
+    value = value?.[key]
+    if (value === undefined) {
+      console.warn(`❌ Missing translation: ${lang}.${path}`)
+      value = translations.en
+      for (const k of keys) {
+        value = value?.[k]
+        if (value === undefined) {
+          return undefined
+        }
+      }
+      break
+    }
+  }
+
+  return value
 }
 
 // DO NOT export keyboards here - it creates circular dependency

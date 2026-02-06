@@ -4,7 +4,7 @@ import type { WizardManager } from "../wizards/wizards"
 
 import TelegramBot from "node-telegram-bot-api"
 import { TransactionType, Currency, TransactionCategory } from "../types"
-import { t } from "../i18n"
+import { Language, t } from "../i18n"
 
 /**
  * Обработчик редактирования суммы шаблона
@@ -159,7 +159,7 @@ export async function handleTemplateUse(
   if (balances.length === 0) {
     await safeAnswerCallback(bot, {
       callback_query_id: query.id,
-      text: t(lang, "templates.noBalancesFound"),
+      text: t(lang, "warnings.noBalancesFound"),
       show_alert: true,
     })
     return
@@ -187,7 +187,12 @@ export async function handleTemplateUse(
 
   const formatted = formatMoney(template.amount, template.currency)
   const emoji = template.type === TransactionType.EXPENSE ? "💸" : "💰"
-  const text = `${emoji} ${formatted} — ${template.category}\nAccount: *${smartAccount}*`
+  const text = t(lang, "templates.useMessage", {
+    emoji,
+    amount: formatted,
+    category: template.category,
+    account: smartAccount || "",
+  })
 
   await safeAnswerCallback(bot, {
     callback_query_id: query.id,
@@ -222,17 +227,17 @@ export async function handleTemplateManage(
 
   const formatted = formatMoney(template.amount, template.currency)
   const accountText = template.accountId
-    ? `Account: ${template.accountId}`
-    : "No default account"
+    ? t(lang, "templates.accountLine", { account: template.accountId })
+    : t(lang, "templates.noDefaultAccount")
 
   await safeAnswerCallback(bot, { callback_query_id: query.id })
   await bot.sendMessage(
     chatId,
-    `⚙️ *Manage Template*\n\n` +
-      `*${template.name}*\n` +
-      `Amount: ${formatted}\n` +
+    `${t(lang, "templates.manageTitle")}\n\n` +
+      `${t(lang, "templates.nameLine", { name: template.name })}\n` +
+      `${t(lang, "templates.amountLine", { amount: formatted })}\n` +
       `${accountText}\n\n` +
-      `Select action:`,
+      `${t(lang, "templates.selectAction")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -292,7 +297,9 @@ export async function handleTemplateDelete(
     if (templates.length === 0) {
       await bot.sendMessage(
         chatId,
-        '📋 *Templates*\n\nNo templates saved yet.\n\nUse `/expense` or `/income` and click "💾 Save as template?" to create templates.',
+        t(lang, "commands.templates.empty", {
+          saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
+        }),
         { parse_mode: "Markdown" }
       )
     } else {
@@ -305,23 +312,19 @@ export async function handleTemplateDelete(
               callback_data: `tmpl_use|${tpl.id}`,
             },
             {
-              text: "⚙️ Manage",
+              text: t(lang, "buttons.manage"),
               callback_data: `tmpl_manage|${tpl.id}`,
             },
           ]
         }
       )
 
-      await bot.sendMessage(
-        chatId,
-        `📋 *Templates*\n\nClick to use or ⚙️ to manage:`,
-        {
-          parse_mode: "Markdown",
-          reply_markup: {
-            inline_keyboard: buttons,
-          },
-        }
-      )
+      await bot.sendMessage(chatId, t(lang, "commands.templates.listHint"), {
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: buttons,
+        },
+      })
     }
   } else {
     await safeAnswerCallback(bot, {
@@ -349,7 +352,7 @@ export async function handleTemplateEditAccount(
   if (balances.length === 0) {
     await safeAnswerCallback(bot, {
       callback_query_id: query.id,
-      text: "⚠️ No balances found",
+      text: t(lang, "warnings.noBalancesFound"),
       show_alert: true,
     })
     return
@@ -357,7 +360,10 @@ export async function handleTemplateEditAccount(
 
   const buttons: TelegramBot.InlineKeyboardButton[][] = balances.map((bal) => [
     {
-      text: `💳 ${bal.accountId} — ${formatMoney(bal.amount, bal.currency)}`,
+      text: t(lang, "templates.balanceOption", {
+        account: bal.accountId,
+        amount: formatMoney(bal.amount, bal.currency),
+      }),
       callback_data: `tmpl_set_acc|${templateId}|${bal.accountId}`,
     },
   ])
@@ -417,11 +423,19 @@ export async function showTemplatesList(
   userId: string
 ) {
   const templates = await db.getTemplates(userId)
+  let lang: Language = "en"
+  try {
+    lang = await db.getUserLanguage(userId)
+  } catch {
+    lang = "en"
+  }
 
   if (templates.length === 0) {
     await bot.sendMessage(
       chatId,
-      '📋 *Templates*\n\nNo templates saved yet.\n\nUse `/expense` or `/income` and click "💾 Save as template?" to create templates.',
+      t(lang, "commands.templates.empty", {
+        saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
+      }),
       { parse_mode: "Markdown" }
     )
     return
@@ -435,22 +449,18 @@ export async function showTemplatesList(
         callback_data: `tmpl_use|${tpl.id}`,
       },
       {
-        text: "⚙️ Manage",
+        text: t(lang, "buttons.manage"),
         callback_data: `tmpl_manage|${tpl.id}`,
       },
     ]
   })
 
-  await bot.sendMessage(
-    chatId,
-    `📋 *Templates*\n\nClick to use or ⚙️ to manage:`,
-    {
-      parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: buttons,
-      },
-    }
-  )
+  await bot.sendMessage(chatId, t(lang, "commands.templates.listHint"), {
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: buttons,
+    },
+  })
 }
 
 export async function showTemplateManageMenu(
@@ -473,16 +483,16 @@ export async function showTemplateManageMenu(
 
   const formatted = formatMoney(template.amount, template.currency)
   const accountText = template.accountId
-    ? `Account: ${template.accountId}`
-    : "No default account"
+    ? t(lang, "templates.accountLine", { account: template.accountId })
+    : t(lang, "templates.noDefaultAccount")
 
   await bot.sendMessage(
     chatId,
-    `⚙️ *Manage Template*\n\n` +
-      `*${template.name}*\n` +
-      `Amount: ${formatted}\n` +
+    `${t(lang, "templates.manageTitle")}\n\n` +
+      `${t(lang, "templates.nameLine", { name: template.name })}\n` +
+      `${t(lang, "templates.amountLine", { amount: formatted })}\n` +
       `${accountText}\n\n` +
-      `Select action:`,
+      `${t(lang, "templates.selectAction")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {

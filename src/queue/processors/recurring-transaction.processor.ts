@@ -5,6 +5,7 @@ import { RecurringTransactionJobData, JobResult } from "../types"
 import { balanceService } from "../../database/services/balance.service"
 import { TransactionType } from "../../types"
 import { randomUUID } from "crypto"
+import { Language, t } from "../../i18n"
 
 /**
  * Calculate next execution date based on frequency
@@ -52,8 +53,15 @@ export async function processRecurringTransaction(
     description,
   } = data
 
+  let lang: Language = "en"
+  try {
+    lang = await dbStorage.getUserLanguage(userId)
+  } catch {
+    lang = "en"
+  }
+
   if (!category) {
-    throw new Error("Category is required for recurring transaction")
+    throw new Error(t(lang, "queue.recurring.missingCategory"))
   }
 
   try {
@@ -74,7 +82,7 @@ export async function processRecurringTransaction(
       logger.warn("Recurring transaction not found", { recurringTransactionId })
       return {
         success: false,
-        message: "Recurring transaction not found",
+        message: t(lang, "queue.recurring.notFound"),
       }
     }
 
@@ -84,7 +92,7 @@ export async function processRecurringTransaction(
       })
       return {
         success: false,
-        message: "Recurring transaction is inactive",
+        message: t(lang, "queue.recurring.inactive"),
       }
     }
 
@@ -94,13 +102,15 @@ export async function processRecurringTransaction(
         type === TransactionType.EXPENSE ? data.fromAccountId : data.toAccountId
 
       if (!accountId) {
-        throw new Error(`Account ID required for ${type}`)
+        throw new Error(t(lang, "queue.recurring.accountRequired", { type }))
       }
 
       // Check balance exists
       const balance = await dbStorage.getBalance(userId, accountId, currency)
       if (!balance) {
-        throw new Error(`Balance not found for account ${accountId}`)
+        throw new Error(
+          t(lang, "queue.recurring.balanceNotFound", { account: accountId })
+        )
       }
 
       // For expenses, check sufficient funds
@@ -113,7 +123,10 @@ export async function processRecurringTransaction(
         })
         return {
           success: false,
-          message: `Insufficient funds: ${balance.amount} < ${amount}`,
+          message: t(lang, "queue.recurring.insufficientFunds", {
+            available: balance.amount,
+            required: amount,
+          }),
         }
       }
     }
@@ -125,7 +138,7 @@ export async function processRecurringTransaction(
       amount,
       currency,
       category,
-      description: `${description} (Recurring)`,
+      description: `${description} ${t(lang, "queue.recurring.recurringSuffix")}`,
       fromAccountId: data.fromAccountId,
       toAccountId: data.toAccountId,
       date: new Date(),
@@ -180,7 +193,7 @@ export async function processRecurringTransaction(
 
     return {
       success: true,
-      message: "Transaction created successfully",
+      message: t(lang, "queue.recurring.created"),
       data: {
         transactionId: transaction,
         amount,

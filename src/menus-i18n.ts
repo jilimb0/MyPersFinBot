@@ -10,14 +10,14 @@ import {
   Balance,
 } from "./types"
 import {
-  ANALYTICS_KEYBOARD,
-  BACK_N_MAIN_KEYBOARD,
-  SETTINGS_KEYBOARD,
-  STATS_KEYBOARD,
-} from "./constants"
+  getAnalyticsKeyboard,
+  getBackAndMainKeyboard,
+  getSettingsKeyboard,
+  getStatsKeyboard,
+} from "./i18n/keyboards"
 import { WizardManager } from "./wizards/wizards"
 import { createListButtons, formatMoney } from "./utils"
-import { Language, t } from "./i18n"
+import { Language, getLocale, t } from "./i18n"
 import { getMainMenuKeyboard } from "./i18n/keyboards"
 
 export async function showMainMenu(
@@ -46,6 +46,7 @@ export async function showBalancesMenu(
 
   const keyboard = createListButtons({
     items,
+    lang,
     withoutBack: true,
     beforeItemsButtons:
       balancesList.length >= 2
@@ -98,7 +99,7 @@ export async function showDebtsMenu(
     youOwe.forEach((d: Debt) => {
       const remaining = d.amount - d.paidAmount
       const dueDateStr = d.dueDate
-        ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(lang === "ru" ? "ru-RU" : "en-GB")}`
+        ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(getLocale(lang))}`
         : ""
       msg += `└─ ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
     })
@@ -111,7 +112,7 @@ export async function showDebtsMenu(
       const remaining = d.amount - d.paidAmount
       const prefix = index === theyOwe.length - 1 ? "└─" : "┣─"
       const dueDateStr = d.dueDate
-        ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(lang === "ru" ? "ru-RU" : "en-GB")}`
+        ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(getLocale(lang))}`
         : ""
       msg += `${prefix} ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
     })
@@ -132,6 +133,7 @@ export async function showDebtsMenu(
 
   const listButtons = createListButtons({
     items,
+    lang,
     withoutBack: true,
     beforeItemsButtons: [[{ text: t(lang, "debts.addDebt") }]],
   })
@@ -157,6 +159,7 @@ export async function showGoalsMenu(
 
   const listButtons = createListButtons({
     items,
+    lang,
     withoutBack: true,
     beforeItemsButtons: [[{ text: t(lang, "goals.addGoal") }]],
   })
@@ -181,6 +184,7 @@ export async function showIncomeSourcesMenu(
 
   const listButtons = createListButtons({
     items,
+    lang,
     beforeItemsButtons: [[{ text: t(lang, "incomeSources.addSource") }]],
   })
 
@@ -206,7 +210,7 @@ export async function showSettingsMenu(
     `${t(lang, "settings.title")}\n\n${t(lang, "settings.currentCurrency")} ${currentCurrency}\n\n${t(lang, "settings.manageConfig")}`,
     {
       parse_mode: "Markdown",
-      reply_markup: SETTINGS_KEYBOARD,
+      reply_markup: getSettingsKeyboard(lang),
     }
   )
 }
@@ -221,7 +225,7 @@ export async function showStatsMenu(
     t(lang, "analytics.title") + "\n\n" + t(lang, "analytics.viewInsights"),
     {
       parse_mode: "Markdown",
-      reply_markup: STATS_KEYBOARD,
+      reply_markup: getStatsKeyboard(lang),
     }
   )
 }
@@ -263,7 +267,7 @@ export async function showHistoryMenu(
 
     await wizard.sendMessage(chatId, msg, {
       parse_mode: "Markdown",
-      reply_markup: BACK_N_MAIN_KEYBOARD,
+      reply_markup: getBackAndMainKeyboard(lang),
     })
     return
   }
@@ -298,10 +302,9 @@ export async function showHistoryMenu(
   const items = transactions.map((tx, i) => {
     const emoji =
       tx.type === "EXPENSE" ? "📉" : tx.type === "INCOME" ? "📈" : "↔️"
-    const date = new Date(tx.date).toLocaleDateString(
-      lang === "ru" ? "ru-RU" : "en-GB"
-    )
-    const account = tx.fromAccountId || tx.toAccountId || "N/A"
+    const date = new Date(tx.date).toLocaleDateString(getLocale(lang))
+    const account =
+      tx.fromAccountId || tx.toAccountId || t(lang, "common.notAvailable")
     msg += `${emoji} *${tx.category}* - ${formatMoney(tx.amount, tx.currency)}\n`
     msg += `   💳 ${account} | 📅 ${date}\n`
     if (i < transactions.length - 1) msg += "\n"
@@ -315,6 +318,7 @@ export async function showHistoryMenu(
 
   const listButtons = createListButtons({
     items,
+    lang,
     afterItemsButtons:
       navButtons.length > 0 ? navButtons : [t(lang, "history.filters")],
   })
@@ -371,6 +375,7 @@ export async function showBudgetMenu(
 
   const keyboard = createListButtons({
     items,
+    lang,
     beforeItemsButtons: [[{ text: t(lang, "budget.addEditBudget") }]],
     withoutBack: true,
   })
@@ -396,7 +401,7 @@ export async function showAnalyticsReportsMenu(
   wizard: WizardManager,
   chatId: number,
   userId: string,
-  _lang: Language
+  lang: Language
 ) {
   const statsMsg = await formatMonthlyStats(userId)
 
@@ -408,7 +413,7 @@ export async function showAnalyticsReportsMenu(
 
   wizard.sendMessage(chatId, statsMsg, {
     parse_mode: "Markdown",
-    reply_markup: ANALYTICS_KEYBOARD,
+    reply_markup: getAnalyticsKeyboard(lang),
   })
 }
 
@@ -463,7 +468,7 @@ export async function showNetWorthMenu(
       youOwe.forEach((d: Debt) => {
         const remaining = d.amount - d.paidAmount
         const dueDateStr = d.dueDate
-          ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(lang === "ru" ? "ru-RU" : "en-GB")}`
+          ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(getLocale(lang))}`
           : ""
         msg += `└─ ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
       })
@@ -476,7 +481,7 @@ export async function showNetWorthMenu(
         const remaining = d.amount - d.paidAmount
         const prefix = index === theyOwe.length - 1 ? "└─" : "┣─"
         const dueDateStr = d.dueDate
-          ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(lang === "ru" ? "ru-RU" : "en-GB")}`
+          ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(getLocale(lang))}`
           : ""
         msg += `${prefix} ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
       })
@@ -556,7 +561,7 @@ export async function showActiveRemindersMenu(
       msg += `└─ ${debt.name}\n`
       for (const r of reminders) {
         const dateStr = new Date(r.reminderDate).toLocaleDateString(
-          lang === "ru" ? "ru-RU" : "en-GB"
+          getLocale(lang)
         )
         msg += `   📅 ${dateStr} - ${r.message}\n`
       }
@@ -571,7 +576,7 @@ export async function showActiveRemindersMenu(
       msg += `└─ ${goal.name}\n`
       for (const r of reminders) {
         const dateStr = new Date(r.reminderDate).toLocaleDateString(
-          lang === "ru" ? "ru-RU" : "en-GB"
+          getLocale(lang)
         )
         msg += `   📅 ${dateStr} - ${r.message}\n`
       }
@@ -590,7 +595,7 @@ export async function showActiveRemindersMenu(
 
   await wizard.sendMessage(chatId, msg, {
     parse_mode: "Markdown",
-    reply_markup: BACK_N_MAIN_KEYBOARD,
+    reply_markup: getBackAndMainKeyboard(lang),
   })
 }
 

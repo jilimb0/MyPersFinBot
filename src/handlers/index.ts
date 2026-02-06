@@ -16,3 +16,5 @@ export * from "./voice-handler"
 export * from "./advanced-menu-handlers"
 export * from "./period-report-handlers"
 export * from "./language-handler"
+
+export * from "./reminder-callback-handlers"

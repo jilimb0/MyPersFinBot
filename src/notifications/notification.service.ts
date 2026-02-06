@@ -12,6 +12,7 @@ import {
 import { dbStorage } from "../database/storage-db"
 import logger from "../logger"
 import TelegramBot from "node-telegram-bot-api"
+import { Language, t } from "../i18n"
 
 export class NotificationService {
   private config: Map<string, NotificationConfig> = new Map()
@@ -101,7 +102,7 @@ export class NotificationService {
 
       await bot.sendMessage(notification.userId, message, {
         parse_mode: "Markdown",
-        reply_markup: this.getNotificationKeyboard(notification),
+        reply_markup: await this.getNotificationKeyboard(notification),
       })
 
       notification.sent = true
@@ -144,7 +145,10 @@ export class NotificationService {
    * Get keyboard for notification
    */
 
-  private getNotificationKeyboard(notification: Notification): any {
+  private async getNotificationKeyboard(
+    notification: Notification
+  ): Promise<any> {
+    const lang = await dbStorage.getUserLanguage(notification.userId)
     const keyboard: any[][] = []
 
     switch (notification.type) {
@@ -153,13 +157,13 @@ export class NotificationService {
         keyboard.push(
           [
             {
-              text: "📊 Посмотреть бюджет",
+              text: t(lang, "notifications.keyboard.viewBudget"),
               callback_data: `view_budget|${notification.data?.budgetId}`,
             },
           ],
           [
             {
-              text: "💸 Посмотреть расходы",
+              text: t(lang, "notifications.keyboard.viewExpenses"),
               callback_data: `view_expenses|${notification.data?.category}`,
             },
           ]
@@ -169,7 +173,7 @@ export class NotificationService {
       case "UNUSUAL_EXPENSE":
         keyboard.push([
           {
-            text: "📝 Посмотреть транзакцию",
+            text: t(lang, "notifications.keyboard.viewTransaction"),
             callback_data: `view_transaction|${notification.data?.transactionId}`,
           },
         ])
@@ -178,7 +182,7 @@ export class NotificationService {
       case "SPENDING_SPIKE":
         keyboard.push([
           {
-            text: "📊 Статистика недели",
+            text: t(lang, "notifications.keyboard.weeklyStats"),
             callback_data: "view_weekly_stats",
           },
         ])
@@ -188,7 +192,7 @@ export class NotificationService {
     // Add dismiss button
     keyboard.push([
       {
-        text: "✅ Понятно",
+        text: t(lang, "notifications.keyboard.dismiss"),
         callback_data: `dismiss_notification|${notification.id}`,
       },
     ])
@@ -200,8 +204,10 @@ export class NotificationService {
    * Get daily summary
    */
   async getDailySummary(userId: string): Promise<string> {
+    let lang: Language = "en"
     try {
       const userData = await dbStorage.getUserData(userId)
+      lang = await dbStorage.getUserLanguage(userId)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
@@ -220,21 +226,35 @@ export class NotificationService {
       // Get budget remaining
       const budgetRemaining = await budgetAlerts.getDailyRemaining(userId)
 
-      let message = `📅 *Итоги дня*\n\n`
-      message += `💸 Расходы: ${totalExpenses.toFixed(2)} ${userData.defaultCurrency}\n`
-      message += `💰 Доходы: ${totalIncome.toFixed(2)} ${userData.defaultCurrency}\n`
-      message += `📊 Баланс: ${(totalIncome - totalExpenses).toFixed(2)} ${userData.defaultCurrency}\n\n`
+      let message = `${t(lang, "notifications.dailySummary.title")}\n\n`
+      message += `${t(lang, "notifications.dailySummary.expensesLine", {
+        amount: totalExpenses.toFixed(2),
+        currency: userData.defaultCurrency,
+      })}\n`
+      message += `${t(lang, "notifications.dailySummary.incomeLine", {
+        amount: totalIncome.toFixed(2),
+        currency: userData.defaultCurrency,
+      })}\n`
+      message += `${t(lang, "notifications.dailySummary.balanceLine", {
+        amount: (totalIncome - totalExpenses).toFixed(2),
+        currency: userData.defaultCurrency,
+      })}\n\n`
 
       if (budgetRemaining.total > 0) {
-        message += `🎯 Осталось сегодня: ${budgetRemaining.total.toFixed(2)} ${userData.defaultCurrency}\n`
+        message += `${t(lang, "notifications.dailySummary.remainingTodayLine", {
+          amount: budgetRemaining.total.toFixed(2),
+          currency: userData.defaultCurrency,
+        })}\n`
       }
 
-      message += `\n📋 Транзакций: ${transactions.length}`
+      message += `\n${t(lang, "notifications.dailySummary.transactionsLine", {
+        count: transactions.length,
+      })}`
 
       return message
     } catch (error) {
       logger.error("Daily summary error", error, { userId })
-      return "❌ Ошибка генерации сводки"
+      return t(lang, "notifications.dailySummary.error")
     }
   }
 

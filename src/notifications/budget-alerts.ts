@@ -9,6 +9,7 @@ import logger from "../logger"
 import { randomUUID } from "crypto"
 import { Budget } from "../types"
 import { BudgetPeriod } from "../database/entities/Budget"
+import { Language, t } from "../i18n"
 
 export class BudgetAlerts {
   /**
@@ -20,11 +21,17 @@ export class BudgetAlerts {
   ): Promise<Notification[]> {
     try {
       const userData = await dbStorage.getUserData(userId)
+      const lang = await dbStorage.getUserLanguage(userId)
       const notifications: Notification[] = []
 
       // Check each budget
       for (const budget of userData.budgets) {
-        const alert = await this.checkBudget(userId, budget, warningThreshold)
+        const alert = await this.checkBudget(
+          userId,
+          budget,
+          warningThreshold,
+          lang
+        )
         if (alert) {
           notifications.push(alert)
         }
@@ -43,7 +50,8 @@ export class BudgetAlerts {
   private async checkBudget(
     userId: string,
     budget: any,
-    warningThreshold: number
+    warningThreshold: number,
+    lang: Language
   ): Promise<Notification | null> {
     try {
       // Get current period transactions
@@ -76,7 +84,8 @@ export class BudgetAlerts {
           budget,
           spent,
           percentage,
-          remaining
+          remaining,
+          lang
         )
       } else if (percentage >= warningThreshold) {
         return this.createWarningAlert(
@@ -84,7 +93,8 @@ export class BudgetAlerts {
           budget,
           spent,
           percentage,
-          remaining
+          remaining,
+          lang
         )
       }
 
@@ -103,22 +113,27 @@ export class BudgetAlerts {
     budget: any,
     spent: number,
     percentage: number,
-    remaining: number
+    remaining: number,
+    lang: Language
   ): Notification {
     const overspent = Math.abs(remaining)
+    const categoryLabel =
+      budget.category || t(lang, "notifications.alerts.common.generalBudget")
 
     return {
       id: randomUUID(),
       userId,
       type: "BUDGET_EXCEEDED",
       priority: "HIGH" as NotificationPriority,
-      title: "🚨 Бюджет превышен!",
-      message:
-        `*${budget.category || "Общий"} бюджет превышен!*\n\n` +
-        `Лимит: ${budget.amount.toFixed(2)} ${budget.currency}\n` +
-        `Потрачено: ${spent.toFixed(2)} ${budget.currency}\n` +
-        `Превышение: ${overspent.toFixed(2)} ${budget.currency} (${percentage.toFixed(0)}%)\n\n` +
-        `⚠️ Рекомендуем сократить расходы в этой категории!`,
+      title: t(lang, "notifications.alerts.budgetExceeded.title"),
+      message: t(lang, "notifications.alerts.budgetExceeded.message", {
+        category: categoryLabel,
+        limit: budget.amount.toFixed(2),
+        spent: spent.toFixed(2),
+        overspent: overspent.toFixed(2),
+        percentage: percentage.toFixed(0),
+        currency: budget.currency,
+      }),
       data: {
         budgetId: budget.id,
         category: budget.category,
@@ -140,20 +155,26 @@ export class BudgetAlerts {
     budget: any,
     spent: number,
     percentage: number,
-    remaining: number
+    remaining: number,
+    lang: Language
   ): Notification {
+    const categoryLabel =
+      budget.category || t(lang, "notifications.alerts.common.generalBudget")
+
     return {
       id: randomUUID(),
       userId,
       type: "BUDGET_WARNING",
       priority: "MEDIUM" as NotificationPriority,
-      title: "⚠️ Предупреждение о бюджете",
-      message:
-        `*${budget.category || "Общий"} бюджет*\n\n` +
-        `Лимит: ${budget.amount.toFixed(2)} ${budget.currency}\n` +
-        `Потрачено: ${spent.toFixed(2)} ${budget.currency} (${percentage.toFixed(0)}%)\n` +
-        `Осталось: ${remaining.toFixed(2)} ${budget.currency}\n\n` +
-        `💡 Вы использовали ${percentage.toFixed(0)}% бюджета`,
+      title: t(lang, "notifications.alerts.budgetWarning.title"),
+      message: t(lang, "notifications.alerts.budgetWarning.message", {
+        category: categoryLabel,
+        limit: budget.amount.toFixed(2),
+        spent: spent.toFixed(2),
+        percentage: percentage.toFixed(0),
+        remaining: remaining.toFixed(2),
+        currency: budget.currency,
+      }),
       data: {
         budgetId: budget.id,
         category: budget.category,

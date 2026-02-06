@@ -17,6 +17,7 @@ import {
   createProgressBar,
 } from "../helpers"
 import { CategoryTotals, MonthlyStatsData } from "../types"
+import { Language, t } from "../../i18n"
 
 /**
  * Fetches monthly stats data
@@ -47,7 +48,8 @@ function formatIncomeSection(
   data: MonthlyStatsData,
   incomeTotals: CategoryTotals,
   totalIncomeCount: number,
-  totalIncomeInDefaultCurrency: number
+  totalIncomeInDefaultCurrency: number,
+  lang: Language
 ): string {
   const { incomeSources, defaultCurrency } = data
 
@@ -58,7 +60,10 @@ function formatIncomeSection(
   let section = ""
 
   if (incomeSources.length > 0) {
-    section += "💵 *Income Plan vs Actual*\n\nExpected:\n"
+    section += `${t(lang, "reports.stats.incomePlanTitle")}\n\n${t(
+      lang,
+      "reports.stats.expectedTitle"
+    )}\n`
 
     const sourceItems = incomeSources.map((source: IncomeSource) => ({
       amount: source.expectedAmount || 0,
@@ -74,21 +79,36 @@ function formatIncomeSection(
     incomeSources.forEach((source: IncomeSource) => {
       const amount = source.expectedAmount || 0
       const currency = source.currency || defaultCurrency
-      section += `• ${source.name}: ${formatMoney(amount, currency)}\n`
+      section += `${t(lang, "reports.stats.lineItem", {
+        name: source.name,
+        amount: formatMoney(amount, currency),
+      })}\n`
     })
-    section += `Total: ${formatMoney(totalExpected, defaultCurrency)}\n`
+    section += `${t(lang, "reports.stats.total", {
+      amount: formatMoney(totalExpected, defaultCurrency),
+    })}\n`
 
-    section += "\nActual:\n"
+    section += `\n${t(lang, "reports.stats.actualTitle")}\n`
     if (totalIncomeCount > 0) {
       Object.entries(incomeTotals).forEach(([category, currencies]) => {
         const currencyStr = Object.entries(currencies)
           .map(([cur, amt]) => formatMoney(amt, cur))
           .join(" / ")
-        section += `• ${getCategoryEmoji(category)} ${category}: ${currencyStr}\n`
+        section += `${t(lang, "reports.stats.categoryLine", {
+          emoji: getCategoryEmoji(category),
+          category,
+          amount: currencyStr,
+        })}\n`
       })
-      section += `Total: ${formatMoney(totalIncomeInDefaultCurrency, defaultCurrency)}\n`
+      section += `${t(lang, "reports.stats.total", {
+        amount: formatMoney(totalIncomeInDefaultCurrency, defaultCurrency),
+      })}\n`
     } else {
-      section += `• No income received yet\nTotal: 0 ${defaultCurrency}\n`
+      section += `${t(lang, "reports.stats.noIncomeYet")}\n${t(
+        lang,
+        "reports.stats.total",
+        { amount: `0 ${defaultCurrency}` }
+      )}\n`
     }
 
     const difference = totalIncomeInDefaultCurrency - totalExpected
@@ -101,10 +121,15 @@ function formatIncomeSection(
         ? ((totalIncomeInDefaultCurrency / totalExpected) * 100).toFixed(2)
         : "0.00"
 
-    section += `\n📈 Progress: ${progress} ${progressPercent}%\n`
+    section += `\n${t(lang, "reports.stats.progress", {
+      bar: progress,
+      percent: progressPercent,
+    })}\n`
 
     if (difference >= 0) {
-      section += `✅ Goal reached! +${formatMoney(difference, defaultCurrency)}\n`
+      section += `${t(lang, "reports.stats.goalReached", {
+        amount: formatMoney(difference, defaultCurrency),
+      })}\n`
     } else {
       // Позитивный прогресс вместо "Short by"
       const now = new Date()
@@ -117,17 +142,25 @@ function formatIncomeSection(
       const remaining = Math.abs(difference)
       const dailyTarget = Math.ceil(remaining / daysLeft)
 
-      section += `⚠️ Short by: ${formatMoney(remaining, defaultCurrency)}\n`
-      section += `⏰ Days left: ${daysLeft}\n`
-      section += `📈 Daily target: ~${formatMoney(dailyTarget, defaultCurrency)}\n`
+      section += `${t(lang, "reports.stats.shortBy", {
+        amount: formatMoney(remaining, defaultCurrency),
+      })}\n`
+      section += `${t(lang, "reports.stats.daysLeft", { days: daysLeft })}\n`
+      section += `${t(lang, "reports.stats.dailyTarget", {
+        amount: formatMoney(dailyTarget, defaultCurrency),
+      })}\n`
     }
   } else if (totalIncomeCount > 0) {
-    section += "💰 *Income*\n"
+    section += `${t(lang, "reports.stats.incomeTitle")}\n`
     Object.entries(incomeTotals).forEach(([category, currencies]) => {
       const currencyStr = Object.entries(currencies)
         .map(([cur, amt]) => formatMoney(amt, cur))
         .join(" / ")
-      section += `• ${getCategoryEmoji(category)} ${category}: ${currencyStr}\n`
+      section += `${t(lang, "reports.stats.categoryLine", {
+        emoji: getCategoryEmoji(category),
+        category,
+        amount: currencyStr,
+      })}\n`
     })
   }
 
@@ -139,16 +172,21 @@ function formatIncomeSection(
  */
 function formatExpenseSection(
   expenseTotals: CategoryTotals,
-  totalExpenseCount: number
+  totalExpenseCount: number,
+  lang: Language
 ): string {
   if (totalExpenseCount === 0) return ""
 
-  let section = "📉 *Expenses*\n"
+  let section = `${t(lang, "reports.stats.expensesTitle")}\n`
   Object.entries(expenseTotals).forEach(([category, currencies]) => {
     const currencyStr = Object.entries(currencies)
       .map(([cur, amt]) => formatMoney(amt, cur))
       .join(" / ")
-    section += `• ${getCategoryEmoji(category)} ${category}: ${currencyStr}\n`
+    section += `${t(lang, "reports.stats.categoryLine", {
+      emoji: getCategoryEmoji(category),
+      category,
+      amount: currencyStr,
+    })}\n`
   })
 
   return section
@@ -161,7 +199,8 @@ async function formatTrendsSection(
   userId: string,
   data: MonthlyStatsData,
   totalIncomeInDefaultCurrency: number,
-  expenseTotals: CategoryTotals
+  expenseTotals: CategoryTotals,
+  lang: Language
 ): Promise<string> {
   const { year, month, defaultCurrency } = data
 
@@ -212,28 +251,40 @@ async function formatTrendsSection(
     convertToDefaultCurrency(currentExpenseItems, defaultCurrency)
   )
 
-  let section = "\n📊 *vs Last Month*\n"
+  let section = `\n${t(lang, "reports.stats.vsLastMonth")}\n`
 
   const incomeDiff = totalIncomeInDefaultCurrency - prevIncome
   const incomePercent = prevIncome > 0 ? (incomeDiff / prevIncome) * 100 : 0
 
   if (incomeDiff > 0) {
-    section += `💰 Income: +${formatMoney(incomeDiff, defaultCurrency)} (+${formatAmount(incomePercent)}%)\n`
+    section += `${t(lang, "reports.stats.vsIncomePositive", {
+      amount: formatMoney(incomeDiff, defaultCurrency),
+      percent: formatAmount(incomePercent),
+    })}\n`
   } else if (incomeDiff < 0) {
-    section += `💰 Income: ${formatMoney(incomeDiff, defaultCurrency)} (${formatAmount(incomePercent)}%)\n`
+    section += `${t(lang, "reports.stats.vsIncomeNegative", {
+      amount: formatMoney(incomeDiff, defaultCurrency),
+      percent: formatAmount(incomePercent),
+    })}\n`
   } else {
-    section += `💰 Income: no change\n`
+    section += `${t(lang, "reports.stats.vsIncomeNoChange")}\n`
   }
 
   const expenseDiff = currentExpense - prevExpense
   const expensePercent = prevExpense > 0 ? (expenseDiff / prevExpense) * 100 : 0
 
   if (expenseDiff > 0) {
-    section += `📉 Expenses: +${formatMoney(expenseDiff, defaultCurrency)} (+${formatAmount(expensePercent)}%)\n`
+    section += `${t(lang, "reports.stats.vsExpensesPositive", {
+      amount: formatMoney(expenseDiff, defaultCurrency),
+      percent: formatAmount(expensePercent),
+    })}\n`
   } else if (expenseDiff < 0) {
-    section += `📉 Expenses: ${formatMoney(Math.abs(expenseDiff), defaultCurrency)} (${formatAmount(Math.abs(expensePercent))}%)\n`
+    section += `${t(lang, "reports.stats.vsExpensesNegative", {
+      amount: formatMoney(Math.abs(expenseDiff), defaultCurrency),
+      percent: formatAmount(Math.abs(expensePercent)),
+    })}\n`
   } else {
-    section += `📉 Expenses: no change\n`
+    section += `${t(lang, "reports.stats.vsExpensesNoChange")}\n`
   }
 
   return section
@@ -244,9 +295,10 @@ async function formatTrendsSection(
  */
 export async function formatMonthlyStats(userId: string): Promise<string> {
   const data = await getMonthlyStatsData(userId)
+  const lang = await db.getUserLanguage(userId)
 
   if (data.transactions.length === 0 && data.incomeSources.length === 0) {
-    return "📊 No transactions this month."
+    return t(lang, "reports.stats.noTransactionsThisMonth")
   }
 
   const incomeTotals: CategoryTotals = {}
@@ -294,7 +346,7 @@ export async function formatMonthlyStats(userId: string): Promise<string> {
     totalExpenseCount === 0 &&
     data.incomeSources.length === 0
   ) {
-    return "📊 No Income or Expense transactions this month (only Transfers)."
+    return t(lang, "reports.stats.noIncomeOrExpenseOnlyTransfers")
   }
 
   const sections = [
@@ -302,16 +354,21 @@ export async function formatMonthlyStats(userId: string): Promise<string> {
       data,
       incomeTotals,
       totalIncomeCount,
-      totalIncomeInDefaultCurrency
+      totalIncomeInDefaultCurrency,
+      lang
     ),
-    formatExpenseSection(expenseTotals, totalExpenseCount),
+    formatExpenseSection(expenseTotals, totalExpenseCount, lang),
     await formatTrendsSection(
       userId,
       data,
       totalIncomeInDefaultCurrency,
-      expenseTotals
+      expenseTotals,
+      lang
     ),
   ].filter(Boolean)
 
-  return `📈 *Monthly Report (${data.month + 1}/${data.year})*\n\n${sections.join("\n")}`
+  return `${t(lang, "reports.stats.monthlyTitle", {
+    month: data.month + 1,
+    year: data.year,
+  })}\n\n${sections.join("\n")}`
 }

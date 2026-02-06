@@ -26,7 +26,7 @@ export async function handleStatementUpload(
   const lang = state?.lang || "en"
 
   if (!document) {
-    await bot.sendMessage(msg.chat.id, t(lang, "upload.pleaseUploadValid"))
+    await bot.sendMessage(msg.chat.id, t(lang, "import.invalidFile"))
     return
   }
 
@@ -35,21 +35,14 @@ export async function handleStatementUpload(
   const ext = fileName.split(".").pop()?.toLowerCase()
 
   if (!ext || !["csv", "txt", "json"].includes(ext)) {
-    await bot.sendMessage(
-      msg.chat.id,
-      t(lang, "upload.unsupportedFormat") +
-        "\n\n" +
-        "Supported formats:\n" +
-        "• CSV (Tinkoff, Monobank, Revolut)\n" +
-        "• TXT (Wise)\n" +
-        "• JSON (Monobank)",
-      { parse_mode: "Markdown" }
-    )
+    await bot.sendMessage(msg.chat.id, t(lang, "import.unsupportedFormat"), {
+      parse_mode: "Markdown",
+    })
     return
   }
 
   try {
-    await bot.sendMessage(msg.chat.id, t(lang, "upload.downloadingParsing"))
+    await bot.sendMessage(msg.chat.id, t(lang, "import.processing"))
 
     // Download file
     const fileLink = await bot.getFileLink(document.file_id)
@@ -66,13 +59,13 @@ export async function handleStatementUpload(
     if (result.errors.length > 0) {
       await bot.sendMessage(
         msg.chat.id,
-        t(lang, "upload.parsingErrors") + "\n" + result.errors.join("\n"),
+        t(lang, "import.parsingErrors") + "\n" + result.errors.join("\n"),
         { parse_mode: "Markdown" }
       )
     }
 
     if (result.transactions.length === 0) {
-      await bot.sendMessage(msg.chat.id, t(lang, "upload.noTransactionsFound"))
+      await bot.sendMessage(msg.chat.id, t(lang, "import.noTransactions"))
       return
     }
 
@@ -89,9 +82,10 @@ export async function handleStatementUpload(
     console.error("Upload error:", error)
     await bot.sendMessage(
       msg.chat.id,
-      t(lang, "upload.failedToParse") +
-        ": " +
-        (error instanceof Error ? error.message : "Unknown error")
+      t(lang, "import.failed", {
+        error:
+          error instanceof Error ? error.message : t(lang, "errors.unknown"),
+      })
     )
   }
 }
@@ -127,31 +121,34 @@ async function showTransactionPreview(
 
   // Preview first 5 transactions
   const preview = transactions.slice(0, 5)
-  let msg = `📊 *Statement Preview*\n\n`
-  msg += `Bank: ${bankType}\n`
-  msg += `Total transactions: ${total}\n`
-  msg += `Income: ${incomeCount} | Expense: ${expenseCount}\n\n`
+  const state = wizardManager.getState(userId)
+  const lang = state?.lang || "en"
 
-  msg += "*Totals:*\n"
+  let msg = `${t(lang, "import.preview")}\n\n`
+  msg += `${t(lang, "import.bankLine", { bank: bankType })}\n`
+  msg += `${t(lang, "import.totalTransactions", { count: total })}\n`
+  msg += `${t(lang, "import.incomeExpenseLine", {
+    income: incomeCount,
+    expense: expenseCount,
+  })}\n\n`
+
+  msg += `${t(lang, "import.totalsTitle")}\n`
   Object.entries(totalsByCurrency).forEach(([currency, totals]) => {
     msg += `${currency}: +${formatMoney(totals.income, currency as Currency, true)} / -${formatMoney(totals.expense, currency as Currency, true)}\n`
   })
 
-  msg += "\n*First transactions:*\n"
+  msg += `\n${t(lang, "import.firstTransactionsTitle")}\n`
   preview.forEach((tx, i) => {
     const emoji = tx.type === "INCOME" ? "💰" : "💸"
     const sign = tx.type === "INCOME" ? "+" : "-"
     msg += `${i + 1}. ${emoji} ${sign}${formatMoney(tx.amount, tx.currency, true)}\n`
     msg += `   ${tx.description}\n`
-    msg += `   ${tx.category || "Other"}\n`
+    msg += `   ${tx.category || t(lang, "buttons.other")}\n`
   })
 
   if (total > 5) {
-    msg += `\n...and ${total - 5} more\n`
+    msg += `\n${t(lang, "import.moreTransactions", { count: total - 5 })}\n`
   }
-
-  const state = wizardManager.getState(userId)
-  const lang = state?.lang || "en"
   wizardManager.setState(userId, {
     step: "STATEMENT_PREVIEW",
     data: {
@@ -170,7 +167,7 @@ async function showTransactionPreview(
           { text: t(lang, "common.importAll") },
           { text: t(lang, "common.editAndImport") },
         ],
-        [{ text: "🔍 Review Transactions" }],
+        [{ text: t(lang, "import.review") }],
         [{ text: t(lang, "common.cancel") }],
       ],
       resize_keyboard: true,
@@ -209,7 +206,7 @@ export async function handleStatementPreviewAction(
     )
   }
 
-  if (text === "🔍 Review Transactions") {
+  if (text === t(lang, "import.review")) {
     return await showTransactionsList(
       wizardManager,
       chatId,
@@ -220,7 +217,7 @@ export async function handleStatementPreviewAction(
 
   if (text === t(lang, "common.cancel")) {
     wizardManager.clearState(userId)
-    await wizardManager.sendMessage(chatId, "❌ Import cancelled", {
+    await wizardManager.sendMessage(chatId, t(lang, "import.cancelled"), {
       reply_markup: SETTINGS_KEYBOARD,
     })
     return true
@@ -236,16 +233,15 @@ async function importAllTransactions(
   userId: string,
   transactions: ParsedTransaction[]
 ): Promise<boolean> {
+  const lang = wizardManager.getState(userId)?.lang || "en"
   try {
     // Get user's default account
     const balances = await db.getBalancesList(userId)
 
     if (balances.length === 0) {
-      await wizardManager.sendMessage(
-        chatId,
-        "⚠️ No accounts found. Please create a balance account first.",
-        { reply_markup: SETTINGS_KEYBOARD }
-      )
+      await wizardManager.sendMessage(chatId, t(lang, "import.noAccounts"), {
+        reply_markup: SETTINGS_KEYBOARD,
+      })
       wizardManager.clearState(userId)
       return true
     }
@@ -278,11 +274,15 @@ async function importAllTransactions(
 
     await wizardManager.sendMessage(
       chatId,
-      `✅ *Import completed!*\n\n` +
-        `Imported: ${result.added}\n` +
-        (invalid.length > 0 ? `Skipped (invalid): ${invalid.length}\n` : "") +
-        (result.errors.length > 0 ? `Errors: ${result.errors.length}\n` : "") +
-        `\n⚡ Time: ${duration}ms`,
+      `${t(lang, "import.completed")}\n\n` +
+        `${t(lang, "import.imported", { count: result.added })}\n` +
+        (invalid.length > 0
+          ? `${t(lang, "import.skipped", { count: invalid.length })}\n`
+          : "") +
+        (result.errors.length > 0
+          ? `${t(lang, "import.errors", { count: result.errors.length })}\n`
+          : "") +
+        `\n${t(lang, "import.time", { ms: duration })}`,
       {
         parse_mode: "Markdown",
         reply_markup: SETTINGS_KEYBOARD,
@@ -295,7 +295,10 @@ async function importAllTransactions(
     console.error("Import error:", error)
     await wizardManager.sendMessage(
       chatId,
-      `❌ Import failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      t(lang, "import.failed", {
+        error:
+          error instanceof Error ? error.message : t(lang, "errors.unknown"),
+      }),
       { reply_markup: SETTINGS_KEYBOARD }
     )
     wizardManager.clearState(userId)
@@ -345,11 +348,20 @@ async function showTransactionEditor(
   const emoji = tx.type === "INCOME" ? "💰" : "💸"
   const sign = tx.type === "INCOME" ? "+" : "-"
 
-  let msg = `*Edit Transaction ${index + 1}/${total}*\n\n`
+  let msg = `${t(lang, "import.editorTitle", {
+    index: index + 1,
+    total,
+  })}\n\n`
   msg += `${emoji} ${sign}${formatMoney(tx.amount, tx.currency, true)}\n`
-  msg += `Date: ${new Date(tx.date).toLocaleDateString()}\n`
-  msg += `Category: ${tx.category || "Other"}\n`
-  msg += `Description: ${tx.description}\n`
+  msg += `${t(lang, "import.editorDateLine", {
+    date: new Date(tx.date).toLocaleDateString(),
+  })}\n`
+  msg += `${t(lang, "import.editorCategoryLine", {
+    category: tx.category || t(lang, "buttons.other"),
+  })}\n`
+  msg += `${t(lang, "import.editorDescriptionLine", {
+    description: tx.description,
+  })}\n`
 
   await wizardManager.sendMessage(chatId, msg, {
     parse_mode: "Markdown",
@@ -363,7 +375,7 @@ async function showTransactionEditor(
           { text: t(lang, "common.keepAndNext") },
           { text: t(lang, "common.skip") },
         ],
-        [{ text: t(lang, "upload.saveAll") }],
+        [{ text: t(lang, "import.saveAll") }],
       ],
       resize_keyboard: true,
     },
@@ -382,13 +394,18 @@ async function showTransactionsList(
   const state = wizardManager.getState(userId)
   const lang = state?.lang || "en"
 
-  let msg = `📋 *All Transactions (${transactions.length})*\n\n`
+  let msg = `${t(lang, "import.allTransactionsTitle", {
+    count: transactions.length,
+  })}\n\n`
 
   transactions.forEach((tx, i) => {
     const emoji = tx.type === "INCOME" ? "💰" : "💸"
     const sign = tx.type === "INCOME" ? "+" : "-"
     msg += `${i + 1}. ${emoji} ${sign}${formatMoney(tx.amount, tx.currency, true)}\n`
-    msg += `   ${tx.description} | ${tx.category || "Other"}\n`
+    msg += `   ${t(lang, "import.listItemLine", {
+      description: tx.description,
+      category: tx.category || t(lang, "buttons.other"),
+    })}\n`
   })
 
   await wizardManager.sendMessage(chatId, msg, {

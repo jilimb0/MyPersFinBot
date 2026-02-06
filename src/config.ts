@@ -61,6 +61,14 @@ const ConfigSchema = z.object({
 
   MAX_FILE_SIZE_MB: z.coerce.number().min(1).max(50).default(20),
 
+  SENTRY_DSN: z.string().optional(),
+  SENTRY_ENV: z.string().optional(),
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
+  SENTRY_RELEASE: z.string().optional(),
+
+  HEALTH_HOST: z.string().default("0.0.0.0"),
+  HEALTH_PORT: z.coerce.number().min(1).max(65535).default(3001),
+
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
 })

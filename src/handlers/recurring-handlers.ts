@@ -5,6 +5,7 @@ import { recurringManager } from "../services/recurring-manager"
 import { TransactionType, TransactionCategory } from "../types"
 import * as validators from "../validators"
 import { SETTINGS_KEYBOARD } from "../constants"
+import { formatDateDisplay } from "../utils"
 import dayjs from "dayjs"
 import { Language, t } from "../i18n"
 
@@ -21,23 +22,29 @@ export async function handleRecurringMenu(
 
   if (!recurring.length) {
     msg += t(lang, "recurring.noTransactions") + "\n\n"
-    msg += t(lang, "recurring.setupInfo")
-    msg += "• Monthly rent\n"
-    msg += "• Subscriptions (Netflix, Spotify)\n"
-    msg += "• Utilities (electricity, internet)\n"
-    msg += "• Salary income\n\n"
+    msg += t(lang, "recurring.setupInfo") + "\n"
+    msg += t(lang, "recurring.setupExamples") + "\n\n"
     msg += t(lang, "recurring.tapToStart")
   } else {
     msg += t(lang, "recurring.yourTransactions") + "\n\n"
     recurring.forEach((r, idx) => {
       const typeEmoji = r.type === TransactionType.EXPENSE ? "💸" : "💰"
       const statusEmoji = r.isActive ? "▶️" : "⏸"
-      const freqLabel =
-        r.frequency === "MONTHLY" ? "monthly" : r.frequency.toLowerCase()
+      const freqLabel = t(
+        lang,
+        `recurring.frequency.${r.frequency.toLowerCase()}`
+      )
+      const name = r.description || t(lang, "recurring.unnamed")
 
-      msg += `${idx + 1}. ${statusEmoji} ${typeEmoji} *${r.description || "Unnamed"}*\n`
-      msg += `   ${r.amount} ${r.currency} — ${freqLabel}\n`
-      msg += `   Next: ${dayjs(r.nextExecutionDate).format("DD.MM.YYYY")}\n\n`
+      msg += `${idx + 1}. ${statusEmoji} ${typeEmoji} *${name}*\n`
+      msg += `   ${t(lang, "recurring.listItemAmountLine", {
+        amount: r.amount,
+        currency: r.currency,
+        frequency: freqLabel,
+      })}\n`
+      msg += `   ${t(lang, "recurring.listItemNextLine", {
+        date: formatDateDisplay(r.nextExecutionDate),
+      })}\n\n`
     })
     msg += "\n" + t(lang, "recurring.tapToManage")
   }
@@ -47,11 +54,15 @@ export async function handleRecurringMenu(
   // Add buttons for each recurring transaction
   recurring.forEach((r) => {
     const typeEmoji = r.type === TransactionType.EXPENSE ? "💸" : "💰"
-    buttons.push([{ text: `${typeEmoji} ${r.description || "Unnamed"}` }])
+    const name = r.description || t(lang, "recurring.unnamed")
+    buttons.push([{ text: `${typeEmoji} ${name}` }])
   })
 
-  buttons.push([{ text: t(lang, "recurring.addRecurring") }])
-  buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+  buttons.push([{ text: t(lang, "buttons.addRecurring") }])
+  buttons.push([
+    { text: t(lang, "common.back") },
+    { text: t(lang, "mainMenu.mainMenuButton") },
+  ])
 
   wizardManager.setState(userId, {
     step: "RECURRING_MENU",
@@ -82,7 +93,7 @@ export async function handleRecurringSelect(
   const recurring = await recurringManager.getUserRecurring(userId)
   const selected = recurring.find(
     (r) =>
-      `${r.type === TransactionType.EXPENSE ? "💸" : "💰"} ${r.description || "Unnamed"}` ===
+      `${r.type === TransactionType.EXPENSE ? "💸" : "💰"} ${r.description || t(lang, "recurring.unnamed")}` ===
       text
   )
 
@@ -95,22 +106,50 @@ export async function handleRecurringSelect(
   })
 
   const typeEmoji = selected.type === TransactionType.EXPENSE ? "💸" : "💰"
-  const statusEmoji = selected.isActive ? "▶️ Active" : "⏸ Paused"
-  const freqLabel =
-    selected.frequency === "MONTHLY" ? "Monthly" : selected.frequency
+  const statusLabel = selected.isActive
+    ? t(lang, "recurring.statusActive")
+    : t(lang, "recurring.statusPaused")
+  const freqLabel = t(
+    lang,
+    `recurring.frequency.${selected.frequency.toLowerCase()}`
+  )
+  const name = selected.description || t(lang, "recurring.unnamed")
 
-  let msg = `${typeEmoji} *${selected.description || "Unnamed"}*\n\n`
-  msg += `Status: ${statusEmoji}\n`
-  msg += `Amount: ${selected.amount} ${selected.currency}\n`
-  msg += `Account: ${selected.accountId}\n`
-  msg += `Frequency: ${freqLabel}\n`
-  msg += `Day: ${selected.dayOfMonth || "N/A"}\n`
-  msg += `Next execution: ${dayjs(selected.nextExecutionDate).format("DD.MM.YYYY")}\n`
+  let msg = `${t(lang, "recurring.detailsTitle", {
+    emoji: typeEmoji,
+    name,
+  })}\n\n`
+  msg += `${t(lang, "recurring.statusLine", { status: statusLabel })}\n`
+  msg += `${t(lang, "recurring.amountLine", {
+    amount: selected.amount,
+    currency: selected.currency,
+  })}\n`
+  msg += `${t(lang, "recurring.accountLine", {
+    account: selected.accountId,
+  })}\n`
+  msg += `${t(lang, "recurring.frequencyLine", {
+    frequency: freqLabel,
+  })}\n`
+  msg += `${t(lang, "recurring.dayLine", {
+    day: selected.dayOfMonth || t(lang, "common.notAvailable"),
+  })}\n`
+  msg += `${t(lang, "recurring.nextExecutionLine", {
+    date: formatDateDisplay(selected.nextExecutionDate),
+  })}\n`
 
   const buttons: TelegramBot.KeyboardButton[][] = [
-    [{ text: selected.isActive ? "⏸ Pause" : "▶️ Resume" }],
+    [
+      {
+        text: selected.isActive
+          ? t(lang, "recurring.pauseButton")
+          : t(lang, "recurring.resumeButton"),
+      },
+    ],
     [{ text: t(lang, "common.delete") }],
-    [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+    [
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ],
   ]
 
   await wizardManager.sendMessage(chatId, msg, {
@@ -137,8 +176,11 @@ export async function handleRecurringItemAction(
   const recurringId = state?.data?.recurringId
   const recurring = state?.data?.recurring
 
-  if (text === "⏸ Pause" || text === "▶️ Resume") {
-    const newStatus = text === "▶️ Resume"
+  if (
+    text === t(lang, "recurring.pauseButton") ||
+    text === t(lang, "recurring.resumeButton")
+  ) {
+    const newStatus = text === t(lang, "recurring.resumeButton")
     await recurringManager.toggleRecurring(recurringId, newStatus)
 
     await wizardManager.sendMessage(
@@ -162,10 +204,12 @@ export async function handleRecurringItemAction(
 
     await wizardManager.sendMessage(
       chatId,
-      `⚠️ *Delete Recurring Transaction?*\n\n` +
-        `This will delete: *${recurring.description || "Unnamed"}*\n` +
-        `Amount: ${recurring.amount} ${recurring.currency}\n\n` +
-        `Are you sure?`,
+      `${t(lang, "recurring.deleteConfirmTitle")}\n\n` +
+        t(lang, "recurring.deleteConfirmBody", {
+          name: recurring.description || t(lang, "recurring.unnamed"),
+          amount: recurring.amount,
+          currency: recurring.currency,
+        }),
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -236,11 +280,7 @@ export async function handleRecurringCreateStart(
       "\n\n" +
       t(lang, "recurring.enterDescription") +
       "\n\n" +
-      "*Examples:*\n" +
-      "• Rent\n" +
-      "• Netflix Subscription\n" +
-      "• Salary\n" +
-      "• Electricity Bill",
+      t(lang, "recurring.descriptionExamples"),
     {
       parse_mode: "Markdown",
       ...wizardManager.getBackButton(lang),
@@ -273,7 +313,10 @@ export async function handleRecurringDescription(
           { text: t(lang, "recurring.expense") },
           { text: t(lang, "recurring.income") },
         ],
-        [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+        [
+          { text: t(lang, "common.back") },
+          { text: t(lang, "mainMenu.mainMenuButton") },
+        ],
       ],
       resize_keyboard: true,
     },
@@ -311,7 +354,7 @@ export async function handleRecurringType(
 
   await wizardManager.sendMessage(
     chatId,
-    `💵 Enter amount:\n\nExamples: 1000, 1000 ${currency}`,
+    t(lang, "recurring.enterAmountPrompt", { currency }),
     wizardManager.getBackButton(lang)
   )
 
@@ -334,7 +377,7 @@ export async function handleRecurringAmount(
   if (!parsed || parsed.amount <= 0) {
     await wizardManager.sendMessage(
       chatId,
-      t(lang, "errors.invalidAmountTryAgain"),
+      t(lang, "errors.invalidAmount"),
       wizardManager.getBackButton(lang)
     )
     return true
@@ -367,7 +410,10 @@ export async function handleRecurringAmount(
   const buttons: TelegramBot.KeyboardButton[][] = balances.map((bal) => [
     { text: `💳 ${bal.accountId}` },
   ])
-  buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+  buttons.push([
+    { text: t(lang, "common.back") },
+    { text: t(lang, "mainMenu.mainMenuButton") },
+  ])
 
   await wizardManager.sendMessage(chatId, t(lang, "common.selectAccount"), {
     reply_markup: {
@@ -408,7 +454,10 @@ export async function handleRecurringAccount(
   for (let i = 0; i < categories.length; i += 2) {
     buttons.push(categories.slice(i, i + 2).map((cat) => ({ text: cat })))
   }
-  buttons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+  buttons.push([
+    { text: t(lang, "common.back") },
+    { text: t(lang, "mainMenu.mainMenuButton") },
+  ])
 
   await wizardManager.sendMessage(chatId, t(lang, "recurring.selectCategory"), {
     reply_markup: {
@@ -442,11 +491,10 @@ export async function handleRecurringCategory(
 
   await wizardManager.sendMessage(
     chatId,
-    t(lang, "recurring.enterDayPrompt") +
-      "Examples:\n" +
-      "• 1 (first day of month)\n" +
-      "• 15 (mid-month)\n" +
-      "• 28 (safe for all months)",
+    `${t(lang, "recurring.enterDayPrompt")}\n${t(
+      lang,
+      "recurring.dayExamples"
+    )}`,
     {
       parse_mode: "Markdown",
       ...wizardManager.getBackButton(lang),
@@ -502,12 +550,19 @@ export async function handleRecurringDay(
 
   await wizardManager.sendMessage(
     chatId,
-    `✅ *Recurring transaction created!*\n\n` +
+    `${t(lang, "recurring.createdTitle")}\n\n` +
       `${typeEmoji} ${state?.data?.description}\n` +
-      `Amount: ${state?.data?.amount} ${state?.data?.currency}\n` +
-      `Account: ${state?.data?.accountId}\n` +
-      `Day: ${day} of each month\n` +
-      `Next: ${nextDate.format("DD.MM.YYYY")}`,
+      `${t(lang, "recurring.amountLine", {
+        amount: state?.data?.amount,
+        currency: state?.data?.currency,
+      })}\n` +
+      `${t(lang, "recurring.accountLine", {
+        account: state?.data?.accountId,
+      })}\n` +
+      `${t(lang, "recurring.dayOfMonthLine", { day })}\n` +
+      `${t(lang, "recurring.nextLine", {
+        date: formatDateDisplay(nextDate.toDate()),
+      })}`,
     {
       parse_mode: "Markdown",
       reply_markup: SETTINGS_KEYBOARD,

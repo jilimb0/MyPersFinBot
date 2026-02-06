@@ -25,12 +25,12 @@ export async function handleAutoPaymentToggle(
   const lang = state?.lang || "en"
   const debt = state?.data?.debt as Debt
 
-  if (text === "✅ Enable Auto-Payment") {
+  if (text === t(lang, "wizard.debt.enableAutoPayment")) {
     // Only for I_OWE debts
     if (debt.type !== "I_OWE") {
       await wizard.sendMessage(
         chatId,
-        "⚠️ Auto-payment only available for debts you owe.",
+        t(lang, "autoPayment.onlyOweWarning"),
         wizard.getBackButton(lang)
       )
       return true
@@ -58,13 +58,19 @@ export async function handleAutoPaymentToggle(
         text: `${b.accountId} (${b.currency})`,
       },
     ])
-    accountButtons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+    accountButtons.push([
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ])
 
     await wizard.sendMessage(
       chatId,
-      `🤖 *Auto-Payment Setup*\n\n` +
-        `Debt: *${debt.name}* (${debt.counterparty})\n\n` +
-        `Select the account to pay from:`,
+      `${t(lang, "autoPayment.setupTitle")}\n\n` +
+        `${t(lang, "autoPayment.debtLine", {
+          name: debt.name,
+          counterparty: debt.counterparty,
+        })}\n\n` +
+        `${t(lang, "autoPayment.selectAccountPrompt")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -76,7 +82,7 @@ export async function handleAutoPaymentToggle(
     return true
   }
 
-  if (text === "❌ Disable Auto-Payment") {
+  if (text === t(lang, "wizard.debt.disableAutoPayment")) {
     // Disable auto-payment
     const debtRepo = AppDataSource.getRepository(DebtEntity)
     await debtRepo.update(
@@ -86,7 +92,7 @@ export async function handleAutoPaymentToggle(
 
     await wizard.sendMessage(
       chatId,
-      `✅ Auto-payment disabled for *${debt.name}*.`,
+      t(lang, "autoPayment.disabledMessage", { name: debt.name }),
       { parse_mode: "Markdown" }
     )
 
@@ -117,7 +123,7 @@ export async function handleAutoPaymentAccountSelect(
   if (!match) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid account format. Please select from the list.",
+      t(lang, "errors.invalidAccountFormat"),
       wizard.getBackButton(lang)
     )
     return true
@@ -139,16 +145,27 @@ export async function handleAutoPaymentAccountSelect(
 
   await wizard.sendMessage(
     chatId,
-    `💸 *Auto-Payment Amount*\n\n` +
-      `Debt: *${debt.name}* (${debt.counterparty})\n` +
-      `From: *${accountId?.trim() || "N/A"}*\n` +
-      `Remaining: *${remaining} ${debt.currency}*\n\n` +
-      `Enter the monthly payment amount:\n` +
-      `Example: 1000`,
+    `${t(lang, "autoPayment.amountTitle")}\n\n` +
+      `${t(lang, "autoPayment.debtLine", {
+        name: debt.name,
+        counterparty: debt.counterparty,
+      })}\n` +
+      `${t(lang, "autoPayment.fromLine", {
+        account: accountId?.trim() || t(lang, "common.notAvailable"),
+      })}\n` +
+      `${t(lang, "autoPayment.remainingLine", {
+        remaining: `${remaining} ${debt.currency}`,
+      })}\n\n` +
+      `${t(lang, "autoPayment.amountPrompt")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
-        keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
+        keyboard: [
+          [
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
+        ],
         resize_keyboard: true,
       },
     }
@@ -177,7 +194,7 @@ export async function handleAutoPaymentAmountInput(
   if (isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      t(lang, "errors.invalidAmountPositive"),
+      t(lang, "errors.invalidAmount"),
       wizard.getBackButton(lang)
     )
     return true
@@ -187,7 +204,9 @@ export async function handleAutoPaymentAmountInput(
   if (amount > remaining) {
     await wizard.sendMessage(
       chatId,
-      `⚠️ Amount exceeds remaining debt (${remaining} ${debt.currency}). Please enter a smaller amount.`,
+      t(lang, "errors.debtAmountExceedsRemaining", {
+        remaining: `${remaining} ${debt.currency}`,
+      }),
       wizard.getBackButton(lang)
     )
     return true
@@ -205,11 +224,16 @@ export async function handleAutoPaymentAmountInput(
 
   await wizard.sendMessage(
     chatId,
-    `📅 *Select Payment Day*\n\n` +
-      `Debt: *${debt.name}*\n` +
-      `Amount: *${amount} ${debt.currency}*\n\n` +
-      `Enter the day (1-31) for monthly payment:\n` +
-      `Example: 15 (for 15th of each month)`,
+    `${t(lang, "autoPayment.selectDayTitle")}\n\n` +
+      `${t(lang, "autoPayment.debtLine", {
+        name: debt.name,
+        counterparty: debt.counterparty,
+      })}\n` +
+      `${t(lang, "autoPayment.amountLine", {
+        amount,
+        currency: debt.currency,
+      })}\n\n` +
+      `${t(lang, "autoPayment.selectDayPrompt")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -217,7 +241,10 @@ export async function handleAutoPaymentAmountInput(
           [{ text: "1" }, { text: "5" }, { text: "10" }],
           [{ text: "15" }, { text: "20" }, { text: "25" }],
           [{ text: "28" }],
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+          [
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
         ],
         resize_keyboard: true,
       },
@@ -259,12 +286,20 @@ export async function handleAutoPaymentDaySelect(
 
   await wizard.sendMessage(
     chatId,
-    `✅ *Auto-Payment Enabled!*\n\n` +
-      `Debt: *${debt.name}* (${debt.counterparty})\n` +
-      `Amount: *${amount} ${debt.currency}*\n` +
-      `From: *${accountId}*\n` +
-      `Day: *${dayOfMonth}th of each month*\n\n` +
-      `🤖 The bot will automatically pay this debt on day ${dayOfMonth} of each month.`,
+    `${t(lang, "autoPayment.enabledTitle")}\n\n` +
+      `${t(lang, "autoPayment.debtLine", {
+        name: debt.name,
+        counterparty: debt.counterparty,
+      })}\n` +
+      `${t(lang, "autoPayment.amountLine", {
+        amount,
+        currency: debt.currency,
+      })}\n` +
+      `${t(lang, "autoPayment.fromLine", { account: accountId })}\n` +
+      `${t(lang, "autoPayment.dayLine", {
+        day: t(lang, "autoPayment.dayOfMonth", { day: dayOfMonth }),
+      })}\n\n` +
+      `${t(lang, "autoPayment.noteMonthly", { day: dayOfMonth })}`,
     { parse_mode: "Markdown" }
   )
 

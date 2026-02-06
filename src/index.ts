@@ -1,8 +1,10 @@
 import "dotenv/config"
 import "reflect-metadata"
 import { initializeApp, setupShutdownHandlers } from "./bootstrap"
-import { createMessageRouter } from "./handlers/message"
 import logger from "./logger"
+import { registerAppServices } from "./bootstrap/app-services"
+import { initObservability } from "./bootstrap/observability"
+import { registerRouters } from "./bootstrap/routers"
 
 /**
  * Main application entry point
@@ -18,29 +20,14 @@ async function main() {
       process.exit(1)
     }
 
+    initObservability()
+
     // Initialize application
     const context = await initializeApp(token)
 
-    // Import heavy modules AFTER bootstrap to avoid circular deps
-    const { Scheduler } = await import("./services/scheduler")
-    const scheduler = new Scheduler(context.bot)
-    scheduler.start()
-    logger.info("✅ Scheduler started")
+    await registerAppServices(context.bot)
 
-    const { registerCommands } = await import("./commands")
-    registerCommands(context.bot)
-    logger.info("✅ Commands registered")
-
-    const handlers = await import("./handlers")
-    handlers.registerPeriodReportHandlers(context.bot)
-    logger.info("✅ Period report handlers registered")
-
-    const { WizardManager } = await import("./wizards/wizards")
-    const wizardManager = new WizardManager(context.bot)
-    logger.info("✅ Wizard manager initialized")
-
-    const messageRouter = createMessageRouter(context.bot, wizardManager)
-    messageRouter.listen()
+    registerRouters(context.bot)
 
     setupShutdownHandlers(context)
 

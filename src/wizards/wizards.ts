@@ -12,7 +12,7 @@ import {
   IncomeSource,
 } from "../types"
 import { dbStorage as db } from "../database/storage-db"
-import { Language } from "../i18n"
+import { isValidLanguage, Language } from "../i18n"
 import * as validators from "../validators"
 import {
   showAdvancedMenu,
@@ -25,10 +25,16 @@ import {
   showHistoryMenu,
   showIncomeSourcesMenu,
   showMainMenu,
+  showNetWorthMenu,
   showSettingsMenu,
   showStatsMenu,
 } from "../menus-i18n"
-import { createListButtons, formatAmount, formatMoney } from "../utils"
+import {
+  createListButtons,
+  formatAmount,
+  formatDateDisplay,
+  formatMoney,
+} from "../utils"
 
 import * as handlers from "../handlers"
 import * as helpers from "./helpers"
@@ -43,6 +49,7 @@ import {
 import { randomUUID } from "crypto"
 import { reminderManager } from "../services/reminder-manager"
 import { t } from "../i18n"
+import { getStatsKeyboard } from "../i18n/keyboards"
 
 export type WizardData = Record<string, any>
 
@@ -65,6 +72,15 @@ export class WizardManager {
   }
 
   constructor(private bot: TelegramBot) {}
+
+  private async resolveUserLang(userId: string): Promise<Language> {
+    try {
+      const lang = await db.getUserLanguage(userId)
+      return isValidLanguage(lang) ? lang : "en"
+    } catch {
+      return "en"
+    }
+  }
 
   async sendMessage(
     chatId: number,
@@ -163,8 +179,11 @@ export class WizardManager {
 
   async returnToContext(chatId: number, userId: string, returnTo?: string) {
     const state = this.getState(userId)
-
-    const stateLang = state?.lang || "en"
+    const stateLang = state?.lang || (await this.resolveUserLang(userId))
+    if (state && state.lang !== stateLang) {
+      state.lang = stateLang
+      this.setState(userId, state)
+    }
     switch (returnTo) {
       case "debts":
         await showDebtsMenu(this.bot, chatId, userId, stateLang)
@@ -213,23 +232,31 @@ export class WizardManager {
     text: string
   ): Promise<boolean> {
     const state = this.getState(userId)
-    const lang = state?.lang || "en"
+    const lang = (state?.lang ||
+      (await this.resolveUserLang(userId))) as Language
+    if (state && state.lang !== lang) {
+      state.lang = lang
+      this.setState(userId, state)
+    }
 
     if (text === t(lang, "mainMenu.mainMenuButton")) {
       this.clearState(userId)
-      await showMainMenu(this.bot, chatId, state?.lang || "en")
+      await showMainMenu(this.bot, chatId, lang)
 
       return true
     }
 
-    if (text === "💳 Balances" || text === "💳 Go to Balances") {
+    if (
+      text === t(lang, "buttons.balances") ||
+      text === t(lang, "buttons.goToBalances")
+    ) {
       this.clearState(userId)
-      await showBalancesMenu(this, chatId, userId, state?.lang || "en")
+      await showBalancesMenu(this, chatId, userId, lang)
 
       return true
     }
 
-    if (text === "💫 Change Amount") {
+    if (text === t(lang, "buttons.changeAmount")) {
       if (!state) {
         await showMainMenu(this.bot, chatId, lang)
         return true
@@ -315,7 +342,7 @@ export class WizardManager {
           return await handlers.handleTxToAccount(this, chatId, userId, text)
 
         case "TX_CONFIRM_REFUND": {
-          if (text === "✅ Yes, it's a refund") {
+          if (text === t(lang, "transactions.yesRefund")) {
             if (!state?.data) return false
             await this.goToStep(userId, "TX_ACCOUNT", {
               category: IncomeCategory.REFUND,
@@ -327,7 +354,7 @@ export class WizardManager {
               this,
               chatId,
               userId,
-              "📥 Select account to receive refund:"
+              t(lang, "wizard.tx.selectRefundAccount")
             )
             return true
           }
@@ -344,20 +371,29 @@ export class WizardManager {
             )
           })
 
-          if (text === "🔍 Filters") {
+          if (text === t(lang, "transactions.historyFilters")) {
             await this.goToStep(userId, "TX_VIEW_PERIOD")
             this.bot.sendMessage(
               chatId,
-              "📋 *Transaction History*\n\nSelect filter:",
+              `${t(lang, "transactions.historyTitle")}\n\n${t(
+                lang,
+                "wizard.tx.selectPeriod"
+              )}`,
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    [{ text: "📅 Last 7 days" }, { text: "📅 Last 30 days" }],
-                    [{ text: "💸 Expenses only" }, { text: "💰 Income only" }],
                     [
-                      { text: "📅 Custom Period" },
-                      { text: "🔍 All transactions" },
+                      { text: t(lang, "buttons.last7Days") },
+                      { text: t(lang, "buttons.last30Days") },
+                    ],
+                    [
+                      { text: t(lang, "buttons.expensesOnly") },
+                      { text: t(lang, "buttons.incomeOnly") },
+                    ],
+                    [
+                      { text: t(lang, "buttons.customPeriod") },
+                      { text: t(lang, "buttons.allTransactions") },
                     ],
                     [
                       { text: t(lang, "common.back") },
@@ -375,7 +411,7 @@ export class WizardManager {
           if (!selected) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Select a transaction from the list.",
+              t(lang, "wizard.tx.selectTransactionFromList"),
               this.getBackButton(lang)
             )
             return true
@@ -384,24 +420,39 @@ export class WizardManager {
           await this.goToStep(userId, "TX_EDIT_MENU", { transaction: selected })
 
           const account =
-            selected.fromAccountId || selected.toAccountId || "N/A"
+            selected.fromAccountId ||
+            selected.toAccountId ||
+            t(lang, "common.notAvailable")
           await this.bot.sendMessage(
             chatId,
-            `📋 *Transaction Details*\n\n` +
-              `Type: ${selected.type}\n` +
-              `Category: ${selected.category}\n` +
-              `Amount: ${selected.amount} ${selected.currency}\n` +
-              `Account: ${account}\n` +
-              `Date: ${new Date(selected.date).toLocaleDateString("en-GB")}\n\n` +
-              `What would you like to do?`,
+            `${t(lang, "wizard.tx.detailsTitle")}\n\n` +
+              `${t(lang, "wizard.tx.detailsType", {
+                type:
+                  selected.type === "EXPENSE"
+                    ? t(lang, "transactions.expenseTitle")
+                    : selected.type === "INCOME"
+                      ? t(lang, "transactions.incomeTitle")
+                      : t(lang, "transactions.transferTitle"),
+              })}\n` +
+              `${t(lang, "wizard.tx.detailsCategory", {
+                category: selected.category,
+              })}\n` +
+              `${t(lang, "wizard.tx.detailsAmount", {
+                amount: `${selected.amount} ${selected.currency}`,
+              })}\n` +
+              `${t(lang, "wizard.tx.detailsAccount", { account })}\n` +
+              `${t(lang, "wizard.tx.detailsDate", {
+                date: formatDateDisplay(new Date(selected.date)),
+              })}\n\n` +
+              `${t(lang, "wizard.tx.detailsPrompt")}`,
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
-                  [{ text: "✏️ Edit Amount" }],
-                  [{ text: "📝 Edit Category" }],
-                  [{ text: "💳 Edit Account" }],
-                  [{ text: "🗑️ Delete Transaction" }],
+                  [{ text: t(lang, "buttons.editAmount") }],
+                  [{ text: t(lang, "buttons.editCategory") }],
+                  [{ text: t(lang, "buttons.editAccount") }],
+                  [{ text: t(lang, "wizard.tx.deleteTransactionButton") }],
                   [
                     { text: t(lang, "common.back") },
                     { text: t(lang, "mainMenu.mainMenuButton") },
@@ -417,28 +468,27 @@ export class WizardManager {
           const allTransactions = await db.getAllTransactions(userId)
           let filtered = allTransactions
 
-          if (text === "📅 Last 7 days") {
+          if (text === t(lang, "buttons.last7Days")) {
             const weekAgo = new Date()
             weekAgo.setDate(weekAgo.getDate() - 7)
             filtered = filtered.filter((tx) => new Date(tx.date) >= weekAgo)
-          } else if (text === "📅 Last 30 days") {
+          } else if (text === t(lang, "buttons.last30Days")) {
             const monthAgo = new Date()
             monthAgo.setDate(monthAgo.getDate() - 30)
             filtered = filtered.filter((tx) => new Date(tx.date) >= monthAgo)
-          } else if (text === "💸 Expenses only") {
+          } else if (text === t(lang, "buttons.expensesOnly")) {
             filtered = filtered.filter(
               (tx) => tx.type === TransactionType.EXPENSE
             )
-          } else if (text === "💰 Income only") {
+          } else if (text === t(lang, "buttons.incomeOnly")) {
             filtered = filtered.filter(
               (tx) => tx.type === TransactionType.INCOME
             )
-          } else if (text === "📅 Custom Period") {
+          } else if (text === t(lang, "buttons.customPeriod")) {
             await this.goToStep(userId, "CUSTOM_PERIOD_SINGLE")
             await this.bot.sendMessage(
               chatId,
-              `📅 *Period*\n\n1️⃣ DD.MM.YYYY-DD.MM.YYYY\n` +
-                `Example: \`01.01.2026-13.01.2026\``,
+              t(lang, "wizard.tx.customPeriodPrompt"),
               { parse_mode: "Markdown", ...this.getBackButton(lang) }
             )
             return true
@@ -447,7 +497,7 @@ export class WizardManager {
           if (filtered.length === 0) {
             await this.bot.sendMessage(
               chatId,
-              "📬 No transactions match this filter.",
+              t(lang, "wizard.tx.noTransactionsForFilter"),
               this.getBackButton(lang)
             )
             return true
@@ -469,13 +519,17 @@ export class WizardManager {
 
           const keyboard = createListButtons({
             items,
+            lang,
             afterItemsButtons:
-              filtered.length > 10 ? ["🔍 View More"] : undefined,
+              filtered.length > 10 ? [t(lang, "buttons.viewMore")] : undefined,
           })
 
-          let msg = `📋 *Transaction History* (${text})\n\n`
-          msg += `Showing ${toShow.length} of ${filtered.length} transaction(s)\n\n`
-          msg += `Select transaction to edit:`
+          let msg = `${t(lang, "transactions.historyTitle")} (${text})\n\n`
+          msg += `${t(lang, "transactions.showing", {
+            count: toShow.length,
+            total: filtered.length,
+          })}\n\n`
+          msg += t(lang, "wizard.tx.selectTransactionToEdit")
 
           await this.bot.sendMessage(chatId, msg, {
             parse_mode: "Markdown",
@@ -494,9 +548,7 @@ export class WizardManager {
           if (!match) {
             await this.bot.sendMessage(
               chatId,
-              `❌ *Wrong format!*\n\n` +
-                `✅ Example: \`01.01.2026-13.01.2026\`\n\n` +
-                `📋 Day: 01-31, Month: 01-12, Year: 2026`,
+              t(lang, "wizard.tx.customPeriodWrongFormat"),
               { parse_mode: "Markdown", ...this.getBackButton(lang) }
             )
             return true
@@ -506,7 +558,7 @@ export class WizardManager {
           if (!sd || !sm || !sy || !ed || !em || !ey) {
             await this.bot.sendMessage(
               chatId,
-              `❌ Invalid date format!`,
+              t(lang, "wizard.tx.customPeriodInvalid"),
               this.getBackButton(lang)
             )
             return true
@@ -520,7 +572,7 @@ export class WizardManager {
           if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Wrong dates!",
+              t(lang, "wizard.tx.customPeriodWrongDates"),
               this.getBackButton(lang)
             )
             return true
@@ -529,7 +581,7 @@ export class WizardManager {
           if (endDate < startDate) {
             await this.bot.sendMessage(
               chatId,
-              "❌ End date before Start!",
+              t(lang, "wizard.tx.customPeriodEndBeforeStart"),
               this.getBackButton(lang)
             )
             return true
@@ -544,7 +596,7 @@ export class WizardManager {
           if (filtered.length === 0) {
             await this.bot.sendMessage(
               chatId,
-              `📭 *No transactions*\n\nFor period ${text}`,
+              t(lang, "wizard.tx.customPeriodNoTransactions", { period: text }),
               this.getBackButton(lang)
             )
             return true
@@ -566,16 +618,19 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            `📋 *Custom Period: ${text}*\n\n` +
-              `Found ${filtered.length} transaction${filtered.length > 1 ? "s" : ""}\n\n` +
-              `Choose for editing:`,
+            `${t(lang, "wizard.tx.customPeriodTitle", { period: text })}\n\n` +
+              `${t(lang, "wizard.tx.foundTransactions", {
+                count: filtered.length,
+              })}\n\n` +
+              `${t(lang, "wizard.tx.selectTransactionToEdit")}`,
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: createListButtons({
                   items,
+                  lang,
                   afterItemsButtons:
-                    filtered.length > 10 ? ["🔍 View More"] : [],
+                    filtered.length > 10 ? [t(lang, "buttons.viewMore")] : [],
                 }),
                 resize_keyboard: true,
               },
@@ -588,14 +643,14 @@ export class WizardManager {
           if (!state?.data) return false
           const { transactions, offset, period } = state.data
 
-          if (text === "🔍 View More") {
+          if (text === t(lang, "buttons.viewMore")) {
             const nextOffset = offset + 10
             const nextBatch = transactions.slice(nextOffset, nextOffset + 10)
 
             if (nextBatch.length === 0) {
               await this.bot.sendMessage(
                 chatId,
-                "📭 No more transactions",
+                t(lang, "wizard.tx.noMoreTransactions"),
                 this.getBackButton(lang)
               )
               return true
@@ -620,16 +675,28 @@ export class WizardManager {
 
             await this.bot.sendMessage(
               chatId,
-              `📋 *Next batch* (${period})\n\nShowing ${nextOffset + 1}-${nextOffset + toShow.length} of ${transactions.length}`,
+              `${t(lang, "wizard.tx.nextBatchTitle", { period })}\n\n${t(
+                lang,
+                "wizard.tx.showingRange",
+                {
+                  start: nextOffset + 1,
+                  end: nextOffset + toShow.length,
+                  total: transactions.length,
+                }
+              )}`,
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: createListButtons({
                     items,
+                    lang,
                     afterItemsButtons:
                       nextOffset + 10 < transactions.length
-                        ? ["🔙 Previous Page", "🔍 View More"]
-                        : ["🔙 Previous Page"],
+                        ? [
+                            t(lang, "buttons.previousPage"),
+                            t(lang, "buttons.viewMore"),
+                          ]
+                        : [t(lang, "buttons.previousPage")],
                   }),
                   resize_keyboard: true,
                 },
@@ -638,7 +705,7 @@ export class WizardManager {
             return true
           }
 
-          if (text === "🔙 Previous Page") {
+          if (text === t(lang, "buttons.previousPage")) {
             const prevOffset = Math.max(0, offset - 10)
 
             await this.goToStep(userId, "TX_VIEW_LIST", {
@@ -660,20 +727,27 @@ export class WizardManager {
 
             const afterButtons = []
             if (prevOffset > 0) {
-              afterButtons.push("🔙 Previous Page")
+              afterButtons.push(t(lang, "buttons.previousPage"))
             }
             if (prevOffset + 10 < transactions.length) {
-              afterButtons.push("🔍 View More")
+              afterButtons.push(t(lang, "buttons.viewMore"))
             }
 
             await this.bot.sendMessage(
               chatId,
-              `📋 *Previous batch* (${period})\n\nShowing ${prevOffset + 1}-${prevOffset + toShow.length} of ${transactions.length}`,
+              `${t(lang, "wizard.tx.previousBatchTitle", {
+                period,
+              })}\n\n${t(lang, "wizard.tx.showingRange", {
+                start: prevOffset + 1,
+                end: prevOffset + toShow.length,
+                total: transactions.length,
+              })}`,
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: createListButtons({
                     items,
+                    lang,
                     afterItemsButtons: afterButtons,
                   }),
                   resize_keyboard: true,
@@ -695,7 +769,7 @@ export class WizardManager {
           if (!selected) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Select a transaction from the list.",
+              t(lang, "wizard.tx.selectTransactionFromList"),
               this.getBackButton(lang)
             )
             return true
@@ -704,24 +778,39 @@ export class WizardManager {
           await this.goToStep(userId, "TX_EDIT_MENU", { transaction: selected })
 
           const account =
-            selected.fromAccountId || selected.toAccountId || "N/A"
+            selected.fromAccountId ||
+            selected.toAccountId ||
+            t(lang, "common.notAvailable")
           await this.bot.sendMessage(
             chatId,
-            `📋 *Transaction Details*\n\n` +
-              `Type: ${selected.type}\n` +
-              `Category: ${selected.category}\n` +
-              `Amount: ${selected.amount} ${selected.currency}\n` +
-              `Account: ${account}\n` +
-              `Date: ${new Date(selected.date).toLocaleDateString("en-GB")}\n\n` +
-              `What would you like to do?`,
+            `${t(lang, "wizard.tx.detailsTitle")}\n\n` +
+              `${t(lang, "wizard.tx.detailsType", {
+                type:
+                  selected.type === "EXPENSE"
+                    ? t(lang, "transactions.expenseTitle")
+                    : selected.type === "INCOME"
+                      ? t(lang, "transactions.incomeTitle")
+                      : t(lang, "transactions.transferTitle"),
+              })}\n` +
+              `${t(lang, "wizard.tx.detailsCategory", {
+                category: selected.category,
+              })}\n` +
+              `${t(lang, "wizard.tx.detailsAmount", {
+                amount: `${selected.amount} ${selected.currency}`,
+              })}\n` +
+              `${t(lang, "wizard.tx.detailsAccount", { account })}\n` +
+              `${t(lang, "wizard.tx.detailsDate", {
+                date: formatDateDisplay(new Date(selected.date)),
+              })}\n\n` +
+              `${t(lang, "wizard.tx.detailsPrompt")}`,
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
-                  [{ text: "✏️ Edit Amount" }],
-                  [{ text: "📝 Edit Category" }],
-                  [{ text: "💳 Edit Account" }],
-                  [{ text: "🗑️ Delete Transaction" }],
+                  [{ text: t(lang, "buttons.editAmount") }],
+                  [{ text: t(lang, "buttons.editCategory") }],
+                  [{ text: t(lang, "buttons.editAccount") }],
+                  [{ text: t(lang, "wizard.tx.deleteTransactionButton") }],
                   [
                     { text: t(lang, "common.back") },
                     { text: t(lang, "mainMenu.mainMenuButton") },
@@ -737,25 +826,35 @@ export class WizardManager {
           const tx = state?.data?.transaction
           if (!tx) return true
 
-          if (text === "✏️ Edit Amount") {
+          if (text === t(lang, "buttons.editAmount")) {
             await this.goToStep(userId, "TX_EDIT_AMOUNT", { transaction: tx })
             const defaultCurrency = await db.getDefaultCurrency(userId)
             await this.bot.sendMessage(
               chatId,
-              `✏️ *Edit Amount*\n\nCurrent: \n${formatMoney(tx.amount, tx.currency)}\n\nEnter new amount (e.g. 100 or 100 ${defaultCurrency}):`,
+              `${t(lang, "wizard.tx.editAmountTitle")}\n\n${t(
+                lang,
+                "wizard.tx.currentAmount",
+                { amount: formatMoney(tx.amount, tx.currency) }
+              )}\n\n${t(lang, "wizard.tx.enterNewAmount", {
+                currency: defaultCurrency,
+              })}`,
               this.getBackButton(lang)
             )
-          } else if (text === "📝 Edit Category") {
+          } else if (text === t(lang, "buttons.editCategory")) {
             await this.goToStep(userId, "TX_EDIT_CATEGORY", { transaction: tx })
 
             if (tx.type === TransactionType.EXPENSE) {
               const categories = Object.values(ExpenseCategory)
               const items = categories.map((c) => c)
-              const keyboard = createListButtons({ items })
+              const keyboard = createListButtons({ items, lang })
 
               await this.bot.sendMessage(
                 chatId,
-                `📝 *Edit Category*\n\nCurrent: ${tx.category}\n\nSelect new category:`,
+                `${t(lang, "wizard.tx.editCategoryExpenseTitle")}\n\n${t(
+                  lang,
+                  "wizard.tx.currentCategory",
+                  { category: tx.category }
+                )}\n\n${t(lang, "wizard.tx.selectNewCategory")}`,
                 {
                   parse_mode: "Markdown",
                   reply_markup: { keyboard, resize_keyboard: true },
@@ -764,37 +863,51 @@ export class WizardManager {
             } else if (tx.type === TransactionType.INCOME) {
               const categories = Object.values(IncomeCategory)
               const items = categories.map((c) => c)
-              const keyboard = createListButtons({ items })
+              const keyboard = createListButtons({ items, lang })
 
               await this.bot.sendMessage(
                 chatId,
-                `📝 *Edit Category*\n\nCurrent: ${tx.category}\n\nSelect new category:`,
+                `${t(lang, "wizard.tx.editCategoryIncomeTitle")}\n\n${t(
+                  lang,
+                  "wizard.tx.currentCategory",
+                  { category: tx.category }
+                )}\n\n${t(lang, "wizard.tx.selectNewCategory")}`,
                 {
                   parse_mode: "Markdown",
                   reply_markup: { keyboard, resize_keyboard: true },
                 }
               )
             }
-          } else if (text === "💳 Edit Account") {
+          } else if (text === t(lang, "buttons.editAccount")) {
             await this.goToStep(userId, "TX_EDIT_ACCOUNT", { transaction: tx })
-            const account = tx.fromAccountId || tx.toAccountId || "N/A"
+            const account =
+              tx.fromAccountId ||
+              tx.toAccountId ||
+              t(lang, "common.notAvailable")
             await handlers.handleTxAccount(
               this,
               chatId,
               userId,
-              `💳 *Edit Account*\n\nCurrent: ${account}\n\nSelect new account:`
+              `${t(lang, "wizard.tx.editAccountTitle")}\n\n${t(
+                lang,
+                "wizard.tx.currentAccount",
+                { account }
+              )}\n\n${t(lang, "wizard.tx.selectNewAccount")}`
             )
-          } else if (text === "🗑️ Delete Transaction") {
+          } else if (text === t(lang, "wizard.tx.deleteTransactionButton")) {
             const success = await db.deleteTransaction(userId, tx.id)
 
             if (success) {
-              await this.bot.sendMessage(chatId, "✅ Transaction deleted!")
+              await this.bot.sendMessage(
+                chatId,
+                t(lang, "wizard.tx.transactionDeleted")
+              )
             } else {
               await this.bot.sendMessage(
                 chatId,
-                "❌ Error deleting transaction"
+                t(lang, "wizard.tx.deleteError")
               )
-              await showHistoryMenu(this, chatId, userId, state?.lang || "en")
+              await showHistoryMenu(this, chatId, userId, lang)
               return true
             }
 
@@ -803,7 +916,7 @@ export class WizardManager {
             if (recentTxs.length === 0) {
               await this.bot.sendMessage(
                 chatId,
-                "💭 No more transactions to edit.",
+                t(lang, "wizard.tx.noMoreToEdit"),
                 {
                   reply_markup: {
                     keyboard: [
@@ -816,7 +929,7 @@ export class WizardManager {
                   },
                 }
               )
-              await showHistoryMenu(this, chatId, userId, state?.lang || "en")
+              await showHistoryMenu(this, chatId, userId, lang)
               return true
             }
 
@@ -830,11 +943,11 @@ export class WizardManager {
               return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
             })
 
-            const keyboard = createListButtons({ items })
+            const keyboard = createListButtons({ items, lang })
 
             await this.bot.sendMessage(
               chatId,
-              "✏️ *Edit Transactions*\n\nSelect another transaction to edit:",
+              t(lang, "wizard.tx.editTransactionsTitle"),
               {
                 parse_mode: "Markdown",
                 reply_markup: { keyboard: keyboard, resize_keyboard: true },
@@ -857,7 +970,7 @@ export class WizardManager {
           if (!parsed) {
             await this.bot.sendMessage(
               chatId,
-              `❌ Invalid amount. Try: 100 or 100 ${defaultCurrency}`,
+              t(lang, "wizard.tx.invalidAmount", { currency: defaultCurrency }),
               this.getBackButton(lang)
             )
             return true
@@ -872,13 +985,16 @@ export class WizardManager {
           if (success) {
             await this.bot.sendMessage(
               chatId,
-              `✅ Amount updated to ${parsed.amount} ${parsed.currency}!`
+              t(lang, "wizard.tx.amountUpdated", {
+                amount: parsed.amount,
+                currency: parsed.currency,
+              })
             )
           } else {
-            await this.bot.sendMessage(chatId, "❌ Error updating transaction.")
+            await this.bot.sendMessage(chatId, t(lang, "wizard.tx.updateError"))
           }
 
-          await showHistoryMenu(this, chatId, userId, state?.lang || "en")
+          await showHistoryMenu(this, chatId, userId, lang)
           return true
         }
         case "TX_EDIT_CATEGORY": {
@@ -899,7 +1015,7 @@ export class WizardManager {
           if (!isValid) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Please select a category from the list.",
+              t(lang, "wizard.tx.invalidCategory"),
               this.getBackButton(lang)
             )
             return true
@@ -913,13 +1029,13 @@ export class WizardManager {
           if (success) {
             await this.bot.sendMessage(
               chatId,
-              `✅ Category updated to "${text}"!`
+              t(lang, "wizard.tx.categoryUpdated", { category: text })
             )
           } else {
-            await this.bot.sendMessage(chatId, "❌ Error updating transaction.")
+            await this.bot.sendMessage(chatId, t(lang, "wizard.tx.updateError"))
           }
 
-          await showHistoryMenu(this, chatId, userId, state?.lang || "en")
+          await showHistoryMenu(this, chatId, userId, lang)
           return true
         }
         case "TX_EDIT_ACCOUNT": {
@@ -938,7 +1054,7 @@ export class WizardManager {
           if (!newAccountId) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Invalid account name.",
+              t(lang, "wizard.tx.invalidAccount"),
               this.getBackButton(lang)
             )
             return true
@@ -958,13 +1074,13 @@ export class WizardManager {
           if (success) {
             await this.bot.sendMessage(
               chatId,
-              `✅ Account updated to "${newAccountId}"!`
+              t(lang, "wizard.tx.accountUpdated", { account: newAccountId })
             )
           } else {
-            await this.bot.sendMessage(chatId, "❌ Error updating transaction.")
+            await this.bot.sendMessage(chatId, t(lang, "wizard.tx.updateError"))
           }
 
-          await showHistoryMenu(this, chatId, userId, state?.lang || "en")
+          await showHistoryMenu(this, chatId, userId, lang)
           return true
         }
 
@@ -991,22 +1107,24 @@ export class WizardManager {
             text
           )
         case "DEBT_TYPE": {
-          const type = text === "🔴 I Owe" ? "I_OWE" : "OWES_ME"
+          const type = text === t(lang, "buttons.iOwe") ? "I_OWE" : "OWES_ME"
 
           await this.goToStep(userId, "DEBT_CREATE_DETAILS", { type })
 
           const emoji = type === "I_OWE" ? "🔴" : "🟢"
-          const action = type === "I_OWE" ? "owe to" : "lent to"
+          const action =
+            type === "I_OWE"
+              ? t(lang, "wizard.debt.actionOweTo")
+              : t(lang, "wizard.debt.actionLentTo")
           const defaultCurrency = await db.getDefaultCurrency(userId)
 
           await this.bot.sendMessage(
             chatId,
-            `${emoji} Enter person's name and amount you ${action}:\n\n` +
-              `💡 *Format:* Name Amount [Currency]\n\n` +
-              `*Examples:*\n` +
-              `• John 1000\n` +
-              `• Maria 5000 USD\n` +
-              `• Alex 50000 ${defaultCurrency}`,
+            t(lang, "wizard.debt.createDetails", {
+              emoji,
+              action,
+              currency: defaultCurrency,
+            }),
             {
               parse_mode: "Markdown",
               ...this.getBackButton(lang),
@@ -1015,20 +1133,27 @@ export class WizardManager {
           return true
         }
         case "DEBT_EDIT_SELECT": {
-          if (text === "✨ Add Debt") {
+          if (text === t(lang, "buttons.addDebt")) {
             await this.goToStep(userId, "DEBT_TYPE", {})
-            await this.bot.sendMessage(chatId, "Select debt type:", {
-              reply_markup: {
-                keyboard: [
-                  [{ text: "🔴 I Owe" }, { text: "🟢 They Owe Me" }],
-                  [
-                    { text: t(lang, "common.back") },
-                    { text: t(lang, "mainMenu.mainMenuButton") },
+            await this.bot.sendMessage(
+              chatId,
+              t(lang, "wizard.debt.selectType"),
+              {
+                reply_markup: {
+                  keyboard: [
+                    [
+                      { text: t(lang, "buttons.iOwe") },
+                      { text: t(lang, "buttons.theyOweMe") },
+                    ],
+                    [
+                      { text: t(lang, "common.back") },
+                      { text: t(lang, "mainMenu.mainMenuButton") },
+                    ],
                   ],
-                ],
-                resize_keyboard: true,
-              },
-            })
+                  resize_keyboard: true,
+                },
+              }
+            )
             return true
           }
 
@@ -1042,7 +1167,7 @@ export class WizardManager {
           if (!selected) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Select a debt from the list.",
+              t(lang, "wizard.debt.selectFromListError"),
               this.getBackButton(lang)
             )
             return true
@@ -1062,48 +1187,60 @@ export class WizardManager {
           let msg = ""
           const remaining = amount - paidAmount
           const progress = createProgressBar(paidAmount, amount)
-          const emoji = type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
-          const action = type === "I_OWE" ? "pay" : "receive"
+          const emoji =
+            type === "I_OWE"
+              ? t(lang, "wizard.debt.payTo")
+              : t(lang, "wizard.debt.getPaidFrom")
+          const action =
+            type === "I_OWE"
+              ? t(lang, "wizard.debt.actionPay")
+              : t(lang, "wizard.debt.actionReceive")
 
           msg += `${emoji} *${name}*\n`
           msg += `${progress}\n`
 
           if (paidAmount === 0) {
-            msg += `Total: ${formatMoney(amount, currency)}\n`
+            msg += `${t(lang, "wizard.debt.totalLine", {
+              amount: formatMoney(amount, currency),
+            })}\n`
           } else if (remaining > 0) {
-            msg += `Remaining: ${formatMoney(remaining, currency)}\n`
+            msg += `${t(lang, "wizard.debt.remainingLine", {
+              amount: formatMoney(remaining, currency),
+            })}\n`
           } else {
-            msg += `🎉 Goal achieved!\n`
+            msg += `${t(lang, "wizard.debt.paidLabel")}\n`
           }
 
           if (dueDate) {
             const deadlineDate = new Date(dueDate)
-            msg += `Due: ${deadlineDate.toLocaleDateString("en-GB")}\n`
+            msg += `${t(lang, "wizard.debt.dueLine", {
+              date: formatDateDisplay(deadlineDate),
+            })}\n`
           }
 
-          msg += `\n💡 Enter amount to ${action}`
+          msg += `\n${t(lang, "wizard.debt.enterAmountTo", { action })}`
 
           const deadlineButtons = dueDate
             ? [
-                [{ text: "📅 Change Deadline" }],
-                [{ text: "🔕 Disable Reminders" }],
+                [{ text: t(lang, "buttons.changeDeadline") }],
+                [{ text: t(lang, "buttons.disableReminders") }],
                 [
                   {
                     text: autoPayment?.enabled
-                      ? "❌ Disable Auto-Payment"
-                      : "✅ Enable Auto-Payment",
+                      ? t(lang, "wizard.debt.disableAutoPayment")
+                      : t(lang, "wizard.debt.enableAutoPayment"),
                   },
                 ],
               ]
-            : [[{ text: "📅 Set Deadline" }]]
+            : [[{ text: t(lang, "buttons.setDeadline") }]]
 
           await this.bot.sendMessage(chatId, msg, {
             parse_mode: "Markdown",
             reply_markup: {
               keyboard: [
-                [{ text: "✏️ Edit Amount" }],
+                [{ text: t(lang, "buttons.editAmount") }],
                 ...deadlineButtons,
-                [{ text: "🗑 Delete Debt" }],
+                [{ text: t(lang, "wizard.debt.deleteDebtButton") }],
                 [
                   { text: t(lang, "common.back") },
                   { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1117,15 +1254,15 @@ export class WizardManager {
         case "DEBT_EDIT_AMOUNT": {
           const debt = state?.data?.debt
           if (!debt) {
-            await this.bot.sendMessage(chatId, "❌ Debt not found.")
+            await this.bot.sendMessage(chatId, t(lang, "wizard.debt.notFound"))
             this.clearState(userId)
-            await showDebtsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showDebtsMenu(this.bot, chatId, userId, lang)
             return true
           }
 
           if (
-            text === "✅ Enable Auto-Payment" ||
-            text === "❌ Disable Auto-Payment"
+            text === t(lang, "wizard.debt.enableAutoPayment") ||
+            text === t(lang, "wizard.debt.disableAutoPayment")
           ) {
             return await handlers.handleAutoPaymentToggle(
               this,
@@ -1144,7 +1281,9 @@ export class WizardManager {
           if (!parsed || parsed.amount <= 0) {
             await this.bot.sendMessage(
               chatId,
-              `❌ Invalid amount. Try: 500 or 500 ${defaultCurrency}`,
+              t(lang, "wizard.debt.invalidAmount", {
+                currency: defaultCurrency,
+              }),
               this.getBackButton(lang)
             )
             return true
@@ -1155,15 +1294,20 @@ export class WizardManager {
             if (remaining < 0) {
               await this.bot.sendMessage(
                 chatId,
-                `✅ ${debt.type === "I_OWE" ? "💸 Debt fully paid!" : "💰 Debt fully received!"}\n\n` +
-                  `Total: ${formatMoney(debt.amount, debt.currency)}\n` +
-                  `Paid: ${formatMoney(debt.paidAmount, debt.currency)}`,
+                t(lang, "wizard.debt.fullySettledMessage", {
+                  status:
+                    debt.type === "I_OWE"
+                      ? t(lang, "wizard.debt.fullyPaidLabel")
+                      : t(lang, "wizard.debt.fullyReceivedLabel"),
+                  total: formatMoney(debt.amount, debt.currency),
+                  paid: formatMoney(debt.paidAmount, debt.currency),
+                }),
                 {
                   parse_mode: "Markdown",
                   reply_markup: {
                     keyboard: [
-                      [{ text: "✏️ Edit Amount" }],
-                      [{ text: "🗑 Delete Debt" }],
+                      [{ text: t(lang, "buttons.editAmount") }],
+                      [{ text: t(lang, "wizard.debt.deleteDebtButton") }],
                       [
                         { text: t(lang, "common.back") },
                         { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1178,7 +1322,10 @@ export class WizardManager {
 
             await this.bot.sendMessage(
               chatId,
-              `❌ New debt amount ${formatMoney(parsed.amount, debt.currency)} cannot be less than already paid amount ${formatMoney(debt.paidAmount, debt.currency)}.`,
+              t(lang, "wizard.debt.amountLessThanPaid", {
+                amount: formatMoney(parsed.amount, debt.currency),
+                paid: formatMoney(debt.paidAmount, debt.currency),
+              }),
               this.getBackButton(lang)
             )
             return true
@@ -1191,14 +1338,17 @@ export class WizardManager {
             parsed.currency
           )
 
-          await this.bot.sendMessage(chatId, "✅ Debt amount updated!")
+          await this.bot.sendMessage(
+            chatId,
+            t(lang, "wizard.debt.amountUpdated")
+          )
 
           const userData = await db.getUserData(userId)
           const updatedDebt = userData.debts.find((d: Debt) => d.id === debt.id)
 
           if (!updatedDebt) {
             this.clearState(userId)
-            await showDebtsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showDebtsMenu(this.bot, chatId, userId, lang)
             return true
           }
 
@@ -1219,50 +1369,62 @@ export class WizardManager {
           let msg = ""
           const remaining = amount - paidAmount
           const progress = createProgressBar(paidAmount, amount)
-          const emoji = type === "I_OWE" ? "💸 Pay to" : "💰 Get paid from"
-          const action = type === "I_OWE" ? "pay" : "receive"
+          const emoji =
+            type === "I_OWE"
+              ? t(lang, "wizard.debt.payTo")
+              : t(lang, "wizard.debt.getPaidFrom")
+          const action =
+            type === "I_OWE"
+              ? t(lang, "wizard.debt.actionPay")
+              : t(lang, "wizard.debt.actionReceive")
 
           msg += `${emoji} *${name}*\n`
           msg += `${progress}\n`
 
           if (paidAmount === 0) {
-            msg += `Total: ${formatMoney(amount, currency)}\n`
+            msg += `${t(lang, "wizard.debt.totalLine", {
+              amount: formatMoney(amount, currency),
+            })}\n`
           } else if (remaining > 0) {
-            msg += `Remaining: ${formatMoney(remaining, currency)}\n`
+            msg += `${t(lang, "wizard.debt.remainingLine", {
+              amount: formatMoney(remaining, currency),
+            })}\n`
           } else {
-            msg += `🎉 Goal achieved!\n`
+            msg += `${t(lang, "wizard.debt.paidLabel")}\n`
           }
 
           if (dueDate) {
             const deadlineDate = new Date(dueDate)
-            msg += `Due: ${deadlineDate.toLocaleDateString("en-GB")}\n`
+            msg += `${t(lang, "wizard.debt.dueLine", {
+              date: formatDateDisplay(deadlineDate),
+            })}\n`
           }
 
-          msg += `\n💡 Enter amount to ${action}`
+          msg += `\n${t(lang, "wizard.debt.enterAmountTo", { action })}`
 
           await this.bot.sendMessage(chatId, msg, {
             parse_mode: "Markdown",
             reply_markup: {
               keyboard: [
-                [{ text: "✏️ Edit Amount" }],
+                [{ text: t(lang, "buttons.editAmount") }],
                 [
                   {
                     text: dueDate
-                      ? `${t(state?.data?.lang, "debts.changeDueDate")}`
-                      : `${t(state?.data?.lang, "debts.setDueDate")}`,
+                      ? t(lang, "buttons.changeDeadline")
+                      : t(lang, "buttons.setDeadline"),
                   },
                 ],
-                dueDate ? [{ text: "🔕 Disable Reminders" }] : [],
+                dueDate ? [{ text: t(lang, "buttons.disableReminders") }] : [],
                 type === "I_OWE"
                   ? [
                       {
                         text: autoPayment?.enabled
-                          ? "❌ Disable Auto-Payment"
-                          : "✅ Enable Auto-Payment",
+                          ? t(lang, "wizard.debt.disableAutoPayment")
+                          : t(lang, "wizard.debt.enableAutoPayment"),
                       },
                     ]
                   : [],
-                [{ text: "🗑 Delete Debt" }],
+                [{ text: t(lang, "wizard.debt.deleteDebtButton") }],
                 [
                   { text: t(lang, "common.back") },
                   { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1289,8 +1451,8 @@ export class WizardManager {
           }
 
           if (
-            text === "✅ Enable Auto-Payment" ||
-            text === "❌ Disable Auto-Payment"
+            text === t(lang, "wizard.debt.enableAutoPayment") ||
+            text === t(lang, "wizard.debt.disableAutoPayment")
           ) {
             return await handlers.handleAutoPaymentToggle(
               this,
@@ -1301,25 +1463,26 @@ export class WizardManager {
           }
 
           if (
-            text === t(state?.data?.lang, "debts.setDueDate") ||
-            text === t(state?.data?.lang, "debts.changeDueDate") ||
-            text === "📅 Set Deadline" ||
-            text === "📅 Change Deadline"
+            text === t(lang, "buttons.setDeadline") ||
+            text === t(lang, "buttons.changeDeadline")
           ) {
             await this.goToStep(userId, "DEBT_EDIT_DUE_DATE", { debt })
             await this.bot.sendMessage(
               chatId,
-              `📅 ${text.includes("Set") ? "Set Due Date" : "Change Due Date"}\n\n` +
-                `Enter new due date (DD.MM.YYYY)\n` +
-                `Example: 31.12.2026\n\n` +
-                `${text.includes("Change") ? "Or tap Remove to delete due date.\n" : ""}` +
-                `Or tap Skip to cancel.`,
+              t(lang, "wizard.debt.dueDatePrompt", {
+                mode:
+                  text === t(lang, "buttons.setDeadline")
+                    ? t(lang, "wizard.debt.dueDateSetTitle")
+                    : t(lang, "wizard.debt.dueDateChangeTitle"),
+              }),
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    text.includes("Change") ? [{ text: "🗑 Remove Date" }] : [],
-                    [{ text: "⏩ Skip" }],
+                    text === t(lang, "buttons.changeDeadline")
+                      ? [{ text: t(lang, "buttons.removeDate") }]
+                      : [],
+                    [{ text: t(lang, "wizard.common.skip") }],
                     [
                       { text: t(lang, "common.back") },
                       { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1332,19 +1495,19 @@ export class WizardManager {
             return true
           }
 
-          if (text === "🔕 Disable Reminders") {
+          if (text === t(lang, "buttons.disableReminders")) {
             await db.updateDebtDueDate(userId, debt.id, null)
             await reminderManager.deleteRemindersForEntity(userId, debt.id)
             await this.bot.sendMessage(
               chatId,
-              "✅ Reminders disabled and due date removed."
+              t(lang, "wizard.debt.remindersRemoved")
             )
-            await showDebtsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showDebtsMenu(this.bot, chatId, userId, lang)
             this.clearState(userId)
             return true
           }
 
-          if (text === "⚙️ Advanced") {
+          if (text === t(lang, "buttons.advanced")) {
             return await handlers.handleDebtAdvancedMenu(
               this,
               chatId,
@@ -1353,15 +1516,16 @@ export class WizardManager {
             )
           }
 
-          if (text === "✏️ Edit Amount") {
+          if (text === t(lang, "buttons.editAmount")) {
             await this.goToStep(userId, "DEBT_EDIT_AMOUNT", { debt })
             const defaultCurrency = await db.getDefaultCurrency(userId)
             await this.bot.sendMessage(
               chatId,
-              `✏️ *Edit Total Debt Amount*\n\n` +
-                `Current: ${formatMoney(debt.amount, debt.currency)}\n` +
-                `Already Paid: ${formatMoney(debt.paidAmount, debt.currency)}\n\n` +
-                `Enter new total amount (e.g. 1000 or 1000 ${defaultCurrency}):`,
+              t(lang, "wizard.debt.editTotalPrompt", {
+                current: formatMoney(debt.amount, debt.currency),
+                paid: formatMoney(debt.paidAmount, debt.currency),
+                currency: defaultCurrency,
+              }),
               {
                 parse_mode: "Markdown",
                 ...this.getBackButton(lang),
@@ -1371,14 +1535,14 @@ export class WizardManager {
           }
 
           // Delete Debt
-          if (text === "🗑 Delete Debt") {
+          if (text === t(lang, "wizard.debt.deleteDebtButton")) {
             await db.deleteDebt(userId, debt.id)
             await this.bot.sendMessage(
               chatId,
-              `✅ Debt "${debt.name}" deleted.`
+              t(lang, "wizard.debt.deletedMessage", { name: debt.name })
             )
             this.clearState(userId)
-            await showDebtsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showDebtsMenu(this.bot, chatId, userId, lang)
             return true
           }
 
@@ -1394,7 +1558,10 @@ export class WizardManager {
             if (parsed.amount > remaining) {
               await this.bot.sendMessage(
                 chatId,
-                `❌ Amount ${formatMoney(parsed.amount, debt.currency)} exceeds remaining debt ${formatMoney(remaining, debt.currency)}.`,
+                t(lang, "wizard.debt.amountExceedsRemaining", {
+                  amount: formatMoney(parsed.amount, debt.currency),
+                  remaining: formatMoney(remaining, debt.currency),
+                }),
                 this.getBackButton(lang)
               )
               return true
@@ -1437,13 +1604,14 @@ export class WizardManager {
           )
 
           const selected = completedGoals.find(
-            (g: Goal) => text === `✅ Goal: ${g.name}`
+            (g: Goal) =>
+              text === t(lang, "wizard.goal.completedItem", { name: g.name })
           )
 
           if (!selected) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Select a goal from the list.",
+              t(lang, "wizard.goal.selectFromListError"),
               this.getBackButton(lang)
             )
             return true
@@ -1455,14 +1623,15 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            `✅ Completed Goal: "${selected.name}"\n\n` +
-              `Target: ${selected.targetAmount} ${selected.currency}\n` +
-              `Achieved: ${selected.currentAmount} ${selected.currency}\n\n` +
-              `🎉 Congratulations on reaching this goal!`,
+            t(lang, "wizard.goal.completedDeleteMessage", {
+              name: selected.name,
+              target: `${selected.targetAmount} ${selected.currency}`,
+              achieved: `${selected.currentAmount} ${selected.currency}`,
+            }),
             {
               reply_markup: {
                 keyboard: [
-                  [{ text: "🗑️ Delete Goal" }],
+                  [{ text: t(lang, "wizard.goal.deleteGoalButton") }],
                   [
                     { text: t(lang, "common.back") },
                     { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1475,17 +1644,17 @@ export class WizardManager {
           return true
         }
         case "GOAL_COMPLETED_DELETE": {
-          if (text === "🗑️ Delete Goal") {
+          if (text === t(lang, "wizard.goal.deleteGoalButton")) {
             const goal = state?.data?.goal
             if (goal) {
               await db.deleteGoal(userId, goal.id)
               await this.bot.sendMessage(
                 chatId,
-                `✅ Completed goal "${goal.name}" deleted.`
+                t(lang, "wizard.goal.completedDeleted", { name: goal.name })
               )
             }
             this.clearState(userId)
-            await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showGoalsMenu(this.bot, chatId, userId, lang)
             return true
           }
           return true
@@ -1504,8 +1673,8 @@ export class WizardManager {
 
           // Auto-Deposit Toggle
           if (
-            text === "✅ Enable Auto-Deposit" ||
-            text === "❌ Disable Auto-Deposit"
+            text === t(lang, "wizard.goal.enableAutoDeposit") ||
+            text === t(lang, "wizard.goal.disableAutoDeposit")
           ) {
             return await handlers.handleAutoDepositToggle(
               this,
@@ -1516,23 +1685,27 @@ export class WizardManager {
           }
 
           // Set/Change Deadline
-          if (text === "📅 Set Deadline" || text === "📅 Change Deadline") {
+          if (
+            text === t(lang, "buttons.setDeadline") ||
+            text === t(lang, "buttons.changeDeadline")
+          ) {
             await this.goToStep(userId, "GOAL_EDIT_DEADLINE", { goal })
             await this.bot.sendMessage(
               chatId,
-              `📅 ${text === "📅 Set Deadline" ? "Set Deadline" : "Change Deadline"}\n\n` +
-                `Enter new deadline (DD.MM.YYYY)\n` +
-                `Example: 31.12.2026\n\n` +
-                `${text === "📅 Change Deadline" ? "Or tap Remove to delete deadline.\n" : ""}` +
-                `Or tap Skip to cancel.`,
+              t(lang, "wizard.goal.deadlinePrompt", {
+                mode:
+                  text === t(lang, "buttons.setDeadline")
+                    ? t(lang, "wizard.goal.deadlineSetTitle")
+                    : t(lang, "wizard.goal.deadlineChangeTitle"),
+              }),
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    text === "📅 Change Deadline"
-                      ? [{ text: "🗑 Remove Date" }]
+                    text === t(lang, "buttons.changeDeadline")
+                      ? [{ text: t(lang, "buttons.removeDate") }]
                       : [],
-                    [{ text: "⏩ Skip" }],
+                    [{ text: t(lang, "wizard.common.skip") }],
                     [
                       { text: t(lang, "common.back") },
                       { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1546,7 +1719,7 @@ export class WizardManager {
           }
 
           // Advanced Menu
-          if (text === "⚙️ Advanced") {
+          if (text === t(lang, "buttons.advanced")) {
             return await handlers.handleGoalAdvancedMenu(
               this,
               chatId,
@@ -1556,22 +1729,24 @@ export class WizardManager {
           }
 
           // Edit Target
-          if (text === "✏️ Edit Target") {
+          if (text === t(lang, "buttons.editTarget")) {
             await this.goToStep(userId, "GOAL_EDIT_AMOUNT", { goal })
             await this.bot.sendMessage(
               chatId,
-              `✏️ *Edit Goal Target*\n\nCurrent: ${formatMoney(goal.targetAmount, goal.currency)}\n\nEnter new target amount:`,
+              t(lang, "wizard.goal.editTargetPrompt", {
+                current: formatMoney(goal.targetAmount, goal.currency),
+              }),
               { parse_mode: "Markdown", ...this.getBackButton(lang) }
             )
             return true
           }
 
           // Delete Goal
-          if (text === "🗑 Delete Goal") {
+          if (text === t(lang, "wizard.goal.deleteGoalButton")) {
             await db.deleteGoal(userId, goal.id)
-            await this.bot.sendMessage(chatId, "✅ Goal deleted.")
+            await this.bot.sendMessage(chatId, t(lang, "wizard.goal.deleted"))
             this.clearState(userId)
-            await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showGoalsMenu(this.bot, chatId, userId, lang)
             return true
           }
 
@@ -1584,7 +1759,10 @@ export class WizardManager {
             if (parsed.amount > remaining) {
               await this.bot.sendMessage(
                 chatId,
-                `❌ Error: Amount (${formatAmount(parsed.amount)}) exceeds remaining goal target (${formatMoney(remaining, goal.currency)}).`,
+                t(lang, "wizard.goal.amountExceedsRemaining", {
+                  amount: formatAmount(parsed.amount),
+                  remaining: formatMoney(remaining, goal.currency),
+                }),
                 this.getBackButton(lang)
               )
               return true
@@ -1595,17 +1773,12 @@ export class WizardManager {
             if (balanceCount === 0) {
               await this.bot.sendMessage(
                 chatId,
-                "⚠️ *No Balances Found*\n\n" +
-                  "Before depositing to goals, you need at least one balance account.\n\n" +
-                  "💡 *Quick Start:*\n" +
-                  "1️⃣ Go to 💰 *Balances*\n" +
-                  "2️⃣ Tap ✨ *Add Balance*\n" +
-                  "3️⃣ Enter account name and amount",
+                t(lang, "wizard.goal.noBalances"),
                 {
                   parse_mode: "Markdown",
                   reply_markup: {
                     keyboard: [
-                      [{ text: "💳 Go to Balances" }],
+                      [{ text: t(lang, "buttons.goToBalances") }],
                       [
                         { text: t(lang, "common.back") },
                         { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1628,7 +1801,7 @@ export class WizardManager {
               this,
               chatId,
               userId,
-              "💳 Select account to deposit from:"
+              t(lang, "wizard.goal.selectDepositAccount")
             )
           }
 
@@ -1638,9 +1811,9 @@ export class WizardManager {
         case "GOAL_EDIT_AMOUNT": {
           const goal = state?.data?.goal
           if (!goal) {
-            await this.bot.sendMessage(chatId, "❌ Goal not found.")
+            await this.bot.sendMessage(chatId, t(lang, "wizard.goal.notFound"))
             this.clearState(userId)
-            await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showGoalsMenu(this.bot, chatId, userId, lang)
             return true
           }
 
@@ -1653,7 +1826,9 @@ export class WizardManager {
           if (!parsed || parsed.amount <= 0) {
             await this.bot.sendMessage(
               chatId,
-              `❌ Invalid amount. Try: 2000 or 2000 ${defaultCurrency}`,
+              t(lang, "wizard.goal.invalidAmount", {
+                currency: defaultCurrency,
+              }),
               this.getBackButton(lang)
             )
             return true
@@ -1667,14 +1842,15 @@ export class WizardManager {
 
             await this.bot.sendMessage(
               chatId,
-              `🎯 New target amount *${formatMoney(parsed.amount, parsed.currency)}* equals your current progress.\n\n` +
-                `Would you like to update the target and mark this goal as completed?`,
+              t(lang, "wizard.goal.completeConfirmMessage", {
+                amount: formatMoney(parsed.amount, parsed.currency),
+              }),
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    [{ text: "✅ Yes, Complete Goal" }],
-                    [{ text: "❌ No, Enter Different Amount" }],
+                    [{ text: t(lang, "wizard.goal.confirmCompleteYes") }],
+                    [{ text: t(lang, "wizard.goal.confirmCompleteNoAlt") }],
                     [
                       { text: t(lang, "common.back") },
                       { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1690,13 +1866,15 @@ export class WizardManager {
           if (parsed.amount < goal.currentAmount) {
             await this.bot.sendMessage(
               chatId,
-              `❌ New target amount *${formatMoney(parsed.amount, parsed.currency)}* is less than current progress *${formatMoney(goal.currentAmount, goal.currency)}*.\n\n` +
-                `💡 You can mark this goal as completed instead.`,
+              t(lang, "wizard.goal.targetLessThanProgress", {
+                amount: formatMoney(parsed.amount, parsed.currency),
+                progress: formatMoney(goal.currentAmount, goal.currency),
+              }),
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    [{ text: "✏️ Try Again" }],
+                    [{ text: t(lang, "buttons.tryAgainEdit") }],
                     [
                       { text: t(lang, "common.back") },
                       { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1711,14 +1889,17 @@ export class WizardManager {
 
           await db.updateGoalTargetAmount(userId, goal.id, parsed.amount)
 
-          await this.bot.sendMessage(chatId, "✅ Goal target updated!")
+          await this.bot.sendMessage(
+            chatId,
+            t(lang, "wizard.goal.targetUpdated")
+          )
 
           const userData = await db.getUserData(userId)
           const updatedGoal = userData.goals.find((g: Goal) => g.id === goal.id)
 
           if (!updatedGoal) {
             this.clearState(userId)
-            await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showGoalsMenu(this.bot, chatId, userId, lang)
             return true
           }
 
@@ -1745,41 +1926,47 @@ export class WizardManager {
           msg += `${progress}\n`
 
           if (currentAmount === 0) {
-            msg += `Target: ${formatMoney(targetAmount, currency)}\n`
+            msg += `${t(lang, "wizard.goal.targetLine", {
+              amount: formatMoney(targetAmount, currency),
+            })}\n`
           } else if (remaining > 0) {
-            msg += `📈 Remaining: ${formatMoney(remaining, currency)}\n`
+            msg += `${t(lang, "wizard.goal.remainingLine", {
+              amount: formatMoney(remaining, currency),
+            })}\n`
           } else {
-            msg += `🎉 Goal achieved!\n`
+            msg += `${t(lang, "wizard.goal.achievedLine")}\n`
           }
 
           if (deadline) {
             const deadlineDate = new Date(deadline)
-            msg += `Deadline: ${deadlineDate.toLocaleDateString("en-GB")}\n`
+            msg += `${t(lang, "wizard.goal.deadlineLine", {
+              date: formatDateDisplay(deadlineDate),
+            })}\n`
           }
 
-          msg += `\n💡 Enter amount to deposit:`
+          msg += `\n${t(lang, "wizard.goal.enterDepositAmount")}`
 
           const deadlineButtons = deadline
             ? [
-                [{ text: "📅 Change Deadline" }],
-                [{ text: "🔕 Disable Reminders" }],
+                [{ text: t(lang, "buttons.changeDeadline") }],
+                [{ text: t(lang, "buttons.disableReminders") }],
                 [
                   {
                     text: autoDeposit?.enabled
-                      ? "❌ Disable Auto-Deposit"
-                      : "✅ Enable Auto-Deposit",
+                      ? t(lang, "wizard.goal.disableAutoDeposit")
+                      : t(lang, "wizard.goal.enableAutoDeposit"),
                   },
                 ],
               ]
-            : [[{ text: "📅 Set Deadline" }]]
+            : [[{ text: t(lang, "buttons.setDeadline") }]]
 
           await this.bot.sendMessage(chatId, msg, {
             parse_mode: "Markdown",
             reply_markup: {
               keyboard: [
-                [{ text: "✏️ Edit Target" }],
+                [{ text: t(lang, "buttons.editTarget") }],
                 ...deadlineButtons,
-                [{ text: "🗑 Delete Goal" }],
+                [{ text: t(lang, "wizard.goal.deleteGoalButton") }],
                 [
                   { text: t(lang, "common.back") },
                   { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1795,30 +1982,28 @@ export class WizardManager {
           const newTargetAmount = state?.data?.newTargetAmount
 
           if (!goal || !newTargetAmount) {
-            await this.bot.sendMessage(chatId, "❌ Goal data not found.")
+            await this.bot.sendMessage(
+              chatId,
+              t(lang, "wizard.goal.dataNotFound")
+            )
             this.clearState(userId)
-            await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showGoalsMenu(this.bot, chatId, userId, lang)
             return true
           }
 
-          if (text === "✅ Yes, Complete Goal") {
+          if (text === t(lang, "wizard.goal.confirmCompleteYes")) {
             await db.updateGoalTargetAmount(userId, goal.id, newTargetAmount)
 
             const balanceCount = (await db.getBalancesList(userId)).length
             if (balanceCount === 0) {
               await this.bot.sendMessage(
                 chatId,
-                "⚠️ *No Balances Found*\n\n" +
-                  "Before completing goals, you need at least one balance account.\n\n" +
-                  "💡 *Quick Start:*\n" +
-                  "1️⃣ Go to 💰 *Balances*\n" +
-                  "2️⃣ Tap ✨ *Add Balance*\n" +
-                  "3️⃣ Enter account name and amount",
+                t(lang, "wizard.goal.noBalancesComplete"),
                 {
                   parse_mode: "Markdown",
                   reply_markup: {
                     keyboard: [
-                      [{ text: "💳 Go to Balances" }],
+                      [{ text: t(lang, "buttons.goToBalances") }],
                       [
                         { text: t(lang, "common.back") },
                         { text: t(lang, "mainMenu.mainMenuButton") },
@@ -1837,7 +2022,7 @@ export class WizardManager {
 
             if (!updatedGoal) {
               this.clearState(userId)
-              await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+              await showGoalsMenu(this.bot, chatId, userId, lang)
               return true
             }
 
@@ -1847,14 +2032,19 @@ export class WizardManager {
             if (remaining <= 0) {
               await this.bot.sendMessage(
                 chatId,
-                `🎉 *Goal "${updatedGoal.name}" is now completed!*\n\n` +
-                  `Final amount: ${formatMoney(updatedGoal.currentAmount, updatedGoal.currency)}`,
+                t(lang, "wizard.goal.completedNow", {
+                  name: updatedGoal.name,
+                  amount: formatMoney(
+                    updatedGoal.currentAmount,
+                    updatedGoal.currency
+                  ),
+                }),
                 {
                   parse_mode: "Markdown",
                 }
               )
               this.clearState(userId)
-              await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+              await showGoalsMenu(this.bot, chatId, userId, lang)
               return true
             }
 
@@ -1868,19 +2058,21 @@ export class WizardManager {
               this,
               chatId,
               userId,
-              "💳 Select account to deposit remaining amount:"
+              t(lang, "wizard.goal.selectDepositRemainingAccount")
             )
             return true
           }
 
-          if (text === "❌ No, Enter Different Amount") {
+          if (text === t(lang, "wizard.goal.confirmCompleteNoAlt")) {
             await this.goToStep(userId, "GOAL_EDIT_AMOUNT", { goal })
 
             await this.bot.sendMessage(
               chatId,
-              `Enter new target amount for *${goal.name}*:\n\n` +
-                `Current target: ${formatMoney(goal.targetAmount, goal.currency)}\n` +
-                `Current progress: ${formatMoney(goal.currentAmount, goal.currency)}`,
+              t(lang, "wizard.goal.enterNewTargetPrompt", {
+                name: goal.name,
+                target: formatMoney(goal.targetAmount, goal.currency),
+                progress: formatMoney(goal.currentAmount, goal.currency),
+              }),
               {
                 parse_mode: "Markdown",
                 ...this.getBackButton(lang),
@@ -1894,18 +2086,14 @@ export class WizardManager {
 
         // --- Balance Flow ---
         case "BALANCE_LIST": {
-          if (text === "✨ Add Balance") {
+          if (text === t(lang, "buttons.addBalance")) {
             await this.goToStep(userId, "BALANCE_CREATE", {})
             const defaultCurrency = await db.getDefaultCurrency(userId)
             await this.sendMessage(
               chatId,
-              `✨ *Add New Balance*\n\n` +
-                `Enter account details in one step:\n\n` +
-                `*Format:* AccountName Amount [Currency]\n\n` +
-                `*Examples:*\n` +
-                `• Cash 1000\n` +
-                `• Bank Card 500 ${defaultCurrency}\n` +
-                `• Savings 2500 USD`,
+              t(lang, "wizard.balance.addNewPrompt", {
+                currency: defaultCurrency,
+              }),
               {
                 parse_mode: "Markdown",
                 ...this.getBackButton(lang),
@@ -1928,7 +2116,7 @@ export class WizardManager {
             chatId,
             userId,
             text,
-            state?.data?.lang || "en"
+            lang
           )
         case "BALANCE_EDIT_MENU":
           return await handlers.handleBalanceEditMenu(
@@ -1980,7 +2168,7 @@ export class WizardManager {
           if (!accountIdRaw) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Account name can't be empty.",
+              t(lang, "wizard.balance.nameEmpty"),
               this.getBackButton(lang)
             )
             return true
@@ -1995,7 +2183,7 @@ export class WizardManager {
           if (exists) {
             await this.bot.sendMessage(
               chatId,
-              `❌ Account "${accountId}" already exists. Please choose a different name.`,
+              t(lang, "wizard.balance.nameExists", { accountId }),
               this.getBackButton(lang)
             )
             return true
@@ -2006,11 +2194,13 @@ export class WizardManager {
           const defaultCurrency = await db.getDefaultCurrency(userId)
           await this.bot.sendMessage(
             chatId,
-            `Enter amount (e.g. 100 or 100 ${defaultCurrency}):`,
+            t(lang, "wizard.balance.enterAmount", {
+              currency: defaultCurrency,
+            }),
             {
               reply_markup: {
                 keyboard: [
-                  [{ text: "⚪ Empty Balance" }],
+                  [{ text: t(lang, "buttons.emptyBalance") }],
                   [
                     { text: t(lang, "common.back") },
                     { text: t(lang, "mainMenu.mainMenuButton") },
@@ -2028,7 +2218,7 @@ export class WizardManager {
           let amount = 0
           let currency = defaultCurrency
 
-          if (text === "⚪ Empty Balance") {
+          if (text === t(lang, "buttons.emptyBalance")) {
             amount = 0
             currency = defaultCurrency
           } else {
@@ -2039,11 +2229,13 @@ export class WizardManager {
             if (!parsed) {
               await this.bot.sendMessage(
                 chatId,
-                `❌ Invalid amount. Try: 100 or 100 ${defaultCurrency}`,
+                t(lang, "wizard.balance.invalidAmount", {
+                  currency: defaultCurrency,
+                }),
                 {
                   reply_markup: {
                     keyboard: [
-                      [{ text: "⚪ Empty Balance" }],
+                      [{ text: t(lang, "buttons.emptyBalance") }],
                       [
                         { text: t(lang, "common.back") },
                         { text: t(lang, "mainMenu.mainMenuButton") },
@@ -2064,10 +2256,10 @@ export class WizardManager {
           if (!accountId) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Account name missing. Start again."
+              t(lang, "wizard.balance.nameMissing")
             )
             this.clearState(userId)
-            await showBalancesMenu(this, chatId, userId, state?.lang || "en")
+            await showBalancesMenu(this, chatId, userId, lang)
 
             return true
           }
@@ -2080,23 +2272,26 @@ export class WizardManager {
           })
 
           this.clearState(userId)
-          await showBalancesMenu(this, chatId, userId, state?.lang || "en")
+          await showBalancesMenu(this, chatId, userId, lang)
           return true
         }
         case "BALANCE_DELETE_TRANSFER": {
           if (!state?.data) return false
           const { accountId, currency, amount } = state.data
 
-          if (text === "🗑️ Delete and clear everything") {
+          if (text === t(lang, "wizard.balance.deleteAndClear")) {
             await db.deleteBalance(userId, accountId, currency)
             await this.bot.sendMessage(
               chatId,
-              `✅ Balance "${accountId}" deleted and ${formatMoney(amount, currency)} cleared.`
+              t(lang, "wizard.balance.deletedAndCleared", {
+                accountId,
+                amount: formatMoney(amount, currency),
+              })
             )
             this.clearState(userId)
-            await showBalancesMenu(this, chatId, userId, state?.lang || "en")
+            await showBalancesMenu(this, chatId, userId, lang)
             return true
-          } else if (text === "↔️ Transfer to another account") {
+          } else if (text === t(lang, "buttons.transferToAnotherAccount")) {
             await this.goToStep(userId, "BALANCE_DELETE_SELECT_TARGET", {
               accountId,
               currency,
@@ -2118,7 +2313,9 @@ export class WizardManager {
 
             await this.bot.sendMessage(
               chatId,
-              `↔️ Transfer ${formatMoney(amount, currency)} to:`,
+              t(lang, "wizard.balance.transferToPrompt", {
+                amount: formatMoney(amount, currency),
+              }),
               {
                 reply_markup: {
                   keyboard: rows,
@@ -2132,7 +2329,7 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            "❌ Please select an option from the buttons.",
+            t(lang, "wizard.balance.selectOptionError"),
             this.getBackButton(lang)
           )
           return true
@@ -2144,7 +2341,7 @@ export class WizardManager {
           const inputCurrency = state?.data?.inputCurrency
           const convertedAmount = state?.data?.convertedAmount
 
-          if (text.startsWith("🔄 Convert to")) {
+          if (text.startsWith("🔄")) {
             await db.convertBalanceAmount(
               userId,
               accountId,
@@ -2153,11 +2350,16 @@ export class WizardManager {
             )
             await this.bot.sendMessage(
               chatId,
-              `✅ Balance "${accountId}" converted: ${inputAmount} ${inputCurrency} → ${formatMoney(convertedAmount, currentCurrency)}!`
+              t(lang, "wizard.balance.converted", {
+                accountId,
+                inputAmount,
+                inputCurrency,
+                converted: formatMoney(convertedAmount, currentCurrency),
+              })
             )
             this.clearState(userId)
-            await showBalancesMenu(this, chatId, userId, state?.lang || "en")
-          } else if (text.startsWith("💱 Change to")) {
+            await showBalancesMenu(this, chatId, userId, lang)
+          } else if (text.startsWith("💱")) {
             await db.setBalanceAmountWithCurrencyChange(
               userId,
               accountId,
@@ -2166,27 +2368,26 @@ export class WizardManager {
             )
             await this.bot.sendMessage(
               chatId,
-              `✅ Balance "${accountId}" changed to ${formatMoney(inputAmount, inputCurrency)}!`
+              t(lang, "wizard.balance.changed", {
+                accountId,
+                amount: formatMoney(inputAmount, inputCurrency),
+              })
             )
             this.clearState(userId)
-            await showBalancesMenu(this, chatId, userId, state?.lang || "en")
+            await showBalancesMenu(this, chatId, userId, lang)
           }
           return true
         }
 
         // --- Income Flow ---
         case "INCOME_VIEW": {
-          if (text === "✨ Add Income Source") {
+          if (text === t(lang, "buttons.addIncomeSource")) {
             await this.goToStep(userId, "INCOME_INLINE", {})
             const defaultCurrency = await db.getDefaultCurrency(userId)
 
             await this.bot.sendMessage(
               chatId,
-              "💼 *Add Income Source*\n\n" +
-                "Format: `Name Amount [Currency]`\n\n" +
-                "*Examples:*\n" +
-                `• Salary 1500\n` +
-                `• Freelance 800 ${defaultCurrency}`,
+              t(lang, "wizard.income.addPrompt", { currency: defaultCurrency }),
               {
                 parse_mode: "Markdown",
                 ...this.getBackButton(lang),
@@ -2204,7 +2405,7 @@ export class WizardManager {
           if (!source) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Select an income source from the list or use ✨ Add Income Source.",
+              t(lang, "wizard.income.selectFromListError"),
               this.getBackButton(lang)
             )
             return true
@@ -2214,22 +2415,23 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            `💼 *Income Source:* ${source.name}\n\n` +
-              `Expected: ${formatMoney(source.expectedAmount!, source.currency)}\n\n` +
-              `You can edit name, delete or enter a new amount to update.`,
+            t(lang, "wizard.income.menuMessage", {
+              name: source.name,
+              amount: formatMoney(source.expectedAmount!, source.currency),
+            }),
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
-                  [{ text: "✏️ Edit Name" }],
+                  [{ text: t(lang, "buttons.editName") }],
                   [
                     {
                       text: source.autoCreate?.enabled
-                        ? "❌ Disable Auto-Income"
-                        : "✅ Enable Auto-Income",
+                        ? t(lang, "wizard.income.disableAutoIncome")
+                        : t(lang, "wizard.income.enableAutoIncome"),
                     },
                   ],
-                  [{ text: "🗑️ Delete Income" }],
+                  [{ text: t(lang, "wizard.income.deleteIncomeButton") }],
                   [
                     { text: t(lang, "common.back") },
                     { text: t(lang, "mainMenu.mainMenuButton") },
@@ -2247,31 +2449,29 @@ export class WizardManager {
             | { name: string; amount: number; currency: Currency }
             | undefined
 
-          if (text === "✅ Confirm delete") {
+          if (text === t(lang, "wizard.income.confirmDeleteButton")) {
             if (source) {
               await db.deleteIncomeSource(userId, source.name)
               await this.bot.sendMessage(
                 chatId,
-                `✅ Income source "${source.name}" deleted.`
+                t(lang, "wizard.income.deletedMessage", { name: source.name })
               )
             } else {
               await this.bot.sendMessage(
                 chatId,
-                "❌ No income source selected.",
+                t(lang, "wizard.income.noSourceSelected"),
                 this.getBackButton(lang)
               )
             }
           } else if (text !== t(lang, "common.back")) {
-            await this.bot.sendMessage(chatId, "❌ Deletion cancelled.")
+            await this.bot.sendMessage(
+              chatId,
+              t(lang, "wizard.income.deleteCancelled")
+            )
           }
 
           await this.goToStep(userId, "INCOME_VIEW", {})
-          await showIncomeSourcesMenu(
-            this.bot,
-            chatId,
-            userId,
-            state?.lang || "en"
-          )
+          await showIncomeSourcesMenu(this.bot, chatId, userId, lang)
           return true
         }
         case "INCOME_INLINE": {
@@ -2280,8 +2480,9 @@ export class WizardManager {
             const defaultCurrency = await db.getDefaultCurrency(userId)
             await this.bot.sendMessage(
               chatId,
-              `❌ Invalid format.\n\nUse: Name Amount [Currency]\n` +
-                `Example: Salary 1500 or Salary 1500 ${defaultCurrency}`,
+              t(lang, "wizard.income.invalidFormat", {
+                currency: defaultCurrency,
+              }),
               this.getBackButton(lang)
             )
             return true
@@ -2298,7 +2499,9 @@ export class WizardManager {
           if (!parsed || parsed.amount <= 0) {
             await this.bot.sendMessage(
               chatId,
-              `❌ Invalid amount. Try: 1000 or 1000 ${defaultCurrency}`,
+              t(lang, "wizard.income.invalidAmount", {
+                currency: defaultCurrency,
+              }),
               this.getBackButton(lang)
             )
             return true
@@ -2314,17 +2517,15 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            `✅ Income source "${name}" added: ${parsed.amount} ${parsed.currency}.`
+            t(lang, "wizard.income.addedMessage", {
+              name: name || "",
+              amount: `${parsed.amount} ${parsed.currency}`,
+            })
           )
 
           await this.goToStep(userId, "INCOME_VIEW", {})
 
-          await showIncomeSourcesMenu(
-            this.bot,
-            chatId,
-            userId,
-            state?.lang || "en"
-          )
+          await showIncomeSourcesMenu(this.bot, chatId, userId, lang)
           return true
         }
         case "INCOME_EDIT_NAME": {
@@ -2332,13 +2533,11 @@ export class WizardManager {
             | { name: string; amount: number; currency: Currency }
             | undefined
           if (!source) {
-            await this.bot.sendMessage(chatId, "❌ Income source not found.")
-            await showIncomeSourcesMenu(
-              this.bot,
+            await this.bot.sendMessage(
               chatId,
-              userId,
-              state?.lang || "en"
+              t(lang, "wizard.income.notFound")
             )
+            await showIncomeSourcesMenu(this.bot, chatId, userId, lang)
             return true
           }
 
@@ -2346,7 +2545,7 @@ export class WizardManager {
           if (!newName) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Name cannot be empty.",
+              t(lang, "wizard.income.nameEmpty"),
               this.getBackButton(lang)
             )
             return true
@@ -2356,17 +2555,15 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            `✅ Income source renamed from "${source.name}" to "${newName}".`
+            t(lang, "wizard.income.renamedMessage", {
+              from: source.name,
+              to: newName,
+            })
           )
 
           await this.goToStep(userId, "INCOME_VIEW", {})
 
-          await showIncomeSourcesMenu(
-            this.bot,
-            chatId,
-            userId,
-            state?.lang || "en"
-          )
+          await showIncomeSourcesMenu(this.bot, chatId, userId, lang)
           return true
         }
         case "INCOME_MENU": {
@@ -2374,20 +2571,18 @@ export class WizardManager {
             | { name: string; amount: number; currency: Currency }
             | undefined
           if (!source) {
-            await this.bot.sendMessage(chatId, "❌ Income source not found.")
-            await showIncomeSourcesMenu(
-              this.bot,
+            await this.bot.sendMessage(
               chatId,
-              userId,
-              state?.lang || "en"
+              t(lang, "wizard.income.notFound")
             )
+            await showIncomeSourcesMenu(this.bot, chatId, userId, lang)
             return true
           }
 
           // Auto-Income Toggle
           if (
-            text === "✅ Enable Auto-Income" ||
-            text === "❌ Disable Auto-Income"
+            text === t(lang, "wizard.income.enableAutoIncome") ||
+            text === t(lang, "wizard.income.disableAutoIncome")
           ) {
             return await handlers.handleAutoIncomeToggle(
               this,
@@ -2398,26 +2593,26 @@ export class WizardManager {
           }
 
           // 1) Edit Name
-          if (text === "✏️ Edit Name") {
+          if (text === t(lang, "buttons.editName")) {
             await this.goToStep(userId, "INCOME_EDIT_NAME", { source })
             await this.bot.sendMessage(
               chatId,
-              `✏️ Enter new name for "${source.name}":`,
+              t(lang, "wizard.income.editNamePrompt", { name: source.name }),
               this.getBackButton(lang)
             )
             return true
           }
 
           // 2) Delete Income
-          if (text === "🗑️ Delete Income") {
+          if (text === t(lang, "wizard.income.deleteIncomeButton")) {
             await this.goToStep(userId, "INCOME_DELETE_CONFIRM", { source })
             await this.bot.sendMessage(
               chatId,
-              `🗑️ Delete income source "${source.name}"?`,
+              t(lang, "wizard.income.deleteConfirm", { name: source.name }),
               {
                 reply_markup: {
                   keyboard: [
-                    [{ text: "✅ Confirm delete" }],
+                    [{ text: t(lang, "wizard.income.confirmDeleteButton") }],
                     [
                       { text: t(lang, "common.back") },
                       { text: t(lang, "mainMenu.mainMenuButton") },
@@ -2453,23 +2648,24 @@ export class WizardManager {
 
             await this.bot.sendMessage(
               chatId,
-              `✅ Updated amount for "${updatedSource.name}": ${formatMoney(updatedSource.amount, updatedSource.currency)}`
+              t(lang, "wizard.income.amountUpdated", {
+                name: updatedSource.name,
+                amount: formatMoney(
+                  updatedSource.amount,
+                  updatedSource.currency
+                ),
+              })
             )
 
             await this.goToStep(userId, "INCOME_VIEW", {})
 
-            await showIncomeSourcesMenu(
-              this.bot,
-              chatId,
-              userId,
-              state?.lang || "en"
-            )
+            await showIncomeSourcesMenu(this.bot, chatId, userId, lang)
             return true
           }
 
           await this.bot.sendMessage(
             chatId,
-            "❌ Please select an option or enter a valid amount.",
+            t(lang, "wizard.income.selectOptionError"),
             this.getBackButton(lang)
           )
           return true
@@ -2485,36 +2681,74 @@ export class WizardManager {
           return true
         }
         case "ANALYTICS_MENU": {
+          if (
+            text === t(lang, "analytics.reports") ||
+            text === t(lang, "buttons.reports")
+          ) {
+            await showAnalyticsReportsMenu(this, chatId, userId, lang)
+            return true
+          }
+
+          if (
+            text === t(lang, "analytics.history") ||
+            text === t(lang, "buttons.history")
+          ) {
+            await this.goToStep(userId, "HISTORY_LIST", {})
+            await showHistoryMenu(this, chatId, userId, lang)
+            return true
+          }
+
+          if (
+            text === t(lang, "analytics.netWorth") ||
+            text === t(lang, "buttons.netWorth")
+          ) {
+            await this.goToStep(userId, "NET_WORTH_VIEW", { view: "summary" })
+            await showNetWorthMenu(this.bot, chatId, userId, lang, "summary")
+            return true
+          }
+
           await this.bot.sendMessage(
             chatId,
-            "📊 *Analytics*\n\nSelect what you want to see:",
+            t(lang, "wizard.analytics.menuTitle"),
             {
               parse_mode: "Markdown",
-              reply_markup: {
-                keyboard: [
-                  [{ text: "📈 Reports" }],
-                  [{ text: "📋 History" }],
-                  [{ text: "💎 Net Worth" }],
-                  [{ text: t(lang, "mainMenu.mainMenuButton") }],
-                ],
-                resize_keyboard: true,
-              },
+              reply_markup: getStatsKeyboard(lang),
             }
           )
           return true
         }
+        case "NET_WORTH_VIEW": {
+          const view =
+            text === t(lang, "netWorth.viewAssets")
+              ? "assets"
+              : text === t(lang, "netWorth.viewDebts")
+                ? "debts"
+                : text === t(lang, "netWorth.fullReport")
+                  ? "full"
+                  : "summary"
+
+          await this.goToStep(userId, "NET_WORTH_VIEW", { view })
+          await showNetWorthMenu(this.bot, chatId, userId, lang, view)
+          return true
+        }
         case "ANALYTICS_REPORTS_MENU": {
-          if (text === "🔎 Filters") {
+          if (text === t(lang, "buttons.filters")) {
             await this.goToStep(userId, "ANALYTICS_FILTERS", {})
             await this.bot.sendMessage(
               chatId,
-              "📊 *Reports Filters*\n\nSelect period:",
+              `${t(lang, "wizard.analytics.filtersTitle")}\n\n${t(
+                lang,
+                "wizard.analytics.selectPeriod"
+              )}`,
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    [{ text: "📅 Last 7 days" }, { text: "📅 Last 30 days" }],
-                    [{ text: "📅 Custom Period" }],
+                    [
+                      { text: t(lang, "buttons.last7Days") },
+                      { text: t(lang, "buttons.last30Days") },
+                    ],
+                    [{ text: t(lang, "buttons.customPeriod") }],
                     [
                       { text: t(lang, "common.back") },
                       { text: t(lang, "mainMenu.mainMenuButton") },
@@ -2526,7 +2760,7 @@ export class WizardManager {
             )
 
             return true
-          } else if (text === "📅 Export CSV") {
+          } else if (text === t(lang, "buttons.exportCsv")) {
             const csvData = await generateCSV(userId)
 
             if (csvData) {
@@ -2540,29 +2774,37 @@ export class WizardManager {
                   contentType: "text/csv",
                 }
               )
-              this.bot.sendMessage(chatId, "✅ CSV exported successfully!", {
-                reply_markup: {
-                  keyboard: [
-                    [{ text: "📈 Reports" }],
-                    [{ text: "📋 History" }],
-                    [{ text: "💎 Net Worth" }],
-                    [{ text: t(lang, "mainMenu.mainMenuButton") }],
-                  ],
-                  resize_keyboard: true,
-                },
-              })
-            } else {
-              this.bot.sendMessage(chatId, "❌ No transactions to export.", {
-                reply_markup: {
-                  keyboard: [
-                    [
-                      { text: t(lang, "common.back") },
-                      { text: t(lang, "mainMenu.mainMenuButton") },
+              this.bot.sendMessage(
+                chatId,
+                t(lang, "wizard.analytics.exportSuccess"),
+                {
+                  reply_markup: {
+                    keyboard: [
+                      [{ text: t(lang, "buttons.reports") }],
+                      [{ text: t(lang, "buttons.history") }],
+                      [{ text: t(lang, "buttons.netWorth") }],
+                      [{ text: t(lang, "mainMenu.mainMenuButton") }],
                     ],
-                  ],
-                  resize_keyboard: true,
-                },
-              })
+                    resize_keyboard: true,
+                  },
+                }
+              )
+            } else {
+              this.bot.sendMessage(
+                chatId,
+                t(lang, "wizard.analytics.exportNoTransactions"),
+                {
+                  reply_markup: {
+                    keyboard: [
+                      [
+                        { text: t(lang, "common.back") },
+                        { text: t(lang, "mainMenu.mainMenuButton") },
+                      ],
+                    ],
+                    resize_keyboard: true,
+                  },
+                }
+              )
             }
             this.setState(userId, {
               step: "EXPORT_VIEW",
@@ -2571,7 +2813,7 @@ export class WizardManager {
             })
             return true
           }
-          if (text === "📈 Trends") {
+          if (text === t(lang, "buttons.trends")) {
             const trends = await formatTrends(userId)
             await this.bot.sendMessage(chatId, trends, {
               parse_mode: "Markdown",
@@ -2582,7 +2824,7 @@ export class WizardManager {
               returnTo: "reports",
             })
             return true
-          } else if (text === "📉 Top Categories") {
+          } else if (text === t(lang, "buttons.topCategories")) {
             const top = await formatTopExpenses(userId, 5)
             await this.bot.sendMessage(chatId, top, {
               parse_mode: "Markdown",
@@ -2598,11 +2840,15 @@ export class WizardManager {
           return true
         }
         case "ANALYTICS_FILTERS": {
-          if (text === "📅 Last 7 days") {
+          if (text === t(lang, "buttons.last7Days")) {
             try {
-              const report = await generateAnalyticsReport(userId, {
-                preset: "LAST_7_DAYS",
-              })
+              const report = await generateAnalyticsReport(
+                userId,
+                {
+                  preset: "LAST_7_DAYS",
+                },
+                lang
+              )
 
               await this.bot.sendMessage(chatId, report, {
                 parse_mode: "Markdown",
@@ -2611,18 +2857,22 @@ export class WizardManager {
             } catch (error) {
               await this.bot.sendMessage(
                 chatId,
-                "❌ Error generating report. Please try again.",
+                t(lang, "wizard.analytics.reportError"),
                 this.getBackButton(lang)
               )
             }
             return true
           }
 
-          if (text === "📅 Last 30 days") {
+          if (text === t(lang, "buttons.last30Days")) {
             try {
-              const report = await generateAnalyticsReport(userId, {
-                preset: "LAST_30_DAYS",
-              })
+              const report = await generateAnalyticsReport(
+                userId,
+                {
+                  preset: "LAST_30_DAYS",
+                },
+                lang
+              )
 
               await this.bot.sendMessage(chatId, report, {
                 parse_mode: "Markdown",
@@ -2631,18 +2881,18 @@ export class WizardManager {
             } catch (error) {
               await this.bot.sendMessage(
                 chatId,
-                "❌ Error generating report. Please try again.",
+                t(lang, "wizard.analytics.reportError"),
                 this.getBackButton(lang)
               )
             }
             return true
           }
 
-          if (text === "📅 Custom Period") {
+          if (text === t(lang, "buttons.customPeriod")) {
             await this.goToStep(userId, "ANALYTICS_PERIOD_START", {})
             await this.bot.sendMessage(
               chatId,
-              "📅 *Start Date*\n\nEnter date in format DD.MM.YYYY\nExample: `01.01.2026`",
+              t(lang, "wizard.analytics.startDatePrompt"),
               { parse_mode: "Markdown", ...this.getBackButton(lang) }
             )
             return true
@@ -2650,7 +2900,7 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            "❌ Select one of the filters.",
+            t(lang, "wizard.analytics.selectFilterError"),
             this.getBackButton(lang)
           )
           return true
@@ -2660,7 +2910,7 @@ export class WizardManager {
           if (!match) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Wrong format! Use DD.MM.YYYY (e.g. 01.01.2026)",
+              t(lang, "wizard.analytics.dateFormatErrorStart"),
               this.getBackButton(lang)
             )
             return true
@@ -2674,7 +2924,7 @@ export class WizardManager {
           })
           await this.bot.sendMessage(
             chatId,
-            "📅 *End Date*\n\nEnter date in format DD.MM.YYYY\nExample: `13.01.2026`",
+            t(lang, "wizard.analytics.endDatePrompt"),
             { parse_mode: "Markdown", ...this.getBackButton(lang) }
           )
           return true
@@ -2684,7 +2934,7 @@ export class WizardManager {
           if (!match) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Wrong format! Use DD.MM.YYYY (e.g. 13.01.2026)",
+              t(lang, "wizard.analytics.dateFormatErrorEnd"),
               this.getBackButton(lang)
             )
             return true
@@ -2704,7 +2954,7 @@ export class WizardManager {
           ) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Invalid period (end before start or bad dates).",
+              t(lang, "wizard.analytics.invalidPeriod"),
               this.getBackButton(lang)
             )
             return true
@@ -2717,12 +2967,12 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            "📊 Period selected. Tap `📊 Show Report`.",
+            t(lang, "wizard.analytics.periodSelected"),
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
-                  [{ text: "📊 Show Report" }],
+                  [{ text: t(lang, "buttons.showReport") }],
                   [
                     { text: t(lang, "common.back") },
                     { text: t(lang, "mainMenu.mainMenuButton") },
@@ -2735,15 +2985,19 @@ export class WizardManager {
           return true
         }
         case "ANALYTICS_SHOW_REPORT": {
-          if (text === "📊 Show Report") {
+          if (text === t(lang, "buttons.showReport")) {
             const { preset, startDate, endDate } = state?.data || {}
 
             try {
-              const report = await generateAnalyticsReport(userId, {
-                preset,
-                startDate,
-                endDate,
-              })
+              const report = await generateAnalyticsReport(
+                userId,
+                {
+                  preset,
+                  startDate,
+                  endDate,
+                },
+                lang
+              )
 
               await this.bot.sendMessage(chatId, report, {
                 parse_mode: "Markdown",
@@ -2752,7 +3006,7 @@ export class WizardManager {
             } catch (error) {
               await this.bot.sendMessage(
                 chatId,
-                "❌ Error generating report. Please try again.",
+                t(lang, "wizard.analytics.reportError"),
                 this.getBackButton(lang)
               )
             }
@@ -2763,7 +3017,7 @@ export class WizardManager {
           // If user didn't press button, show error
           await this.bot.sendMessage(
             chatId,
-            "❌ Please tap '📊 Show Report' button.",
+            t(lang, "wizard.analytics.tapShowReport"),
             this.getBackButton(lang)
           )
           return true
@@ -2771,15 +3025,18 @@ export class WizardManager {
 
         // BUDGET PLANNER
         case "BUDGET_MENU": {
-          if (text === "✨ Add / Edit Budget") {
+          if (text === t(lang, "buttons.addEditBudget")) {
             await this.goToStep(userId, "BUDGET_SELECT_CATEGORY", {})
             const categories = Object.values(ExpenseCategory)
             const items = categories.map((c) => c)
-            const keyboard = createListButtons({ items })
+            const keyboard = createListButtons({ items, lang })
 
             await this.bot.sendMessage(
               chatId,
-              "🔮 *Budget Planner*\n\nSelect category to set limit:",
+              `${t(lang, "wizard.budget.title")}\n\n${t(
+                lang,
+                "wizard.budget.selectCategory"
+              )}`,
               {
                 parse_mode: "Markdown",
                 reply_markup: { keyboard, resize_keyboard: true },
@@ -2807,16 +3064,22 @@ export class WizardManager {
 
             await this.bot.sendMessage(
               chatId,
-              `💳 *${cat}*\n\n` +
-                `Limit: ${b.limit} ${b.currency}\n` +
-                `Spent: ${b.spent} ${b.currency}\n` +
+              `${t(lang, "wizard.budget.categoryTitle", { category: cat })}\n\n` +
+                `${t(lang, "wizard.budget.limitLine", {
+                  amount: b.limit,
+                  currency: b.currency || "USD",
+                })}\n` +
+                `${t(lang, "wizard.budget.spentLine", {
+                  amount: b.spent,
+                  currency: b.currency || "USD",
+                })}\n` +
                 `${bar}\n\n` +
-                "You can edit limit, clear it or enter a new limit directly.",
+                `${t(lang, "wizard.budget.editOrClearHint")}`,
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   keyboard: [
-                    [{ text: "🧹 Clear Limit" }],
+                    [{ text: t(lang, "buttons.clearLimit") }],
                     [
                       { text: t(lang, "common.back") },
                       { text: t(lang, "mainMenu.mainMenuButton") },
@@ -2831,7 +3094,7 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            "❌ Select a category from the list or use ✨ Add / Edit Budget.",
+            t(lang, "wizard.budget.selectCategoryError"),
             this.getBackButton(lang)
           )
           return true
@@ -2841,7 +3104,7 @@ export class WizardManager {
           if (!Object.values(ExpenseCategory).includes(cat)) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Select a category from the list.",
+              t(lang, "wizard.budget.invalidCategory"),
               this.getBackButton(lang)
             )
             return true
@@ -2863,16 +3126,22 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            `💳 *${cat}*\n\n` +
-              `Limit: ${b.limit} ${b.currency}\n` +
-              `Spent: ${b.spent} ${b.currency}\n` +
+            `${t(lang, "wizard.budget.categoryTitle", { category: cat })}\n\n` +
+              `${t(lang, "wizard.budget.limitLine", {
+                amount: b.limit,
+                currency: b.currency || "USD",
+              })}\n` +
+              `${t(lang, "wizard.budget.spentLine", {
+                amount: b.spent,
+                currency: b.currency || "USD",
+              })}\n` +
               `${bar}\n\n` +
-              "Enter new limit (e.g. 500 or 500 USD), or use buttons.",
+              `${t(lang, "wizard.budget.enterNewLimit")}`,
             {
               parse_mode: "Markdown",
               reply_markup: {
                 keyboard: [
-                  [{ text: "🧹 Clear Limit" }],
+                  [{ text: t(lang, "buttons.clearLimit") }],
                   [
                     { text: t(lang, "common.back") },
                     { text: t(lang, "mainMenu.mainMenuButton") },
@@ -2887,16 +3156,19 @@ export class WizardManager {
         case "BUDGET_CATEGORY_MENU": {
           const category = state?.data?.category as ExpenseCategory | undefined
           if (!category) {
-            await this.bot.sendMessage(chatId, "❌ Category missing.")
+            await this.bot.sendMessage(
+              chatId,
+              t(lang, "wizard.budget.categoryMissing")
+            )
             this.clearState(userId)
-            await showBudgetMenu(this, chatId, userId, state?.lang || "en")
+            await showBudgetMenu(this, chatId, userId, lang)
             return true
           }
 
-          if (text === "🧹 Clear Limit") {
+          if (text === t(lang, "buttons.clearLimit")) {
             await db.clearCategoryBudget(userId, category)
             await this.goToStep(userId, "BUDGET_MENU", {})
-            await showBudgetMenu(this, chatId, userId, state?.lang || "en")
+            await showBudgetMenu(this, chatId, userId, lang)
             return true
           }
 
@@ -2913,13 +3185,13 @@ export class WizardManager {
               parsed.currency
             )
             await this.goToStep(userId, "BUDGET_MENU", {})
-            await showBudgetMenu(this, chatId, userId, state?.lang || "en")
+            await showBudgetMenu(this, chatId, userId, lang)
             return true
           }
 
           await this.bot.sendMessage(
             chatId,
-            "❌ Enter a valid amount or use buttons.",
+            t(lang, "wizard.budget.invalidAmount"),
             this.getBackButton(lang)
           )
           return true
@@ -2928,7 +3200,10 @@ export class WizardManager {
         case "TEMPLATE_EDIT_AMOUNT": {
           const templateId = state?.data?.templateId as string | undefined
           if (!templateId) {
-            await this.bot.sendMessage(chatId, "❌ Template ID missing.")
+            await this.bot.sendMessage(
+              chatId,
+              t(lang, "wizard.template.idMissing")
+            )
             this.clearState(userId)
             return true
           }
@@ -2937,7 +3212,10 @@ export class WizardManager {
           const template = templates.find((t) => t.id === templateId)
 
           if (!template) {
-            await this.bot.sendMessage(chatId, "❌ Template not found.")
+            await this.bot.sendMessage(
+              chatId,
+              t(lang, "wizard.template.notFound")
+            )
             this.clearState(userId)
             return true
           }
@@ -2947,14 +3225,14 @@ export class WizardManager {
           if (isNaN(amount) || amount <= 0) {
             await this.bot.sendMessage(
               chatId,
-              "❌ Invalid amount. Please enter a valid number.",
+              t(lang, "wizard.template.invalidAmount"),
               {
                 parse_mode: "Markdown",
                 reply_markup: {
                   inline_keyboard: [
                     [
                       {
-                        text: "❌ Cancel",
+                        text: t(lang, "wizard.template.cancel"),
                         callback_data: `tmpl_cancel|${templateId}`,
                       },
                     ],
@@ -2972,7 +3250,10 @@ export class WizardManager {
           )
 
           if (!success) {
-            await this.bot.sendMessage(chatId, "❌ Failed to update template.")
+            await this.bot.sendMessage(
+              chatId,
+              t(lang, "wizard.template.updateFailed")
+            )
             this.clearState(userId)
             return true
           }
@@ -2980,7 +3261,7 @@ export class WizardManager {
           const formatted = formatMoney(amount, template.currency)
           await this.bot.sendMessage(
             chatId,
-            `✅ Amount updated to ${formatted}`,
+            t(lang, "wizard.template.amountUpdated", { amount: formatted }),
             {
               parse_mode: "Markdown",
             }
@@ -3014,21 +3295,21 @@ export class WizardManager {
           )
 
         case "DEBT_EDIT_DUE_DATE": {
-          if (text === "🗑 Remove Date") {
+          if (text === t(lang, "buttons.removeDate")) {
             const debt = state?.data?.debt
             await db.updateDebtDueDate(userId, debt.id, null)
             await reminderManager.deleteRemindersForEntity(userId, debt.id)
             await this.bot.sendMessage(
               chatId,
-              "✅ Due date and reminders removed."
+              t(lang, "wizard.debt.dueDateRemoved")
             )
-            await showDebtsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showDebtsMenu(this.bot, chatId, userId, lang)
             this.clearState(userId)
             return true
           }
 
-          if (text === "⏩ Skip") {
-            await showDebtsMenu(this.bot, chatId, userId, state?.lang || "en")
+          if (text === t(lang, "wizard.common.skip")) {
+            await showDebtsMenu(this.bot, chatId, userId, lang)
             this.clearState(userId)
             return true
           }
@@ -3042,21 +3323,21 @@ export class WizardManager {
         }
 
         case "GOAL_EDIT_DEADLINE": {
-          if (text === "🗑 Remove Date") {
+          if (text === t(lang, "buttons.removeDate")) {
             const goal = state?.data?.goal
             await db.updateGoalDeadline(userId, goal.id, null)
             await reminderManager.deleteRemindersForEntity(userId, goal.id)
             await this.bot.sendMessage(
               chatId,
-              "✅ Deadline and reminders removed."
+              t(lang, "wizard.goal.deadlineRemoved")
             )
-            await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+            await showGoalsMenu(this.bot, chatId, userId, lang)
             this.clearState(userId)
             return true
           }
 
-          if (text === "⏩ Skip") {
-            await showGoalsMenu(this.bot, chatId, userId, state?.lang || "en")
+          if (text === t(lang, "wizard.common.skip")) {
+            await showGoalsMenu(this.bot, chatId, userId, lang)
             this.clearState(userId)
             return true
           }
@@ -3164,8 +3445,8 @@ export class WizardManager {
         case "NOTIFICATIONS_MENU": {
           // Handle button clicks within notifications menu
           if (
-            text === "✅ Enable Notifications" ||
-            text === "❌ Disable Notifications"
+            text === t(lang, "wizard.notifications.enable") ||
+            text === t(lang, "wizard.notifications.disable")
           ) {
             return await handlers.handleNotificationsToggle(
               this,
@@ -3175,11 +3456,11 @@ export class WizardManager {
             )
           }
 
-          if (text === "⏰ Change Time") {
+          if (text === t(lang, "wizard.notifications.changeTime")) {
             return await handlers.handleReminderTimeSelect(this, chatId, userId)
           }
 
-          if (text === "🌍 Change Timezone") {
+          if (text === t(lang, "buttons.changeTimezone")) {
             return await handlers.handleTimezoneSelect(this, chatId, userId)
           }
 
@@ -3200,30 +3481,30 @@ export class WizardManager {
 
         // --- Automation Menu ---
         case "AUTOMATION_MENU": {
-          if (text === "🔁 Recurring Payments") {
+          if (text === t(lang, "buttons.recurringPayments")) {
             await this.goToStep(userId, "RECURRING_MENU", {})
             return await handlers.handleRecurringMenu(
               this,
               chatId,
               userId,
-              state?.lang || "en"
+              lang
             )
           }
 
-          if (text === "🔔 Notifications") {
+          if (text === t(lang, "buttons.notifications")) {
             await this.goToStep(userId, "NOTIFICATIONS_MENU", {})
             return await handlers.handleNotificationsMenu(this, chatId, userId)
           }
 
           // Default: show automation menu again
-          await showAutomationMenu(this, chatId, userId, state?.lang || "en")
+          await showAutomationMenu(this, chatId, userId, lang)
           return true
         }
 
         // --- Recurring Transactions Handlers ---
         case "RECURRING_MENU": {
           // Handle button clicks
-          if (text === "✨ Add Recurring") {
+          if (text === t(lang, "buttons.addRecurring")) {
             return await handlers.handleRecurringCreateStart(
               this,
               chatId,
@@ -3243,12 +3524,7 @@ export class WizardManager {
           }
 
           // Default: show menu
-          return await handlers.handleRecurringMenu(
-            this,
-            chatId,
-            userId,
-            state?.lang || "en"
-          )
+          return await handlers.handleRecurringMenu(this, chatId, userId, lang)
         }
 
         case "RECURRING_ITEM_MENU":
@@ -3333,12 +3609,9 @@ export class WizardManager {
       }
     } catch (error) {
       console.error("Wizard Error:", error)
-      await this.bot.sendMessage(
-        chatId,
-        "⚠️ An error occurred. Please try again."
-      )
+      await this.bot.sendMessage(chatId, t(lang, "wizard.common.error"))
       this.clearState(userId)
-      await showMainMenu(this.bot, chatId, state?.lang || "en")
+      await showMainMenu(this.bot, chatId, lang)
     }
 
     return false

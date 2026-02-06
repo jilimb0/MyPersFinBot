@@ -13,9 +13,11 @@ import {
   formatAmount,
   formatPercent,
   formatDateRange,
+  getDayName,
   getMonthName,
 } from "./helpers"
 import { TransactionCategory } from "../types"
+import { Language, t } from "../i18n"
 
 /**
  * Category emoji map
@@ -43,7 +45,10 @@ function getCategoryEmoji(category: TransactionCategory | string): string {
 /**
  * Format analytics summary
  */
-export function formatAnalyticsSummary(summary: AnalyticsSummary): string {
+export function formatAnalyticsSummary(
+  summary: AnalyticsSummary,
+  lang: Language = "ru"
+): string {
   const {
     stats,
     categories,
@@ -54,21 +59,32 @@ export function formatAnalyticsSummary(summary: AnalyticsSummary): string {
     currency,
   } = summary
 
-  let message = `📊 *Аналитика*\n`
-  message += `📅 ${formatDateRange(startDate, endDate)}\n\n`
+  let message = `${t(lang, "analytics.formatters.summaryTitle")}\n`
+  message += `${t(lang, "analytics.formatters.summaryPeriodLine", {
+    range: formatDateRange(startDate, endDate, lang),
+  })}\n\n`
 
   // Period stats
-  message += `*Общая статистика:*\n`
-  message += `🟢 Доходы: ${formatAmount(stats.income, currency)}\n`
-  message += `🔴 Расходы: ${formatAmount(stats.expense, currency)}\n`
+  message += `${t(lang, "analytics.formatters.summaryStatsTitle")}\n`
+  message += `${t(lang, "analytics.formatters.summaryIncomeLine", {
+    amount: formatAmount(stats.income, currency),
+  })}\n`
+  message += `${t(lang, "analytics.formatters.summaryExpenseLine", {
+    amount: formatAmount(stats.expense, currency),
+  })}\n`
 
   const balanceEmoji = stats.balance >= 0 ? "🟢" : "🔴"
-  message += `${balanceEmoji} Баланс: ${formatAmount(stats.balance, currency)}\n`
-  message += `📈 Транзакций: ${stats.transactions}\n\n`
+  message += `${t(lang, "analytics.formatters.summaryBalanceLine", {
+    emoji: balanceEmoji,
+    amount: formatAmount(stats.balance, currency),
+  })}\n`
+  message += `${t(lang, "analytics.formatters.summaryTransactionsLine", {
+    count: stats.transactions,
+  })}\n\n`
 
   // Category breakdown
   if (categories.length > 0) {
-    message += `*По категориям:*\n`
+    message += `${t(lang, "analytics.formatters.summaryByCategoryTitle")}\n`
 
     categories.slice(0, 5).forEach((cat) => {
       const emoji = getCategoryEmoji(cat.category)
@@ -83,11 +99,12 @@ export function formatAnalyticsSummary(summary: AnalyticsSummary): string {
 
   // Top expenses
   if (topExpenses.length > 0) {
-    message += `*💸 Топ трат:*\n`
+    message += `${t(lang, "analytics.formatters.summaryTopExpensesTitle")}\n`
 
     topExpenses.slice(0, 3).forEach((expense, index) => {
       const emoji = getCategoryEmoji(expense.category)
-      message += `${index + 1}. ${emoji} ${expense.description}\n`
+      const description = expense.description || t(lang, "common.noDescription")
+      message += `${index + 1}. ${emoji} ${description}\n`
       message += `   ${formatAmount(expense.amount, currency)}\n`
     })
 
@@ -96,7 +113,7 @@ export function formatAnalyticsSummary(summary: AnalyticsSummary): string {
 
   // Insights
   if (insights.length > 0) {
-    message += `*💡 Инсайты:*\n`
+    message += `${t(lang, "analytics.formatters.summaryInsightsTitle")}\n`
     insights.forEach((insight) => {
       message += `• ${insight}\n`
     })
@@ -110,29 +127,60 @@ export function formatAnalyticsSummary(summary: AnalyticsSummary): string {
  */
 export function formatComparison(
   comparison: ComparisonResult,
+  lang: Language = "ru",
   currency: string = "RUB"
 ): string {
   const { current, previous, change } = comparison
 
-  let message = `🔄 *Сравнение периодов*\n\n`
+  let message = `${t(lang, "analytics.formatters.comparisonTitle")}\n\n`
 
   // Income comparison
-  message += `*🟢 Доходы:*\n`
-  message += `Текущий: ${formatAmount(current.income, currency)}\n`
-  message += `Предыдущий: ${formatAmount(previous.income, currency)}\n`
-  message += `Изменение: ${formatChangeWithArrow(change.income, change.incomePercent, currency)}\n\n`
+  message += `${t(lang, "analytics.formatters.comparisonIncomeTitle")}\n`
+  message += `${t(lang, "analytics.formatters.comparisonCurrentLine", {
+    amount: formatAmount(current.income, currency),
+  })}\n`
+  message += `${t(lang, "analytics.formatters.comparisonPreviousLine", {
+    amount: formatAmount(previous.income, currency),
+  })}\n`
+  message += `${t(lang, "analytics.formatters.comparisonChangeLine", {
+    amount: formatChangeWithArrow(
+      change.income,
+      change.incomePercent,
+      currency
+    ),
+  })}\n\n`
 
   // Expense comparison
-  message += `*🔴 Расходы:*\n`
-  message += `Текущий: ${formatAmount(current.expense, currency)}\n`
-  message += `Предыдущий: ${formatAmount(previous.expense, currency)}\n`
-  message += `Изменение: ${formatChangeWithArrow(change.expense, change.expensePercent, currency)}\n\n`
+  message += `${t(lang, "analytics.formatters.comparisonExpenseTitle")}\n`
+  message += `${t(lang, "analytics.formatters.comparisonCurrentLine", {
+    amount: formatAmount(current.expense, currency),
+  })}\n`
+  message += `${t(lang, "analytics.formatters.comparisonPreviousLine", {
+    amount: formatAmount(previous.expense, currency),
+  })}\n`
+  message += `${t(lang, "analytics.formatters.comparisonChangeLine", {
+    amount: formatChangeWithArrow(
+      change.expense,
+      change.expensePercent,
+      currency
+    ),
+  })}\n\n`
 
   // Balance comparison
-  message += `*📊 Баланс:*\n`
-  message += `Текущий: ${formatAmount(current.balance, currency)}\n`
-  message += `Предыдущий: ${formatAmount(previous.balance, currency)}\n`
-  message += `Изменение: ${formatChangeWithArrow(change.balance, change.balancePercent, currency)}\n`
+  message += `${t(lang, "analytics.formatters.comparisonBalanceTitle")}\n`
+  message += `${t(lang, "analytics.formatters.comparisonCurrentLine", {
+    amount: formatAmount(current.balance, currency),
+  })}\n`
+  message += `${t(lang, "analytics.formatters.comparisonPreviousLine", {
+    amount: formatAmount(previous.balance, currency),
+  })}\n`
+  message += `${t(lang, "analytics.formatters.comparisonChangeLine", {
+    amount: formatChangeWithArrow(
+      change.balance,
+      change.balancePercent,
+      currency
+    ),
+  })}\n`
 
   return message
 }
@@ -142,14 +190,20 @@ export function formatComparison(
  */
 export function formatSpendingPatterns(
   patterns: SpendingPattern[],
+  lang: Language = "ru",
   currency: string = "RUB"
 ): string {
-  let message = `📈 *Паттерны трат*\n\n`
+  let message = `${t(lang, "analytics.formatters.patternsTitle")}\n\n`
 
   patterns.forEach((pattern) => {
-    message += `*${pattern.dayOfWeek}*\n`
-    message += `Среднее: ${formatAmount(pattern.averageAmount, currency)}\n`
-    message += `Транзакций: ${pattern.transactionCount}\n\n`
+    const baseDate = new Date(2020, 0, 5 + pattern.dayOfWeek)
+    message += `*${getDayName(baseDate, lang)}*\n`
+    message += `${t(lang, "analytics.formatters.patternsAverageLine", {
+      amount: formatAmount(pattern.averageAmount, currency),
+    })}\n`
+    message += `${t(lang, "analytics.formatters.patternsTransactionsLine", {
+      count: pattern.transactionCount,
+    })}\n\n`
   })
 
   return message
@@ -160,21 +214,29 @@ export function formatSpendingPatterns(
  */
 export function formatMonthlyTrend(
   trend: MonthlyStats[],
+  lang: Language = "ru",
   currency: string = "RUB"
 ): string {
-  let message = `📉 *Тренд по месяцам*\n\n`
+  let message = `${t(lang, "analytics.formatters.monthlyTrendTitle")}\n\n`
 
   trend.forEach((month) => {
     const [year, monthNum] = month.month.split("-")
     const date = new Date(parseInt(year!), parseInt(monthNum!) - 1, 1)
-    const monthName = getMonthName(date)
+    const monthName = getMonthName(date, lang)
 
     message += `*${monthName} ${year}*\n`
-    message += `🟢 Доход: ${formatAmount(month.income, currency)}\n`
-    message += `🔴 Расход: ${formatAmount(month.expense, currency)}\n`
+    message += `${t(lang, "analytics.formatters.monthlyTrendIncomeLine", {
+      amount: formatAmount(month.income, currency),
+    })}\n`
+    message += `${t(lang, "analytics.formatters.monthlyTrendExpenseLine", {
+      amount: formatAmount(month.expense, currency),
+    })}\n`
 
     const balanceEmoji = month.balance >= 0 ? "🟢" : "🔴"
-    message += `${balanceEmoji} Баланс: ${formatAmount(month.balance, currency)}\n\n`
+    message += `${t(lang, "analytics.formatters.monthlyTrendBalanceLine", {
+      emoji: balanceEmoji,
+      amount: formatAmount(month.balance, currency),
+    })}\n\n`
   })
 
   return message
@@ -207,20 +269,31 @@ function getProgressBar(percent: number, length: number = 10): string {
  */
 export function formatCategories(
   categories: CategoryStats[],
+  lang: Language = "ru",
   currency: string = "RUB"
 ): string {
-  let message = `🏷️ *Категории расходов*\n\n`
+  let message = `${t(lang, "analytics.formatters.categoriesTitle")}\n\n`
 
   if (categories.length === 0) {
-    return message + "Нет данных за этот период"
+    return message + t(lang, "analytics.formatters.categoriesEmpty")
   }
 
   categories.forEach((cat, index) => {
     const emoji = getCategoryEmoji(cat.category)
     message += `${index + 1}. ${emoji} *${cat.category}*\n`
-    message += `   Сумма: ${formatAmount(cat.total, currency)}\n`
-    message += `   Доля: ${cat.percentage.toFixed(1)}%\n`
-    message += `   Транзакций: ${cat.count}\n\n`
+    message += `   ${t(lang, "analytics.formatters.categoriesAmountLine", {
+      amount: formatAmount(cat.total, currency),
+    })}\n`
+    message += `   ${t(lang, "analytics.formatters.categoriesShareLine", {
+      percent: cat.percentage.toFixed(1),
+    })}\n`
+    message += `   ${t(
+      lang,
+      "analytics.formatters.categoriesTransactionsLine",
+      {
+        count: cat.count,
+      }
+    )}\n\n`
   })
 
   return message
@@ -233,14 +306,22 @@ export function formatQuickStats(
   income: number,
   expense: number,
   balance: number,
+  lang: Language = "ru",
   currency: string = "RUB"
 ): string {
   const balanceEmoji = balance >= 0 ? "🟢" : "🔴"
 
   return (
-    `📊 *Быстрая статистика*\n` +
-    `🟢 Доход: ${formatAmount(income, currency)}\n` +
-    `🔴 Расход: ${formatAmount(expense, currency)}\n` +
-    `${balanceEmoji} Баланс: ${formatAmount(balance, currency)}`
+    `${t(lang, "analytics.formatters.quickStatsTitle")}\n` +
+    `${t(lang, "analytics.formatters.quickStatsIncomeLine", {
+      amount: formatAmount(income, currency),
+    })}\n` +
+    `${t(lang, "analytics.formatters.quickStatsExpenseLine", {
+      amount: formatAmount(expense, currency),
+    })}\n` +
+    t(lang, "analytics.formatters.quickStatsBalanceLine", {
+      emoji: balanceEmoji,
+      amount: formatAmount(balance, currency),
+    })
   )
 }

@@ -30,7 +30,7 @@ export async function handleBalanceCreate(
     const match = text.match(/^(.+?)\s+([0-9]+(?:\.[0-9]{1,2})?)$/)
     if (match) {
       if (!match[1] || !match[2]) {
-        await wizard.sendMessage(chatId, "❌ Invalid format. Use: Name 100")
+        await wizard.sendMessage(chatId, t(lang, "balances.invalidFormatShort"))
         return true
       }
       const accountId = match[1].trim()
@@ -43,16 +43,11 @@ export async function handleBalanceCreate(
         if (existing) {
           await wizard.sendMessage(
             chatId,
-            t(lang, "balances.alreadyExists", {
+            t(lang, "balances.alreadyExistsMessage", {
               accountId,
               currency: defaultCurrency,
-            }) +
-              "\n\n" +
-              t(lang, "balances.currentAmount") +
-              ": " +
-              formatMoney(existing.amount, defaultCurrency) +
-              "\n\n" +
-              `Please choose a different account name or edit the existing balance.`,
+              amount: formatMoney(existing.amount, defaultCurrency),
+            }),
             {
               parse_mode: "Markdown",
               ...wizard.getBackButton(lang),
@@ -70,11 +65,10 @@ export async function handleBalanceCreate(
 
         await wizard.sendMessage(
           chatId,
-          t(lang, "balances.created") +
-            ": *" +
-            accountId +
-            "* - " +
-            formatMoney(amount, defaultCurrency),
+          t(lang, "balances.createdWithAmount", {
+            accountId,
+            amount: formatMoney(amount, defaultCurrency),
+          }),
           { parse_mode: "Markdown" }
         )
 
@@ -93,9 +87,11 @@ export async function handleBalanceCreate(
       if (existing) {
         await wizard.sendMessage(
           chatId,
-          `❌ *Balance "${justName}" (${defaultCurrency}) already exists!*\n\n` +
-            `Current amount: ${formatMoney(existing.amount, defaultCurrency)}\n\n` +
-            `Please choose a different account name or edit the existing balance.`,
+          t(lang, "balances.alreadyExistsMessage", {
+            accountId: justName,
+            currency: defaultCurrency,
+            amount: formatMoney(existing.amount, defaultCurrency),
+          }),
           {
             parse_mode: "Markdown",
             ...wizard.getBackButton(lang),
@@ -113,7 +109,10 @@ export async function handleBalanceCreate(
 
       await wizard.sendMessage(
         chatId,
-        `✅ Balance created: *${justName}* - ${formatMoney(0, defaultCurrency)}`,
+        t(lang, "balances.createdWithAmount", {
+          accountId: justName,
+          amount: formatMoney(0, defaultCurrency),
+        }),
         { parse_mode: "Markdown" }
       )
 
@@ -124,7 +123,7 @@ export async function handleBalanceCreate(
 
     await wizard.sendMessage(
       chatId,
-      validators.getValidationErrorMessage("balance"),
+      validators.getValidationErrorMessage(lang, "balance"),
       wizard.getBackButton(lang)
     )
     return true
@@ -140,9 +139,11 @@ export async function handleBalanceCreate(
   if (existing) {
     await wizard.sendMessage(
       chatId,
-      `❌ *Balance "${parsed.accountId}" (${parsed.currency}) already exists!*\n\n` +
-        `Current amount: ${formatMoney(existing.amount, parsed.currency)}\n\n` +
-        `Please choose a different account name or edit the existing balance.`,
+      t(lang, "balances.alreadyExistsMessage", {
+        accountId: parsed.accountId,
+        currency: parsed.currency,
+        amount: formatMoney(existing.amount, parsed.currency),
+      }),
       {
         parse_mode: "Markdown",
         ...wizard.getBackButton(lang),
@@ -155,7 +156,10 @@ export async function handleBalanceCreate(
 
   await wizard.sendMessage(
     chatId,
-    `✅ Balance created: *${parsed.accountId}* - ${formatMoney(parsed.amount, parsed.currency)}`,
+    t(lang, "balances.createdWithAmount", {
+      accountId: parsed.accountId,
+      amount: formatMoney(parsed.amount, parsed.currency),
+    }),
     { parse_mode: "Markdown" }
   )
 
@@ -220,15 +224,13 @@ export async function handleBalanceSelection(
 
   await wizard.sendMessage(
     chatId,
-    "✏️ *" +
-      accountId +
-      "* (" +
-      currency +
-      ")\n\n" +
-      `Balance: ${formatMoney(balance.amount, currency)}\n\n` +
-      `💡 *Quick edit:*\n` +
-      `• Enter number → update amount\n` +
-      `• Enter text → rename account`,
+    `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+      `${t(lang, "balances.balanceLine", {
+        amount: formatMoney(balance.amount, currency),
+      })}\n\n` +
+      `${t(lang, "balances.quickEditTitle")}\n` +
+      `${t(lang, "balances.quickEditNumber")}\n` +
+      `${t(lang, "balances.quickEditText")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -300,7 +302,9 @@ export async function handleBalanceEditMenu(
     const msg =
       t(lang, "balances.setToZeroConfirm", { accountId, currency }) +
       "\n\n" +
-      `Current: ${formatMoney(currentAmount, currency)}\n\n` +
+      `${t(lang, "balances.currentLine", {
+        amount: formatMoney(currentAmount, currency),
+      })}\n\n` +
       (hasOtherBalances
         ? t(lang, "balances.canTransferFirst", {
             amount: formatMoney(currentAmount, currency),
@@ -332,7 +336,7 @@ export async function handleBalanceEditMenu(
     const keyboard = []
 
     if (currentAmount > 0 && hasOtherBalances) {
-      keyboard.push([{ text: "🔄 Transfer to another account" }])
+      keyboard.push([{ text: t(lang, "balances.transferToAnother") }])
     }
 
     keyboard.push(
@@ -344,13 +348,19 @@ export async function handleBalanceEditMenu(
     )
 
     const msg =
-      currentAmount > 0
-        ? `⚠️ Delete ${accountId}?\n\n` +
-          `Current balance: ${formatMoney(currentAmount, currency)}\n\n` +
+      t(lang, "balances.deleteConfirmTitle", { accountId }) +
+      (currentAmount > 0
+        ? `\n\n${t(lang, "balances.currentBalanceLine", {
+            amount: formatMoney(currentAmount, currency),
+          })}\n\n` +
           (hasOtherBalances
-            ? `⚡️ Transfer to another account before deleting, or clear ${formatMoney(currentAmount, currency)}.`
-            : `${formatMoney(currentAmount, currency)} will be cleared.`)
-        : `⚠️ Delete ${accountId}?`
+            ? t(lang, "balances.deleteTransferHint", {
+                amount: formatMoney(currentAmount, currency),
+              })
+            : t(lang, "balances.deleteClearHint", {
+                amount: formatMoney(currentAmount, currency),
+              }))
+        : "")
 
     await wizard.sendMessage(chatId, msg, {
       reply_markup: {
@@ -378,10 +388,14 @@ export async function handleBalanceEditMenu(
 
     await wizard.sendMessage(
       chatId,
-      `💰 *Confirm Amount Change*\n\n` +
-        `Current: ${formatMoney(currentAmount, currency)}\n` +
-        `New: ${formatMoney(parsed.amount, currency)}\n\n` +
-        `✅ Yes / ❌ No?`,
+      `${t(lang, "balances.confirmAmountTitle")}\n\n` +
+        `${t(lang, "balances.currentLine", {
+          amount: formatMoney(currentAmount, currency),
+        })}\n` +
+        `${t(lang, "balances.newLine", {
+          amount: formatMoney(parsed.amount, currency),
+        })}\n\n` +
+        `${t(lang, "balances.confirmYesNo")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -415,7 +429,7 @@ export async function handleBalanceEditMenu(
     if (duplicate) {
       await wizard.sendMessage(
         chatId,
-        `❌ Balance "${newName}" already exists.\n\nTry a different name.`,
+        t(lang, "balances.renameDuplicate", { name: newName }),
         wizard.getBackButton(lang)
       )
       return true
@@ -431,10 +445,10 @@ export async function handleBalanceEditMenu(
 
     await wizard.sendMessage(
       chatId,
-      `✏️ *Confirm Rename*\n\n` +
-        `Old: "${accountId}"\n` +
-        `New: "${newName}"\n\n` +
-        `✅ Yes / ❌ No?`,
+      `${t(lang, "balances.confirmRenameTitle")}\n\n` +
+        `${t(lang, "balances.confirmRenameOld", { name: accountId })}\n` +
+        `${t(lang, "balances.confirmRenameNew", { name: newName })}\n\n` +
+        `${t(lang, "balances.confirmYesNo")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -454,13 +468,10 @@ export async function handleBalanceEditMenu(
   }
 
   // 3️⃣ Ничего не подошло
-  await wizard.sendMessage(
-    chatId,
-    "❌ Invalid input.\n\n" +
-      "• Enter *number* to change amount (e.g., 500)\n" +
-      "• Enter *text* to rename (e.g., MyCard)",
-    { parse_mode: "Markdown", ...wizard.getBackButton(lang) }
-  )
+  await wizard.sendMessage(chatId, t(lang, "balances.invalidInput"), {
+    parse_mode: "Markdown",
+    ...wizard.getBackButton(lang),
+  })
   return true
 }
 
@@ -497,11 +508,13 @@ export async function handleBalanceConfirmAmount(
 
     await wizard.sendMessage(
       chatId,
-      `✏️ *${accountId}* (${currency})\n\n` +
-        `Balance: ${formatMoney(state?.data?.currentAmount, currency)}\n\n` +
-        `💡 *Quick edit:*\n` +
-        `• Number → update amount\n` +
-        `• Text → rename account`,
+      `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+        `${t(lang, "balances.balanceLine", {
+          amount: formatMoney(state?.data?.currentAmount, currency),
+        })}\n\n` +
+        `${t(lang, "balances.quickEditTitle")}\n` +
+        `${t(lang, "balances.quickEditNumber")}\n` +
+        `${t(lang, "balances.quickEditText")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -542,11 +555,13 @@ export async function handleBalanceConfirmAmount(
 
   await wizard.sendMessage(
     chatId,
-    `✏️ *${accountId}* (${currency})\n\n` +
-      `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
-      `💡 *Quick edit:*\n` +
-      `• Enter number → update amount\n` +
-      `• Enter text → rename account`,
+    `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+      `${t(lang, "balances.balanceLine", {
+        amount: formatMoney(currentAmount, currency),
+      })}\n\n` +
+      `${t(lang, "balances.quickEditTitle")}\n` +
+      `${t(lang, "balances.quickEditNumber")}\n` +
+      `${t(lang, "balances.quickEditText")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -592,11 +607,13 @@ export async function handleBalanceConfirmRename(
 
     await wizard.sendMessage(
       chatId,
-      `✏️ *${accountId}* (${currency})\n\n` +
-        `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
-        `💡 *Quick edit:*\n` +
-        `• Number → update amount\n` +
-        `• Text → rename account`,
+      `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+        `${t(lang, "balances.balanceLine", {
+          amount: formatMoney(currentAmount, currency),
+        })}\n\n` +
+        `${t(lang, "balances.quickEditTitle")}\n` +
+        `${t(lang, "balances.quickEditNumber")}\n` +
+        `${t(lang, "balances.quickEditText")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -636,11 +653,13 @@ export async function handleBalanceConfirmRename(
 
   await wizard.sendMessage(
     chatId,
-    `✏️ *${accountId}* (${currency})\n\n` +
-      `Balance: ${formatMoney(currentAmount, currency)}\n\n` +
-      `💡 *Quick edit:*\n` +
-      `• Enter number → update amount\n` +
-      `• Enter text → rename account`,
+    `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+      `${t(lang, "balances.balanceLine", {
+        amount: formatMoney(currentAmount, currency),
+      })}\n\n` +
+      `${t(lang, "balances.quickEditTitle")}\n` +
+      `${t(lang, "balances.quickEditNumber")}\n` +
+      `${t(lang, "balances.quickEditText")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -675,7 +694,7 @@ export async function handleBalanceSetToZero(
     return true
   }
 
-  if (text === "🔄 Transfer to another account" && hasOtherBalances) {
+  if (text === t(lang, "balances.transferToAnother") && hasOtherBalances) {
     await wizard.goToStep(userId, "BALANCE_ZERO_SELECT_TARGET", {
       accountId,
       currency,
@@ -699,7 +718,9 @@ export async function handleBalanceSetToZero(
 
     await wizard.sendMessage(
       chatId,
-      `🔄 Transfer ${formatMoney(amount, currency)} to:`,
+      t(lang, "balances.transferToPrompt", {
+        amount: formatMoney(amount, currency),
+      }),
       {
         reply_markup: {
           keyboard: rows,
@@ -739,7 +760,7 @@ export async function handleBalanceDelete(
     return true
   }
 
-  if (text === "🔄 Transfer to another account" && hasOtherBalances) {
+  if (text === t(lang, "balances.transferToAnother") && hasOtherBalances) {
     await wizard.goToStep(userId, "BALANCE_DELETE_SELECT_TARGET", {
       accountId,
       currency,
@@ -763,7 +784,9 @@ export async function handleBalanceDelete(
 
     await wizard.sendMessage(
       chatId,
-      `🔄 Transfer ${formatMoney(amount, currency)} to:`,
+      t(lang, "balances.transferToPrompt", {
+        amount: formatMoney(amount, currency),
+      }),
       {
         reply_markup: {
           keyboard: rows,
@@ -819,7 +842,7 @@ export async function handleBalanceDeleteSelectTarget(
     currency,
     type: TransactionType.TRANSFER,
     category: InternalCategory.TRANSFER,
-    description: `Transfer before deleting ${accountId}`,
+    description: t(lang, "balances.transferDescDelete", { accountId }),
     fromAccountId: accountId,
     toAccountId: targetAccountId,
   }
@@ -856,7 +879,7 @@ export async function handleBalanceZeroSelectTarget(
   if (!match) {
     await wizard.sendMessage(
       chatId,
-      "❌ Select a balance from buttons.",
+      t(lang, "balances.selectFromButtons"),
       wizard.getBackButton(lang)
     )
     return true
@@ -876,7 +899,7 @@ export async function handleBalanceZeroSelectTarget(
     currency,
     type: TransactionType.TRANSFER,
     category: InternalCategory.TRANSFER,
-    description: `Transfer before zeroing ${accountId}`,
+    description: t(lang, "balances.transferDescZero", { accountId }),
     fromAccountId: accountId,
     toAccountId: targetAccountId,
   }

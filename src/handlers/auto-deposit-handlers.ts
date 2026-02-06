@@ -25,7 +25,7 @@ export async function handleAutoDepositToggle(
 
   const goal = state?.data?.goal as Goal
 
-  if (text === "✅ Enable Auto-Deposit") {
+  if (text === t(lang, "wizard.goal.enableAutoDeposit")) {
     // Start auto-deposit setup wizard
     wizard.setState(userId, {
       ...state,
@@ -48,13 +48,16 @@ export async function handleAutoDepositToggle(
         text: `${b.accountId} (${b.currency})`,
       },
     ])
-    accountButtons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+    accountButtons.push([
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ])
 
     await wizard.sendMessage(
       chatId,
-      `🤖 *Auto-Deposit Setup*\n\n` +
-        `Goal: *${goal.name}*\n\n` +
-        `Select the account to transfer from:`,
+      `${t(lang, "autoDeposit.setupTitle")}\n\n` +
+        `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n\n` +
+        `${t(lang, "autoDeposit.selectAccountPrompt")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -66,7 +69,7 @@ export async function handleAutoDepositToggle(
     return true
   }
 
-  if (text === "❌ Disable Auto-Deposit") {
+  if (text === t(lang, "wizard.goal.disableAutoDeposit")) {
     // Disable auto-deposit
     const goalRepo = AppDataSource.getRepository(GoalEntity)
     await goalRepo.update(
@@ -76,7 +79,7 @@ export async function handleAutoDepositToggle(
 
     await wizard.sendMessage(
       chatId,
-      `✅ Auto-deposit disabled for *${goal.name}*.`,
+      t(lang, "autoDeposit.disabledMessage", { name: goal.name }),
       { parse_mode: "Markdown" }
     )
 
@@ -107,7 +110,7 @@ export async function handleAutoDepositAccountSelect(
   if (!match) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid account format. Please select from the list.",
+      t(lang, "errors.invalidAccountFormat"),
       wizard.getBackButton(lang)
     )
     return true
@@ -127,15 +130,21 @@ export async function handleAutoDepositAccountSelect(
 
   await wizard.sendMessage(
     chatId,
-    `💰 *Auto-Deposit Amount*\n\n` +
-      `Goal: *${goal.name}*\n` +
-      `From: *${accountId?.trim() || "N/A"}*\n\n` +
-      `Enter the amount to deposit automatically:\n` +
-      `Example: 100`,
+    `${t(lang, "autoDeposit.amountTitle")}\n\n` +
+      `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+      `${t(lang, "autoDeposit.fromLine", {
+        account: accountId?.trim() || t(lang, "common.notAvailable"),
+      })}\n\n` +
+      `${t(lang, "autoDeposit.amountPrompt")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
-        keyboard: [[{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }]],
+        keyboard: [
+          [
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
+        ],
         resize_keyboard: true,
       },
     }
@@ -164,7 +173,7 @@ export async function handleAutoDepositAmountInput(
   if (isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      t(lang, "errors.invalidAmountPositive"),
+      t(lang, "errors.invalidAmount"),
       wizard.getBackButton(lang)
     )
     return true
@@ -182,17 +191,26 @@ export async function handleAutoDepositAmountInput(
 
   await wizard.sendMessage(
     chatId,
-    `📅 *Auto-Deposit Frequency*\n\n` +
-      `Goal: *${goal.name}*\n` +
-      `From: *${accountId}*\n` +
-      `Amount: *${amount} ${goal.currency}*\n\n` +
-      `Choose frequency:`,
+    `${t(lang, "autoDeposit.frequencyTitle")}\n\n` +
+      `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+      `${t(lang, "autoDeposit.fromLine", { account: accountId })}\n` +
+      `${t(lang, "autoDeposit.amountLine", {
+        amount,
+        currency: goal.currency,
+      })}\n\n` +
+      `${t(lang, "autoDeposit.frequencyPrompt")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: "📆 Weekly" }, { text: "📅 Monthly" }],
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+          [
+            { text: t(lang, "buttons.weekly") },
+            { text: t(lang, "buttons.monthly") },
+          ],
+          [
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
         ],
         resize_keyboard: true,
       },
@@ -219,11 +237,12 @@ export async function handleAutoDepositFrequencySelect(
   )
     return false
 
+  const lang = state?.lang || "en"
   const goal = state?.data?.goal as Goal
   // const accountId = state?.data?.autoDepositAccountId as string
   const amount = state?.data?.autoDepositAmount as number
 
-  if (text === "📆 Weekly") {
+  if (text === t(lang, "buttons.weekly")) {
     // Ask for day of week
     wizard.setState(userId, {
       ...state,
@@ -236,19 +255,34 @@ export async function handleAutoDepositFrequencySelect(
 
     await wizard.sendMessage(
       chatId,
-      `📆 *Select Day of Week*\n\n` +
-        `Goal: *${goal.name}*\n` +
-        `Amount: *${amount} ${goal.currency}*\n\n` +
-        `Choose the day for automatic deposit:`,
+      `${t(lang, "autoDeposit.selectDayOfWeekTitle")}\n\n` +
+        `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+        `${t(lang, "autoDeposit.amountLine", {
+          amount,
+          currency: goal.currency,
+        })}\n\n` +
+        `${t(lang, "autoDeposit.selectDayOfWeekPrompt")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: "Monday" }, { text: "Tuesday" }],
-            [{ text: "Wednesday" }, { text: "Thursday" }],
-            [{ text: "Friday" }, { text: "Saturday" }],
-            [{ text: "Sunday" }],
-            [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+            [
+              { text: t(lang, "wizard.days.Monday") },
+              { text: t(lang, "wizard.days.Tuesday") },
+            ],
+            [
+              { text: t(lang, "wizard.days.Wednesday") },
+              { text: t(lang, "wizard.days.Thursday") },
+            ],
+            [
+              { text: t(lang, "wizard.days.Friday") },
+              { text: t(lang, "wizard.days.Saturday") },
+            ],
+            [{ text: t(lang, "wizard.days.Sunday") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -257,7 +291,7 @@ export async function handleAutoDepositFrequencySelect(
     return true
   }
 
-  if (text === "📅 Monthly") {
+  if (text === t(lang, "buttons.monthly")) {
     // Ask for day of month
     wizard.setState(userId, {
       ...state,
@@ -270,11 +304,13 @@ export async function handleAutoDepositFrequencySelect(
 
     await wizard.sendMessage(
       chatId,
-      `📅 *Select Day of Month*\n\n` +
-        `Goal: *${goal.name}*\n` +
-        `Amount: *${amount} ${goal.currency}*\n\n` +
-        `Enter the day (1-31) for automatic deposit:\n` +
-        `Example: 25 (for 25th of each month)`,
+      `${t(lang, "autoDeposit.selectDayOfMonthTitle")}\n\n` +
+        `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+        `${t(lang, "autoDeposit.amountLine", {
+          amount,
+          currency: goal.currency,
+        })}\n\n` +
+        `${t(lang, "autoDeposit.selectDayOfMonthPrompt")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -282,7 +318,10 @@ export async function handleAutoDepositFrequencySelect(
             [{ text: "1" }, { text: "5" }, { text: "10" }],
             [{ text: "15" }, { text: "20" }, { text: "25" }],
             [{ text: "28" }],
-            [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -312,20 +351,20 @@ export async function handleAutoDepositDayWeeklySelect(
   const amount = state?.data?.autoDepositAmount as number
 
   const dayMap: Record<string, number> = {
-    Monday: 1,
-    Tuesday: 2,
-    Wednesday: 3,
-    Thursday: 4,
-    Friday: 5,
-    Saturday: 6,
-    Sunday: 0,
+    [t(lang, "wizard.days.Monday")]: 1,
+    [t(lang, "wizard.days.Tuesday")]: 2,
+    [t(lang, "wizard.days.Wednesday")]: 3,
+    [t(lang, "wizard.days.Thursday")]: 4,
+    [t(lang, "wizard.days.Friday")]: 5,
+    [t(lang, "wizard.days.Saturday")]: 6,
+    [t(lang, "wizard.days.Sunday")]: 0,
   }
 
   const dayOfWeek = dayMap[text]
   if (dayOfWeek === undefined) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid day. Please select from the list.",
+      t(lang, "errors.invalidDay"),
       wizard.getBackButton(lang)
     )
     return true
@@ -344,12 +383,17 @@ export async function handleAutoDepositDayWeeklySelect(
 
   await wizard.sendMessage(
     chatId,
-    `✅ *Auto-Deposit Enabled!*\n\n` +
-      `Goal: *${goal.name}*\n` +
-      `Amount: *${amount} ${goal.currency}*\n` +
-      `From: *${accountId}*\n` +
-      `Frequency: Every *${text}*\n\n` +
-      `🤖 The bot will automatically deposit money to your goal every ${text}.`,
+    `${t(lang, "autoDeposit.enabledTitle")}\n\n` +
+      `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+      `${t(lang, "autoDeposit.amountLine", {
+        amount,
+        currency: goal.currency,
+      })}\n` +
+      `${t(lang, "autoDeposit.fromLine", { account: accountId })}\n` +
+      `${t(lang, "autoDeposit.frequencyLine", {
+        frequency: t(lang, "autoDeposit.frequencyWeekly", { day: text }),
+      })}\n\n` +
+      `${t(lang, "autoDeposit.noteWeekly", { day: text })}`,
     { parse_mode: "Markdown" }
   )
 
@@ -398,12 +442,19 @@ export async function handleAutoDepositDayMonthlySelect(
 
   await wizard.sendMessage(
     chatId,
-    `✅ *Auto-Deposit Enabled!*\n\n` +
-      `Goal: *${goal.name}*\n` +
-      `Amount: *${amount} ${goal.currency}*\n` +
-      `From: *${accountId}*\n` +
-      `Frequency: *${dayOfMonth}th of each month*\n\n` +
-      `🤖 The bot will automatically deposit money to your goal on day ${dayOfMonth} of each month.`,
+    `${t(lang, "autoDeposit.enabledTitle")}\n\n` +
+      `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+      `${t(lang, "autoDeposit.amountLine", {
+        amount,
+        currency: goal.currency,
+      })}\n` +
+      `${t(lang, "autoDeposit.fromLine", { account: accountId })}\n` +
+      `${t(lang, "autoDeposit.frequencyLine", {
+        frequency: t(lang, "autoDeposit.frequencyMonthly", {
+          day: dayOfMonth,
+        }),
+      })}\n\n` +
+      `${t(lang, "autoDeposit.noteMonthly", { day: dayOfMonth })}`,
     { parse_mode: "Markdown" }
   )
 

@@ -10,6 +10,8 @@ import { randomUUID } from "crypto"
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc"
 import timezone from "dayjs/plugin/timezone"
+import { Language, t } from "../i18n"
+import { formatDateDisplay } from "../utils"
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -214,6 +216,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
+    const lang = (user?.language || "en") as Language
 
     const customTemplate = user?.reminderSettings?.customMessages?.debt
 
@@ -222,7 +225,7 @@ export class ReminderManager {
         name: debt.name,
         amount: debt.amount.toFixed(2),
         currency: debt.currency,
-        dueDate: dayjs(debt.dueDate).format("DD.MM.YYYY"),
+        dueDate: formatDateDisplay(debt.dueDate || ""),
         remaining: remaining.toFixed(2),
         monthlyAmount: monthlyAmount.toFixed(2),
         monthsLeft: monthsLeft.toString(),
@@ -230,14 +233,23 @@ export class ReminderManager {
     }
 
     const emoji = debt.type === "I_OWE" ? "💸" : "💰"
-    return (
-      `${emoji} *Monthly Debt Reminder*\n\n` +
-      `Debt: ${debt.name}\n` +
-      `Total remaining: ${remaining.toFixed(2)} ${debt.currency}\n` +
-      `Months left: ${monthsLeft}\n` +
-      `Suggested monthly payment: ${monthlyAmount.toFixed(2)} ${debt.currency}\n\n` +
-      `Due: ${dayjs(debt.dueDate).format("DD.MM.YYYY")}`
-    )
+    const title = t(lang, "reminders.messages.debtMonthlyTitle", { emoji })
+    const lines = [
+      t(lang, "reminders.messages.debtLine", { name: debt.name }),
+      t(lang, "reminders.messages.totalRemainingLine", {
+        amount: remaining.toFixed(2),
+        currency: debt.currency,
+      }),
+      t(lang, "reminders.messages.monthsLeftLine", { months: monthsLeft }),
+      t(lang, "reminders.messages.suggestedMonthlyPaymentLine", {
+        amount: monthlyAmount.toFixed(2),
+        currency: debt.currency,
+      }),
+      t(lang, "reminders.messages.dueLine", {
+        date: formatDateDisplay(debt.dueDate || ""),
+      }),
+    ]
+    return `${title}\n\n${lines.join("\n")}`
   }
 
   private async formatDebtFinalReminder(
@@ -247,6 +259,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
+    const lang = (user?.language || "en") as Language
 
     const customTemplate = user?.reminderSettings?.customMessages?.debt
 
@@ -255,18 +268,24 @@ export class ReminderManager {
         name: debt.name,
         amount: debt.amount.toFixed(2),
         currency: debt.currency,
-        dueDate: dayjs(debt.dueDate).format("DD.MM.YYYY"),
+        dueDate: formatDateDisplay(debt.dueDate || ""),
         remaining: remaining.toFixed(2),
       })
     }
 
     const emoji = debt.type === "I_OWE" ? "⚠️" : "💰"
-    return (
-      `${emoji} *Debt Due Tomorrow!*\n\n` +
-      `${debt.name}\n` +
-      `Amount: ${remaining.toFixed(2)} ${debt.currency}\n` +
-      `Due: ${dayjs(debt.dueDate).format("DD.MM.YYYY")}`
-    )
+    const title = t(lang, "reminders.messages.debtFinalTitle", { emoji })
+    const lines = [
+      t(lang, "reminders.messages.debtLine", { name: debt.name }),
+      t(lang, "reminders.messages.amountLine", {
+        amount: remaining.toFixed(2),
+        currency: debt.currency,
+      }),
+      t(lang, "reminders.messages.dueLine", {
+        date: formatDateDisplay(debt.dueDate || ""),
+      }),
+    ]
+    return `${title}\n\n${lines.join("\n")}`
   }
 
   private async formatGoalMonthlyReminder(
@@ -278,6 +297,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
+    const lang = (user?.language || "en") as Language
 
     const customTemplate = user?.reminderSettings?.customMessages?.goal
 
@@ -290,18 +310,27 @@ export class ReminderManager {
         target: goal.targetAmount.toFixed(2),
         monthlyAmount: monthlyAmount.toFixed(2),
         monthsLeft: monthsLeft.toString(),
-        dueDate: dayjs(goal.deadline).format("DD.MM.YYYY"),
+        dueDate: formatDateDisplay(goal.deadline || ""),
       })
     }
 
-    return (
-      `🎯 *Monthly Goal Reminder*\n\n` +
-      `Goal: ${goal.name}\n` +
-      `Total remaining: ${remaining.toFixed(2)} ${goal.currency}\n` +
-      `Months left: ${monthsLeft}\n` +
-      `Suggested monthly saving: ${monthlyAmount.toFixed(2)} ${goal.currency}\n\n` +
-      `Deadline: ${dayjs(goal.deadline).format("DD.MM.YYYY")}`
-    )
+    const title = t(lang, "reminders.messages.goalMonthlyTitle")
+    const lines = [
+      t(lang, "reminders.messages.goalLine", { name: goal.name }),
+      t(lang, "reminders.messages.totalRemainingLine", {
+        amount: remaining.toFixed(2),
+        currency: goal.currency,
+      }),
+      t(lang, "reminders.messages.monthsLeftLine", { months: monthsLeft }),
+      t(lang, "reminders.messages.suggestedMonthlySavingLine", {
+        amount: monthlyAmount.toFixed(2),
+        currency: goal.currency,
+      }),
+      t(lang, "reminders.messages.deadlineLine", {
+        date: formatDateDisplay(goal.deadline || ""),
+      }),
+    ]
+    return `${title}\n\n${lines.join("\n")}`
   }
 
   private async formatGoalFinalReminder(
@@ -311,6 +340,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
+    const lang = (user?.language || "en") as Language
 
     const customTemplate = user?.reminderSettings?.customMessages?.goal
 
@@ -321,16 +351,23 @@ export class ReminderManager {
         currency: goal.currency,
         remaining: remaining.toFixed(2),
         target: goal.targetAmount.toFixed(2),
-        dueDate: dayjs(goal.deadline).format("DD.MM.YYYY"),
+        dueDate: formatDateDisplay(goal.deadline || ""),
       })
     }
 
-    return (
-      `⏰ *Goal Deadline Approaching!*\n\n` +
-      `${goal.name}\n` +
-      `Remaining: ${remaining.toFixed(2)} ${goal.currency}\n` +
-      `Deadline: ${dayjs(goal.deadline).format("DD.MM.YYYY")} (in 3 days)`
-    )
+    const title = t(lang, "reminders.messages.goalFinalTitle")
+    const lines = [
+      t(lang, "reminders.messages.goalLine", { name: goal.name }),
+      t(lang, "reminders.messages.remainingLine", {
+        amount: remaining.toFixed(2),
+        currency: goal.currency,
+      }),
+      t(lang, "reminders.messages.deadlineCountdownLine", {
+        date: formatDateDisplay(goal.deadline || ""),
+        days: 3,
+      }),
+    ]
+    return `${title}\n\n${lines.join("\n")}`
   }
 
   private async formatIncomeReminder(
@@ -339,6 +376,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
+    const lang = (user?.language || "en") as Language
 
     const customTemplate = user?.reminderSettings?.customMessages?.income
 
@@ -350,12 +388,18 @@ export class ReminderManager {
       })
     }
 
-    return (
-      `💰 *Income Reminder*\n\n` +
-      `Source: ${income.name}\n` +
-      `Expected amount: ${income.expectedAmount} ${income.currency}\n` +
-      `Expected date: Day ${income.expectedDate} of this month`
-    )
+    const title = t(lang, "reminders.messages.incomeTitle")
+    const lines = [
+      t(lang, "reminders.messages.sourceLine", { name: income.name }),
+      t(lang, "reminders.messages.expectedAmountLine", {
+        amount: income.expectedAmount?.toFixed(2) || "0",
+        currency: income.currency || "USD",
+      }),
+      t(lang, "reminders.messages.expectedDateLine", {
+        day: income.expectedDate || 0,
+      }),
+    ]
+    return `${title}\n\n${lines.join("\n")}`
   }
 
   // Utility methods
