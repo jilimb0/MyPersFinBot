@@ -15,6 +15,7 @@
 import { getCache } from "../cache"
 import { CacheInterface } from "../cache/cache.interface"
 import logger from "../logger"
+import { config } from "../config"
 import { UserData, Balance, Transaction, Currency } from "../types"
 import { Language } from "../i18n"
 
@@ -492,7 +493,9 @@ export class CacheManager {
       this.invalidateCategoryTotals(userId),
     ])
 
-    logger.info("All caches invalidated for user", { userId })
+    if (config.LOG_CACHE_VERBOSE) {
+      logger.info("All caches invalidated for user", { userId })
+    }
   }
 
   /**
@@ -511,11 +514,13 @@ export class CacheManager {
       this.invalidateCategoryTotals(userId, year, month),
     ])
 
-    logger.debug("Transaction-related caches invalidated", {
-      userId,
-      year,
-      month,
-    })
+    if (config.LOG_CACHE_VERBOSE) {
+      logger.debug("Transaction-related caches invalidated", {
+        userId,
+        year,
+        month,
+      })
+    }
   }
 
   /**

@@ -1,5 +1,6 @@
 import NodeCache from "node-cache"
 import logger from "../logger"
+import { config as appConfig } from "../config"
 import { CacheInterface, CacheConfig, CacheStats } from "./cache.interface"
 
 /**
@@ -22,7 +23,9 @@ export class MemoryCacheService implements CacheInterface {
       useClones: false, // Better performance
     })
 
-    logger.info("Memory cache initialized (in-memory fallback)")
+    if (appConfig.LOG_BOOT_DETAIL) {
+      logger.info("Memory cache initialized (in-memory fallback)")
+    }
   }
 
   /**
@@ -141,6 +144,8 @@ export class MemoryCacheService implements CacheInterface {
    */
   async close(): Promise<void> {
     this.cache.flushAll()
-    logger.info("Memory cache closed")
+    if (appConfig.LOG_BOOT_DETAIL) {
+      logger.info("Memory cache closed")
+    }
   }
 }

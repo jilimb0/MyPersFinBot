@@ -3,11 +3,12 @@
  */
 
 import TelegramBot from "node-telegram-bot-api"
-import { Language } from "../../i18n"
+import { resolveLanguage, Language } from "../../i18n"
 import type { WizardManager } from "../../wizards/wizards"
 import { dbStorage as db } from "../../database/storage-db"
 import { securityCheck } from "../../security"
 import logger from "../../logger"
+import { config } from "../../config"
 import { MessageContext, MessageRoute, MessageHandler } from "./types"
 
 /**
@@ -57,7 +58,8 @@ export class MessageRouter {
         if (!text) return
 
         // Get user language
-        const lang = (await db.getUserLanguage(userId)) as Language
+        const storedLang = await db.getUserLanguage(userId)
+        const lang = resolveLanguage(storedLang)
 
         // Create context
         const context: MessageContext = {
@@ -85,7 +87,9 @@ export class MessageRouter {
       }
     })
 
-    logger.info(`✅ MessageRouter listening (${this.routes.length} routes)`)
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info(`✅ MessageRouter listening (${this.routes.length} routes)`)
+    }
   }
 
   /**

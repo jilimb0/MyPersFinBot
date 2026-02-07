@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
-import { t, isValidLanguage, Language } from "../i18n"
+import { t, isValidLanguage, Language, resolveLanguage } from "../i18n"
 import { getMainMenuKeyboard, getLanguageKeyboard } from "../i18n/keyboards"
 
 /**
@@ -11,7 +11,7 @@ export async function showLanguageMenu(
   chatId: number,
   userId: string
 ): Promise<void> {
-  const currentLang = (await db.getUserLanguage(userId)) as Language
+  const currentLang = resolveLanguage(await db.getUserLanguage(userId))
 
   const message =
     `🌍 *${t(currentLang, "settings.language")}*\n\n` +
@@ -33,7 +33,7 @@ export async function handleLanguageSelection(
   userId: string,
   text: string
 ): Promise<boolean> {
-  const currentLang = (await db.getUserLanguage(userId)) as Language
+  const currentLang = resolveLanguage(await db.getUserLanguage(userId))
   // Match language by emoji flag
   let selectedLang: Language | null = null
   const labels: Record<Language, string> = {
@@ -84,14 +84,14 @@ export async function detectAndSetLanguage(
 
   // If user already has language set, use it
   if (existingLang && isValidLanguage(existingLang)) {
-    return existingLang as Language
+    return existingLang
   }
 
   // Try to detect from Telegram
   let detectedLang: Language = "en"
 
   if (telegramLangCode) {
-    const langCode = telegramLangCode.toLowerCase().split("-")[0] as Language
+    const langCode = telegramLangCode.toLowerCase().split("-")[0]
 
     if (isValidLanguage(langCode)) {
       detectedLang = langCode

@@ -1,0 +1,42 @@
+# Environment Variables
+
+## Required
+- `TELEGRAM_BOT_TOKEN`
+
+## Optional
+- `ASSEMBLYAI_API_KEY`
+- `FX_API_KEY`
+- `ALLOWED_USERS` (comma‑separated user IDs)
+- `BLOCKED_USERS` (comma‑separated user IDs)
+- `RATE_LIMIT_ENABLED` (`true|false`)
+- `RATE_LIMIT_MAX_MESSAGES` (number)
+- `RATE_LIMIT_WINDOW_MS` (ms)
+- `LOG_UNAUTHORIZED_ACCESS` (`true|false`)
+- `DB_PATH`
+- `DB_WAL_ENABLED` (`true|false`)
+- `SCHEDULER_MINUTE`
+- `RECURRING_CHECK_INTERVAL`
+- `VOICE_TRANSCRIPTION_TIMEOUT` (ms)
+- `VOICE_MAX_DURATION` (seconds)
+- `ASSEMBLYAI_POLL_INTERVAL` (ms)
+- `FX_REFRESH_INTERVAL_HOURS`
+- `ANALYTICS_DAYS_DEFAULT`
+- `REMINDER_CHECK_INTERVAL`
+- `MAX_FILE_SIZE_MB`
+- `SENTRY_DSN`
+- `SENTRY_ENV`
+- `SENTRY_TRACES_SAMPLE_RATE`
+- `SENTRY_RELEASE`
+- `HEALTH_HOST`
+- `HEALTH_PORT`
+- `NODE_ENV` (`development|production|test`)
+- `LOG_LEVEL` (`error|warn|info|debug`)
+- `LOG_BOOT_DETAIL` (`true|false`)
+- `LOG_CACHE_VERBOSE` (`true|false`)
+- `LOG_SCHEDULER_TICK` (`true|false`)
+
+## Cache/Redis
+- `USE_REDIS` (`true|false`)
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_PASSWORD`

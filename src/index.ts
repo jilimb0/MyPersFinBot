@@ -5,6 +5,7 @@ import logger from "./logger"
 import { registerAppServices } from "./bootstrap/app-services"
 import { initObservability } from "./bootstrap/observability"
 import { registerRouters } from "./bootstrap/routers"
+import { config } from "./config"
 
 /**
  * Main application entry point
@@ -31,7 +32,9 @@ async function main() {
 
     setupShutdownHandlers(context)
 
-    logger.info("🚀 Bot started successfully")
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("🚀 Bot started successfully")
+    }
   } catch (error) {
     console.error("❌ Failed to start bot:")
     console.error(error)

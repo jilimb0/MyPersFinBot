@@ -8,7 +8,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
-[Features](#-features) • [Setup](#-quick-start) • [Documentation](#-documentation) • [Deployment](#-deployment)
+[Features](#-features) • [Setup](#-quick-start) • [Documentation](#-documentation)
 
 </div>
 
@@ -16,49 +16,12 @@
 
 ## 🌟 Features
 
-### 💸 **Transaction Management**
-- ✅ Track expenses and income
-- ✅ Multi-currency support (USD, EUR, GEL, UAH, etc.)
-- ✅ Transfers between accounts
-- ✅ Automatic category detection
-- ✅ Date selection (today, yesterday, custom)
-- ✅ Transaction history with filters
-
-### 💳 **Account Balances**
-- ✅ Multiple accounts (Cash, Card, Savings)
-- ✅ Multi-currency balances
-- ✅ Real-time balance updates
-- ✅ Net worth calculation
-- ✅ Edit/delete accounts
-
-### 📉 **Debt Tracking**
-- ✅ "I Owe" and "They Owe Me"
-- ✅ Partial payments
-- ✅ Payment reminders
-- ✅ Mark as paid
-
-### 🎯 **Savings Goals**
-- ✅ Create savings targets
-- ✅ Track progress with visual bars
-- ✅ Add/withdraw funds
-- ✅ Completed goals archive
-
-### 📊 **Analytics & Reports**
-- ✅ Monthly statistics
-- ✅ Category breakdown
-- ✅ Income vs Expense trends
-- ✅ Export to CSV
-- ✅ Top spending categories
-
-### 🚀 **Advanced Features**
-- ✅ **Voice Messages** 🎤 - Say "fifty on coffee" and bot creates transaction
-- ✅ **Natural Language Processing** 🤖 - Type "100 taxi" or "потратил 200 на еду"
-- ✅ **Multi-language Input** 🌍 - English, Russian, Ukrainian
-- ✅ **Real-time FX Rates** 💱 - Auto-updated exchange rates
-- ✅ **Recurring Transactions** 🔁 - Auto-create daily/weekly/monthly
-- ✅ **Reminders** 🔔 - Get notified about upcoming payments
-- ✅ **Bank Statement Import** 📥 - Upload CSV files
-- ✅ **Auto-deposit to Goals** 💰 - Automatically save from income
+- Track expenses, income, and transfers
+- Multi-currency balances with FX rates
+- Debts and goals with reminders
+- Analytics, reports, and CSV export
+- NLP + voice input
+- Recurring transactions and notifications
 
 ---
 
@@ -84,130 +47,28 @@ Bot: 🎤 Processing voice message...
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- **Node.js** 20+ ([Download](https://nodejs.org/))
-- **pnpm** ([Install](https://pnpm.io/installation))
-- **FFmpeg** (for voice messages)
-- **Telegram Bot Token** ([Get from @BotFather](https://t.me/botfather))
-
-### Installation
-
-```bash
-# 1. Clone repository
-git clone https://github.com/yourusername/MyPersFinBot.git
-cd MyPersFinBot
-
-# 2. Install dependencies
-pnpm install
-
-# 3. Install FFmpeg
-# macOS:
-brew install ffmpeg
-
-# Linux:
-sudo apt-get install ffmpeg
-
-# 4. Create configuration
-cp .env.example .env
-
-# 5. Add your tokens
-nano .env
-```
-
-### Configuration
-
-Create `.env` file:
-
-```env
-# Telegram Bot Token (from @BotFather)
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-
-# AssemblyAI API Key (for voice transcription - optional)
-# Get free key at https://www.assemblyai.com/
-ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
-
-# FX Rates API Key (optional - for exchange rates)
-# Get free key at https://freecurrencyapi.com/
-FX_API_KEY=your_fx_api_key_here
-```
-
-**Legacy:** Create `secure.json` (alternative to .env):
-
-```json
-{
-  "API": "your_telegram_bot_token_here"
-}
-```
-
-### Run
-
-```bash
-# Development
-pnpm run dev
-
-# Production
-pnpm run build
-pnpm start
-```
+See `docs/DEV.md`.
 
 ---
 
 ## 📖 Documentation
 
-### Core Documentation
-- 📊 [**PROJECT_AUDIT.md**](PROJECT_AUDIT.md) - Complete project analysis
-- 🚀 [**DEPLOYMENT.md**](DEPLOYMENT.md) - Production deployment guide
-- 📝 [**NEXT_STEPS.md**](NEXT_STEPS.md) - Development roadmap
-
-### Feature Guides
-- 🎤 [**VOICE_QUICK_START.md**](VOICE_QUICK_START.md) - Voice message setup (5 min)
-- 🎵 [**FFMPEG_SETUP.md**](FFMPEG_SETUP.md) - FFmpeg installation
-- 📡 [**ASSEMBLYAI_SETUP.md**](ASSEMBLYAI_SETUP.md) - AssemblyAI configuration
-- 🤖 [**NLP_INTEGRATION.md**](NLP_INTEGRATION.md) - Natural language processing
-
-### Fixes & Troubleshooting
-- ✅ [**FINAL_FIX.md**](FINAL_FIX.md) - Latest fixes (voice upload)
-- 🔍 [**DEBUG_VOICE.md**](DEBUG_VOICE.md) - Voice debugging guide
-- 📋 [**FIXES_SUMMARY.md**](FIXES_SUMMARY.md) - All applied fixes
-
-### Future Plans
-- 🌍 [**INTERNATIONALIZATION_PLAN.md**](INTERNATIONALIZATION_PLAN.md) - Multi-language UI (EN/RU/UK)
+- 📚 [**Docs Index**](docs/README.md)
+- 🏗️ [**Architecture**](docs/ARCHITECTURE.md)
+- 🚀 [**Deployment**](docs/DEPLOYMENT.md)
+- ✅ [**Testing**](docs/TESTING.md)
+- 🧪 [**Debugging**](docs/DEBUGGING.md)
+- ⚙️ [**Environment**](docs/ENV.md)
 
 ---
 
 ## 🏗️ Architecture
 
-```
-src/
-├── commands.ts              # Bot commands (/start, /help)
-├── constants.ts             # UI keyboards and constants
-├── database/               
-│   ├── entities/           # TypeORM entities
-│   ├── data-source.ts      # Database connection
-│   └── storage-db.ts       # Database operations
-├── fx.ts                   # Exchange rates (FX API)
-├── handlers/               # Feature handlers
-│   ├── balance-handlers.ts
-│   ├── debt-handlers.ts
-│   ├── goal-handlers.ts
-│   ├── transaction-handlers.ts
-│   ├── voice-handler.ts
-│   ├── recurring-handlers.ts
-│   └── ... (10 more)
-├── index.ts                # Main bot logic
-├── menus.ts                # Menu builders
-├── parsers/                # NLP text parsers
-├── reports/                # Analytics & CSV export
-├── services/              
-│   ├── assemblyai-service.ts
-│   ├── scheduler.ts
-│   └── reminder-manager.ts
-├── types/                  # TypeScript types
-├── utils.ts                # Helper functions
-├── validators.ts           # Input validation
-└── wizards/                # Wizard state management
-```
+- `src/handlers` – bot flows and menus
+- `src/wizards` – state machine
+- `src/database` – TypeORM entities + storage
+- `src/services` – scheduler, reminders, FX, voice
+- `src/reports` – analytics and export
 
 ---
 

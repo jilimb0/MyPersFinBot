@@ -7,7 +7,9 @@ let initialized = false
 export function initSentry() {
   if (initialized) return
   if (!config.SENTRY_DSN) {
-    logger.info("Sentry disabled (no DSN)")
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("Sentry disabled (no DSN)")
+    }
     return
   }
 
@@ -19,7 +21,9 @@ export function initSentry() {
   })
 
   initialized = true
-  logger.info("✅ Sentry initialized")
+  if (config.LOG_BOOT_DETAIL) {
+    logger.info("✅ Sentry initialized")
+  }
 }
 
 export { Sentry }

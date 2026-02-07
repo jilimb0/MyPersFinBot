@@ -12,7 +12,7 @@ import {
   IncomeSource,
 } from "../types"
 import { dbStorage as db } from "../database/storage-db"
-import { isValidLanguage, Language } from "../i18n"
+import { resolveLanguage, Language } from "../i18n"
 import * as validators from "../validators"
 import {
   showAdvancedMenu,
@@ -59,7 +59,7 @@ export interface WizardState {
   txType?: TransactionType
   history?: string[]
   returnTo?: string
-  lang?: Language
+  lang: Language
 }
 
 export class WizardManager {
@@ -76,7 +76,7 @@ export class WizardManager {
   private async resolveUserLang(userId: string): Promise<Language> {
     try {
       const lang = await db.getUserLanguage(userId)
-      return isValidLanguage(lang) ? lang : "en"
+      return resolveLanguage(lang)
     } catch {
       return "en"
     }
@@ -131,10 +131,12 @@ export class WizardManager {
 
     // ✅ If no state exists, create a new one
     if (!state) {
+      const lang = await this.resolveUserLang(userId)
       state = {
         step: nextStep,
         data: data || {},
         history: [],
+        lang,
       }
       this.setState(userId, state)
       return
@@ -232,8 +234,9 @@ export class WizardManager {
     text: string
   ): Promise<boolean> {
     const state = this.getState(userId)
-    const lang = (state?.lang ||
-      (await this.resolveUserLang(userId))) as Language
+    const lang = resolveLanguage(
+      state?.lang || (await this.resolveUserLang(userId))
+    )
     if (state && state.lang !== lang) {
       state.lang = lang
       this.setState(userId, state)
@@ -2810,6 +2813,7 @@ export class WizardManager {
               step: "EXPORT_VIEW",
               data: {},
               returnTo: "analytics",
+              lang,
             })
             return true
           }
@@ -2822,6 +2826,7 @@ export class WizardManager {
             this.setState(userId, {
               step: "TRENDS_VIEW",
               returnTo: "reports",
+              lang,
             })
             return true
           } else if (text === t(lang, "buttons.topCategories")) {
@@ -2833,6 +2838,7 @@ export class WizardManager {
             this.setState(userId, {
               step: "TOP_CATEGORIES_VIEW",
               returnTo: "reports",
+              lang,
             })
             return true
           }

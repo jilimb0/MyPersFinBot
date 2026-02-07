@@ -12,13 +12,15 @@ import { Budget } from "../database/entities/Budget"
 import { RecurringTransaction } from "../database/entities/RecurringTransaction"
 import { Reminder } from "../database/entities/Reminder"
 import { CustomQueryLogger } from "../monitoring"
+import { config } from "../config"
+import logger from "../logger"
 
 const DB_PATH = path.resolve(__dirname, "../../data/database.sqlite")
 
 export const AppDataSource = new DataSource({
   type: "sqlite",
   database: DB_PATH,
-  logging: ["error", "warn", "schema"],
+  logging: ["error", "warn"],
   logger: new CustomQueryLogger(),
   entities: [
     User,
@@ -54,11 +56,13 @@ export async function initializeDatabase() {
       await AppDataSource.query("PRAGMA cache_size = 10000;")
       await AppDataSource.query("PRAGMA temp_store = MEMORY;")
 
-      console.log("✅ Database initialized successfully (WAL mode enabled)")
+      if (config.LOG_BOOT_DETAIL) {
+        logger.info("✅ Database initialized successfully (WAL mode enabled)")
+      }
     }
     return AppDataSource
   } catch (error) {
-    console.error("❌ Error initializing database:", error)
+    logger.error("❌ Error initializing database:", error)
     throw error
   }
 }
@@ -66,6 +70,8 @@ export async function initializeDatabase() {
 export async function closeDatabase() {
   if (AppDataSource.isInitialized) {
     await AppDataSource.destroy()
-    console.log("✅ Database connection closed")
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("✅ Database connection closed")
+    }
   }
 }

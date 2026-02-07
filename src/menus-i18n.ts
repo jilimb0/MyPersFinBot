@@ -63,6 +63,7 @@ export async function showBalancesMenu(
     step: "BALANCE_LIST",
     data: {},
     returnTo: "balances",
+    lang,
   })
 
   await wizard.sendMessage(chatId, balancesMsg, {
@@ -281,6 +282,7 @@ export async function showHistoryMenu(
       ...state?.data,
     },
     returnTo: "analytics",
+    lang,
   })
 
   const startIdx = (page - 1) * limit + 1
@@ -383,12 +385,18 @@ export async function showBudgetMenu(
   const text =
     t(lang, "budget.title") +
     "\n\n" +
-    (lines.length ? lines.join("\n") : t(lang, "budget.noBudgetsCategories")) +
+    (lines.length
+      ? lines.join("\n")
+      : `${t(lang, "budget.noBudgetsCategories")}\n\n${t(
+          lang,
+          "budget.emptyHint"
+        )}`) +
     summaryLine
 
   wizard.setState(userId, {
     step: "BUDGET_MENU",
     data: {},
+    lang,
   })
 
   await wizard.sendMessage(chatId, text, {
@@ -409,6 +417,7 @@ export async function showAnalyticsReportsMenu(
     step: "ANALYTICS_REPORTS_MENU",
     data: {},
     returnTo: "reports",
+    lang,
   })
 
   wizard.sendMessage(chatId, statsMsg, {
@@ -448,7 +457,7 @@ export async function showNetWorthMenu(
 
   const netWorth = totalAssets + netDebt
 
-  let msg = `${t(lang, "netWorth.title")} ${formatMoney(netWorth, defaultCurrency)}*\n\n`
+  let msg = `${t(lang, "netWorth.title")} ${formatMoney(netWorth, defaultCurrency)}\n\n`
 
   if (view === "summary") {
     msg += `${t(lang, "netWorth.assets")} ${formatMoney(totalAssets, defaultCurrency)} (${balances.length} ${t(lang, "netWorth.accounts")})\n`
@@ -456,7 +465,7 @@ export async function showNetWorthMenu(
     msg += `──────────────────\n`
     msg += `${t(lang, "netWorth.net")} ${formatMoney(netWorth, defaultCurrency)}\n`
   } else if (view === "assets") {
-    msg += `${t(lang, "netWorth.assetsDetail")} ${formatMoney(totalAssets, defaultCurrency)}*\n\n`
+    msg += `${t(lang, "netWorth.assetsDetail")} ${formatMoney(totalAssets, defaultCurrency)}\n\n`
     balances.forEach((b: Balance) => {
       msg += `• ${b.accountId}: ${formatMoney(b.amount, b.currency)}\n`
     })
@@ -591,6 +600,7 @@ export async function showActiveRemindersMenu(
   wizard.setState(userId, {
     step: "REMINDERS_LIST",
     data: {},
+    lang,
   })
 
   await wizard.sendMessage(chatId, msg, {
@@ -609,6 +619,7 @@ export async function showAutomationMenu(
     step: "AUTOMATION_MENU",
     data: {},
     returnTo: "settings",
+    lang,
   })
 
   await wizard.sendMessage(
@@ -641,6 +652,7 @@ export async function showAdvancedMenu(
     step: "ADVANCED_MENU",
     data: {},
     returnTo: "settings",
+    lang,
   })
 
   await wizard.sendMessage(

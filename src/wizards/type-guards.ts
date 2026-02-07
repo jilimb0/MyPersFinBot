@@ -20,14 +20,14 @@ export function hasData(
 export function hasLang(
   state: WizardState
 ): state is WizardState & { lang: Language } {
-  return state?.lang !== undefined
+  return state.lang !== undefined
 }
 
 /**
  * Get lang or default
  */
 export function getLang(state: WizardState): Language {
-  return state?.lang || "en"
+  return state.lang
 }
 
 /**

@@ -11,7 +11,7 @@ import {
 import { formatMoney } from "../utils"
 import { SETTINGS_KEYBOARD } from "../constants"
 import { randomUUID } from "crypto"
-import { t } from "../i18n"
+import { resolveLanguage, t } from "../i18n"
 
 // Handle file upload
 export async function handleStatementUpload(
@@ -157,6 +157,7 @@ async function showTransactionPreview(
       currentIndex: 0,
     },
     returnTo: "settings",
+    lang,
   })
 
   await bot.sendMessage(chatId, msg, {
@@ -313,6 +314,7 @@ async function startEditingTransactions(
   userId: string,
   transactions: ParsedTransaction[]
 ): Promise<boolean> {
+  const lang = resolveLanguage(wizardManager.getState(userId)?.lang)
   wizardManager.setState(userId, {
     step: "STATEMENT_EDIT",
     data: {
@@ -321,6 +323,7 @@ async function startEditingTransactions(
       edited: [],
     },
     returnTo: "settings",
+    lang,
   })
 
   return await showTransactionEditor(

@@ -403,6 +403,8 @@ export const uk = {
     addGoal: "✨ Додати ціль",
     addTitle: "🎯 *Додати ціль*",
     noGoals: "💡 Цілей поки немає. Створіть першу ціль!",
+    emptyHint:
+      "Порада: створіть ціль, наприклад `Відпустка 5000 USD`, або натисніть *Додати ціль*.",
     noGoalsYet: "Цілей поки немає.",
     listTitle: "🎯 *Цілі*",
     progress: "Прогрес",
@@ -640,6 +642,8 @@ export const uk = {
     addBudget: "✨ Додати бюджет",
     addEditBudget: "✨ Додати / Змінити бюджет",
     noBudgetsCategories: "💡 Поки немає бюджетів за категоріями.",
+    emptyHint:
+      "Порада: встановіть ліміт для категорії, щоб почати контроль бюджету.",
     summary: "Підсумок: {spent}/{total} ({percent}%)",
     noBudgets: "💡 Бюджетів поки немає. Створіть перший!",
     monthly: "Щомісяця",
@@ -693,6 +697,8 @@ export const uk = {
     notAvailable: "Н/Д",
     noDescription: "Без опису",
     featureInDevelopmentSuffix: "(функція в розробці)",
+    unknownCommand:
+      "Не зрозумів повідомлення. Використайте кнопки нижче або відкрийте Головне меню.",
 
     // Дії редагування
     editAmount: "💰 Змінити суму",
@@ -1068,6 +1074,8 @@ export const uk = {
     failedToUpdate: "❌ Не вдалося оновити шаблон.",
     selectDefaultAccount: "Виберіть рахунок за замовчуванням:",
     manageTitle: "⚙️ *Керування шаблоном*",
+    emptyHint:
+      "Порада: створіть шаблон з транзакції та натисніть *Зберегти як шаблон*.",
     nameLine: "*{name}*",
     amountLine: "Сума: {amount}",
     accountLine: "Рахунок: *{account}*",
@@ -2247,8 +2255,8 @@ export const uk = {
         "💼 *Джерело доходу:* {name}\n\n" +
         "Очікується: {amount}\n\n" +
         "Можна змінити ім'я, видалити або ввести нову суму.",
-      enableAutoIncome: "✅ Увімкнути авто-доход",
-      disableAutoIncome: "❌ Вимкнути авто-доход",
+      enableAutoIncome: "✅ Увімкнути авто-дохід",
+      disableAutoIncome: "❌ Вимкнути авто-дохід",
       deleteIncomeButton: "🗑️ Видалити дохід",
       deletedMessage: '✅ Джерело доходу "{name}" видалено.',
       noSourceSelected: "❌ Джерело доходу не вибрано.",

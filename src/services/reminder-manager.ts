@@ -10,7 +10,7 @@ import { randomUUID } from "crypto"
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc"
 import timezone from "dayjs/plugin/timezone"
-import { Language, t } from "../i18n"
+import { resolveLanguage, t } from "../i18n"
 import { formatDateDisplay } from "../utils"
 
 dayjs.extend(utc)
@@ -216,7 +216,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
-    const lang = (user?.language || "en") as Language
+    const lang = resolveLanguage(user?.language)
 
     const customTemplate = user?.reminderSettings?.customMessages?.debt
 
@@ -259,7 +259,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
-    const lang = (user?.language || "en") as Language
+    const lang = resolveLanguage(user?.language)
 
     const customTemplate = user?.reminderSettings?.customMessages?.debt
 
@@ -297,7 +297,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
-    const lang = (user?.language || "en") as Language
+    const lang = resolveLanguage(user?.language)
 
     const customTemplate = user?.reminderSettings?.customMessages?.goal
 
@@ -340,7 +340,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
-    const lang = (user?.language || "en") as Language
+    const lang = resolveLanguage(user?.language)
 
     const customTemplate = user?.reminderSettings?.customMessages?.goal
 
@@ -376,7 +376,7 @@ export class ReminderManager {
   ): Promise<string> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
-    const lang = (user?.language || "en") as Language
+    const lang = resolveLanguage(user?.language)
 
     const customTemplate = user?.reminderSettings?.customMessages?.income
 

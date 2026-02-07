@@ -39,6 +39,7 @@ export async function handleAutoPaymentToggle(
     // Start auto-payment setup wizard
     wizard.setState(userId, {
       ...state,
+      lang: state.lang,
       step: "AUTO_PAYMENT_SELECT_ACCOUNT",
     })
 
@@ -134,6 +135,7 @@ export async function handleAutoPaymentAccountSelect(
   // Store selected account and ask for amount
   wizard.setState(userId, {
     ...state,
+    lang: state.lang,
     step: "AUTO_PAYMENT_ENTER_AMOUNT",
     data: {
       ...state?.data,
@@ -215,6 +217,7 @@ export async function handleAutoPaymentAmountInput(
   // Store amount and ask for day of month
   wizard.setState(userId, {
     ...state,
+    lang: state.lang,
     step: "AUTO_PAYMENT_SELECT_DAY",
     data: {
       ...state?.data,

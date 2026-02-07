@@ -4,6 +4,7 @@
 
 import TelegramBot from "node-telegram-bot-api"
 import logger from "../logger"
+import { config } from "../config"
 
 export interface BotContext {
   bot: TelegramBot
@@ -18,7 +19,9 @@ export async function createBot(token: string): Promise<BotContext> {
   process.env.NTBA_FIX_350 = "1"
 
   const bot = new TelegramBot(token, { polling: true })
-  logger.info("✅ Bot instance created")
+  if (config.LOG_BOOT_DETAIL) {
+    logger.info("✅ Bot instance created")
+  }
 
   return { bot }
 }
@@ -29,7 +32,11 @@ export async function createBot(token: string): Promise<BotContext> {
 export async function stopBot(context: BotContext): Promise<void> {
   const { bot } = context
 
-  logger.info("⏳ Stopping bot...")
+  if (config.LOG_BOOT_DETAIL) {
+    logger.info("⏳ Stopping bot...")
+  }
   await bot.stopPolling()
-  logger.info("✅ Bot stopped")
+  if (config.LOG_BOOT_DETAIL) {
+    logger.info("✅ Bot stopped")
+  }
 }

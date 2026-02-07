@@ -29,6 +29,7 @@ export async function handleAutoDepositToggle(
     // Start auto-deposit setup wizard
     wizard.setState(userId, {
       ...state,
+      lang: state.lang,
       step: "AUTO_DEPOSIT_SELECT_ACCOUNT",
     })
 
@@ -121,6 +122,7 @@ export async function handleAutoDepositAccountSelect(
   // Store selected account and ask for amount
   wizard.setState(userId, {
     ...state,
+    lang: state.lang,
     step: "AUTO_DEPOSIT_ENTER_AMOUNT",
     data: {
       ...state?.data,
@@ -182,6 +184,7 @@ export async function handleAutoDepositAmountInput(
   // Store amount and ask for frequency
   wizard.setState(userId, {
     ...state,
+    lang: state.lang,
     step: "AUTO_DEPOSIT_SELECT_FREQUENCY",
     data: {
       ...state?.data,
@@ -246,6 +249,7 @@ export async function handleAutoDepositFrequencySelect(
     // Ask for day of week
     wizard.setState(userId, {
       ...state,
+      lang: state.lang,
       step: "AUTO_DEPOSIT_SELECT_DAY_WEEKLY",
       data: {
         ...state?.data,
@@ -295,6 +299,7 @@ export async function handleAutoDepositFrequencySelect(
     // Ask for day of month
     wizard.setState(userId, {
       ...state,
+      lang: state.lang,
       step: "AUTO_DEPOSIT_SELECT_DAY_MONTHLY",
       data: {
         ...state?.data,

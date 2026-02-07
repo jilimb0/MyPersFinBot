@@ -406,6 +406,8 @@ export const es = {
     addGoal: "✨ Añadir objetivo",
     addTitle: "🎯 *Añadir objetivo*",
     noGoals: "💡 Aún no hay objetivos. ¡Crea tu primer objetivo!",
+    emptyHint:
+      "Consejo: crea un objetivo como `Vacaciones 5000 USD` o pulsa *Añadir objetivo*.",
     noGoalsYet: "Aún no hay objetivos.",
     listTitle: "🎯 *Objetivos*",
     progress: "Progreso",
@@ -646,6 +648,8 @@ export const es = {
     addBudget: "✨ Añadir presupuesto",
     addEditBudget: "✨ Añadir / Editar presupuesto",
     noBudgetsCategories: "💡 Aún no hay presupuestos por categoría.",
+    emptyHint:
+      "Consejo: establece un límite para una categoría y empieza a controlar tu presupuesto.",
     summary: "Resumen: {spent}/{total} ({percent}%)",
     noBudgets: "💡 Aún no hay presupuestos. ¡Crea el primero!",
     monthly: "Mensual",
@@ -699,6 +703,8 @@ export const es = {
     notAvailable: "N/D",
     noDescription: "Sin descripción",
     featureInDevelopmentSuffix: "(función en desarrollo)",
+    unknownCommand:
+      "No entendí el mensaje. Usa los botones abajo o abre el Menú principal.",
 
     // Acciones de edición
     editAmount: "💰 Editar cantidad",
@@ -1082,6 +1088,8 @@ export const es = {
     failedToUpdate: "❌ No se pudo actualizar la plantilla.",
     selectDefaultAccount: "Selecciona la cuenta predeterminada:",
     manageTitle: "⚙️ *Gestionar plantilla*",
+    emptyHint:
+      "Consejo: crea una plantilla desde una transacción y pulsa *Guardar como plantilla*.",
     nameLine: "*{name}*",
     amountLine: "Importe: {amount}",
     accountLine: "Cuenta: *{account}*",

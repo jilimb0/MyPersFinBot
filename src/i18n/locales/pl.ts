@@ -405,6 +405,8 @@ export const pl = {
     addGoal: "✨ Dodaj cel",
     addTitle: "🎯 *Dodaj cel*",
     noGoals: "💡 Nie ma jeszcze celów. Stwórz swój pierwszy cel!",
+    emptyHint:
+      "Wskazówka: utwórz cel np. `Wakacje 5000 USD` lub kliknij *Dodaj cel*.",
     noGoalsYet: "Nie ma jeszcze celów.",
     listTitle: "🎯 *Cele*",
     progress: "Postęp",
@@ -642,6 +644,8 @@ export const pl = {
     addBudget: "✨ Dodaj budżet",
     addEditBudget: "✨ Dodaj / Edytuj budżet",
     noBudgetsCategories: "💡 Brak budżetów według kategorii.",
+    emptyHint:
+      "Wskazówka: ustaw limit dla kategorii, aby zacząć kontrolować budżet.",
     summary: "Podsumowanie: {spent}/{total} ({percent}%)",
     noBudgets: "💡 Nie ma jeszcze budżetów. Stwórz pierwszy!",
     monthly: "Miesięcznie",
@@ -695,6 +699,8 @@ export const pl = {
     notAvailable: "N/D",
     noDescription: "Bez opisu",
     featureInDevelopmentSuffix: "(funkcja w trakcie rozwoju)",
+    unknownCommand:
+      "Nie zrozumiałem wiadomości. Użyj przycisków poniżej lub otwórz Menu główne.",
 
     // Akcje edycji
     editAmount: "💰 Edytuj kwotę",
@@ -1552,6 +1558,8 @@ export const pl = {
     failedToUpdate: "❌ Nie udało się zaktualizować szablonu.",
     selectDefaultAccount: "Wybierz domyślne konto:",
     manageTitle: "⚙️ *Zarządzaj szablonem*",
+    emptyHint:
+      "Wskazówka: utwórz szablon z transakcji i kliknij *Zapisz jako szablon*.",
     nameLine: "*{name}*",
     amountLine: "Kwota: {amount}",
     accountLine: "Konto: *{account}*",

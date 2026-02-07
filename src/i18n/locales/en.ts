@@ -402,6 +402,8 @@ export const en = {
     addGoal: "✨ Add Goal",
     addTitle: "🎯 *Add Goal*",
     noGoals: "💡 No goals yet. Create your first goal!",
+    emptyHint:
+      "Tip: create your first goal like `Vacation 5000 USD` or tap *Add Goal*.",
     noGoalsYet: "No goals yet.",
     listTitle: "🎯 *Goals*",
     progress: "Progress",
@@ -638,6 +640,8 @@ export const en = {
     addBudget: "✨ Add Budget",
     addEditBudget: "✨ Add / Edit Budget",
     noBudgetsCategories: "💡 No budgets by category yet.",
+    emptyHint:
+      "Tip: set a monthly limit for a category to start tracking your budget.",
     summary: "Summary: {spent}/{total} ({percent}%)",
     noBudgets: "💡 No budgets yet. Create your first budget!",
     monthly: "Monthly",
@@ -691,6 +695,8 @@ export const en = {
     notAvailable: "N/A",
     noDescription: "No description",
     featureInDevelopmentSuffix: "(feature in development)",
+    unknownCommand:
+      "I didn't understand that. Try using the buttons below or open the Main Menu.",
 
     // Edit actions
     editAmount: "💰 Edit Amount",
@@ -1060,6 +1066,8 @@ export const en = {
     failedToUpdate: "❌ Failed to update template.",
     selectDefaultAccount: "Select default account:",
     manageTitle: "⚙️ *Manage Template*",
+    emptyHint:
+      "Tip: create a template from a transaction and tap *Save as template*.",
     nameLine: "*{name}*",
     amountLine: "Amount: {amount}",
     accountLine: "Account: *{account}*",

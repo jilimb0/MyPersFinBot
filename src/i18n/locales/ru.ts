@@ -402,6 +402,8 @@ export const ru = {
     addGoal: "✨ Добавить цель",
     addTitle: "🎯 *Добавить цель*",
     noGoals: "💡 Целей пока нет. Создайте первую цель!",
+    emptyHint:
+      "Подсказка: создайте цель, например `Отпуск 5000 USD`, или нажмите *Добавить цель*.",
     noGoalsYet: "Целей пока нет.",
     listTitle: "🎯 *Цели*",
     progress: "Прогресс",
@@ -638,6 +640,8 @@ export const ru = {
     addBudget: "✨ Добавить бюджет",
     addEditBudget: "✨ Добавить / Изменить бюджет",
     noBudgetsCategories: "💡 Пока нет бюджетов по категориям.",
+    emptyHint:
+      "Подсказка: установите лимит по категории, чтобы начать контроль бюджета.",
     summary: "Итог: {spent}/{total} ({percent}%)",
     noBudgets: "💡 Бюджетов пока нет. Создайте первый!",
     monthly: "Ежемесячно",
@@ -691,6 +695,8 @@ export const ru = {
     notAvailable: "Н/Д",
     noDescription: "Без описания",
     featureInDevelopmentSuffix: "(функция в разработке)",
+    unknownCommand:
+      "Не понял сообщение. Используйте кнопки ниже или откройте Главное меню.",
 
     // Действия редактирования
     editAmount: "💰 Изменить сумму",
@@ -1071,6 +1077,8 @@ export const ru = {
     failedToUpdate: "❌ Не удалось обновить шаблон.",
     selectDefaultAccount: "Выберите счёт по умолчанию:",
     manageTitle: "⚙️ *Управление шаблоном*",
+    emptyHint:
+      "Подсказка: создайте шаблон из транзакции и нажмите *Сохранить как шаблон*.",
     nameLine: "*{name}*",
     amountLine: "Сумма: {amount}",
     accountLine: "Счёт: *{account}*",

@@ -1,7 +1,7 @@
 import { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
 import { SETTINGS_KEYBOARD } from "../constants"
-import { t } from "../i18n"
+import { resolveLanguage, t } from "../i18n"
 
 // Show custom messages menu
 export async function handleCustomMessagesMenu(
@@ -10,6 +10,7 @@ export async function handleCustomMessagesMenu(
   userId: string
 ): Promise<void> {
   const state = wizardManager.getState(userId)
+  const lang = resolveLanguage(state?.lang)
   const settings = await db.getReminderSettings(userId)
   const customMessages = settings?.customMessages || {}
 
@@ -49,6 +50,7 @@ export async function handleCustomMessagesMenu(
     step: "CUSTOM_MESSAGES_MENU",
     data: {},
     returnTo: "advanced",
+    lang,
   })
 
   await wizardManager.sendMessage(chatId, msg, {
@@ -78,12 +80,13 @@ export async function handleCustomMessagesAction(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state || state.step !== "CUSTOM_MESSAGES_MENU") return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   if (text === t(state?.lang || "en", "notifications.editDebtTemplate")) {
     wizardManager.setState(userId, {
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "debt" },
       returnTo: "settings",
+      lang,
     })
 
     await wizardManager.sendMessage(
@@ -109,6 +112,7 @@ export async function handleCustomMessagesAction(
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "goal" },
       returnTo: "settings",
+      lang,
     })
 
     await wizardManager.sendMessage(
@@ -134,6 +138,7 @@ export async function handleCustomMessagesAction(
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "income" },
       returnTo: "settings",
+      lang,
     })
 
     await wizardManager.sendMessage(

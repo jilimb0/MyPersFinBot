@@ -9,7 +9,7 @@
 
 import TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "./database/storage-db"
-import { t, isValidLanguage, Language } from "./i18n"
+import { t, resolveLanguage, Language } from "./i18n"
 
 // ==========================================
 // CONFIGURATION
@@ -78,8 +78,7 @@ export async function sendUnauthorizedMessage(
   chatId: number,
   userId: string
 ) {
-  const lang = (await db.getUserLanguage(userId)) as Language
-  const safeLang: Language = lang && isValidLanguage(lang) ? lang : "en"
+  const safeLang: Language = resolveLanguage(await db.getUserLanguage(userId))
   bot.sendMessage(
     chatId,
     t(safeLang, "security.accessDeniedMessage", { userId }),
@@ -145,8 +144,7 @@ export async function sendRateLimitMessage(
     ? Math.ceil((entry.resetTime - Date.now()) / 1000)
     : 60
 
-  const lang = (await db.getUserLanguage(userId)) as Language
-  const safeLang: Language = lang && isValidLanguage(lang) ? lang : "en"
+  const safeLang: Language = resolveLanguage(await db.getUserLanguage(userId))
 
   bot.sendMessage(
     chatId,

@@ -3,6 +3,8 @@ import undici from "undici"
 import { promises as fs } from "fs"
 import path from "path"
 import { Currency } from "./types"
+import logger from "./logger"
+import { config } from "./config"
 
 interface FXRates {
   [currency: string]: number
@@ -81,7 +83,7 @@ async function persistRates(cache: FXCache): Promise<void> {
 
     await fs.writeFile(FX_CACHE_PATH, data, "utf-8")
   } catch (error) {
-    console.error("❌ Failed to persist FX cache:", error)
+    logger.error("❌ Failed to persist FX cache:", error)
     // Не пробрасываем ошибку - это не критично
   }
 }
@@ -93,22 +95,26 @@ async function loadPersistedRates(): Promise<FXCache | null> {
 
     // Проверяем TTL
     if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
-      console.log(
-        `✅ Loaded persisted FX rates (age: ${Math.round((Date.now() - parsed.timestamp) / 1000)}s)`
-      )
+      if (config.LOG_BOOT_DETAIL) {
+        logger.info(
+          `✅ Loaded persisted FX rates (age: ${Math.round((Date.now() - parsed.timestamp) / 1000)}s)`
+        )
+      }
       return {
         rates: parsed.rates,
         timestamp: parsed.timestamp,
         errorCount: parsed.errorCount || 0,
       }
     } else {
-      console.log("⚠️ Persisted FX cache expired")
+      if (config.LOG_BOOT_DETAIL) {
+        logger.warn("⚠️ Persisted FX cache expired")
+      }
       return null
     }
   } catch (error: unknown) {
     const err = error as { code?: string }
     if (err.code !== "ENOENT") {
-      console.error("❌ Failed to load persisted FX cache:", error)
+      logger.error("❌ Failed to load persisted FX cache:", error)
     }
     return null
   }
@@ -227,8 +233,10 @@ async function fetchRates(): Promise<FXRates> {
           cache.errorCount = 0
         }
 
-        if (attempt > 1) {
-          console.log(`✅ FX rates fetched successfully on attempt ${attempt}`)
+        if (attempt > 1 && config.LOG_BOOT_DETAIL) {
+          logger.info(
+            `✅ FX rates fetched successfully on attempt ${attempt}`
+          )
         }
 
         // ExchangeRate-API возвращает ВСЕ валюты, фильтруем нужные
@@ -242,9 +250,11 @@ async function fetchRates(): Promise<FXRates> {
           } else if (FALLBACK_RATES[currency]) {
             // Если валюты нет в API - используем fallback
             filteredRates[currency] = FALLBACK_RATES[currency]
-            console.log(
-              `⚠️ Using fallback rate for ${currency}: ${FALLBACK_RATES[currency]}`
-            )
+            if (config.LOG_BOOT_DETAIL) {
+              logger.warn(
+                `⚠️ Using fallback rate for ${currency}: ${FALLBACK_RATES[currency]}`
+              )
+            }
           }
         })
 
@@ -259,7 +269,7 @@ async function fetchRates(): Promise<FXRates> {
       const isTimeout = err.code === "ECONNABORTED" || err.code === "ETIMEDOUT"
       const errorType = isTimeout ? "timeout" : err.code || "unknown"
 
-      console.error(
+      logger.error(
         `❌ FX API error (attempt ${attempt}/${MAX_RETRIES}): ${errorType}`,
         err.message || "Unknown error"
       )
@@ -268,7 +278,9 @@ async function fetchRates(): Promise<FXRates> {
       if (attempt < MAX_RETRIES && isRetryableError(error)) {
         metrics.retries++
         const delay = RETRY_DELAY_MS * attempt // Linear backoff
-        console.log(`⏳ Retrying in ${delay}ms...`)
+        if (config.LOG_BOOT_DETAIL) {
+          logger.info(`⏳ Retrying in ${delay}ms...`)
+        }
         await sleep(delay)
         continue
       }
@@ -279,7 +291,7 @@ async function fetchRates(): Promise<FXRates> {
   }
 
   // All retries failed
-  console.error(`❌ All ${MAX_RETRIES} attempts failed. Using fallback rates.`)
+  logger.error(`❌ All ${MAX_RETRIES} attempts failed. Using fallback rates.`)
 
   // Update cache error tracking
   if (cache) {
@@ -304,9 +316,11 @@ export async function getRates(): Promise<FXRates> {
 
   // Check if we should retry API (exponential backoff)
   if (!shouldRetryAPI()) {
-    console.log(
-      `⏳ API retry delayed. Using fallback rates. Next retry in ${getRetryDelay(cache?.errorCount || 0) / 1000}s`
-    )
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info(
+        `⏳ API retry delayed. Using fallback rates. Next retry in ${getRetryDelay(cache?.errorCount || 0) / 1000}s`
+      )
+    }
     return cache?.rates || FALLBACK_RATES
   }
 
@@ -347,13 +361,15 @@ export function convertSync(
   let rates = getRatesSync()
 
   if (!rates[from] || !rates[to]) {
-    console.error(`❌ Missing currency rate: from=${from}, to=${to}`)
-    console.log(`⚠️ Using fallback rates...`)
+    logger.error(`❌ Missing currency rate: from=${from}, to=${to}`)
+    if (config.LOG_BOOT_DETAIL) {
+      logger.warn(`⚠️ Using fallback rates...`)
+    }
 
     rates = FALLBACK_RATES
 
     if (!rates[from] || !rates[to]) {
-      console.error(
+      logger.error(
         `❌ Currency not supported even in fallback: from=${from}, to=${to}`
       )
       return amount
@@ -378,11 +394,11 @@ export function convertBatchSync(
 
     let currentRates = rates
     if (!currentRates[from] || !currentRates[to]) {
-      console.error(`❌ Missing currency rate in batch: from=${from}, to=${to}`)
+      logger.error(`❌ Missing currency rate in batch: from=${from}, to=${to}`)
       currentRates = FALLBACK_RATES
 
       if (!currentRates[from] || !currentRates[to]) {
-        console.error(`❌ Currency not supported: from=${from}, to=${to}`)
+        logger.error(`❌ Currency not supported: from=${from}, to=${to}`)
         return amount
       }
     }
@@ -400,9 +416,11 @@ function startAutoRefresh() {
   autoRefreshTimer = setInterval(async () => {
     try {
       await getRates()
-      console.log("✅ FX rates refreshed")
+      if (config.LOG_BOOT_DETAIL) {
+        logger.info("✅ FX rates refreshed")
+      }
     } catch (error) {
-      console.error("❌ Failed to auto-refresh FX rates:", error)
+      logger.error("❌ Failed to auto-refresh FX rates:", error)
     }
   }, refreshInterval)
 }
@@ -413,16 +431,20 @@ export async function preloadRates(): Promise<void> {
 
     if (persisted) {
       cache = persisted
-      console.log("✅ Using persisted FX rates (no API call needed)")
+      if (config.LOG_BOOT_DETAIL) {
+        logger.info("✅ Using persisted FX rates (no API call needed)")
+      }
 
       startAutoRefresh()
       return
     }
 
     await getRates()
-    console.log("✅ FX rates preloaded successfully")
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("✅ FX rates preloaded successfully")
+    }
   } catch (error) {
-    console.error("❌ Failed to preload FX rates:", error)
+    logger.error("❌ Failed to preload FX rates:", error)
   }
 }
 
@@ -430,7 +452,9 @@ export function stopAutoRefresh() {
   if (autoRefreshTimer) {
     clearInterval(autoRefreshTimer)
     autoRefreshTimer = null
-    console.log("⏸️ FX auto-refresh stopped")
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("⏸️ FX auto-refresh stopped")
+    }
   }
 }
 
@@ -491,11 +515,13 @@ export function getCacheStatus(): {
 export async function clearPersistedCache(): Promise<void> {
   try {
     await fs.unlink(FX_CACHE_PATH)
-    console.log("✅ Persisted FX cache cleared")
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("✅ Persisted FX cache cleared")
+    }
   } catch (error: unknown) {
     const err = error as { code?: string }
     if (err.code !== "ENOENT") {
-      console.error("❌ Failed to clear persisted cache:", error)
+      logger.error("❌ Failed to clear persisted cache:", error)
     }
   }
 }

@@ -1,6 +1,7 @@
 import http from "http"
 import { config } from "./config"
 import logger from "./logger"
+import { config as appConfig } from "./config"
 
 let server: http.Server | null = null
 
@@ -30,9 +31,11 @@ export function startHealthServer() {
   })
 
   server.listen(config.HEALTH_PORT, config.HEALTH_HOST, () => {
-    logger.info(
-      `✅ Health server listening on ${config.HEALTH_HOST}:${config.HEALTH_PORT}`
-    )
+    if (appConfig.LOG_BOOT_DETAIL) {
+      logger.info(
+        `✅ Health server listening on ${config.HEALTH_HOST}:${config.HEALTH_PORT}`
+      )
+    }
   })
 
   server.on("error", (err) => {

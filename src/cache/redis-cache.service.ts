@@ -1,6 +1,7 @@
 import Redis from "ioredis"
 import logger from "../logger"
 import { CacheInterface, CacheConfig, CacheStats } from "./cache.interface"
+import { config as appConfig } from "../config"
 
 /**
  * Redis Cache Service with connection pooling and error handling
@@ -44,7 +45,9 @@ export class RedisCacheService implements CacheInterface {
 
     // Setup event handlers
     this.redis.on("connect", () => {
-      logger.info("Redis connected successfully")
+      if (appConfig.LOG_BOOT_DETAIL) {
+        logger.info("Redis connected successfully")
+      }
     })
 
     this.redis.on("error", (err) => {
@@ -52,7 +55,9 @@ export class RedisCacheService implements CacheInterface {
     })
 
     this.redis.on("close", () => {
-      logger.warn("Redis connection closed")
+      if (appConfig.LOG_BOOT_DETAIL) {
+        logger.warn("Redis connection closed")
+      }
     })
   }
 
@@ -99,7 +104,9 @@ export class RedisCacheService implements CacheInterface {
         await this.redis.set(fullKey, serialized)
       }
 
-      logger.debug("Redis set", { key, ttl: expiry })
+      if (appConfig.LOG_CACHE_VERBOSE) {
+        logger.debug("Redis set", { key, ttl: expiry })
+      }
     } catch (error: any) {
       logger.error("Redis set error", { key, error: error.message })
       throw error
@@ -113,7 +120,9 @@ export class RedisCacheService implements CacheInterface {
     try {
       const fullKey = this.buildKey(key)
       await this.redis.del(fullKey)
-      logger.debug("Redis del", { key })
+      if (appConfig.LOG_CACHE_VERBOSE) {
+        logger.debug("Redis del", { key })
+      }
     } catch (error: any) {
       logger.error("Redis del error", { key, error: error.message })
       throw error

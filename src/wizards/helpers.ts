@@ -22,7 +22,7 @@ import {
 
 import * as handlers from "../handlers"
 import { createProgressBar, getProgressEmoji } from "../reports"
-import { DAY_KEYS, Language, t } from "../i18n"
+import { DAY_KEYS, resolveLanguage, t } from "../i18n"
 
 export async function resendCurrentStepPrompt(
   wizard: WizardManager,
@@ -31,7 +31,7 @@ export async function resendCurrentStepPrompt(
   state: WizardState
 ): Promise<void> {
   const { step, data, txType } = state
-  const lang = (state?.lang || "en") as Language
+  const lang = resolveLanguage(state?.lang)
   const defaultCurrency = await db.getDefaultCurrency(userId)
 
   switch (step) {
@@ -200,23 +200,23 @@ export async function resendCurrentStepPrompt(
       await wizard.sendMessage(
         chatId,
         `${t(lang, "wizard.tx.detailsTitle")}\n\n` +
-          `${t(lang, "wizard.tx.detailsType", {
-            type:
-              tx.type === "EXPENSE"
-                ? t(lang, "transactions.expenseTitle")
-                : tx.type === "INCOME"
-                  ? t(lang, "transactions.incomeTitle")
-                  : t(lang, "transactions.transferTitle"),
-          })}\n` +
-          `${t(lang, "wizard.tx.detailsCategory", { category: tx.category })}\n` +
-          `${t(lang, "wizard.tx.detailsAmount", {
-            amount: formatMoney(tx.amount, tx.currency),
-          })}\n` +
-          `${t(lang, "wizard.tx.detailsAccount", { account })}\n` +
-          `${t(lang, "wizard.tx.detailsDate", {
-            date: formatDateDisplay(new Date(tx.date)),
-          })}\n\n` +
-          `${t(lang, "wizard.tx.detailsPrompt")}`,
+        `${t(lang, "wizard.tx.detailsType", {
+          type:
+            tx.type === "EXPENSE"
+              ? t(lang, "transactions.expenseTitle")
+              : tx.type === "INCOME"
+                ? t(lang, "transactions.incomeTitle")
+                : t(lang, "transactions.transferTitle"),
+        })}\n` +
+        `${t(lang, "wizard.tx.detailsCategory", { category: tx.category })}\n` +
+        `${t(lang, "wizard.tx.detailsAmount", {
+          amount: formatMoney(tx.amount, tx.currency),
+        })}\n` +
+        `${t(lang, "wizard.tx.detailsAccount", { account })}\n` +
+        `${t(lang, "wizard.tx.detailsDate", {
+          date: formatDateDisplay(new Date(tx.date)),
+        })}\n\n` +
+        `${t(lang, "wizard.tx.detailsPrompt")}`,
         {
           parse_mode: "Markdown",
           reply_markup: {
@@ -440,16 +440,16 @@ export async function resendCurrentStepPrompt(
 
         const deadlineButtons = dueDate
           ? [
-              [{ text: t(lang, "buttons.changeDeadline") }],
-              [{ text: t(lang, "buttons.disableReminders") }],
-              [
-                {
-                  text: autoPayment?.enabled
-                    ? t(lang, "wizard.debt.disableAutoPayment")
-                    : t(lang, "wizard.debt.enableAutoPayment"),
-                },
-              ],
-            ]
+            [{ text: t(lang, "buttons.changeDeadline") }],
+            [{ text: t(lang, "buttons.disableReminders") }],
+            [
+              {
+                text: autoPayment?.enabled
+                  ? t(lang, "wizard.debt.disableAutoPayment")
+                  : t(lang, "wizard.debt.enableAutoPayment"),
+              },
+            ],
+          ]
           : [[{ text: t(lang, "buttons.setDeadline") }]]
 
         wizard.sendMessage(chatId, msg, {
@@ -570,16 +570,16 @@ export async function resendCurrentStepPrompt(
 
         const deadlineButtons = deadline
           ? [
-              [{ text: t(lang, "buttons.changeDeadline") }],
-              [{ text: t(lang, "buttons.disableReminders") }],
-              [
-                {
-                  text: autoDeposit?.enabled
-                    ? t(lang, "wizard.goal.disableAutoDeposit")
-                    : t(lang, "wizard.goal.enableAutoDeposit"),
-                },
-              ],
-            ]
+            [{ text: t(lang, "buttons.changeDeadline") }],
+            [{ text: t(lang, "buttons.disableReminders") }],
+            [
+              {
+                text: autoDeposit?.enabled
+                  ? t(lang, "wizard.goal.disableAutoDeposit")
+                  : t(lang, "wizard.goal.enableAutoDeposit"),
+              },
+            ],
+          ]
           : [[{ text: t(lang, "buttons.setDeadline") }]]
 
         wizard.sendMessage(chatId, msg, {
@@ -697,12 +697,7 @@ export async function resendCurrentStepPrompt(
       break
     }
     case "INCOME_VIEW":
-      await showIncomeSourcesMenu(
-        wizard.getBot(),
-        chatId,
-        userId,
-        state?.lang || "en"
-      )
+      await showIncomeSourcesMenu(wizard.getBot(), chatId, userId, lang)
       break
 
     case "INCOME_NAME":
@@ -721,6 +716,7 @@ export async function resendCurrentStepPrompt(
           step: "INCOME_DELETE_CONFIRM",
           data: { incomeName },
           returnTo: "income",
+          lang,
         })
         await wizard.sendMessage(
           chatId,
@@ -893,12 +889,12 @@ export async function resendCurrentStepPrompt(
               accountId,
               currency,
             })}\n\n` +
-              `${t(lang, "wizard.balance.editBalanceLine", {
-                amount: formatMoney(balance.amount, currency),
-              })}\n\n` +
-              `${t(lang, "wizard.balance.quickEditTitle")}\n` +
-              `${t(lang, "wizard.balance.quickEditNumber")}\n` +
-              `${t(lang, "wizard.balance.quickEditText")}`,
+            `${t(lang, "wizard.balance.editBalanceLine", {
+              amount: formatMoney(balance.amount, currency),
+            })}\n\n` +
+            `${t(lang, "wizard.balance.quickEditTitle")}\n` +
+            `${t(lang, "wizard.balance.quickEditNumber")}\n` +
+            `${t(lang, "wizard.balance.quickEditText")}`,
             {
               parse_mode: "Markdown",
               reply_markup: {
@@ -1008,11 +1004,11 @@ export async function resendCurrentStepPrompt(
           const scheduleStr =
             frequency === "WEEKLY"
               ? t(lang, "wizard.goal.autoDepositWeekly", {
-                  day: t(lang, `wizard.days.${DAY_KEYS[dayOfWeek || 0]}`),
-                })
+                day: t(lang, `wizard.days.${DAY_KEYS[dayOfWeek || 0]}`),
+              })
               : t(lang, "wizard.goal.autoDepositMonthly", {
-                  day: dayOfMonth || 0,
-                })
+                day: dayOfMonth || 0,
+              })
           msg += `${t(lang, "wizard.goal.autoDepositLine", {
             amount: formatMoney(amount, currency),
             accountId,
@@ -1143,16 +1139,16 @@ export async function resendCurrentStepPrompt(
           `${t(lang, "wizard.budget.categoryTitle", {
             category,
           })}\n\n` +
-            `${t(lang, "wizard.budget.limitLine", {
-              amount: b.limit,
-              currency: b.currency || "USD",
-            })}\n` +
-            `${t(lang, "wizard.budget.spentLine", {
-              amount: b.spent,
-              currency: b.currency || "USD",
-            })}\n` +
-            `${bar}\n\n` +
-            `${t(lang, "wizard.budget.enterNewLimit")}`,
+          `${t(lang, "wizard.budget.limitLine", {
+            amount: b.limit,
+            currency: b.currency || "USD",
+          })}\n` +
+          `${t(lang, "wizard.budget.spentLine", {
+            amount: b.spent,
+            currency: b.currency || "USD",
+          })}\n` +
+          `${bar}\n\n` +
+          `${t(lang, "wizard.budget.enterNewLimit")}`,
           {
             parse_mode: "Markdown",
             reply_markup: {

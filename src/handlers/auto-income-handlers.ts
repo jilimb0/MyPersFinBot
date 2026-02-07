@@ -29,6 +29,7 @@ export async function handleAutoIncomeToggle(
     // Start auto-income setup wizard
     wizard.setState(userId, {
       ...state,
+      lang: state.lang,
       step: "AUTO_INCOME_SELECT_ACCOUNT",
     })
 
@@ -121,6 +122,7 @@ export async function handleAutoIncomeAccountSelect(
   // Store selected account and ask for amount
   wizard.setState(userId, {
     ...state,
+    lang: state.lang,
     step: "AUTO_INCOME_ENTER_AMOUNT",
     data: {
       ...state?.data,
@@ -182,6 +184,7 @@ export async function handleAutoIncomeAmountInput(
   // Store amount and ask for day of month
   wizard.setState(userId, {
     ...state,
+    lang: state.lang,
     step: "AUTO_INCOME_SELECT_DAY",
     data: {
       ...state?.data,

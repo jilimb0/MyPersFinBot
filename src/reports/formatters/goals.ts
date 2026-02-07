@@ -19,7 +19,10 @@ export async function formatGoals(userId: string): Promise<string> {
   const activeGoals = userData.goals.filter((g: Goal) => g.status === "ACTIVE")
 
   if (activeGoals.length === 0) {
-    return t(lang, "reports.goals.empty")
+    return `${t(lang, "reports.goals.empty")}\n\n${t(
+      lang,
+      "goals.emptyHint"
+    )}`
   }
 
   let msg = `${t(lang, "reports.goals.title")}\n\n`

@@ -1,16 +1,23 @@
 import logger from "../logger"
+import { config } from "../config"
 
 export async function registerAppServices(bot: any) {
   const { Scheduler } = await import("../services/scheduler")
   const scheduler = new Scheduler(bot)
   scheduler.start()
-  logger.info("✅ Scheduler started")
+  if (config.LOG_BOOT_DETAIL) {
+    logger.info("✅ Scheduler started")
+  }
 
   const { registerCommands } = await import("../commands")
   registerCommands(bot)
-  logger.info("✅ Commands registered")
+  if (config.LOG_BOOT_DETAIL) {
+    logger.info("✅ Commands registered")
+  }
 
   const handlers = await import("../handlers")
   handlers.registerPeriodReportHandlers(bot)
-  logger.info("✅ Period report handlers registered")
+  if (config.LOG_BOOT_DETAIL) {
+    logger.info("✅ Period report handlers registered")
+  }
 }

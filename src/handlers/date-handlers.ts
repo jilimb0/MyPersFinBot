@@ -13,7 +13,7 @@ import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeS
 import { formatDateDisplay, formatMoney } from "../utils"
 import { randomUUID } from "crypto"
 import dayjs from "dayjs"
-import { t } from "../i18n"
+import { resolveLanguage, t } from "../i18n"
 
 // Helper function to parse DD.MM.YYYY format
 function parseDateDDMMYYYY(text: string): Date | null {
@@ -40,12 +40,13 @@ export async function handleDebtDueDate(
   if (!state) return false
 
   if (!state.data) return true
-  const { name, amount, currency, type: debtType, lang } = state.data
+  const lang = resolveLanguage(state?.lang)
+  const { name, amount, currency, type: debtType } = state.data
 
   if (!name || !amount || !currency || !debtType) {
     await wizard.sendMessage(chatId, t(lang, "errors.missingDebtData"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
@@ -110,6 +111,10 @@ export async function handleDebtDueDate(
         ...state?.data,
         dueDate,
       })
+      const updated = wizard.getState(userId)
+      if (updated) {
+        wizard.setState(userId, { ...updated, lang })
+      }
       return true
     }
   }
@@ -169,7 +174,7 @@ export async function handleDebtDueDate(
   )
 
   wizard.clearState(userId)
-  await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+  await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
 
@@ -206,6 +211,7 @@ export async function handleDebtDueDateEdit(
     })
     wizard.setState(userId, {
       ...state,
+      lang: state.lang,
       data: { ...state?.data, newDueDate: parsed },
     })
     return true
@@ -227,7 +233,7 @@ export async function handleDebtDueDateEdit(
     })
   )
   wizard.clearState(userId)
-  await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+  await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
 
@@ -277,7 +283,7 @@ export async function handleGoalDeadlineEdit(
     })
   )
   wizard.clearState(userId)
-  await showGoalsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+  await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
 
@@ -291,12 +297,13 @@ export async function handleGoalDeadline(
   if (!state) return false
 
   if (!state.data) return true
-  const { goalId, name, targetAmount, currency, lang } = state.data
+  const lang = resolveLanguage(state?.lang)
+  const { goalId, name, targetAmount, currency } = state.data
 
   if (!goalId || !name || !targetAmount || !currency) {
     await wizard.sendMessage(chatId, t(lang, "errors.missingGoalData"))
     wizard.clearState(userId)
-    await showGoalsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+    await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
@@ -358,6 +365,11 @@ export async function handleGoalDeadline(
     }
   }
 
+  const updatedGoalState = wizard.getState(userId)
+  if (updatedGoalState) {
+    wizard.setState(userId, { ...updatedGoalState, lang })
+  }
+
   // Update goal with deadline
   if (deadline) {
     const goalRepo = AppDataSource.getRepository(GoalEntity)
@@ -392,7 +404,7 @@ export async function handleGoalDeadline(
   }
 
   wizard.clearState(userId)
-  await showGoalsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+  await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
 
@@ -406,17 +418,13 @@ export async function handleIncomeExpectedDate(
   if (!state) return false
 
   if (!state.data) return true
-  const { incomeId, name, expectedAmount, currency, lang } = state.data
+  const lang = resolveLanguage(state?.lang)
+  const { incomeId, name, expectedAmount, currency } = state.data
 
   if (!incomeId || !name || !expectedAmount || !currency) {
     await wizard.sendMessage(chatId, t(lang, "errors.missingIncomeData"))
     wizard.clearState(userId)
-    await showIncomeSourcesMenu(
-      wizard.getBot(),
-      chatId,
-      userId,
-      state?.lang || "en"
-    )
+    await showIncomeSourcesMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 

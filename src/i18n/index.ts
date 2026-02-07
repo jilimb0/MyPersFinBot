@@ -40,8 +40,14 @@ export const DAY_KEYS = [
 /**
  * Check if language code is valid
  */
-export function isValidLanguage(lang: string): lang is Language {
-  return ["en", "ru", "uk", "es", "pl"].includes(lang)
+export function isValidLanguage(lang: unknown): lang is Language {
+  return (
+    typeof lang === "string" && ["en", "ru", "uk", "es", "pl"].includes(lang)
+  )
+}
+
+export function resolveLanguage(lang: unknown): Language {
+  return isValidLanguage(lang) ? lang : "en"
 }
 
 /**
@@ -52,18 +58,25 @@ export function isValidLanguage(lang: string): lang is Language {
  * @returns Translated string
  */
 export function t(
-  lang: Language,
+  lang: Language | unknown,
   path: string,
   params?: Record<string, string | number>
 ): string {
+  const safeLang = resolveLanguage(lang)
+  if (lang !== safeLang) {
+    const stack = new Error().stack?.split("\n").slice(2, 6).join("\n")
+    console.warn(
+      `⚠️ Invalid language "${String(lang)}" for key "${path}". Using "${safeLang}".\n${stack}`
+    )
+  }
   const keys = path.split(".")
 
-  let value: any = translations[lang]
+  let value: any = translations[safeLang]
 
   for (const key of keys) {
     value = value?.[key]
     if (value === undefined) {
-      console.warn(`❌ Missing translation: ${lang}.${path}`)
+      console.warn(`❌ Missing translation: ${safeLang}.${path}`)
       // Fallback to English
       value = translations.en
       for (const k of keys) {
@@ -91,14 +104,24 @@ export function t(
 /**
  * Get raw translation value (string, array, object) by key path
  */
-export function getTranslationValue(lang: Language, path: string): any {
+export function getTranslationValue(
+  lang: Language | unknown,
+  path: string
+): any {
+  const safeLang = resolveLanguage(lang)
+  if (lang !== safeLang) {
+    const stack = new Error().stack?.split("\n").slice(2, 6).join("\n")
+    console.warn(
+      `⚠️ Invalid language "${String(lang)}" for key "${path}". Using "${safeLang}".\n${stack}`
+    )
+  }
   const keys = path.split(".")
-  let value: any = translations[lang]
+  let value: any = translations[safeLang]
 
   for (const key of keys) {
     value = value?.[key]
     if (value === undefined) {
-      console.warn(`❌ Missing translation: ${lang}.${path}`)
+      console.warn(`❌ Missing translation: ${safeLang}.${path}`)
       value = translations.en
       for (const k of keys) {
         value = value?.[k]

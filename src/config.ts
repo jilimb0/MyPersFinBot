@@ -71,6 +71,24 @@ const ConfigSchema = z.object({
 
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
+  LOG_BOOT_DETAIL: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((val) => val === "true")
+    .pipe(z.boolean()),
+  LOG_CACHE_VERBOSE: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((val) => val === "true")
+    .pipe(z.boolean()),
+  LOG_SCHEDULER_TICK: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((val) => val === "true")
+    .pipe(z.boolean()),
 })
 
 export type AppConfig = z.infer<typeof ConfigSchema>
@@ -78,6 +96,7 @@ export type AppConfig = z.infer<typeof ConfigSchema>
 export const config = ConfigSchema.parse(process.env) as AppConfig
 
 export function logConfig() {
+  if (!config.LOG_BOOT_DETAIL) return
   console.log("\n⚙️  Configuration Loaded:")
   console.log(`  NODE_ENV: ${config.NODE_ENV}`)
   console.log(
@@ -88,6 +107,8 @@ export function logConfig() {
   )
   console.log(`  RATE_LIMIT_ENABLED: ${config.RATE_LIMIT_ENABLED}`)
   console.log(`  LOG_LEVEL: ${config.LOG_LEVEL}`)
+  console.log(`  LOG_BOOT_DETAIL: ${config.LOG_BOOT_DETAIL}`)
+  console.log(`  LOG_CACHE_VERBOSE: ${config.LOG_CACHE_VERBOSE}`)
 
   if (config.ALLOWED_USERS.length > 0) {
     console.log(`  ALLOWED_USERS: ${config.ALLOWED_USERS.length} user(s)`)

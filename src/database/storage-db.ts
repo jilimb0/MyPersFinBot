@@ -28,7 +28,7 @@ import {
 import { convertSync } from "../fx"
 import { formatMoney, handleInsufficientFunds } from "../utils"
 import { randomUUID } from "crypto"
-import { Language, t } from "../i18n"
+import { isValidLanguage, resolveLanguage, Language, t } from "../i18n"
 import { getCacheManager } from "../services/cache-manager"
 
 export class DatabaseStorage {
@@ -186,6 +186,9 @@ export class DatabaseStorage {
       AppDataSource.getRepository(GoalEntity).delete({ userId }),
       AppDataSource.getRepository(IncomeSourceEntity).delete({ userId }),
       AppDataSource.getRepository(CategoryPreference).delete({ userId }),
+      AppDataSource.getRepository(BudgetEntity).delete({ userId }),
+      AppDataSource.getRepository(Reminder).delete({ userId }),
+      AppDataSource.getRepository(RecurringTransaction).delete({ userId }),
     ])
 
     await AppDataSource.getRepository(User).delete({ id: userId })
@@ -956,6 +959,7 @@ export class DatabaseStorage {
     })
 
     await debtRepo.save(newDebt)
+    await this.clearCache(userId)
   }
 
   async updateDebtAmount(
@@ -1065,6 +1069,7 @@ export class DatabaseStorage {
   }
 
   async deleteDebt(userId: string, debtId: string): Promise<void> {
+    if (!debtId) return
     await AppDataSource.getRepository(DebtEntity).delete({
       id: debtId,
       userId,
@@ -1150,6 +1155,7 @@ export class DatabaseStorage {
     })
 
     await goalRepo.save(newGoal)
+    await this.clearCache(userId)
   }
 
   async depositToGoal(
@@ -1235,6 +1241,7 @@ export class DatabaseStorage {
   }
 
   async deleteGoal(userId: string, goalId: string): Promise<void> {
+    if (!goalId) return
     await AppDataSource.getRepository(GoalEntity).delete({
       id: goalId,
       userId,
@@ -1376,6 +1383,7 @@ export class DatabaseStorage {
     })
 
     await sourceRepo.save(newSource)
+    await this.clearCache(userId)
   }
 
   async deleteIncomeSource(userId: string, name: string) {
@@ -1934,11 +1942,15 @@ export class DatabaseStorage {
   // --- Language Methods (i18n) ---
   async getUserLanguage(userId: string): Promise<Language> {
     const cached = await this.cacheManager.getUserLanguage(userId)
-    if (cached) return cached
+    if (cached && isValidLanguage(cached)) return cached
 
     const userRepo = AppDataSource.getRepository(User)
     const user = await userRepo.findOne({ where: { id: userId } })
-    const lang = user?.language || "en"
+    const rawLang = user?.language
+    const lang = resolveLanguage(rawLang)
+    if (rawLang !== lang) {
+      await userRepo.update({ id: userId }, { language: lang })
+    }
     await Promise.all([
       this.cacheManager.setUserLanguage(userId, lang),
       this.cacheManager.setUserSettings(userId, {
@@ -1953,9 +1965,10 @@ export class DatabaseStorage {
   async setUserLanguage(userId: string, language: Language): Promise<void> {
     const userRepo = AppDataSource.getRepository(User)
     await this.ensureUser(userId)
-    await userRepo.update({ id: userId }, { language })
-    await this.cacheManager.setUserLanguage(userId, language)
-    await this.cacheManager.updateUserSettings(userId, { language })
+    const safeLang = resolveLanguage(language)
+    await userRepo.update({ id: userId }, { language: safeLang })
+    await this.cacheManager.setUserLanguage(userId, safeLang)
+    await this.cacheManager.updateUserSettings(userId, { language: safeLang })
     await this.clearCache(userId)
   }
 

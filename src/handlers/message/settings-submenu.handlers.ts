@@ -3,7 +3,8 @@
  */
 
 import { MessageHandler } from "./types"
-import { t } from "../../i18n"
+import { resolveLanguage, t } from "../../i18n"
+import { userContext } from "../../services/user-context"
 import { getSettingsKeyboard } from "../../i18n/keyboards"
 import * as menus from "../../menus-i18n"
 import * as handlers from "../../handlers"
@@ -106,17 +107,20 @@ export const handleClearDataConfirm: MessageHandler = async (context) => {
  * Handle Clear Data execution
  */
 export const handleClearDataExecute: MessageHandler = async (context) => {
-  const { bot, chatId, userId, lang } = context
+  const { bot, chatId, userId, wizardManager } = context
 
   try {
     await context.db.clearAllUserData(userId)
+    userContext.clearContext(userId)
+    wizardManager.clearState(userId)
+    const resetLang = resolveLanguage("en")
     await bot.sendMessage(
       chatId,
-      `${t(lang, "mainMenu.welcome")}\n\n${t(lang, "mainMenu.welcomeIntro")}`,
+      `${t(resetLang, "mainMenu.welcome")}\n\n${t(resetLang, "mainMenu.welcomeIntro")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
-          keyboard: [[{ text: t(lang, "buttons.startTracking") }]],
+          keyboard: [[{ text: t(resetLang, "buttons.startTracking") }]],
           resize_keyboard: true,
         },
       }

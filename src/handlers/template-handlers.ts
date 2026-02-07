@@ -37,6 +37,7 @@ export async function handleTemplateEditAmount(
     step: "TEMPLATE_EDIT_AMOUNT",
     data: { templateId },
     returnTo: "templates",
+    lang,
   })
 
   await safeAnswerCallback(bot, { callback_query_id: query.id })
@@ -299,7 +300,7 @@ export async function handleTemplateDelete(
         chatId,
         t(lang, "commands.templates.empty", {
           saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
-        }),
+        }) + `\n\n${t(lang, "templates.emptyHint")}`,
         { parse_mode: "Markdown" }
       )
     } else {
@@ -435,7 +436,7 @@ export async function showTemplatesList(
       chatId,
       t(lang, "commands.templates.empty", {
         saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
-      }),
+      }) + `\n\n${t(lang, "templates.emptyHint")}`,
       { parse_mode: "Markdown" }
     )
     return

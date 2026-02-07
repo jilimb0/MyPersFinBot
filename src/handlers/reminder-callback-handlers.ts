@@ -2,12 +2,12 @@ import TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
 import { reminderManager } from "../services/reminder-manager"
 import { safeAnswerCallback } from "../utils"
-import { isValidLanguage, Language, t } from "../i18n"
+import { Language, resolveLanguage, t } from "../i18n"
 
 async function resolveLang(userId: string): Promise<Language> {
   try {
     const lang = await db.getUserLanguage(userId)
-    return isValidLanguage(lang) ? (lang as Language) : "en"
+    return resolveLanguage(lang)
   } catch {
     return "en"
   }

@@ -1,4 +1,6 @@
 import axios from "axios"
+import logger from "../logger"
+import { config } from "../config"
 import { readFileSync, existsSync, statSync } from "fs"
 
 interface AssemblyAIConfig {
@@ -191,10 +193,12 @@ const apiKey = process.env.ASSEMBLYAI_API_KEY || "YOUR_ASSEMBLYAI_API_KEY"
 export const assemblyAIService = new AssemblyAIService({ apiKey })
 
 // Log status on import
-if (assemblyAIService.isAvailable()) {
-  console.log("✅ AssemblyAI service configured")
-} else {
-  console.warn(
-    "⚠️ AssemblyAI not configured. Set ASSEMBLYAI_API_KEY to enable voice transcription."
-  )
+if (config.LOG_BOOT_DETAIL) {
+  if (assemblyAIService.isAvailable()) {
+    logger.info("✅ AssemblyAI service configured")
+  } else {
+    logger.warn(
+      "⚠️ AssemblyAI not configured. Set ASSEMBLYAI_API_KEY to enable voice transcription."
+    )
+  }
 }

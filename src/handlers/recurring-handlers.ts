@@ -68,6 +68,7 @@ export async function handleRecurringMenu(
     step: "RECURRING_MENU",
     data: {},
     returnTo: "automation",
+    lang,
   })
 
   await wizardManager.sendMessage(chatId, msg, {
@@ -103,6 +104,7 @@ export async function handleRecurringSelect(
     step: "RECURRING_ITEM_MENU",
     data: { recurringId: selected.id, recurring: selected },
     returnTo: "recurring",
+    lang,
   })
 
   const typeEmoji = selected.type === TransactionType.EXPENSE ? "💸" : "💰"
@@ -200,6 +202,7 @@ export async function handleRecurringItemAction(
       step: "RECURRING_DELETE_CONFIRM",
       data: { recurringId, recurring },
       returnTo: "recurring",
+      lang,
     })
 
     await wizardManager.sendMessage(
@@ -272,6 +275,7 @@ export async function handleRecurringCreateStart(
     step: "RECURRING_CREATE_DESCRIPTION",
     data: {},
     returnTo: "recurring",
+    lang,
   })
 
   await wizardManager.sendMessage(
@@ -304,6 +308,7 @@ export async function handleRecurringDescription(
     step: "RECURRING_CREATE_TYPE",
     data: { ...state?.data, description: text },
     returnTo: "recurring",
+    lang,
   })
 
   await wizardManager.sendMessage(chatId, t(lang, "recurring.selectType"), {
@@ -348,6 +353,7 @@ export async function handleRecurringType(
     step: "RECURRING_CREATE_AMOUNT",
     data: { ...state?.data, type },
     returnTo: "recurring",
+    lang,
   })
 
   const currency = await db.getDefaultCurrency(userId)
@@ -391,6 +397,7 @@ export async function handleRecurringAmount(
       currency: parsed.currency,
     },
     returnTo: "recurring",
+    lang,
   })
 
   const balances = await db.getBalancesList(userId)
@@ -446,6 +453,7 @@ export async function handleRecurringAccount(
     step: "RECURRING_CREATE_CATEGORY",
     data: { ...state?.data, accountId },
     returnTo: "recurring",
+    lang,
   })
 
   const categories = await db.getTopCategories(userId, state?.data?.type)
@@ -487,6 +495,7 @@ export async function handleRecurringCategory(
     step: "RECURRING_CREATE_DAY",
     data: { ...state?.data, category: text as TransactionCategory },
     returnTo: "recurring",
+    lang,
   })
 
   await wizardManager.sendMessage(

@@ -3,7 +3,7 @@
  */
 
 import { setupGlobalErrorHandlers } from "../error-handler"
-import { logConfig } from "../config"
+import { config, logConfig } from "../config"
 import logger from "../logger"
 import { initializeDatabaseAndCache, closeDatabaseAndCache } from "./database"
 import { initializeFXRates, stopFXRatesRefresh } from "./fx-rates"
@@ -20,7 +20,9 @@ export type AppContext = BotContext
 export async function initializeApp(token: string): Promise<AppContext> {
   try {
     setupGlobalErrorHandlers()
-    logger.info("✅ Global error handlers setup")
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("✅ Global error handlers setup")
+    }
 
     logConfig()
 
@@ -30,7 +32,9 @@ export async function initializeApp(token: string): Promise<AppContext> {
 
     const botContext = await createBot(token)
 
-    logger.info("🚀 Application initialized successfully")
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("🚀 Application initialized successfully")
+    }
 
     return botContext
   } catch (error) {
@@ -67,5 +71,7 @@ export function setupShutdownHandlers(context: AppContext): void {
   process.on("SIGINT", shutdown)
   process.on("SIGTERM", shutdown)
 
-  logger.info("✅ Shutdown handlers registered")
+  if (config.LOG_BOOT_DETAIL) {
+    logger.info("✅ Shutdown handlers registered")
+  }
 }

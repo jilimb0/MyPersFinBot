@@ -4,6 +4,7 @@
  */
 
 import logger from "../logger"
+import { config as appConfig } from "../config"
 import { CacheInterface, CacheConfig } from "./cache.interface"
 import { RedisCacheService } from "./redis-cache.service"
 import { MemoryCacheService } from "./memory-cache.service"
@@ -21,7 +22,7 @@ let cacheInstance: CacheInterface | null = null
  * Tries Redis first, falls back to in-memory if Redis is not available
  */
 export async function initializeCache(
-  config?: CacheConfig
+  cacheConfig?: CacheConfig
 ): Promise<CacheInterface> {
   if (cacheInstance) {
     return cacheInstance
@@ -31,14 +32,18 @@ export async function initializeCache(
 
   if (useRedis) {
     try {
-      logger.info("Attempting to connect to Redis...")
-      const redisCache = new RedisCacheService(config)
+      if (appConfig.LOG_BOOT_DETAIL) {
+        logger.info("Attempting to connect to Redis...")
+      }
+      const redisCache = new RedisCacheService(cacheConfig)
 
       // Test Redis connection
       const isConnected = await redisCache.ping()
 
       if (isConnected) {
-        logger.info("✅ Redis cache connected successfully")
+        if (appConfig.LOG_BOOT_DETAIL) {
+          logger.info("✅ Redis cache connected successfully")
+        }
         cacheInstance = redisCache
         return redisCache
       } else {
@@ -53,8 +58,10 @@ export async function initializeCache(
   }
 
   // Fallback to in-memory cache
-  logger.info("Using in-memory cache (fallback)")
-  cacheInstance = new MemoryCacheService(config)
+  if (appConfig.LOG_BOOT_DETAIL) {
+    logger.info("Using in-memory cache (fallback)")
+  }
+  cacheInstance = new MemoryCacheService(cacheConfig)
   return cacheInstance
 }
 
@@ -92,7 +99,9 @@ export async function closeCache(): Promise<void> {
   if (cacheInstance) {
     await cacheInstance.close()
     cacheInstance = null
-    logger.info("Cache closed")
+    if (appConfig.LOG_BOOT_DETAIL) {
+      logger.info("Cache closed")
+    }
   }
 }
 

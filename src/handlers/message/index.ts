@@ -4,7 +4,7 @@
 
 import TelegramBot from "node-telegram-bot-api"
 import type { WizardManager } from "../../wizards/wizards"
-import { t } from "../../i18n"
+import { t, Language } from "../../i18n"
 import { handleLanguageSelection } from "../language-handler"
 import { MessageRouter } from "./router"
 import { handleStart, handleStartTracking } from "./start.handlers"
@@ -67,6 +67,52 @@ export function createMessageRouter(
  * Register all message routes
  */
 function registerAllRoutes(router: MessageRouter): void {
+  const allLanguages: Language[] = ["en", "ru", "uk", "es", "pl"]
+  const startTrackingLabels = new Set(
+    allLanguages.flatMap((lng) => [
+      t(lng, "mainMenu.startTracking"),
+      t(lng, "buttons.startTracking"),
+    ])
+  )
+  const addDebtLabels = new Set(
+    allLanguages.flatMap((lng) => [
+      t(lng, "debts.addDebt"),
+      t(lng, "buttons.addDebt"),
+    ])
+  )
+  const addGoalLabels = new Set(
+    allLanguages.flatMap((lng) => [
+      t(lng, "goals.addGoal"),
+      t(lng, "buttons.addGoal"),
+    ])
+  )
+  const normalizeText = (input: string) =>
+    input
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+
+  const fallbackMap = new Map<string, MessageHandler>()
+  const addFallback = (key: string, handler: MessageHandler) => {
+    for (const lng of allLanguages) {
+      const label = t(lng, key)
+      const normalized = normalizeText(label)
+      if (normalized) {
+        fallbackMap.set(normalized, handler)
+      }
+    }
+  }
+
+  addFallback("mainMenu.expense", handleExpenseStart)
+  addFallback("mainMenu.income", handleIncomeStart)
+  addFallback("mainMenu.balances", handleBalancesMenu)
+  addFallback("mainMenu.budgetPlanner", handleBudgetMenu)
+  addFallback("mainMenu.debts", handleDebtsMenu)
+  addFallback("mainMenu.goals", handleGoalsMenu)
+  addFallback("mainMenu.analytics", handleAnalyticsMenu)
+  addFallback("mainMenu.settings", handleSettingsMenu)
   // ============================================
   // PRIORITY HANDLERS (Execute First)
   // ============================================
@@ -109,7 +155,9 @@ function registerAllRoutes(router: MessageRouter): void {
 
   // Start tracking button
   router.register(
-    (text, lang) => text === t(lang, "mainMenu.startTracking"),
+    (text, lang) =>
+      text === t(lang, "mainMenu.startTracking") ||
+      startTrackingLabels.has(text),
     handleStartTracking,
     "Start tracking"
   )
@@ -296,7 +344,9 @@ function registerAllRoutes(router: MessageRouter): void {
   // Add Debt
   router.register(
     (text, lang) =>
-      text === t(lang, "debts.addDebt") || text === t(lang, "buttons.addDebt"),
+      addDebtLabels.has(text) ||
+      text === t(lang, "debts.addDebt") ||
+      text === t(lang, "buttons.addDebt"),
     handleAddDebt,
     "Debts: Add"
   )
@@ -304,7 +354,9 @@ function registerAllRoutes(router: MessageRouter): void {
   // Add Goal
   router.register(
     (text, lang) =>
-      text === t(lang, "goals.addGoal") || text === t(lang, "buttons.addGoal"),
+      addGoalLabels.has(text) ||
+      text === t(lang, "goals.addGoal") ||
+      text === t(lang, "buttons.addGoal"),
     handleAddGoal,
     "Goals: Add"
   )
@@ -357,6 +409,34 @@ function registerAllRoutes(router: MessageRouter): void {
     (text, lang) => text === t(lang, "common.noCancel"),
     handleNoCancel,
     "Navigation: No Cancel"
+  )
+
+  // ============================================
+  // TEXT FALLBACK (Last Resort)
+  // ============================================
+  router.register(
+    () => true,
+    async (context) => {
+      const { bot, chatId, userId, lang, text, wizardManager } = context
+      if (wizardManager.isInWizard(userId)) {
+        return false
+      }
+
+      const normalized = normalizeText(text)
+      const handler = fallbackMap.get(normalized)
+      if (handler) {
+        return await handler(context)
+      }
+
+      await bot.sendMessage(chatId, t(lang, "common.unknownCommand"), {
+        reply_markup: {
+          keyboard: [[{ text: t(lang, "mainMenu.mainMenuButton") }]],
+          resize_keyboard: true,
+        },
+      })
+      return true
+    },
+    "Fallback: Text"
   )
 }
 

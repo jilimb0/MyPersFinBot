@@ -1,5 +1,6 @@
 import { Logger, QueryRunner } from "typeorm"
 import { logger as log } from "./logger"
+import { config } from "./config"
 
 export class QueryMonitor {
   private static instance: QueryMonitor
@@ -176,11 +177,15 @@ export class CustomQueryLogger implements Logger {
   }
 
   logSchemaBuild(message: string, _queryRunner?: QueryRunner) {
-    log.info(`🛠️ Schema: ${message}`)
+    if (config.LOG_BOOT_DETAIL) {
+      log.info(`🛠️ Schema: ${message}`)
+    }
   }
 
   logMigration(message: string, _queryRunner?: QueryRunner) {
-    log.info(`📦 Migration: ${message}`)
+    if (config.LOG_BOOT_DETAIL) {
+      log.info(`📦 Migration: ${message}`)
+    }
   }
 
   log(
@@ -191,7 +196,9 @@ export class CustomQueryLogger implements Logger {
     switch (level) {
       case "log":
       case "info":
-        log.info(message)
+        if (config.LOG_BOOT_DETAIL) {
+          log.info(message)
+        }
         break
       case "warn":
         log.warn(message)
