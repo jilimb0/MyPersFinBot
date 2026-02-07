@@ -47,6 +47,7 @@ import {
   handleNoCancel,
   handleMainMenu,
 } from "./navigation.handlers"
+import { MessageHandler } from "./types"
 
 /**
  * Create and configure MessageRouter
@@ -121,6 +122,9 @@ function registerAllRoutes(router: MessageRouter): void {
   router.register(
     (text) => isNLPInput(text),
     async (context) => {
+      if (context.wizardManager.isInWizard(context.userId)) {
+        return false
+      }
       await handleNLPInput(
         context.bot,
         context.chatId,
@@ -128,6 +132,7 @@ function registerAllRoutes(router: MessageRouter): void {
         context.text,
         context.wizardManager
       )
+      return true
     },
     "NLP input"
   )
@@ -151,7 +156,19 @@ function registerAllRoutes(router: MessageRouter): void {
   // ============================================
 
   // Start command
-  router.register("/start", handleStart, "Start command")
+  router.register(/^\/start(?:@\w+)?$/i, handleStart, "Start command")
+
+  // Slash commands without args (open flows)
+  router.register(
+    /^\/expense(?:@\w+)?$/i,
+    handleExpenseStart,
+    "Command: Expense"
+  )
+  router.register(
+    /^\/income(?:@\w+)?$/i,
+    handleIncomeStart,
+    "Command: Income"
+  )
 
   // Start tracking button
   router.register(

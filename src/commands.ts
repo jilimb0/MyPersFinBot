@@ -112,7 +112,7 @@ export function registerCommands(bot: TelegramBot) {
         chatId,
         t(lang, "commands.templates.empty", {
           saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
-        }),
+        }) + `\n\n${t(lang, "templates.emptyHint")}`,
         { parse_mode: "Markdown" }
       )
       return

@@ -237,6 +237,13 @@ export class WizardManager {
     const lang = resolveLanguage(
       state?.lang || (await this.resolveUserLang(userId))
     )
+    if (text.startsWith("/")) {
+      this.clearState(userId)
+      if (/^\/(start|expense|income)(?:@\w+)?$/i.test(text)) {
+        return false
+      }
+      return true
+    }
     if (state && state.lang !== lang) {
       state.lang = lang
       this.setState(userId, state)

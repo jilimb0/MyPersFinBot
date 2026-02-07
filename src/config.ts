@@ -67,7 +67,7 @@ const ConfigSchema = z.object({
   SENTRY_RELEASE: z.string().optional(),
 
   HEALTH_HOST: z.string().default("0.0.0.0"),
-  HEALTH_PORT: z.coerce.number().min(1).max(65535).default(3001),
+  HEALTH_PORT: z.coerce.number().min(1).max(65535).default(3005),
 
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
@@ -167,11 +167,10 @@ export function printConfigHelp() {
   const help = `
 📋 Available Configuration Options:
 
-${
-  ConfigSchema.shape.TELEGRAM_BOT_TOKEN.description
-    ? `TELEGRAM_BOT_TOKEN - ${ConfigSchema.shape.TELEGRAM_BOT_TOKEN.description}`
-    : ""
-}
+${ConfigSchema.shape.TELEGRAM_BOT_TOKEN.description
+      ? `TELEGRAM_BOT_TOKEN - ${ConfigSchema.shape.TELEGRAM_BOT_TOKEN.description}`
+      : ""
+    }
 ${ConfigSchema.shape.ASSEMBLYAI_API_KEY.description ? `ASSEMBLYAI_API_KEY - ${ConfigSchema.shape.ASSEMBLYAI_API_KEY.description}` : ""}
 ${ConfigSchema.shape.FX_API_KEY.description ? `FX_API_KEY - ${ConfigSchema.shape.FX_API_KEY.description}` : ""}
 ${ConfigSchema.shape.ALLOWED_USERS.description ? `ALLOWED_USERS - ${ConfigSchema.shape.ALLOWED_USERS.description}` : ""}
