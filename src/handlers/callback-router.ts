@@ -16,6 +16,7 @@ import {
   handleTemplateUse,
   showTemplatesList,
 } from "./template-handlers"
+import { handleNLPCallback } from "./voice-handler"
 
 export function registerCallbackRouter(
   bot: TelegramBot,
@@ -136,6 +137,10 @@ export function registerCallbackRouter(
             data,
             wizardManager
           ),
+      },
+      {
+        match: (value) => value.startsWith("nlp_"),
+        handle: async () => handleNLPCallback(bot, query, wizardManager),
       },
       {
         match: (value) => value === "tmpl_list",

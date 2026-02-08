@@ -17,7 +17,7 @@ import {
   createProgressBar,
 } from "../helpers"
 import { CategoryTotals, MonthlyStatsData } from "../types"
-import { Language, t } from "../../i18n"
+import { Language, t, getCategoryLabel } from "../../i18n"
 
 /**
  * Fetches monthly stats data
@@ -96,7 +96,7 @@ function formatIncomeSection(
           .join(" / ")
         section += `${t(lang, "reports.stats.categoryLine", {
           emoji: getCategoryEmoji(category),
-          category,
+          category: getCategoryLabel(lang, category),
           amount: currencyStr,
         })}\n`
       })
@@ -158,7 +158,7 @@ function formatIncomeSection(
         .join(" / ")
       section += `${t(lang, "reports.stats.categoryLine", {
         emoji: getCategoryEmoji(category),
-        category,
+        category: getCategoryLabel(lang, category),
         amount: currencyStr,
       })}\n`
     })
@@ -184,7 +184,7 @@ function formatExpenseSection(
       .join(" / ")
     section += `${t(lang, "reports.stats.categoryLine", {
       emoji: getCategoryEmoji(category),
-      category,
+      category: getCategoryLabel(lang, category),
       amount: currencyStr,
     })}\n`
   })

@@ -4,7 +4,12 @@ import { dbStorage as db } from "../database/storage-db"
 import type { WizardState } from "../wizards/wizards"
 import { formatMoney, handleInsufficientFunds } from "../utils"
 import { randomUUID } from "crypto"
-import { Language, t } from "../i18n"
+import {
+  Language,
+  t,
+  getExpenseCategoryLabel,
+  getIncomeCategoryLabel,
+} from "../i18n"
 
 export class QuickActionsHandlers {
   private static buildInlineCategoryKeyboard(
@@ -56,12 +61,12 @@ export class QuickActionsHandlers {
         }
       }
 
-      const allItems = [
-        ...topCategories,
-        t(lang, "transactions.moreCategories"),
-      ]
-
-      const items = allItems.map((item) => item)
+      const items = topCategories.map((item) =>
+        state.txType === TransactionType.EXPENSE
+          ? getExpenseCategoryLabel(lang, item, "short")
+          : getIncomeCategoryLabel(lang, item, "short")
+      )
+      items.push(t(lang, "transactions.moreCategories"))
 
       await bot.sendMessage(
         chatId,
@@ -485,7 +490,10 @@ export class QuickActionsHandlers {
         ? Object.values(ExpenseCategory)
         : Object.values(IncomeCategory)
 
-    const items = categories.map((category) => category)
+    const items =
+      txType === TransactionType.EXPENSE
+        ? categories.map((c) => getExpenseCategoryLabel(lang, c, "short"))
+        : categories.map((c) => getIncomeCategoryLabel(lang, c, "short"))
 
     await bot.sendMessage(
       chatId,

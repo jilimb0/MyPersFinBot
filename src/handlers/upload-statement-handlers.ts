@@ -11,7 +11,7 @@ import {
 import { formatMoney } from "../utils"
 import { SETTINGS_KEYBOARD } from "../constants"
 import { randomUUID } from "crypto"
-import { resolveLanguage, t } from "../i18n"
+import { resolveLanguage, t, getCategoryLabel } from "../i18n"
 
 // Handle file upload
 export async function handleStatementUpload(
@@ -143,7 +143,9 @@ async function showTransactionPreview(
     const sign = tx.type === "INCOME" ? "+" : "-"
     msg += `${i + 1}. ${emoji} ${sign}${formatMoney(tx.amount, tx.currency, true)}\n`
     msg += `   ${tx.description}\n`
-    msg += `   ${tx.category || t(lang, "buttons.other")}\n`
+    msg += `   ${
+      tx.category ? getCategoryLabel(lang, tx.category) : t(lang, "buttons.other")
+    }\n`
   })
 
   if (total > 5) {
@@ -360,7 +362,9 @@ async function showTransactionEditor(
     date: new Date(tx.date).toLocaleDateString(),
   })}\n`
   msg += `${t(lang, "import.editorCategoryLine", {
-    category: tx.category || t(lang, "buttons.other"),
+    category: tx.category
+      ? getCategoryLabel(lang, tx.category)
+      : t(lang, "buttons.other"),
   })}\n`
   msg += `${t(lang, "import.editorDescriptionLine", {
     description: tx.description,
@@ -407,7 +411,9 @@ async function showTransactionsList(
     msg += `${i + 1}. ${emoji} ${sign}${formatMoney(tx.amount, tx.currency, true)}\n`
     msg += `   ${t(lang, "import.listItemLine", {
       description: tx.description,
-      category: tx.category || t(lang, "buttons.other"),
+      category: tx.category
+        ? getCategoryLabel(lang, tx.category)
+        : t(lang, "buttons.other"),
     })}\n`
   })
 

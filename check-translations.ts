@@ -68,7 +68,7 @@ function isAllowedFile(full: string): boolean {
   return ALLOWED_PATH_PREFIXES.some((prefix) => full.startsWith(prefix))
 }
 
-function walk(dir: string): string[] {
+function walk(dir: string, includeAll = false): string[] {
   const results: string[] = []
   const entries = fs.readdirSync(dir, { withFileTypes: true })
   for (const entry of entries) {
@@ -83,13 +83,13 @@ function walk(dir: string): string[] {
         continue
       }
       if (full.startsWith(LOCALES_DIR)) continue
-      results.push(...walk(full))
+      results.push(...walk(full, includeAll))
     } else if (entry.isFile()) {
       if (full.endsWith(".ts") || full.endsWith(".tsx")) {
         if (full.startsWith(LOCALES_DIR)) continue
         if (isTestOrTypePath(full)) continue
         if (full.endsWith(`${path.sep}index-old.ts`)) continue
-        if (!isAllowedFile(full)) continue
+        if (!includeAll && !isAllowedFile(full)) continue
         results.push(full)
       }
     }
@@ -307,6 +307,7 @@ async function main() {
   let totalMissing = 0
   let totalExtra = 0
   let totalMissingUsed = 0
+  let totalUnused = 0
 
   const report: string[] = []
   report.push("=== Translation Coverage Report ===")
@@ -371,6 +372,15 @@ async function main() {
     }
   }
 
+  const usedKeyFiles = walk(SRC_DIR, true)
+  for (const file of usedKeyFiles) {
+    const raw = fs.readFileSync(file, "utf8")
+    const code = stripComments(raw)
+    for (const key of extractUsedKeys(code)) {
+      usedKeys.add(key)
+    }
+  }
+
   let hardcodedCount = 0
   const filesWithHardcoded = Object.keys(hardcoded).sort()
   if (filesWithHardcoded.length === 0) {
@@ -388,9 +398,17 @@ async function main() {
     }
   }
 
+  const categoryKeys = enKeys.filter(
+    (k) => k.startsWith("categories.") || k.startsWith("categoriesShort.")
+  )
+  for (const key of categoryKeys) {
+    usedKeys.add(key)
+  }
   const usedKeysList = uniqSorted(Array.from(usedKeys))
   const missingUsedKeys = usedKeysList.filter((k) => !enKeys.includes(k))
   totalMissingUsed = missingUsedKeys.length
+  const unusedKeys = enKeys.filter((k) => !usedKeys.has(k))
+  totalUnused = unusedKeys.length
 
   report.push("=== Used Keys Report ===")
   report.push("")
@@ -402,8 +420,18 @@ async function main() {
   }
   report.push("")
 
+  report.push("=== Unused Keys Report ===")
+  report.push("")
+  if (unusedKeys.length === 0) {
+    report.push("No unused keys found.")
+  } else {
+    report.push(`Unused keys (${unusedKeys.length}):`)
+    for (const key of unusedKeys) report.push(`  - ${key}`)
+  }
+  report.push("")
+
   report.push(
-    `Total issues: ${totalMissing} missing keys, ${totalExtra} extra keys, ${totalMissingUsed} missing used keys, ${hardcodedCount} hardcoded strings`
+    `Total issues: ${totalMissing} missing keys, ${totalExtra} extra keys, ${totalMissingUsed} missing used keys, ${totalUnused} unused keys, ${hardcodedCount} hardcoded strings`
   )
 
   const reportText = report.join("\n")
@@ -414,6 +442,7 @@ async function main() {
     totalMissing > 0 ||
     totalExtra > 0 ||
     totalMissingUsed > 0 ||
+    totalUnused > 0 ||
     hardcodedCount > 0
   ) {
     process.exit(1)

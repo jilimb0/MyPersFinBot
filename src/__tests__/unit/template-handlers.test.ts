@@ -5,7 +5,7 @@ import {
   handleTemplateUse,
   handleTemplateDelete,
 } from "../../handlers/template-handlers"
-import { TransactionType } from "../../types"
+import { TransactionType, ExpenseCategory, IncomeCategory } from "../../types"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -66,7 +66,7 @@ describe("Template handlers", () => {
       bot,
       { id: "cb-1" } as TelegramBot.CallbackQuery,
       "1",
-      "tmpl_save|exp|50|Food%20%26%20dining%20%F0%9F%8D%94|USD|Cash",
+      `tmpl_save|exp|50|${encodeURIComponent(ExpenseCategory.FOOD_DINING)}|USD|Cash`,
       wizard
     )
 
@@ -83,7 +83,7 @@ describe("Template handlers", () => {
       {
         id: "tpl-1",
         name: "☕ Food",
-        category: "Food & dining 🍔",
+        category: ExpenseCategory.FOOD_DINING,
         amount: 50,
         currency: "USD",
         type: TransactionType.EXPENSE,
@@ -123,7 +123,7 @@ describe("Template handlers", () => {
       {
         id: "tpl-2",
         name: "💰 Salary",
-        category: "Salary 💼",
+        category: IncomeCategory.SALARY,
         amount: 1000,
         currency: "USD",
         type: TransactionType.INCOME,

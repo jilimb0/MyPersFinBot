@@ -8,7 +8,7 @@ import { Transaction, TransactionCategory, Currency } from "../types"
 import { Notification, SpendingPattern } from "./types"
 import logger from "../logger"
 import { randomUUID } from "crypto"
-import { Language, t } from "../i18n"
+import { Language, t, getCategoryLabel } from "../i18n"
 
 export class SmartAlerts {
   /**
@@ -310,7 +310,7 @@ export class SmartAlerts {
     const description =
       transaction.description ||
       t(lang, "notifications.alerts.common.noDescription")
-    const category = transaction.category
+    const category = getCategoryLabel(lang, transaction.category)
 
     return {
       id: randomUUID(),
@@ -353,7 +353,7 @@ export class SmartAlerts {
       priority: "LOW",
       title: t(lang, "notifications.alerts.frequentSpending.title"),
       message: t(lang, "notifications.alerts.frequentSpending.message", {
-        category: pattern.category,
+        category: getCategoryLabel(lang, pattern.category),
         days: pattern.consecutiveDays,
         total: pattern.totalAmount.toFixed(2),
         average: pattern.averageDailyAmount.toFixed(2),

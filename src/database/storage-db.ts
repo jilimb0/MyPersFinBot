@@ -8,7 +8,7 @@ import { Budget as BudgetEntity, BudgetPeriod } from "./entities/Budget"
 import { IncomeSource as IncomeSourceEntity } from "./entities/IncomeSource"
 import { CategoryPreference } from "./entities/CategoryPreference"
 import { Reminder } from "./entities/Reminder"
-import { RecurringTransaction } from "./entities/RecurringTransaction"
+import { RecurringTransaction as RecurringTransactionEntity } from "./entities/RecurringTransaction"
 import {
   Balance as BalanceType,
   Debt,
@@ -24,11 +24,13 @@ import {
   TransactionTemplate,
   ReminderSettings,
   TransactionCategory,
+  RecurringTransaction,
 } from "../types"
 import { convertSync } from "../fx"
 import { formatMoney, handleInsufficientFunds } from "../utils"
 import { randomUUID } from "crypto"
 import { isValidLanguage, resolveLanguage, Language, t } from "../i18n"
+import { normalizeCategoryValue } from "../i18n/categories"
 import { getCacheManager } from "../services/cache-manager"
 
 export class DatabaseStorage {
@@ -188,7 +190,7 @@ export class DatabaseStorage {
       AppDataSource.getRepository(CategoryPreference).delete({ userId }),
       AppDataSource.getRepository(BudgetEntity).delete({ userId }),
       AppDataSource.getRepository(Reminder).delete({ userId }),
-      AppDataSource.getRepository(RecurringTransaction).delete({ userId }),
+      AppDataSource.getRepository(RecurringTransactionEntity).delete({ userId }),
     ])
 
     await AppDataSource.getRepository(User).delete({ id: userId })
@@ -1386,6 +1388,61 @@ export class DatabaseStorage {
     await this.clearCache(userId)
   }
 
+  async migrateCategoryValues(): Promise<void> {
+    const txRepo = AppDataSource.getRepository(TransactionEntity)
+    const budgetRepo = AppDataSource.getRepository(BudgetEntity)
+    const recurringRepo = AppDataSource.getRepository(RecurringTransactionEntity)
+    const userRepo = AppDataSource.getRepository(User)
+
+    const txs = await txRepo.find()
+    for (const tx of txs) {
+      if (!tx.category) continue
+      const normalized = normalizeCategoryValue(tx.category)
+      if (normalized && normalized !== tx.category) {
+        tx.category = normalized
+        await txRepo.save(tx)
+      }
+    }
+
+    const budgets = await budgetRepo.find()
+    for (const b of budgets) {
+      if (!b.category) continue
+      const normalized = normalizeCategoryValue(b.category)
+      if (normalized && normalized !== b.category) {
+        b.category = normalized
+        await budgetRepo.save(b)
+      }
+    }
+
+    const users = await userRepo.find()
+    for (const u of users) {
+      if (!u.templates || u.templates.length === 0) continue
+      let updated = false
+      u.templates = u.templates.map((tpl) => {
+        if (!tpl.category) return tpl
+        const normalized = normalizeCategoryValue(tpl.category)
+        if (normalized && normalized !== tpl.category) {
+          updated = true
+          return { ...tpl, category: normalized }
+        }
+        return tpl
+      })
+      if (updated) {
+        await userRepo.save(u)
+      }
+    }
+
+    const recurring = await recurringRepo.find()
+    for (const rec of recurring) {
+      if (!rec.category) continue
+      const normalized = normalizeCategoryValue(rec.category)
+      if (normalized && normalized !== rec.category) {
+        rec.category = normalized
+        await recurringRepo.save(rec)
+      }
+    }
+  }
+
   async deleteIncomeSource(userId: string, name: string) {
     await AppDataSource.getRepository(IncomeSourceEntity).delete({
       userId,
@@ -2425,7 +2482,7 @@ export class DatabaseStorage {
     recurringTransactionId: string
   ): Promise<RecurringTransaction | null> {
     await this.ensureUser(userId)
-    const repo = AppDataSource.getRepository(RecurringTransaction)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
     return await repo.findOne({ where: { id: recurringTransactionId, userId } })
   }
 
@@ -2434,7 +2491,7 @@ export class DatabaseStorage {
     recurringTransactionId: string,
     nextExecutionDate: Date
   ): Promise<void> {
-    const repo = AppDataSource.getRepository(RecurringTransaction)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
     await repo.update(
       { id: recurringTransactionId, userId },
       { nextExecutionDate }
@@ -2458,7 +2515,7 @@ export class DatabaseStorage {
     cronExpression?: string
   }): Promise<RecurringTransaction> {
     await this.ensureUser(data.userId)
-    const repo = AppDataSource.getRepository(RecurringTransaction)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
     const recurringTx = repo.create({
       ...data,
       isActive: true,
@@ -2471,7 +2528,7 @@ export class DatabaseStorage {
     userId: string,
     recurringTransactionId: string
   ): Promise<void> {
-    const repo = AppDataSource.getRepository(RecurringTransaction)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
     await repo.delete({ id: recurringTransactionId, userId })
   }
 
@@ -2479,7 +2536,7 @@ export class DatabaseStorage {
     userId: string
   ): Promise<RecurringTransaction[]> {
     await this.ensureUser(userId)
-    const repo = AppDataSource.getRepository(RecurringTransaction)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
     return await repo.find({
       where: {
         userId,
@@ -2495,7 +2552,7 @@ export class DatabaseStorage {
     userId: string
   ): Promise<RecurringTransaction[]> {
     await this.ensureUser(userId)
-    const repo = AppDataSource.getRepository(RecurringTransaction)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
     return await repo.find({
       where: { userId },
       order: { nextExecutionDate: "ASC" },
@@ -2507,7 +2564,7 @@ export class DatabaseStorage {
     recurringTransactionId: string,
     isActive: boolean
   ): Promise<void> {
-    const repo = AppDataSource.getRepository(RecurringTransaction)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
     await repo.update({ id: recurringTransactionId, userId }, { isActive })
   }
 
@@ -2516,7 +2573,7 @@ export class DatabaseStorage {
     recurringTransactionId: string,
     cronExpression: string
   ): Promise<void> {
-    const repo = AppDataSource.getRepository(RecurringTransaction)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
     await repo.update(
       { id: recurringTransactionId, userId },
       { cronExpression }

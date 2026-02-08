@@ -25,7 +25,7 @@ function formatTransactionLine(lang: Language, tx: Transaction): string {
   const emoji = getCategoryEmoji(tx.category)
   const sign = getTransactionSign(tx.type)
   const account = getTransactionAccount(tx)
-  const label = getTransactionLabel(tx)
+  const label = getTransactionLabel(lang, tx)
 
   return t(lang, "reports.transactions.line", {
     date: dateStr,

@@ -8,7 +8,7 @@ import { formatMoney, formatAmount } from "../../utils"
 import { convertBatchSync } from "../../fx"
 import { createProgressBar } from "../helpers"
 import { CategoryTotals } from "../types"
-import { t } from "../../i18n"
+import { t, getCategoryLabel } from "../../i18n"
 
 /**
  * Formats top expenses for the current month
@@ -80,7 +80,7 @@ export async function formatTopExpenses(
     const percentage = (item.amount / totalExpenses) * 100
     const bar = createProgressBar(item.amount, totalExpenses, 10)
 
-    msg += `${index + 1}. *${item.category}*\n`
+    msg += `${index + 1}. *${getCategoryLabel(lang, item.category)}*\n`
     msg += `   ${t(lang, "reports.topExpenses.itemAmount", {
       amount: formatMoney(item.amount, defaultCurrency),
       percent: formatAmount(percentage),

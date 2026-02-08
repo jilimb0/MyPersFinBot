@@ -17,7 +17,7 @@ import {
 } from "./i18n/keyboards"
 import { WizardManager } from "./wizards/wizards"
 import { createListButtons, formatMoney } from "./utils"
-import { Language, getLocale, t } from "./i18n"
+import { Language, getLocale, t, getExpenseCategoryLabel, getCategoryLabel } from "./i18n"
 import { getMainMenuKeyboard } from "./i18n/keyboards"
 
 export async function showMainMenu(
@@ -307,11 +307,12 @@ export async function showHistoryMenu(
     const date = new Date(tx.date).toLocaleDateString(getLocale(lang))
     const account =
       tx.fromAccountId || tx.toAccountId || t(lang, "common.notAvailable")
-    msg += `${emoji} *${tx.category}* - ${formatMoney(tx.amount, tx.currency)}\n`
+    const categoryLabel = getCategoryLabel(lang, tx.category)
+    msg += `${emoji} *${categoryLabel}* - ${formatMoney(tx.amount, tx.currency)}\n`
     msg += `   💳 ${account} | 📅 ${date}\n`
     if (i < transactions.length - 1) msg += "\n"
 
-    return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
+    return `${emoji} ${categoryLabel} \n${formatMoney(tx.amount, tx.currency)}`
   })
 
   const navButtons = []
@@ -364,10 +365,16 @@ export async function showBudgetMenu(
     const bar = "█".repeat(filled) + "░".repeat(blocks - filled)
 
     lines.push(
-      `${cat}: ${limit} ${currency || defaultCurrency} (${Math.round((limit / totalLimit) * 100 || 0)}%) ${bar} ${spent} ${currency || defaultCurrency} ${t(lang, "budget.spent")}`
+      `${getExpenseCategoryLabel(
+        lang,
+        cat
+      )}: ${limit} ${currency || defaultCurrency} (${Math.round((limit / totalLimit) * 100 || 0)}%) ${bar} ${spent} ${currency || defaultCurrency} ${t(
+        lang,
+        "budget.spent"
+      )}`
     )
 
-    items.push(cat)
+    items.push(getExpenseCategoryLabel(lang, cat, "short"))
   }
 
   const summaryLine =

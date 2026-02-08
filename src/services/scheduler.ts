@@ -7,6 +7,8 @@ import { autoIncomeManager } from "./auto-income-manager"
 import { autoDebtPaymentManager } from "./auto-debt-payment"
 import logger from "../logger"
 import { config } from "../config"
+import { dbStorage as db } from "../database/storage-db"
+import { getCategoryLabel } from "../i18n"
 
 export class Scheduler {
   private bot: TelegramBot
@@ -57,10 +59,11 @@ export class Scheduler {
               logger.debug(`Executed recurring transaction: ${tx.id}`)
             }
           } else {
+            const lang = await db.getUserLanguage(tx.userId)
             await this.bot.sendMessage(
               tx.userId,
               `🔄 *Recurring Transaction Due*\n\n` +
-                `${tx.category}: ${tx.amount} ${tx.currency}\n\n` +
+                `${getCategoryLabel(lang, tx.category)}: ${tx.amount} ${tx.currency}\n\n` +
                 `Execute now?`,
               { parse_mode: "Markdown" }
             )

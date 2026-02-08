@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
 import { Transaction, TransactionType } from "../types"
-import { Language, t } from "../i18n"
+import { Language, t, getCategoryLabel } from "../i18n"
 
 const LOCALES: Record<Language, string> = {
   en: "en-US",
@@ -93,7 +93,7 @@ function formatPeriodReport(
     report += `\n${t(lang, "periodReport.topCategoriesHeader")}\n`
     topCategories.forEach(([category, amount]) => {
       report += `${t(lang, "periodReport.topCategoryLine", {
-        category,
+        category: getCategoryLabel(lang, category),
         amount: amount.toFixed(2),
       })}\n`
     })

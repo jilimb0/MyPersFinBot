@@ -6,6 +6,7 @@ import { Transaction, Currency, TransactionType } from "../types"
 import { dbStorage } from "../database/storage-db"
 import { convertSync } from "../fx"
 import { ExportFilter, ExportResult } from "./types"
+import { getCategoryLabel } from "../i18n"
 import logger from "../logger"
 
 export class CSVExporter {
@@ -26,7 +27,8 @@ export class CSVExporter {
       }
 
       // Generate CSV
-      const csv = this.generateCSV(transactions, convertToCurrency)
+      const lang = await dbStorage.getUserLanguage(userId)
+      const csv = this.generateCSV(transactions, lang, convertToCurrency)
       const filename = this.generateFilename("transactions", filter)
 
       return {
@@ -49,6 +51,7 @@ export class CSVExporter {
     filter?: ExportFilter
   ): Promise<Map<string, ExportResult>> {
     const transactions = await this.getFilteredTransactions(userId, filter)
+    const lang = await dbStorage.getUserLanguage(userId)
     const results = new Map<string, ExportResult>()
 
     // Group by category
@@ -64,7 +67,7 @@ export class CSVExporter {
 
     // Generate CSV for each category
     byCategory.forEach((txs, category) => {
-      const csv = this.generateCSV(txs)
+      const csv = this.generateCSV(txs, lang)
       const filename = `${category.toLowerCase()}_transactions.csv`
 
       results.set(category, {
@@ -145,6 +148,7 @@ export class CSVExporter {
    */
   private generateCSV(
     transactions: Transaction[],
+    lang: string,
     convertToCurrency?: Currency
   ): string {
     const headers = [
@@ -173,7 +177,7 @@ export class CSVExporter {
       const row = [
         date,
         tx.type,
-        tx.category || "OTHER",
+        tx.category ? getCategoryLabel(lang as any, tx.category) : "OTHER",
         tx.amount.toFixed(2),
         tx.currency,
         description,

@@ -3,6 +3,7 @@
  */
 
 import { initializeDatabase, closeDatabase } from "../database/data-source"
+import { dbStorage } from "../database/storage-db"
 import { initializeCache, closeCache } from "../cache"
 import logger from "../logger"
 import { config } from "../config"
@@ -16,6 +17,10 @@ export async function initializeDatabaseAndCache(): Promise<void> {
     await initializeDatabase()
     if (config.LOG_BOOT_DETAIL) {
       logger.info("✅ Database initialized")
+    }
+    await dbStorage.migrateCategoryValues()
+    if (config.LOG_BOOT_DETAIL) {
+      logger.info("✅ Category values migrated")
     }
 
     // Initialize cache

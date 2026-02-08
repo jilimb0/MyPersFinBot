@@ -11,38 +11,20 @@ import {
   getMetrics,
   resetMetrics,
 } from "./fx"
-import { Language, t } from "./i18n"
+import {
+  Language,
+  t,
+  getExpenseCategoryByLabel,
+  getIncomeCategoryByLabel,
+  getCategoryLabel,
+} from "./i18n"
 
 function resolveExpenseCategory(input: string): ExpenseCategory {
-  const normalized = input.toLowerCase()
-  const values = Object.values(ExpenseCategory)
-
-  const exact = values.find((v) => v.toLowerCase() === normalized)
-  if (exact) return exact
-
-  const firstWord = normalized.split(" ")[0]
-  const byPrefix = firstWord
-    ? values.find((v) => v.toLowerCase().startsWith(firstWord))
-    : undefined
-  if (byPrefix) return byPrefix
-
-  return ExpenseCategory.OTHER_EXPENSE
+  return getExpenseCategoryByLabel(input) || ExpenseCategory.OTHER_EXPENSE
 }
 
 function resolveIncomeCategory(input: string): IncomeCategory {
-  const normalized = input.toLowerCase()
-  const values = Object.values(IncomeCategory)
-
-  const exact = values.find((v) => v.toLowerCase() === normalized)
-  if (exact) return exact
-
-  const firstWord = normalized.split(" ")[0]
-  const byPrefix = firstWord
-    ? values.find((v) => v.toLowerCase().startsWith(firstWord))
-    : undefined
-  if (byPrefix) return byPrefix
-
-  return IncomeCategory.OTHER_INCOME
+  return getIncomeCategoryByLabel(input) || IncomeCategory.OTHER_INCOME
 }
 
 function parseAmountAndCategory(
@@ -184,7 +166,7 @@ export function registerCommands(bot: TelegramBot) {
     const formatted = formatMoney(amount, currency)
     const text = t(lang, "commands.expense.added", {
       amount: formatted,
-      category,
+      category: getCategoryLabel(lang, category),
       account: smartAccount || "",
     })
 
@@ -256,7 +238,7 @@ export function registerCommands(bot: TelegramBot) {
     const formatted = formatMoney(amount, currency)
     const text = t(lang, "commands.income.added", {
       amount: formatted,
-      category,
+      category: getCategoryLabel(lang, category),
       account: smartAccount || "",
     })
 

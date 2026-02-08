@@ -4,6 +4,7 @@
 
 import { TransactionType, Currency } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
+import { getCategoryLabel } from "../../i18n"
 
 export interface CSVExportOptions {
   startDate?: Date
@@ -22,6 +23,7 @@ export async function generateAdvancedCSV(
   userId: string,
   options: CSVExportOptions = {}
 ): Promise<string> {
+  const lang = await db.getUserLanguage(userId)
   let transactions = await db.getAllTransactions(userId)
 
   // Apply filters
@@ -84,7 +86,7 @@ export async function generateAdvancedCSV(
       [
         date,
         tx.type,
-        tx.category,
+        tx.category ? getCategoryLabel(lang as any, tx.category) : "",
         tx.amount.toFixed(2),
         tx.currency,
         tx.fromAccountId || "",

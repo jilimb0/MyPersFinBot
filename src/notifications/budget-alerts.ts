@@ -9,7 +9,7 @@ import logger from "../logger"
 import { randomUUID } from "crypto"
 import { Budget } from "../types"
 import { BudgetPeriod } from "../database/entities/Budget"
-import { Language, t } from "../i18n"
+import { Language, t, getCategoryLabel } from "../i18n"
 
 export class BudgetAlerts {
   /**
@@ -117,8 +117,9 @@ export class BudgetAlerts {
     lang: Language
   ): Notification {
     const overspent = Math.abs(remaining)
-    const categoryLabel =
-      budget.category || t(lang, "notifications.alerts.common.generalBudget")
+    const categoryLabel = budget.category
+      ? getCategoryLabel(lang, budget.category)
+      : t(lang, "notifications.alerts.common.generalBudget")
 
     return {
       id: randomUUID(),
@@ -158,8 +159,9 @@ export class BudgetAlerts {
     remaining: number,
     lang: Language
   ): Notification {
-    const categoryLabel =
-      budget.category || t(lang, "notifications.alerts.common.generalBudget")
+    const categoryLabel = budget.category
+      ? getCategoryLabel(lang, budget.category)
+      : t(lang, "notifications.alerts.common.generalBudget")
 
     return {
       id: randomUUID(),

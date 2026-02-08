@@ -5,6 +5,7 @@
 import ExcelJS from "exceljs"
 import { Transaction, TransactionType } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
+import { getCategoryLabel } from "../../i18n"
 import { CSVExportOptions } from "./csv-advanced"
 
 /**
@@ -21,13 +22,14 @@ export async function generateExcel(
 
   // Get all transactions
   let transactions = await db.getAllTransactions(userId)
+  const lang = await db.getUserLanguage(userId)
 
   // Apply filters (same as CSV)
   transactions = applyFilters(transactions, options)
 
   // Create sheets by type
-  await createExpensesSheet(workbook, transactions)
-  await createIncomeSheet(workbook, transactions)
+  await createExpensesSheet(workbook, transactions, lang)
+  await createIncomeSheet(workbook, transactions, lang)
   await createTransfersSheet(workbook, transactions)
   await createSummarySheet(workbook, transactions, userId)
 
@@ -40,7 +42,8 @@ export async function generateExcel(
  */
 async function createExpensesSheet(
   workbook: ExcelJS.Workbook,
-  transactions: Transaction[]
+  transactions: Transaction[],
+  lang: string
 ) {
   const expenses = transactions.filter(
     (tx) => tx.type === TransactionType.EXPENSE
@@ -74,7 +77,7 @@ async function createExpensesSheet(
   expenses.forEach((tx) => {
     sheet.addRow({
       date: new Date(tx.date),
-      category: tx.category,
+      category: getCategoryLabel(lang as any, tx.category),
       amount: tx.amount,
       currency: tx.currency,
       account: tx.fromAccountId || "",
@@ -111,7 +114,8 @@ async function createExpensesSheet(
  */
 async function createIncomeSheet(
   workbook: ExcelJS.Workbook,
-  transactions: Transaction[]
+  transactions: Transaction[],
+  lang: string
 ) {
   const income = transactions.filter((tx) => tx.type === TransactionType.INCOME)
 
@@ -143,7 +147,7 @@ async function createIncomeSheet(
   income.forEach((tx) => {
     sheet.addRow({
       date: new Date(tx.date),
-      category: tx.category,
+      category: getCategoryLabel(lang as any, tx.category),
       amount: tx.amount,
       currency: tx.currency,
       account: tx.toAccountId || "",

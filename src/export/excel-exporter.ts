@@ -4,6 +4,7 @@
 
 import { Transaction, Currency } from "../types"
 import { dbStorage } from "../database/storage-db"
+import { getCategoryLabel } from "../i18n"
 import { convertSync } from "../fx"
 import { ExportFilter, ExportResult } from "./types"
 import logger from "../logger"
@@ -26,6 +27,7 @@ export class ExcelExporter {
       // Get user data
       const userData = await dbStorage.getUserData(userId)
       const defaultCurrency = convertToCurrency || userData.defaultCurrency
+      const lang = await dbStorage.getUserLanguage(userId)
 
       // Get transactions
       let transactions: Transaction[]
@@ -50,7 +52,11 @@ export class ExcelExporter {
 
       // Generate Excel data (simplified TSV format for now)
       // In production, use proper XLSX library
-      const excelData = this.generateExcelTSV(transactions, defaultCurrency)
+      const excelData = this.generateExcelTSV(
+        transactions,
+        defaultCurrency,
+        lang
+      )
 
       const filename = `transactions_${new Date().toISOString().split("T")[0]}.xlsx`
 
@@ -91,10 +97,12 @@ export class ExcelExporter {
 
     transactions = this.applyFilters(transactions, filter)
 
+    const lang = await dbStorage.getUserLanguage(userId)
+
     // Group by category
     const byCategory = new Map<string, Transaction[]>()
     transactions.forEach((tx) => {
-      const cat = tx.category || "OTHER"
+      const cat = tx.category ? getCategoryLabel(lang as any, tx.category) : "OTHER"
       if (!byCategory.has(cat)) byCategory.set(cat, [])
       byCategory.get(cat)!.push(tx)
     })
@@ -113,7 +121,11 @@ export class ExcelExporter {
     })
 
     excelData += "\n=== ALL TRANSACTIONS ===\n"
-    excelData += this.generateExcelTSV(transactions, userData.defaultCurrency)
+    excelData += this.generateExcelTSV(
+      transactions,
+      userData.defaultCurrency,
+      lang
+    )
 
     const filename = `transactions_breakdown_${new Date().toISOString().split("T")[0]}.xlsx`
 
@@ -151,7 +163,8 @@ export class ExcelExporter {
    */
   private generateExcelTSV(
     transactions: Transaction[],
-    defaultCurrency: Currency
+    defaultCurrency: Currency,
+    lang: string
   ): string {
     const headers = [
       "Date",
@@ -176,7 +189,7 @@ export class ExcelExporter {
         [
           date,
           tx.type,
-          tx.category || "OTHER",
+          tx.category ? getCategoryLabel(lang as any, tx.category) : "OTHER",
           tx.amount.toFixed(2),
           tx.currency,
           converted.toFixed(2),

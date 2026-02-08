@@ -4,6 +4,7 @@
 
 import { dbStorage as db } from "../../database/storage-db"
 import { ExpenseCategory, UserData } from "../../types"
+import { normalizeCategoryValue } from "../../i18n/categories"
 
 export interface BackupData {
   version: string
@@ -69,7 +70,13 @@ export async function restoreBackup(
     // Restore transactions
     let transactionCount = 0
     for (const tx of backup.userData.transactions) {
-      await db.addTransaction(userId, tx)
+      const normalizedCategory = tx.category
+        ? normalizeCategoryValue(tx.category)
+        : null
+      await db.addTransaction(userId, {
+        ...tx,
+        category: (normalizedCategory || tx.category) as any,
+      })
       transactionCount++
     }
 
@@ -97,9 +104,10 @@ export async function restoreBackup(
     // Restore budgets
     let budgetCount = 0
     for (const budget of backup.userData.budgets) {
+      const normalizedCategory = normalizeCategoryValue(budget.category)
       await db.setCategoryBudget(
         userId,
-        budget.category as ExpenseCategory,
+        (normalizedCategory || budget.category) as ExpenseCategory,
         budget.amount,
         budget.currency,
         budget.period

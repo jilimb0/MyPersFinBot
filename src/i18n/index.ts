@@ -138,3 +138,12 @@ export function getTranslationValue(
 
 // DO NOT export keyboards here - it creates circular dependency
 // Import keyboards directly where needed: import { ... } from "../i18n/keyboards"
+
+export {
+  getExpenseCategoryLabel,
+  getIncomeCategoryLabel,
+  getExpenseCategoryByLabel,
+  getIncomeCategoryByLabel,
+  getInternalCategoryLabel,
+  getCategoryLabel,
+} from "./categories"

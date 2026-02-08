@@ -15,7 +15,12 @@ jest.mock("../../database/storage-db", () => ({
 }))
 
 import { dbStorage } from "../../database/storage-db"
-import { Transaction, TransactionType } from "../../types"
+import {
+  Transaction,
+  TransactionType,
+  ExpenseCategory,
+  IncomeCategory,
+} from "../../types"
 
 const mockGetTransactions = dbStorage.getTransactions as jest.MockedFunction<
   typeof dbStorage.getTransactions
@@ -38,7 +43,7 @@ describe("AnalyticsService", () => {
           type: TransactionType.INCOME,
           amount: 1000,
           currency: "RUB",
-          category: "SALARY",
+          category: IncomeCategory.SALARY,
           date: new Date(),
         },
         {
@@ -46,7 +51,7 @@ describe("AnalyticsService", () => {
           type: TransactionType.EXPENSE,
           amount: 500,
           currency: "RUB",
-          category: "FOOD",
+          category: ExpenseCategory.FOOD_DINING,
           date: new Date(),
         },
       ]
@@ -68,7 +73,7 @@ describe("AnalyticsService", () => {
           type: TransactionType.EXPENSE,
           amount: 300,
           currency: "RUB",
-          category: "FOOD",
+          category: ExpenseCategory.FOOD_DINING,
           date: new Date(),
         },
         {
@@ -76,7 +81,7 @@ describe("AnalyticsService", () => {
           type: TransactionType.EXPENSE,
           amount: 200,
           currency: "RUB",
-          category: "FOOD",
+          category: ExpenseCategory.FOOD_DINING,
           date: new Date(),
         },
         {
@@ -84,7 +89,7 @@ describe("AnalyticsService", () => {
           type: TransactionType.EXPENSE,
           amount: 500,
           currency: "RUB",
-          category: "TRANSPORT",
+          category: ExpenseCategory.TRANSPORTATION,
           date: new Date(),
         },
       ]
@@ -105,7 +110,7 @@ describe("AnalyticsService", () => {
           type: TransactionType.INCOME,
           amount: 1000,
           currency: "RUB",
-          category: "SALARY",
+          category: IncomeCategory.SALARY,
           date: new Date(),
         },
         {
@@ -113,7 +118,7 @@ describe("AnalyticsService", () => {
           type: TransactionType.EXPENSE,
           amount: 200,
           currency: "RUB",
-          category: "FOOD",
+          category: ExpenseCategory.FOOD_DINING,
           date: new Date(),
         },
       ]

@@ -3,14 +3,35 @@ import {
   validateIncomeCategory,
   parseAmountWithCurrency,
 } from "../../validators"
+import { ExpenseCategory, IncomeCategory } from "../../types"
+import {
+  getExpenseCategoryLabel,
+  getIncomeCategoryLabel,
+} from "../../i18n"
 
 describe("Validators", () => {
   describe("validateExpenseCategory", () => {
     test("should validate correct expense category", () => {
-      expect(validateExpenseCategory("Food & dining 🍔")).not.toBeNull()
-      expect(validateExpenseCategory("Coffee ☕")).not.toBeNull()
-      expect(validateExpenseCategory("Groceries 🛍️")).not.toBeNull()
-      expect(validateExpenseCategory("Transport 🚕")).not.toBeNull()
+      expect(
+        validateExpenseCategory(
+          getExpenseCategoryLabel("en", ExpenseCategory.FOOD_DINING)
+        )
+      ).not.toBeNull()
+      expect(
+        validateExpenseCategory(
+          getExpenseCategoryLabel("en", ExpenseCategory.COFFEE)
+        )
+      ).not.toBeNull()
+      expect(
+        validateExpenseCategory(
+          getExpenseCategoryLabel("en", ExpenseCategory.GROCERIES)
+        )
+      ).not.toBeNull()
+      expect(
+        validateExpenseCategory(
+          getExpenseCategoryLabel("en", ExpenseCategory.TRANSPORTATION)
+        )
+      ).not.toBeNull()
     })
 
     test("should reject invalid expense category", () => {
@@ -22,9 +43,21 @@ describe("Validators", () => {
 
   describe("validateIncomeCategory", () => {
     test("should validate correct income category", () => {
-      expect(validateIncomeCategory("Salary 💼")).not.toBeNull()
-      expect(validateIncomeCategory("Freelance 💻")).not.toBeNull()
-      expect(validateIncomeCategory("Business 💼")).not.toBeNull()
+      expect(
+        validateIncomeCategory(
+          getIncomeCategoryLabel("en", IncomeCategory.SALARY)
+        )
+      ).not.toBeNull()
+      expect(
+        validateIncomeCategory(
+          getIncomeCategoryLabel("en", IncomeCategory.FREELANCE)
+        )
+      ).not.toBeNull()
+      expect(
+        validateIncomeCategory(
+          getIncomeCategoryLabel("en", IncomeCategory.BUSINESS)
+        )
+      ).not.toBeNull()
     })
 
     test("should reject invalid income category", () => {

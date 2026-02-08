@@ -4,7 +4,14 @@
 
 import { CacheManager } from "../../services/cache-manager"
 import { CacheInterface } from "../../cache/cache.interface"
-import { Balance, Transaction, TransactionType, Currency } from "../../types"
+import {
+  Balance,
+  Transaction,
+  TransactionType,
+  Currency,
+  ExpenseCategory,
+  IncomeCategory,
+} from "../../types"
 import { Language } from "../../i18n"
 
 // Mock cache implementation
@@ -235,7 +242,7 @@ describe("CacheManager", () => {
         type: TransactionType.EXPENSE,
         amount: 100,
         currency: "USD",
-        category: "Food & dining 🍔" as any,
+        category: ExpenseCategory.FOOD_DINING,
         description: "Lunch",
         date: new Date(),
         fromAccountId: "cash",
@@ -245,7 +252,7 @@ describe("CacheManager", () => {
         type: TransactionType.INCOME,
         amount: 500,
         currency: "USD",
-        category: "Salary 💼" as any,
+        category: IncomeCategory.SALARY,
         description: "Monthly salary",
         date: new Date(),
         toAccountId: "cash",

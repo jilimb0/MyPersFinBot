@@ -3,7 +3,7 @@
  */
 
 import { Notification, NotificationConfig } from "./types"
-import { Language, t } from "../i18n"
+import { Language, t, getCategoryLabel } from "../i18n"
 
 /**
  * Format notification settings
@@ -211,7 +211,7 @@ export function formatWeeklySummary(
     count: data.transactionCount,
   })}\n`
   message += `${t(lang, "notifications.weekly.topCategoryLine", {
-    category: data.topCategory,
+    category: getCategoryLabel(lang, data.topCategory),
     amount: data.topCategoryAmount.toFixed(2),
     currency: data.currency,
   })}\n\n`
@@ -266,7 +266,7 @@ export function formatMonthlySummary(
   data.topCategories.slice(0, 3).forEach((cat, index) => {
     message += `${t(lang, "notifications.monthly.topCategoryItem", {
       index: index + 1,
-      category: cat.category,
+      category: getCategoryLabel(lang, cat.category),
       amount: cat.amount.toFixed(2),
       currency: data.currency,
     })}\n`

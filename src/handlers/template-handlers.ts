@@ -4,7 +4,7 @@ import type { WizardManager } from "../wizards/wizards"
 
 import TelegramBot from "node-telegram-bot-api"
 import { TransactionType, Currency, TransactionCategory } from "../types"
-import { Language, t } from "../i18n"
+import { Language, t, getCategoryLabel } from "../i18n"
 
 /**
  * Обработчик редактирования суммы шаблона
@@ -113,7 +113,8 @@ export async function handleTemplateSave(
     return
   }
 
-  const name = kind === "exp" ? `☕ ${category}` : `💰 ${category}`
+  const categoryLabel = getCategoryLabel(lang, category)
+  const name = kind === "exp" ? `☕ ${categoryLabel}` : `💰 ${categoryLabel}`
 
   await db.addTemplate(userId, {
     name,
@@ -191,7 +192,7 @@ export async function handleTemplateUse(
   const text = t(lang, "templates.useMessage", {
     emoji,
     amount: formatted,
-    category: template.category,
+    category: getCategoryLabel(lang, template.category),
     account: smartAccount || "",
   })
 

@@ -22,7 +22,14 @@ import {
 
 import * as handlers from "../handlers"
 import { createProgressBar, getProgressEmoji } from "../reports"
-import { DAY_KEYS, resolveLanguage, t } from "../i18n"
+import {
+  DAY_KEYS,
+  resolveLanguage,
+  t,
+  getExpenseCategoryLabel,
+  getIncomeCategoryLabel,
+  getCategoryLabel,
+} from "../i18n"
 
 export async function resendCurrentStepPrompt(
   wizard: WizardManager,
@@ -170,7 +177,7 @@ export async function resendCurrentStepPrompt(
       const items = toShow.map((tx: Transaction) => {
         const emoji =
           tx.type === "EXPENSE" ? "💸" : tx.type === "INCOME" ? "💰" : "↔️"
-        return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
+        return `${emoji} ${getCategoryLabel(lang, tx.category)} \n${formatMoney(tx.amount, tx.currency)}`
       })
 
       const listButtons = createListButtons({
@@ -208,7 +215,7 @@ export async function resendCurrentStepPrompt(
                 ? t(lang, "transactions.incomeTitle")
                 : t(lang, "transactions.transferTitle"),
         })}\n` +
-        `${t(lang, "wizard.tx.detailsCategory", { category: tx.category })}\n` +
+        `${t(lang, "wizard.tx.detailsCategory", { category: getCategoryLabel(lang, tx.category) })}\n` +
         `${t(lang, "wizard.tx.detailsAmount", {
           amount: formatMoney(tx.amount, tx.currency),
         })}\n` +
@@ -265,18 +272,21 @@ export async function resendCurrentStepPrompt(
         title = `${t(lang, "wizard.tx.editCategoryExpenseTitle")}\n\n${t(
           lang,
           "wizard.tx.currentCategory",
-          { category: tx.category }
+          { category: getExpenseCategoryLabel(lang, tx.category) }
         )}`
       } else {
         categories = Object.values(IncomeCategory)
         title = `${t(lang, "wizard.tx.editCategoryIncomeTitle")}\n\n${t(
           lang,
           "wizard.tx.currentCategory",
-          { category: tx.category }
+          { category: getIncomeCategoryLabel(lang, tx.category) }
         )}`
       }
 
-      const items = categories.map((c) => c)
+      const items =
+        tx.type === "EXPENSE"
+          ? categories.map((c) => getExpenseCategoryLabel(lang, c, "short"))
+          : categories.map((c) => getIncomeCategoryLabel(lang, c, "short"))
       const keyboard = createListButtons({ items, lang })
 
       await wizard.sendMessage(

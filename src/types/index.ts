@@ -10,37 +10,37 @@ export enum TransactionType {
 
 // Категории доходов
 export enum IncomeCategory {
-  SALARY = "Salary 💼",
-  FREELANCE = "Freelance 💻",
-  BUSINESS = "Business 💼",
-  INVESTMENT = "Investment 📈",
-  TRADING = "Trading 💸",
-  BONUS = "Bonus 🎁",
-  GIFT = "Gift 🎁",
-  REFUND = "Refund 🔄",
-  OTHER_INCOME = "Other 💰",
+  SALARY = "SALARY",
+  FREELANCE = "FREELANCE",
+  BUSINESS = "BUSINESS",
+  INVESTMENT = "INVESTMENT",
+  TRADING = "TRADING",
+  BONUS = "BONUS",
+  GIFT = "GIFT",
+  REFUND = "REFUND",
+  OTHER_INCOME = "OTHER_INCOME",
 }
 
 // Категории расходов
 export enum ExpenseCategory {
-  FOOD_DINING = "Food & dining 🍔",
-  COFFEE = "Coffee ☕",
-  GROCERIES = "Groceries 🛍️",
-  TRANSPORTATION = "Transport 🚕",
-  HOUSING = "Housing 🏠",
-  UTILITIES = "Utilities 💡",
-  ENTERTAINMENT = "Entertainment 🎬",
-  HEALTH = "Health 🏥",
-  SHOPPING = "Shopping 🛒",
-  EDUCATION = "Education 📚",
-  OTHER_EXPENSE = "Other 📦",
+  FOOD_DINING = "FOOD_DINING",
+  COFFEE = "COFFEE",
+  GROCERIES = "GROCERIES",
+  TRANSPORTATION = "TRANSPORTATION",
+  HOUSING = "HOUSING",
+  UTILITIES = "UTILITIES",
+  ENTERTAINMENT = "ENTERTAINMENT",
+  HEALTH = "HEALTH",
+  SHOPPING = "SHOPPING",
+  EDUCATION = "EDUCATION",
+  OTHER_EXPENSE = "OTHER_EXPENSE",
 }
 
 // Специальные категории (только для внутреннего использования)
 export enum InternalCategory {
-  TRANSFER = "Transfer ↔️",
-  GOAL_DEPOSIT = "Goal 🎯",
-  DEBT_REPAYMENT = "Debt 📉",
+  TRANSFER = "TRANSFER",
+  GOAL_DEPOSIT = "GOAL_DEPOSIT",
+  DEBT_REPAYMENT = "DEBT_REPAYMENT",
 }
 
 // Объединенный тип для хранения

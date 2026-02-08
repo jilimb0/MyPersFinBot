@@ -14,7 +14,7 @@ import { showMainMenu, showBalancesMenu } from "../menus-i18n"
 import { QuickActionsHandlers } from "./quick-actions-handlers"
 import * as helpers from "../wizards/helpers"
 import { randomUUID } from "crypto"
-import { t } from "../i18n"
+import { t, getExpenseCategoryLabel, getIncomeCategoryLabel } from "../i18n"
 
 export async function handleTxCategory(
   wizard: WizardManager,
@@ -410,7 +410,7 @@ export async function handleTxAccount(
       await wizard.sendMessage(
         chatId,
         t(lang, "transactions.budgetExceeded", {
-          category: state?.data?.category,
+          category: getExpenseCategoryLabel(lang, state?.data?.category),
           limit: res.limit,
           overspent: Math.abs(res.remaining),
           currency: state?.data?.currency,
@@ -448,7 +448,10 @@ export async function handleTxAccount(
     t(lang, "transactions.addedDetails", {
       emoji,
       amount: formatMoney(state?.data?.amount, state?.data?.currency),
-      category: state?.data?.category,
+      category:
+        txType === TransactionType.EXPENSE
+          ? getExpenseCategoryLabel(lang, state?.data?.category)
+          : getIncomeCategoryLabel(lang, state?.data?.category),
       account: accountName,
     }),
     {

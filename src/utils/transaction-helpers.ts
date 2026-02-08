@@ -3,6 +3,7 @@
  */
 
 import { Transaction, TransactionType } from "../types"
+import { Language, t, getCategoryLabel } from "../i18n"
 
 /**
  * Match transaction against filters
@@ -40,22 +41,22 @@ export const getTransactionSign = (type: TransactionType): string => {
 /**
  * Get transaction label (with special handling for goals and debts)
  */
-export const getTransactionLabel = (tx: Transaction): string => {
+export const getTransactionLabel = (lang: Language, tx: Transaction): string => {
   if (
-    tx.category === "Goal 🎯" &&
+    tx.category === "GOAL_DEPOSIT" &&
     tx.description?.startsWith("Goal Deposit:")
   ) {
     const goalName = tx.description.replace("Goal Deposit: ", "").trim()
-    return `Goal: ${goalName}`
+    return t(lang, "reminders.messages.goalLine", { name: goalName })
   }
 
   if (
-    tx.category === "Debt 📉" &&
+    tx.category === "DEBT_REPAYMENT" &&
     tx.description?.startsWith("Debt repayment:")
   ) {
     const debtName = tx.description.replace("Debt repayment: ", "").trim()
-    return `Debt: ${debtName}`
+    return t(lang, "reminders.messages.debtLine", { name: debtName })
   }
 
-  return tx.category as unknown as string
+  return getCategoryLabel(lang, tx.category)
 }

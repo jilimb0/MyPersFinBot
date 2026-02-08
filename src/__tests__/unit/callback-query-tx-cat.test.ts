@@ -1,5 +1,7 @@
 import TelegramBot from "node-telegram-bot-api"
 import { WizardManager } from "../../wizards/wizards"
+import { ExpenseCategory } from "../../types"
+import { getExpenseCategoryLabel } from "../../i18n"
 
 jest.mock("../../security", () => ({
   securityCheck: jest.fn().mockResolvedValue(true),
@@ -50,13 +52,19 @@ describe("Callback query tx_cat handler", () => {
     const handleWizardInput = jest.spyOn(wizard, "handleWizardInput")
     registerTxCatCallback(bot, wizard)
 
+    const label = getExpenseCategoryLabel(
+      "en",
+      ExpenseCategory.FOOD_DINING,
+      "short"
+    )
+
     await (bot as any).handlers.callback_query({
       id: "cb-1",
-      data: "tx_cat|Food & dining 🍔",
+      data: `tx_cat|${label}`,
       message: { chat: { id: 10 } },
     })
 
     expect(safeAnswerCallback).toHaveBeenCalled()
-    expect(handleWizardInput).toHaveBeenCalledWith(10, "10", "Food & dining 🍔")
+    expect(handleWizardInput).toHaveBeenCalledWith(10, "10", label)
   })
 })

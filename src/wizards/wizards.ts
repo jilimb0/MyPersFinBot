@@ -12,7 +12,14 @@ import {
   IncomeSource,
 } from "../types"
 import { dbStorage as db } from "../database/storage-db"
-import { resolveLanguage, Language } from "../i18n"
+import {
+  resolveLanguage,
+  Language,
+  getExpenseCategoryLabel,
+  getIncomeCategoryLabel,
+  getExpenseCategoryByLabel,
+  getCategoryLabel,
+} from "../i18n"
 import * as validators from "../validators"
 import {
   showAdvancedMenu,
@@ -377,7 +384,7 @@ export class WizardManager {
             const emoji =
               tx.type === "EXPENSE" ? "📉" : tx.type === "INCOME" ? "📈" : "↔️"
             return text.includes(
-              `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
+              `${emoji} ${getCategoryLabel(lang, tx.category)} \n${formatMoney(tx.amount, tx.currency)}`
             )
           })
 
@@ -524,7 +531,7 @@ export class WizardManager {
           const items = toShow.map((tx) => {
             const emoji =
               tx.type === "EXPENSE" ? "💸" : tx.type === "INCOME" ? "💰" : "↔️"
-            return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
+            return `${emoji} ${getCategoryLabel(lang, tx.category)} \n${formatMoney(tx.amount, tx.currency)}`
           })
 
           const keyboard = createListButtons({
@@ -623,7 +630,7 @@ export class WizardManager {
           const items = toShow.map((tx: Transaction) => {
             const emoji =
               tx.type === "EXPENSE" ? "💸" : tx.type === "INCOME" ? "💰" : "↔️"
-            return `${emoji} ${tx.category}\n${formatMoney(tx.amount, tx.currency)}`
+            return `${emoji} ${getCategoryLabel(lang, tx.category)}\n${formatMoney(tx.amount, tx.currency)}`
           })
 
           await this.bot.sendMessage(
@@ -680,7 +687,7 @@ export class WizardManager {
                   : tx.type === "INCOME"
                     ? "💰"
                     : "↔️"
-              return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
+              return `${emoji} ${getCategoryLabel(lang, tx.category)} \n${formatMoney(tx.amount, tx.currency)}`
             })
 
             await this.bot.sendMessage(
@@ -732,7 +739,7 @@ export class WizardManager {
                   : tx.type === "INCOME"
                     ? "💰"
                     : "↔️"
-              return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
+              return `${emoji} ${getCategoryLabel(lang, tx.category)} \n${formatMoney(tx.amount, tx.currency)}`
             })
 
             const afterButtons = []
@@ -772,7 +779,7 @@ export class WizardManager {
               tx.type === "EXPENSE" ? "💸" : tx.type === "INCOME" ? "💰" : "↔️"
             return (
               text ===
-              `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
+              `${emoji} ${getCategoryLabel(lang, tx.category)} \n${formatMoney(tx.amount, tx.currency)}`
             )
           })
 
@@ -855,7 +862,9 @@ export class WizardManager {
 
             if (tx.type === TransactionType.EXPENSE) {
               const categories = Object.values(ExpenseCategory)
-              const items = categories.map((c) => c)
+              const items = categories.map((c) =>
+                getExpenseCategoryLabel(lang, c, "short")
+              )
               const keyboard = createListButtons({ items, lang })
 
               await this.bot.sendMessage(
@@ -863,7 +872,7 @@ export class WizardManager {
                 `${t(lang, "wizard.tx.editCategoryExpenseTitle")}\n\n${t(
                   lang,
                   "wizard.tx.currentCategory",
-                  { category: tx.category }
+                  { category: getExpenseCategoryLabel(lang, tx.category) }
                 )}\n\n${t(lang, "wizard.tx.selectNewCategory")}`,
                 {
                   parse_mode: "Markdown",
@@ -872,7 +881,9 @@ export class WizardManager {
               )
             } else if (tx.type === TransactionType.INCOME) {
               const categories = Object.values(IncomeCategory)
-              const items = categories.map((c) => c)
+              const items = categories.map((c) =>
+                getIncomeCategoryLabel(lang, c, "short")
+              )
               const keyboard = createListButtons({ items, lang })
 
               await this.bot.sendMessage(
@@ -880,7 +891,7 @@ export class WizardManager {
                 `${t(lang, "wizard.tx.editCategoryIncomeTitle")}\n\n${t(
                   lang,
                   "wizard.tx.currentCategory",
-                  { category: tx.category }
+                  { category: getIncomeCategoryLabel(lang, tx.category) }
                 )}\n\n${t(lang, "wizard.tx.selectNewCategory")}`,
                 {
                   parse_mode: "Markdown",
@@ -950,7 +961,7 @@ export class WizardManager {
                   : tx.type === "INCOME"
                     ? "💰"
                     : "↔️"
-              return `${emoji} ${tx.category} \n${formatMoney(tx.amount, tx.currency)}`
+              return `${emoji} ${getCategoryLabel(lang, tx.category)} \n${formatMoney(tx.amount, tx.currency)}`
             })
 
             const keyboard = createListButtons({ items, lang })
@@ -1013,13 +1024,9 @@ export class WizardManager {
 
           let isValid = false
           if (tx.type === TransactionType.EXPENSE) {
-            isValid = Object.values(ExpenseCategory).includes(
-              text as ExpenseCategory
-            )
+            isValid = !!validators.validateExpenseCategory(text)
           } else if (tx.type === TransactionType.INCOME) {
-            isValid = Object.values(IncomeCategory).includes(
-              text as IncomeCategory
-            )
+            isValid = !!validators.validateIncomeCategory(text)
           }
 
           if (!isValid) {
@@ -1032,14 +1039,24 @@ export class WizardManager {
           }
 
           // Обновляем категорию
+          const normalizedCategory =
+            tx.type === TransactionType.EXPENSE
+              ? validators.validateExpenseCategory(text)
+              : validators.validateIncomeCategory(text)
           const success = await db.updateTransaction(userId, tx.id, {
-            category: text as TransactionCategory,
+            category: (normalizedCategory || text) as TransactionCategory,
           })
 
           if (success) {
+            const categoryLabel = getCategoryLabel(
+              lang,
+              normalizedCategory || text
+            )
             await this.bot.sendMessage(
               chatId,
-              t(lang, "wizard.tx.categoryUpdated", { category: text })
+              t(lang, "wizard.tx.categoryUpdated", {
+                category: categoryLabel,
+              })
             )
           } else {
             await this.bot.sendMessage(chatId, t(lang, "wizard.tx.updateError"))
@@ -3041,7 +3058,9 @@ export class WizardManager {
           if (text === t(lang, "buttons.addEditBudget")) {
             await this.goToStep(userId, "BUDGET_SELECT_CATEGORY", {})
             const categories = Object.values(ExpenseCategory)
-            const items = categories.map((c) => c)
+            const items = categories.map((c) =>
+              getExpenseCategoryLabel(lang, c, "short")
+            )
             const keyboard = createListButtons({ items, lang })
 
             await this.bot.sendMessage(
@@ -3058,8 +3077,8 @@ export class WizardManager {
             return true
           }
 
-          const cat = text.trim() as ExpenseCategory
-          if (Object.values(ExpenseCategory).includes(cat)) {
+          const cat = getExpenseCategoryByLabel(text)
+          if (cat) {
             await this.goToStep(userId, "BUDGET_CATEGORY_MENU", {
               category: cat,
             })
@@ -3077,7 +3096,9 @@ export class WizardManager {
 
             await this.bot.sendMessage(
               chatId,
-              `${t(lang, "wizard.budget.categoryTitle", { category: cat })}\n\n` +
+              `${t(lang, "wizard.budget.categoryTitle", {
+                category: getExpenseCategoryLabel(lang, cat),
+              })}\n\n` +
                 `${t(lang, "wizard.budget.limitLine", {
                   amount: b.limit,
                   currency: b.currency || "USD",
@@ -3113,8 +3134,8 @@ export class WizardManager {
           return true
         }
         case "BUDGET_SELECT_CATEGORY": {
-          const cat = text.trim() as ExpenseCategory
-          if (!Object.values(ExpenseCategory).includes(cat)) {
+          const cat = getExpenseCategoryByLabel(text)
+          if (!cat) {
             await this.bot.sendMessage(
               chatId,
               t(lang, "wizard.budget.invalidCategory"),
@@ -3139,7 +3160,9 @@ export class WizardManager {
 
           await this.bot.sendMessage(
             chatId,
-            `${t(lang, "wizard.budget.categoryTitle", { category: cat })}\n\n` +
+            `${t(lang, "wizard.budget.categoryTitle", {
+              category: getExpenseCategoryLabel(lang, cat),
+            })}\n\n` +
               `${t(lang, "wizard.budget.limitLine", {
                 amount: b.limit,
                 currency: b.currency || "USD",

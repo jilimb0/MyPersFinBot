@@ -8,7 +8,7 @@ import { formatMoney, formatAmount } from "../../utils"
 import { convertBatchSync } from "../../fx"
 import { createProgressBar } from "../helpers"
 import { CategoryTotals } from "../types"
-import { Language, getLocale, t } from "../../i18n"
+import { Language, getLocale, t, getCategoryLabel } from "../../i18n"
 
 type AnalyticsPeriod = {
   preset?: "LAST_7_DAYS" | "LAST_30_DAYS"
@@ -126,7 +126,7 @@ export async function generateAnalyticsReport(
       const percentage = (item.amount / totalExpenses) * 100
       const bar = createProgressBar(item.amount, totalExpenses, 10)
 
-      msg += `${index + 1}. *${item.category}*\n`
+      msg += `${index + 1}. *${getCategoryLabel(lang, item.category)}*\n`
       msg += `   ${formatMoney(item.amount, defaultCurrency)} (${formatAmount(percentage)}%)\n`
       msg += `   ${bar}\n\n`
     })
@@ -139,7 +139,12 @@ export async function generateAnalyticsReport(
     msg += `${t(lang, "reports.analyticsReport.incomeSourcesTitle")}\n\n`
     incomeByCategory.forEach((item, index) => {
       const percentage = (item.amount / totalIncome) * 100
-      msg += `${index + 1}. *${item.category}*: ${formatMoney(item.amount, defaultCurrency)} (${formatAmount(percentage)}%)\n`
+      msg += `${index + 1}. *${getCategoryLabel(
+        lang,
+        item.category
+      )}*: ${formatMoney(item.amount, defaultCurrency)} (${formatAmount(
+        percentage
+      )}%)\n`
     })
 
     msg += `\n──────────────\n\n`

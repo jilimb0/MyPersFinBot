@@ -2,7 +2,8 @@ import { CSVExporter } from "../../export/csv-exporter"
 import { JSONExporter } from "../../export/json-exporter"
 import { ExportService } from "../../export/export.service"
 import { dbStorage } from "../../database/storage-db"
-import { ExpenseCategory, TransactionType } from "../../types"
+import { ExpenseCategory, IncomeCategory, TransactionType } from "../../types"
+import { getCategoryLabel } from "../../i18n"
 
 // Mock database
 jest.mock("../../database/storage-db", () => ({
@@ -10,6 +11,7 @@ jest.mock("../../database/storage-db", () => ({
     getAllTransactions: jest.fn(),
     getTransactionsByDateRange: jest.fn(),
     getUserData: jest.fn(),
+    getUserLanguage: jest.fn().mockResolvedValue("en"),
   },
 }))
 
@@ -23,7 +25,7 @@ const mockTransactions = [
     id: "1",
     date: new Date("2026-01-01"),
     type: "EXPENSE" as const,
-    category: "Food & dining 🍔",
+    category: ExpenseCategory.FOOD_DINING,
     amount: 100,
     currency: "USD" as const,
     description: "Groceries",
@@ -33,7 +35,7 @@ const mockTransactions = [
     id: "2",
     date: new Date("2026-01-02"),
     type: "INCOME" as const,
-    category: "SALARY",
+    category: IncomeCategory.SALARY,
     amount: 5000,
     currency: "USD" as const,
     description: "Monthly salary",
@@ -43,7 +45,7 @@ const mockTransactions = [
     id: "3",
     date: new Date("2026-01-03"),
     type: "EXPENSE" as const,
-    category: "TRANSPORT",
+    category: ExpenseCategory.TRANSPORTATION,
     amount: 50,
     currency: "USD" as const,
     description: "Gas",
@@ -72,8 +74,12 @@ describe("CSVExporter", () => {
       expect(result.mimeType).toBe("text/csv")
       expect(result.recordCount).toBe(3)
       expect(result.data).toContain("Date,Type,Category")
-      expect(result.data).toContain("Food & dining 🍔")
-      expect(result.data).toContain("SALARY")
+      expect(result.data).toContain(
+        getCategoryLabel("en", ExpenseCategory.FOOD_DINING)
+      )
+      expect(result.data).toContain(
+        getCategoryLabel("en", IncomeCategory.SALARY)
+      )
     })
 
     test("should apply type filter", async () => {
@@ -86,8 +92,12 @@ describe("CSVExporter", () => {
       })
 
       expect(result.recordCount).toBe(2) // Only 2 expenses
-      expect(result.data).toContain("Food & dining 🍔")
-      expect(result.data).not.toContain("SALARY")
+      expect(result.data).toContain(
+        getCategoryLabel("en", ExpenseCategory.FOOD_DINING)
+      )
+      expect(result.data).not.toContain(
+        getCategoryLabel("en", IncomeCategory.SALARY)
+      )
     })
 
     test("should apply category filter", async () => {
@@ -168,9 +178,9 @@ describe("CSVExporter", () => {
       const results = await csvExporter.exportByCategory("user123")
 
       expect(results.size).toBe(3) // FOOD, SALARY, TRANSPORT
-      expect(results.has("Food & dining 🍔")).toBe(true)
-      expect(results.has("SALARY")).toBe(true)
-      expect(results.has("TRANSPORT")).toBe(true)
+      expect(results.has(ExpenseCategory.FOOD_DINING)).toBe(true)
+      expect(results.has(IncomeCategory.SALARY)).toBe(true)
+      expect(results.has(ExpenseCategory.TRANSPORTATION)).toBe(true)
     })
   })
 })

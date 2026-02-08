@@ -1,10 +1,12 @@
 import {
   Currency,
-  ExpenseCategory,
-  IncomeCategory,
   TransactionCategory,
 } from "./types"
 import { Language, t } from "./i18n"
+import {
+  getExpenseCategoryByLabel,
+  getIncomeCategoryByLabel,
+} from "./i18n/categories"
 
 const VALID_CURRENCIES = ["USD", "EUR", "GEL", "RUB", "UAH", "PLN"]
 
@@ -175,25 +177,13 @@ export function isValidAmount(text: string): boolean {
 export function validateExpenseCategory(
   text: string
 ): TransactionCategory | null {
-  const categories = Object.values(ExpenseCategory)
-  const normalized = text.trim()
-
-  if (categories.includes(normalized as ExpenseCategory)) {
-    return normalized as ExpenseCategory
-  }
-
-  return null
+  if (!text) return null
+  return getExpenseCategoryByLabel(text)
 }
 
 export function validateIncomeCategory(
   text: string
 ): TransactionCategory | null {
-  const categories = Object.values(IncomeCategory)
-  const normalized = text.trim()
-
-  if (categories.includes(normalized as IncomeCategory)) {
-    return normalized as IncomeCategory
-  }
-
-  return null
+  if (!text) return null
+  return getIncomeCategoryByLabel(text)
 }
