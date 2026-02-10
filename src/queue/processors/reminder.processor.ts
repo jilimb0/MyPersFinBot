@@ -1,10 +1,10 @@
-import { Job } from "bull"
-import TelegramBot from "node-telegram-bot-api"
-import logger from "../../logger"
+import type { Job } from "bull"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage } from "../../database/storage-db"
-import { ReminderJobData, JobResult } from "../types"
-import { Language, t } from "../../i18n"
-import { formatDateDisplay } from "../../utils"
+import { type Language, t } from "../../i18n"
+import logger from "../../logger"
+import { escapeMarkdown, formatDateDisplay } from "../../utils"
+import type { JobResult, ReminderJobData } from "../types"
 
 /**
  * Process reminder job
@@ -51,7 +51,9 @@ export async function processReminder(
     }
 
     // Build reminder message
-    let fullMessage = `🔔 *${title}*\n\n${message}`
+    const safeTitle = escapeMarkdown(title)
+    const safeMessage = escapeMarkdown(message)
+    let fullMessage = `🔔 *${safeTitle}*\n\n${safeMessage}`
 
     // Add entity-specific information
     if (type === "debt" && entityId) {

@@ -1,5 +1,5 @@
+import type { BankParserResult, BankType, ParsedTransaction } from "../types"
 import { BankParser } from "./base-parser"
-import { ParsedTransaction, BankParserResult, BankType } from "../types"
 
 export class TinkoffParser extends BankParser {
   get bankType(): BankType {
@@ -24,7 +24,7 @@ export class TinkoffParser extends BankParser {
         if (parsed) {
           transactions.push(parsed)
         }
-      } catch (error) {
+      } catch (_error) {
         this.errors.push(`Failed to parse line: ${line}`)
       }
     }

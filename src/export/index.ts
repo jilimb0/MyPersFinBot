@@ -9,12 +9,12 @@
  * - Quick presets
  */
 
-export * from "./types"
 export * from "./csv-exporter"
 export * from "./excel-exporter"
-export * from "./json-exporter"
 export * from "./export.service"
 export * from "./formatters"
+export * from "./json-exporter"
+export * from "./types"
 
 // Export default service
 import { exportService } from "./export.service"

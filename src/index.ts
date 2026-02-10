@@ -1,11 +1,11 @@
 import "dotenv/config"
 import "reflect-metadata"
 import { initializeApp, setupShutdownHandlers } from "./bootstrap"
-import logger from "./logger"
 import { registerAppServices } from "./bootstrap/app-services"
 import { initObservability } from "./bootstrap/observability"
 import { registerRouters } from "./bootstrap/routers"
 import { config } from "./config"
+import logger from "./logger"
 
 /**
  * Main application entry point

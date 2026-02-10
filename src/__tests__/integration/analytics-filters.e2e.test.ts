@@ -1,6 +1,6 @@
-import TelegramBot from "node-telegram-bot-api"
-import { WizardManager } from "../../wizards/wizards"
+import type TelegramBot from "node-telegram-bot-api"
 import { t } from "../../i18n"
+import { WizardManager } from "../../wizards/wizards"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {

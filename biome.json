@@ -1,0 +1,189 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "experimentalScannerIgnores": [
+      "dist",
+      "build",
+      "node_modules",
+      "coverage",
+      "data",
+      "logs",
+      "*.log",
+      "*.sqlite",
+      ".env",
+      ".env.local",
+      "**/.DS_Store"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error",
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "error"
+      },
+
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noConsole": "off",
+        "noArrayIndexKey": "warn",
+        "noDoubleEquals": "error",
+        "noImplicitAnyLet": "off",
+        "noAssignInExpressions": "off",
+        "useAwait": "error",
+        "useIterableCallbackReturn": "off"
+      },
+
+      "style": {
+        "noNonNullAssertion": "off",
+        "useConst": "error",
+        "useTemplate": "warn",
+        "noUnusedTemplateLiteral": "warn",
+        "noParameterAssign": "off",
+        "useNodejsImportProtocol": "off"
+      },
+
+      "complexity": {
+        "noStaticOnlyClass": "off",
+        "noForEach": "off",
+        "useLiteralKeys": "off"
+      },
+
+      "security": {
+        "noDangerouslySetInnerHtml": "error"
+      },
+
+      "performance": {
+        "noAccumulatingSpread": "warn",
+        "noDelete": "warn"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "jsxQuoteStyle": "double",
+      "trailingCommas": "es5",
+      "semicolons": "asNeeded",
+      "arrowParentheses": "always",
+      "quoteProperties": "asNeeded",
+      "bracketSpacing": true
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/__tests__/**", "**/*.test.ts", "**/*.spec.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off",
+            "useAwait": "off"
+          },
+          "correctness": {
+            "noUnusedVariables": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.config.js", "**/*.config.ts", "ecosystem.config.js"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNodejsImportProtocol": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/cache/memory-cache.service.ts",
+        "src/bootstrap/bot.ts",
+        "src/analytics/analytics.service.ts",
+        "src/export/*"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/cache/**", "src/bootstrap/app-services.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/wizards/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          },
+          "performance": {
+            "noDelete": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/error-handler.ts",
+        "src/i18n/index.ts",
+        "src/fx.ts",
+        "src/export/**",
+        "src/handlers/auto-*.ts",
+        "src/handlers/transaction-handlers.ts",
+        "src/handlers/voice-handler.ts",
+        "src/database/services/balance.service.ts",
+        "src/database/storage-db.ts",
+        "src/logger/**",
+        "src/middleware/**",
+        "src/monitoring.ts",
+        "src/notifications/**",
+        "src/menus.ts",
+        "src/menus-i18n.ts",
+        "src/queue/**",
+        "src/parsers/**",
+        "src/reports/**",
+        "src/services/**"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off",
+            "useAwait": "off"
+          },
+          "performance": {
+            "noDelete": "off"
+          }
+        }
+      }
+    }
+  ]
+}

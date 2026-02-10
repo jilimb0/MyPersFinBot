@@ -3,9 +3,9 @@
  * Handles inputs like "100 food", "потратил 500", etc.
  */
 
-import TelegramBot from "node-telegram-bot-api"
-import type { WizardManager } from "../../wizards/wizards"
+import type TelegramBot from "node-telegram-bot-api"
 import * as handlers from "../../handlers"
+import type { WizardManager } from "../../wizards/wizards"
 
 /**
  * Check if text is NLP input

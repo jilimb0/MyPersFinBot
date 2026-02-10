@@ -1,5 +1,5 @@
-import { t, Language, getTranslationValue } from "./index"
 import type TelegramBot from "node-telegram-bot-api"
+import { getTranslationValue, type Language, t } from "./index"
 
 /**
  * Generate main menu keyboard based on user language

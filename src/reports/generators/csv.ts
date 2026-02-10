@@ -2,9 +2,9 @@
  * CSV generation utilities
  */
 
-import { Transaction } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
 import { getCategoryLabel } from "../../i18n"
+import type { Transaction } from "../../types"
 
 /**
  * Generates CSV export of all transactions

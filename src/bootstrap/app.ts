@@ -2,12 +2,12 @@
  * Main application initialization module
  */
 
-import { setupGlobalErrorHandlers } from "../error-handler"
 import { config, logConfig } from "../config"
+import { setupGlobalErrorHandlers } from "../error-handler"
 import logger from "../logger"
-import { initializeDatabaseAndCache, closeDatabaseAndCache } from "./database"
+import { type BotContext, createBot, stopBot } from "./bot"
+import { closeDatabaseAndCache, initializeDatabaseAndCache } from "./database"
 import { initializeFXRates, stopFXRatesRefresh } from "./fx-rates"
-import { createBot, stopBot, BotContext } from "./bot"
 
 /**
  * Application context

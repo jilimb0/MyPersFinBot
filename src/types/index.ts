@@ -1,4 +1,4 @@
-import { BudgetPeriod } from "../database/entities/Budget"
+import type { BudgetPeriod } from "../database/entities/Budget"
 
 export type Currency = "USD" | "EUR" | "GEL" | "RUB" | "UAH" | "PLN"
 
@@ -211,6 +211,7 @@ export interface RecurringTransaction {
   category: TransactionCategory
   accountId: string
   frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+  cronExpression?: string
   startDate: string | Date
   endDate?: string | Date
   nextExecutionDate: string | Date

@@ -1,11 +1,12 @@
-import { Job } from "bull"
-import logger from "../../logger"
-import { dbStorage } from "../../database/storage-db"
-import { RecurringTransactionJobData, JobResult } from "../types"
+import { randomUUID } from "node:crypto"
+import type { Job } from "bull"
 import { balanceService } from "../../database/services/balance.service"
+import { dbStorage } from "../../database/storage-db"
+import { type Language, t } from "../../i18n"
+import logger from "../../logger"
 import { TransactionType } from "../../types"
-import { randomUUID } from "crypto"
-import { Language, t } from "../../i18n"
+import { escapeMarkdown } from "../../utils"
+import type { JobResult, RecurringTransactionJobData } from "../types"
 
 /**
  * Calculate next execution date based on frequency
@@ -109,7 +110,9 @@ export async function processRecurringTransaction(
       const balance = await dbStorage.getBalance(userId, accountId, currency)
       if (!balance) {
         throw new Error(
-          t(lang, "queue.recurring.balanceNotFound", { account: accountId })
+          t(lang, "queue.recurring.balanceNotFound", {
+            account: escapeMarkdown(accountId),
+          })
         )
       }
 

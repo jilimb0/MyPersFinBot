@@ -1,37 +1,37 @@
-import { AppDataSource } from "./data-source"
-import { User } from "./entities/User"
-import { Balance } from "./entities/Balance"
-import { Transaction as TransactionEntity } from "./entities/Transaction"
-import { Debt as DebtEntity } from "./entities/Debt"
-import { Goal as GoalEntity } from "./entities/Goal"
-import { Budget as BudgetEntity, BudgetPeriod } from "./entities/Budget"
-import { IncomeSource as IncomeSourceEntity } from "./entities/IncomeSource"
-import { CategoryPreference } from "./entities/CategoryPreference"
-import { Reminder } from "./entities/Reminder"
-import { RecurringTransaction as RecurringTransactionEntity } from "./entities/RecurringTransaction"
-import {
-  Balance as BalanceType,
-  Debt,
-  Goal,
-  Transaction,
-  TransactionType,
-  IncomeSource,
-  Currency,
-  InternalCategory,
-  ExpenseCategory,
-  Budget,
-  CategoryBudget,
-  TransactionTemplate,
-  ReminderSettings,
-  TransactionCategory,
-  RecurringTransaction,
-} from "../types"
+import { randomUUID } from "node:crypto"
 import { convertSync } from "../fx"
-import { formatMoney, handleInsufficientFunds } from "../utils"
-import { randomUUID } from "crypto"
-import { isValidLanguage, resolveLanguage, Language, t } from "../i18n"
+import { isValidLanguage, type Language, resolveLanguage, t } from "../i18n"
 import { normalizeCategoryValue } from "../i18n/categories"
 import { getCacheManager } from "../services/cache-manager"
+import {
+  type Balance as BalanceType,
+  type Budget,
+  type CategoryBudget,
+  type Currency,
+  type Debt,
+  type ExpenseCategory,
+  type Goal,
+  type IncomeSource,
+  InternalCategory,
+  type RecurringTransaction,
+  type ReminderSettings,
+  type Transaction,
+  type TransactionCategory,
+  type TransactionTemplate,
+  TransactionType,
+} from "../types"
+import { escapeMarkdown, formatMoney, handleInsufficientFunds } from "../utils"
+import { AppDataSource } from "./data-source"
+import { Balance } from "./entities/Balance"
+import { Budget as BudgetEntity, BudgetPeriod } from "./entities/Budget"
+import { CategoryPreference } from "./entities/CategoryPreference"
+import { Debt as DebtEntity } from "./entities/Debt"
+import { Goal as GoalEntity } from "./entities/Goal"
+import { IncomeSource as IncomeSourceEntity } from "./entities/IncomeSource"
+import { RecurringTransaction as RecurringTransactionEntity } from "./entities/RecurringTransaction"
+import { Reminder } from "./entities/Reminder"
+import { Transaction as TransactionEntity } from "./entities/Transaction"
+import { User } from "./entities/User"
 
 export class DatabaseStorage {
   private _cacheManager: ReturnType<typeof getCacheManager> | null = null
@@ -181,19 +181,18 @@ export class DatabaseStorage {
   }
 
   async clearAllUserData(userId: string) {
-    await Promise.all([
-      AppDataSource.getRepository(TransactionEntity).delete({ userId }),
-      AppDataSource.getRepository(Balance).delete({ userId }),
-      AppDataSource.getRepository(DebtEntity).delete({ userId }),
-      AppDataSource.getRepository(GoalEntity).delete({ userId }),
-      AppDataSource.getRepository(IncomeSourceEntity).delete({ userId }),
-      AppDataSource.getRepository(CategoryPreference).delete({ userId }),
-      AppDataSource.getRepository(BudgetEntity).delete({ userId }),
-      AppDataSource.getRepository(Reminder).delete({ userId }),
-      AppDataSource.getRepository(RecurringTransactionEntity).delete({ userId }),
-    ])
-
-    await AppDataSource.getRepository(User).delete({ id: userId })
+    await AppDataSource.transaction(async (manager) => {
+      await manager.getRepository(TransactionEntity).delete({ userId })
+      await manager.getRepository(Balance).delete({ userId })
+      await manager.getRepository(DebtEntity).delete({ userId })
+      await manager.getRepository(GoalEntity).delete({ userId })
+      await manager.getRepository(IncomeSourceEntity).delete({ userId })
+      await manager.getRepository(CategoryPreference).delete({ userId })
+      await manager.getRepository(BudgetEntity).delete({ userId })
+      await manager.getRepository(Reminder).delete({ userId })
+      await manager.getRepository(RecurringTransactionEntity).delete({ userId })
+      await manager.getRepository(User).delete({ id: userId })
+    })
 
     await this.clearCache(userId)
   }
@@ -234,7 +233,7 @@ export class DatabaseStorage {
     return balances
       .map((b) =>
         t(lang, "balances.listItem", {
-          account: b.accountId,
+          account: escapeMarkdown(b.accountId),
           amount: formatMoney(b.amount, b.currency),
         })
       )
@@ -491,10 +490,10 @@ export class DatabaseStorage {
       .limit(1)
       .getOne()
 
-    if (lastTx && lastTx.fromAccountId) {
+    if (lastTx?.fromAccountId) {
       return lastTx.fromAccountId
     }
-    if (lastTx && lastTx.toAccountId) {
+    if (lastTx?.toAccountId) {
       return lastTx.toAccountId
     }
 
@@ -1363,7 +1362,7 @@ export class DatabaseStorage {
     return sources
       .map((i: IncomeSourceEntity) =>
         t(lang, "incomeSources.listItem", {
-          name: i.name,
+          name: escapeMarkdown(i.name),
           amount:
             i.expectedAmount && i.currency
               ? formatMoney(i.expectedAmount, i.currency)
@@ -1391,7 +1390,9 @@ export class DatabaseStorage {
   async migrateCategoryValues(): Promise<void> {
     const txRepo = AppDataSource.getRepository(TransactionEntity)
     const budgetRepo = AppDataSource.getRepository(BudgetEntity)
-    const recurringRepo = AppDataSource.getRepository(RecurringTransactionEntity)
+    const recurringRepo = AppDataSource.getRepository(
+      RecurringTransactionEntity
+    )
     const userRepo = AppDataSource.getRepository(User)
 
     const txs = await txRepo.find()

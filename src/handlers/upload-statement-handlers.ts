@@ -1,17 +1,17 @@
-import TelegramBot from "node-telegram-bot-api"
-import { WizardManager } from "../wizards/wizards"
-import { BankParserFactory } from "../parsers"
+import { randomUUID } from "node:crypto"
+import type TelegramBot from "node-telegram-bot-api"
+import { SETTINGS_KEYBOARD } from "../constants"
 import { dbStorage as db } from "../database/storage-db"
-import {
-  ParsedTransaction,
+import { getCategoryLabel, resolveLanguage, t } from "../i18n"
+import { BankParserFactory } from "../parsers"
+import type {
   BankType,
   Currency,
+  ParsedTransaction,
   TransactionCategory,
 } from "../types"
-import { formatMoney } from "../utils"
-import { SETTINGS_KEYBOARD } from "../constants"
-import { randomUUID } from "crypto"
-import { resolveLanguage, t, getCategoryLabel } from "../i18n"
+import { escapeMarkdown, formatMoney } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 // Handle file upload
 export async function handleStatementUpload(
@@ -23,7 +23,7 @@ export async function handleStatementUpload(
   const document = msg.document
 
   const state = wizardManager.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!document) {
     await bot.sendMessage(msg.chat.id, t(lang, "import.invalidFile"))
@@ -59,7 +59,7 @@ export async function handleStatementUpload(
     if (result.errors.length > 0) {
       await bot.sendMessage(
         msg.chat.id,
-        t(lang, "import.parsingErrors") + "\n" + result.errors.join("\n"),
+        `${t(lang, "import.parsingErrors")}\n${result.errors.join("\n")}`,
         { parse_mode: "Markdown" }
       )
     }
@@ -122,7 +122,7 @@ async function showTransactionPreview(
   // Preview first 5 transactions
   const preview = transactions.slice(0, 5)
   const state = wizardManager.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   let msg = `${t(lang, "import.preview")}\n\n`
   msg += `${t(lang, "import.bankLine", { bank: bankType })}\n`
@@ -142,9 +142,11 @@ async function showTransactionPreview(
     const emoji = tx.type === "INCOME" ? "💰" : "💸"
     const sign = tx.type === "INCOME" ? "+" : "-"
     msg += `${i + 1}. ${emoji} ${sign}${formatMoney(tx.amount, tx.currency, true)}\n`
-    msg += `   ${tx.description}\n`
+    msg += `   ${escapeMarkdown(tx.description)}\n`
     msg += `   ${
-      tx.category ? getCategoryLabel(lang, tx.category) : t(lang, "buttons.other")
+      tx.category
+        ? getCategoryLabel(lang, tx.category)
+        : t(lang, "buttons.other")
     }\n`
   })
 
@@ -236,7 +238,7 @@ async function importAllTransactions(
   userId: string,
   transactions: ParsedTransaction[]
 ): Promise<boolean> {
-  const lang = wizardManager.getState(userId)?.lang || "en"
+  const lang = resolveLanguage(wizardManager.getState(userId)?.lang)
   try {
     // Get user's default account
     const balances = await db.getBalancesList(userId)
@@ -348,7 +350,7 @@ async function showTransactionEditor(
   total: number
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const emoji = tx.type === "INCOME" ? "💰" : "💸"
   const sign = tx.type === "INCOME" ? "+" : "-"
@@ -399,7 +401,7 @@ async function showTransactionsList(
   transactions: ParsedTransaction[]
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   let msg = `${t(lang, "import.allTransactionsTitle", {
     count: transactions.length,

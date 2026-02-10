@@ -1,7 +1,7 @@
 import Redis from "ioredis"
-import logger from "../logger"
-import { CacheInterface, CacheConfig, CacheStats } from "./cache.interface"
 import { config as appConfig } from "../config"
+import logger from "../logger"
+import type { CacheConfig, CacheInterface, CacheStats } from "./cache.interface"
 
 /**
  * Redis Cache Service with connection pooling and error handling

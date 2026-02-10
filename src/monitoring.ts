@@ -1,6 +1,6 @@
-import { Logger, QueryRunner } from "typeorm"
-import { logger as log } from "./logger"
+import type { Logger, QueryRunner } from "typeorm"
 import { config } from "./config"
+import { logger as log } from "./logger"
 
 export class QueryMonitor {
   private static instance: QueryMonitor
@@ -60,7 +60,7 @@ export class QueryMonitor {
 
   private truncateQuery(query: string, maxLength: number = 100): string {
     return query.length > maxLength
-      ? query.substring(0, maxLength) + "..."
+      ? `${query.substring(0, maxLength)}...`
       : query
   }
 
@@ -107,14 +107,14 @@ export class QueryMonitor {
     const recentQueries = this.getRecentSlowQueries(5)
 
     let report = "🔍 *Query Performance Report*\n\n"
-    report += `📊 *Statistics:*\n`
+    report += "📊 *Statistics:*\n"
     report += `• Total slow queries: ${stats.totalSlowQueries}\n`
     report += `• Unique slow queries: ${stats.uniqueSlowQueries}\n`
     report += `• Max query time: ${stats.maxTime}ms\n`
     report += `• Avg query time: ${stats.avgTime}ms\n\n`
 
     if (topQueries.length > 0) {
-      report += `🐌 *Top 5 Slowest Queries:*\n`
+      report += "🐌 *Top 5 Slowest Queries:*\n"
       topQueries.forEach((q, i) => {
         report += `${i + 1}. ${this.truncateQuery(q.query, 60)}\n`
         report += `   Count: ${q.count} | Avg: ${q.avgTime}ms | Max: ${q.maxTime}ms\n`
@@ -123,7 +123,7 @@ export class QueryMonitor {
     }
 
     if (recentQueries.length > 0) {
-      report += `🕒 *Recent Slow Queries:*\n`
+      report += "🕒 *Recent Slow Queries:*\n"
       recentQueries.forEach((q, i) => {
         const timeAgo = this.formatTimeAgo(q.timestamp)
         report += `${i + 1}. ${q.time}ms - ${timeAgo}\n`

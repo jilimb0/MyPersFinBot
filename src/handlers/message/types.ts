@@ -2,10 +2,10 @@
  * Message handler types
  */
 
-import TelegramBot from "node-telegram-bot-api"
-import { Language } from "../../i18n"
+import type TelegramBot from "node-telegram-bot-api"
+import type { dbStorage } from "../../database/storage-db"
+import type { Language } from "../../i18n"
 import type { WizardManager } from "../../wizards/wizards"
-import { dbStorage } from "../../database/storage-db"
 
 /**
  * Message handler context
@@ -23,10 +23,12 @@ export interface MessageContext {
 
 /**
  * Message handler function
+ * Returns boolean to indicate if message was handled,
+ * or undefined for fire-and-forget handlers
  */
 export type MessageHandler = (
   context: MessageContext
-) => Promise<boolean | void>
+) => Promise<boolean | undefined>
 
 /**
  * Message route

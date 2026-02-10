@@ -11,9 +11,9 @@
  */
 
 export { AnalyticsService, analyticsService } from "./analytics.service"
-export * from "./types"
-export * from "./helpers"
 export * from "./formatters"
+export * from "./helpers"
+export * from "./types"
 
 // Export default
 import { analyticsService } from "./analytics.service"

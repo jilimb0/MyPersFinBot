@@ -1,5 +1,5 @@
 import { QueueService } from "../../queue/queue.service"
-import { JobName, RecurringTransactionJobData } from "../../queue/types"
+import { JobName, type RecurringTransactionJobData } from "../../queue/types"
 import { ExpenseCategory, TransactionType } from "../../types"
 
 // Mock Bull

@@ -7,9 +7,9 @@
  * - Security logging
  */
 
-import TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "./database/storage-db"
-import { t, resolveLanguage, Language } from "./i18n"
+import { type Language, resolveLanguage, t } from "./i18n"
 
 // ==========================================
 // CONFIGURATION
@@ -39,8 +39,8 @@ export const SECURITY_CONFIG = {
   // Rate limiting
   RATE_LIMIT: {
     enabled: process.env.RATE_LIMIT_ENABLED === "true" || false,
-    maxMessages: parseInt(process.env.RATE_LIMIT_MAX_MESSAGES || "30"),
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000"), // 1 minute
+    maxMessages: parseInt(process.env.RATE_LIMIT_MAX_MESSAGES || "30", 10),
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10), // 1 minute
   },
 
   // Security logging

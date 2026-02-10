@@ -2,13 +2,14 @@
  * Goal Auto-Deposit Handlers
  */
 
-import type { WizardManager } from "../wizards/wizards"
-import { dbStorage as db } from "../database/storage-db"
-import { showGoalsMenu } from "../menus-i18n"
 import { AppDataSource } from "../database/data-source"
 import { Goal as GoalEntity } from "../database/entities/Goal"
-import { Goal } from "../types"
-import { t } from "../i18n"
+import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
+import { showGoalsMenu } from "../menus-i18n"
+import type { Goal } from "../types"
+import { escapeMarkdown } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 /**
  * Handle auto-deposit enable/disable toggle
@@ -21,7 +22,7 @@ export async function handleAutoDepositToggle(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const goal = state?.data?.goal as Goal
 
@@ -57,7 +58,9 @@ export async function handleAutoDepositToggle(
     await wizard.sendMessage(
       chatId,
       `${t(lang, "autoDeposit.setupTitle")}\n\n` +
-        `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n\n` +
+        `${t(lang, "autoDeposit.goalLine", {
+          name: escapeMarkdown(goal.name),
+        })}\n\n` +
         `${t(lang, "autoDeposit.selectAccountPrompt")}`,
       {
         parse_mode: "Markdown",
@@ -80,7 +83,9 @@ export async function handleAutoDepositToggle(
 
     await wizard.sendMessage(
       chatId,
-      t(lang, "autoDeposit.disabledMessage", { name: goal.name }),
+      t(lang, "autoDeposit.disabledMessage", {
+        name: escapeMarkdown(goal.name),
+      }),
       { parse_mode: "Markdown" }
     )
 
@@ -103,7 +108,7 @@ export async function handleAutoDepositAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const goal = state?.data?.goal as Goal
 
   // Extract account name from "AccountName (CURRENCY)"
@@ -133,9 +138,13 @@ export async function handleAutoDepositAccountSelect(
   await wizard.sendMessage(
     chatId,
     `${t(lang, "autoDeposit.amountTitle")}\n\n` +
-      `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+      `${t(lang, "autoDeposit.goalLine", {
+        name: escapeMarkdown(goal.name),
+      })}\n` +
       `${t(lang, "autoDeposit.fromLine", {
-        account: accountId?.trim() || t(lang, "common.notAvailable"),
+        account: escapeMarkdown(
+          accountId?.trim() || t(lang, "common.notAvailable")
+        ),
       })}\n\n` +
       `${t(lang, "autoDeposit.amountPrompt")}`,
     {
@@ -167,12 +176,12 @@ export async function handleAutoDepositAmountInput(
   const state = wizard.getState(userId)
   if (!state?.data?.goal || !state?.data?.autoDepositAccountId) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const goal = state?.data?.goal as Goal
   const accountId = state?.data?.autoDepositAccountId as string
 
   const amount = parseFloat(text)
-  if (isNaN(amount) || amount <= 0) {
+  if (Number.isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
       t(lang, "errors.invalidAmount"),
@@ -195,8 +204,12 @@ export async function handleAutoDepositAmountInput(
   await wizard.sendMessage(
     chatId,
     `${t(lang, "autoDeposit.frequencyTitle")}\n\n` +
-      `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
-      `${t(lang, "autoDeposit.fromLine", { account: accountId })}\n` +
+      `${t(lang, "autoDeposit.goalLine", {
+        name: escapeMarkdown(goal.name),
+      })}\n` +
+      `${t(lang, "autoDeposit.fromLine", {
+        account: escapeMarkdown(accountId),
+      })}\n` +
       `${t(lang, "autoDeposit.amountLine", {
         amount,
         currency: goal.currency,
@@ -240,7 +253,7 @@ export async function handleAutoDepositFrequencySelect(
   )
     return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const goal = state?.data?.goal as Goal
   // const accountId = state?.data?.autoDepositAccountId as string
   const amount = state?.data?.autoDepositAmount as number
@@ -260,7 +273,9 @@ export async function handleAutoDepositFrequencySelect(
     await wizard.sendMessage(
       chatId,
       `${t(lang, "autoDeposit.selectDayOfWeekTitle")}\n\n` +
-        `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+        `${t(lang, "autoDeposit.goalLine", {
+          name: escapeMarkdown(goal.name),
+        })}\n` +
         `${t(lang, "autoDeposit.amountLine", {
           amount,
           currency: goal.currency,
@@ -310,7 +325,9 @@ export async function handleAutoDepositFrequencySelect(
     await wizard.sendMessage(
       chatId,
       `${t(lang, "autoDeposit.selectDayOfMonthTitle")}\n\n` +
-        `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+        `${t(lang, "autoDeposit.goalLine", {
+          name: escapeMarkdown(goal.name),
+        })}\n` +
         `${t(lang, "autoDeposit.amountLine", {
           amount,
           currency: goal.currency,
@@ -350,7 +367,7 @@ export async function handleAutoDepositDayWeeklySelect(
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const goal = state?.data?.goal as Goal
   const accountId = state?.data?.autoDepositAccountId as string
   const amount = state?.data?.autoDepositAmount as number
@@ -389,12 +406,16 @@ export async function handleAutoDepositDayWeeklySelect(
   await wizard.sendMessage(
     chatId,
     `${t(lang, "autoDeposit.enabledTitle")}\n\n` +
-      `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+      `${t(lang, "autoDeposit.goalLine", {
+        name: escapeMarkdown(goal.name),
+      })}\n` +
       `${t(lang, "autoDeposit.amountLine", {
         amount,
         currency: goal.currency,
       })}\n` +
-      `${t(lang, "autoDeposit.fromLine", { account: accountId })}\n` +
+      `${t(lang, "autoDeposit.fromLine", {
+        account: escapeMarkdown(accountId),
+      })}\n` +
       `${t(lang, "autoDeposit.frequencyLine", {
         frequency: t(lang, "autoDeposit.frequencyWeekly", { day: text }),
       })}\n\n` +
@@ -419,13 +440,13 @@ export async function handleAutoDepositDayMonthlySelect(
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const goal = state?.data?.goal as Goal
   const accountId = state?.data?.autoDepositAccountId as string
   const amount = state?.data?.autoDepositAmount as number
 
-  const dayOfMonth = parseInt(text)
-  if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+  const dayOfMonth = parseInt(text, 10)
+  if (Number.isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
       t(lang, "errors.invalidDay"),
@@ -448,12 +469,16 @@ export async function handleAutoDepositDayMonthlySelect(
   await wizard.sendMessage(
     chatId,
     `${t(lang, "autoDeposit.enabledTitle")}\n\n` +
-      `${t(lang, "autoDeposit.goalLine", { name: goal.name })}\n` +
+      `${t(lang, "autoDeposit.goalLine", {
+        name: escapeMarkdown(goal.name),
+      })}\n` +
       `${t(lang, "autoDeposit.amountLine", {
         amount,
         currency: goal.currency,
       })}\n` +
-      `${t(lang, "autoDeposit.fromLine", { account: accountId })}\n` +
+      `${t(lang, "autoDeposit.fromLine", {
+        account: escapeMarkdown(accountId),
+      })}\n` +
       `${t(lang, "autoDeposit.frequencyLine", {
         frequency: t(lang, "autoDeposit.frequencyMonthly", {
           day: dayOfMonth,

@@ -1,10 +1,10 @@
 import {
-  TransactionType,
-  TransactionCategory,
-  Currency,
+  type Currency,
+  ExpenseCategory,
   IncomeCategory,
   InternalCategory,
-  ExpenseCategory,
+  type TransactionCategory,
+  TransactionType,
 } from "../types"
 
 interface NLPResult {
@@ -114,7 +114,7 @@ export class NLPParser {
   private extractAmount(text: string): number | null {
     // Numeric patterns
     const numericMatch = text.match(/([\d.,]+)/)
-    if (numericMatch && numericMatch[1]) {
+    if (numericMatch?.[1]) {
       return this.parseNumber(numericMatch[1])
     }
 

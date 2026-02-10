@@ -1,19 +1,18 @@
-import TelegramBot from "node-telegram-bot-api"
-import { nlpParser } from "../services/nlp-parser"
-import { assemblyAIService } from "../services/assemblyai-service"
-import { dbStorage as db } from "../database/storage-db"
-import { TransactionCategory, TransactionType } from "../types"
-import { formatMoney } from "../utils"
+import { exec } from "node:child_process"
+import { randomUUID } from "node:crypto"
+import fs, { existsSync, unlinkSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { promisify } from "node:util"
 import axios from "axios"
-import { unlinkSync, writeFileSync, existsSync } from "fs"
-import { tmpdir } from "os"
-import { join } from "path"
-import { randomUUID } from "crypto"
-import { exec } from "child_process"
-import { promisify } from "util"
-import fs from "fs"
-import { t } from "../i18n"
-import { WizardManager } from "../wizards/wizards"
+import type TelegramBot from "node-telegram-bot-api"
+import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
+import { assemblyAIService } from "../services/assemblyai-service"
+import { nlpParser } from "../services/nlp-parser"
+import { type TransactionCategory, TransactionType } from "../types"
+import { escapeMarkdown, formatMoney } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 const execAsync = promisify(exec)
 
@@ -26,7 +25,7 @@ export async function handleVoiceMessage(
   const userId = chatId.toString()
   const voice = msg.voice
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   if (!voice) return
 
   try {
@@ -89,10 +88,10 @@ export async function handleVoiceMessage(
     console.error("Voice processing error:", error)
 
     const state = wizard.getState(userId)
-    const lang = state?.lang || "en"
+    const lang = resolveLanguage(state?.lang)
     let errorMsg = t(lang, "voiceHandler.processingFailed")
 
-    if (error.message && error.message.includes("FFmpeg")) {
+    if (error.message?.includes("FFmpeg")) {
       errorMsg = t(lang, "voiceHandler.ffmpegMissingMessage")
     } else {
       errorMsg += ` ${t(lang, "voiceHandler.tryTextInput")}`
@@ -110,7 +109,7 @@ export async function handleNLPInput(
   wizard: WizardManager
 ): Promise<void> {
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   try {
     const defaultCurrency = await db.getDefaultCurrency(userId)
@@ -141,10 +140,10 @@ export async function handleNLPInput(
         amount: `${sign}${formatMoney(result.amount, defaultCurrency, true)}`,
       })}\n` +
       `${t(lang, "voiceHandler.confirm.category", {
-        category: result.category,
+        category: escapeMarkdown(result.category),
       })}\n` +
       `${t(lang, "voiceHandler.confirm.description", {
-        description: result.description,
+        description: escapeMarkdown(result.description),
       })}\n` +
       `${t(lang, "voiceHandler.confirm.confidence", {
         confidence: (result.confidence * 100).toFixed(0),
@@ -194,7 +193,7 @@ export async function handleNLPCallback(
   if (!chatId || !data) return
 
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   try {
     if (data === "nlp_cancel") {
@@ -321,7 +320,7 @@ export async function handleNLPCallback(
 
       await bot.answerCallbackQuery(query.id)
 
-      const newQuery = { ...query, confirmData }
+      const newQuery = { ...query, data: confirmData }
       await handleNLPCallback(bot, newQuery, wizard)
       return
     }
@@ -346,7 +345,7 @@ async function convertOgaToWav(
 
     const command = `ffmpeg -i "${ogaPath}" -acodec pcm_s16le -ar 16000 -ac 1 -f wav -y "${wavPath}" 2>&1`
 
-    console.log(`📞 Running FFmpeg...`)
+    console.log("📞 Running FFmpeg...")
     const { stdout, stderr } = await execAsync(command)
 
     if (!existsSync(wavPath)) {

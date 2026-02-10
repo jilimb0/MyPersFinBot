@@ -1,7 +1,7 @@
 import { AppDataSource } from "../../database/data-source"
-import { balanceService } from "../../database/services/balance.service"
 import { Balance } from "../../database/entities/Balance"
 import { Transaction } from "../../database/entities/Transaction"
+import { balanceService } from "../../database/services/balance.service"
 
 /**
  * Integration tests for BalanceService

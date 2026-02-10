@@ -5,7 +5,7 @@
 
 import { getRedisClient } from "../cache"
 import logger from "../logger"
-import { RateLimitConfig, RateLimitInfo, RateLimitResult } from "./types"
+import type { RateLimitConfig, RateLimitInfo, RateLimitResult } from "./types"
 
 export class RateLimiterService {
   private config: RateLimitConfig
@@ -242,7 +242,7 @@ export class RateLimiterService {
       const oldest = await redis.zrange(key, 0, 0, "WITHSCORES")
 
       if (oldest.length >= 2) {
-        const oldestTime = parseInt(oldest[1])
+        const oldestTime = parseInt(oldest[1], 10)
         return new Date(oldestTime + this.config.windowMs)
       }
 
@@ -274,8 +274,8 @@ export class RateLimiterService {
  */
 export const rateLimiter = new RateLimiterService({
   enabled: process.env.RATE_LIMIT_ENABLED === "true",
-  maxRequests: parseInt(process.env.RATE_LIMIT_MAX_MESSAGES || "30"),
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000"),
+  maxRequests: parseInt(process.env.RATE_LIMIT_MAX_MESSAGES || "30", 10),
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10),
   blockDurationMs: 300000, // 5 minutes
   skipAdmins: true,
 })

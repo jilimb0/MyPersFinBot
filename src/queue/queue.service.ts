@@ -1,6 +1,6 @@
-import Bull, { Queue, Job, JobOptions } from "bull"
+import Bull, { type Job, type JobOptions, type Queue } from "bull"
 import logger from "../logger"
-import { JobName, JobData, QueueJobOptions, JobResult } from "./types"
+import type { JobData, JobName, JobResult, QueueJobOptions } from "./types"
 
 /**
  * Queue Service for background job processing

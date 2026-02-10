@@ -2,12 +2,12 @@
  * Income message handlers
  */
 
-import TelegramBot from "node-telegram-bot-api"
-import { MessageHandler } from "./types"
-import { TransactionType } from "../../types"
-import { formatMoney } from "../../utils"
+import type TelegramBot from "node-telegram-bot-api"
 import { t } from "../../i18n"
 import { getGoToBalancesKeyboard } from "../../i18n/keyboards"
+import { TransactionType } from "../../types"
+import { formatMoney } from "../../utils"
+import type { MessageHandler } from "./types"
 
 /**
  * Handle income menu button
@@ -22,7 +22,7 @@ export const handleIncomeStart: MessageHandler = async (context) => {
       parse_mode: "Markdown",
       ...getGoToBalancesKeyboard(lang),
     })
-    return
+    return true
   }
 
   wizardManager.setState(userId, {
@@ -77,4 +77,5 @@ export const handleIncomeStart: MessageHandler = async (context) => {
       },
     }
   )
+  return true
 }

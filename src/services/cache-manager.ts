@@ -13,11 +13,11 @@
  */
 
 import { getCache } from "../cache"
-import { CacheInterface } from "../cache/cache.interface"
-import logger from "../logger"
+import type { CacheInterface } from "../cache/cache.interface"
 import { config } from "../config"
-import { UserData, Balance, Transaction, Currency } from "../types"
-import { Language } from "../i18n"
+import type { Language } from "../i18n"
+import logger from "../logger"
+import type { Balance, Currency, Transaction, UserData } from "../types"
 
 /**
  * Cache key prefixes

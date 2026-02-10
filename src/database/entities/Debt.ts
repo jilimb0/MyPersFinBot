@@ -1,13 +1,13 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm"
+import type { Currency } from "../../types"
 import { User } from "./User"
-import { Currency } from "../../types"
 
 @Entity("debts")
 @Index(["userId", "isPaid"])
@@ -65,7 +65,10 @@ export class Debt {
   }
 
   // Relations
-  @ManyToOne(() => User, (user) => user.debts)
+  @ManyToOne(
+    () => User,
+    (user) => user.debts
+  )
   @JoinColumn({ name: "userId" })
   user!: User
 }

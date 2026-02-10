@@ -2,11 +2,11 @@
  * Database initialization module
  */
 
-import { initializeDatabase, closeDatabase } from "../database/data-source"
-import { dbStorage } from "../database/storage-db"
-import { initializeCache, closeCache } from "../cache"
-import logger from "../logger"
+import { closeCache, initializeCache } from "../cache"
 import { config } from "../config"
+import { closeDatabase, initializeDatabase } from "../database/data-source"
+import { dbStorage } from "../database/storage-db"
+import logger from "../logger"
 
 /**
  * Initialize database and cache

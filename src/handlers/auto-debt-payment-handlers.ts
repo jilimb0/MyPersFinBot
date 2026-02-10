@@ -2,13 +2,14 @@
  * Debt Auto-Payment Handlers
  */
 
-import type { WizardManager } from "../wizards/wizards"
-import { dbStorage as db } from "../database/storage-db"
-import { showDebtsMenu } from "../menus-i18n"
 import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
-import { Debt } from "../types"
-import { t } from "../i18n"
+import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
+import { showDebtsMenu } from "../menus-i18n"
+import type { Debt } from "../types"
+import { escapeMarkdown } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 /**
  * Handle auto-payment enable/disable toggle
@@ -22,7 +23,7 @@ export async function handleAutoPaymentToggle(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const debt = state?.data?.debt as Debt
 
   if (text === t(lang, "wizard.debt.enableAutoPayment")) {
@@ -68,8 +69,8 @@ export async function handleAutoPaymentToggle(
       chatId,
       `${t(lang, "autoPayment.setupTitle")}\n\n` +
         `${t(lang, "autoPayment.debtLine", {
-          name: debt.name,
-          counterparty: debt.counterparty,
+          name: escapeMarkdown(debt.name),
+          counterparty: escapeMarkdown(debt.counterparty || ""),
         })}\n\n` +
         `${t(lang, "autoPayment.selectAccountPrompt")}`,
       {
@@ -93,7 +94,9 @@ export async function handleAutoPaymentToggle(
 
     await wizard.sendMessage(
       chatId,
-      t(lang, "autoPayment.disabledMessage", { name: debt.name }),
+      t(lang, "autoPayment.disabledMessage", {
+        name: escapeMarkdown(debt.name),
+      }),
       { parse_mode: "Markdown" }
     )
 
@@ -116,7 +119,7 @@ export async function handleAutoPaymentAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const debt = state?.data?.debt as Debt
 
   // Extract account name from "AccountName (CURRENCY)"
@@ -149,11 +152,13 @@ export async function handleAutoPaymentAccountSelect(
     chatId,
     `${t(lang, "autoPayment.amountTitle")}\n\n` +
       `${t(lang, "autoPayment.debtLine", {
-        name: debt.name,
-        counterparty: debt.counterparty,
+        name: escapeMarkdown(debt.name),
+        counterparty: escapeMarkdown(debt.counterparty || ""),
       })}\n` +
       `${t(lang, "autoPayment.fromLine", {
-        account: accountId?.trim() || t(lang, "common.notAvailable"),
+        account: escapeMarkdown(
+          accountId?.trim() || t(lang, "common.notAvailable")
+        ),
       })}\n` +
       `${t(lang, "autoPayment.remainingLine", {
         remaining: `${remaining} ${debt.currency}`,
@@ -190,10 +195,10 @@ export async function handleAutoPaymentAmountInput(
 
   const debt = state?.data?.debt as Debt
   // const accountId = state?.data?.autoPaymentAccountId as string
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const amount = parseFloat(text)
-  if (isNaN(amount) || amount <= 0) {
+  if (Number.isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
       t(lang, "errors.invalidAmount"),
@@ -229,8 +234,8 @@ export async function handleAutoPaymentAmountInput(
     chatId,
     `${t(lang, "autoPayment.selectDayTitle")}\n\n` +
       `${t(lang, "autoPayment.debtLine", {
-        name: debt.name,
-        counterparty: debt.counterparty,
+        name: escapeMarkdown(debt.name),
+        counterparty: escapeMarkdown(debt.counterparty || ""),
       })}\n` +
       `${t(lang, "autoPayment.amountLine", {
         amount,
@@ -269,13 +274,13 @@ export async function handleAutoPaymentDaySelect(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const debt = state?.data?.debt as Debt
   const accountId = state?.data?.autoPaymentAccountId as string
   const amount = state?.data?.autoPaymentAmount as number
 
-  const dayOfMonth = parseInt(text)
-  if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+  const dayOfMonth = parseInt(text, 10)
+  if (Number.isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
       t(lang, "errors.invalidDay"),
@@ -291,14 +296,16 @@ export async function handleAutoPaymentDaySelect(
     chatId,
     `${t(lang, "autoPayment.enabledTitle")}\n\n` +
       `${t(lang, "autoPayment.debtLine", {
-        name: debt.name,
-        counterparty: debt.counterparty,
+        name: escapeMarkdown(debt.name),
+        counterparty: escapeMarkdown(debt.counterparty || ""),
       })}\n` +
       `${t(lang, "autoPayment.amountLine", {
         amount,
         currency: debt.currency,
       })}\n` +
-      `${t(lang, "autoPayment.fromLine", { account: accountId })}\n` +
+      `${t(lang, "autoPayment.fromLine", {
+        account: escapeMarkdown(accountId),
+      })}\n` +
       `${t(lang, "autoPayment.dayLine", {
         day: t(lang, "autoPayment.dayOfMonth", { day: dayOfMonth }),
       })}\n\n` +

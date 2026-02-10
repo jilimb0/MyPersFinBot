@@ -4,7 +4,7 @@
 
 **Track your finances effortlessly via Telegram**
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
@@ -22,6 +22,8 @@
 - Analytics, reports, and CSV export
 - NLP + voice input
 - Recurring transactions and notifications
+- Templates and custom notifications
+- Bank statement import
 
 ---
 
@@ -59,6 +61,8 @@ See `docs/DEV.md`.
 - ✅ [**Testing**](docs/TESTING.md)
 - 🧪 [**Debugging**](docs/DEBUGGING.md)
 - ⚙️ [**Environment**](docs/ENV.md)
+- 📦 [**Release Checklist**](docs/RELEASE_CHECKLIST.md)
+- 🧭 [**Operational Runbook**](docs/RUNBOOK.md)
 
 ---
 
@@ -76,7 +80,7 @@ See `docs/DEV.md`.
 
 ### Core
 - **Node.js** 20+ - Runtime
-- **TypeScript** 5.7 - Language
+- **TypeScript** 5.8 - Language
 - **node-telegram-bot-api** - Telegram integration
 
 ### Database
@@ -186,7 +190,7 @@ bot.on('message', (msg) => {
 
 ## 🚀 Deployment
 
-See [**DEPLOYMENT.md**](DEPLOYMENT.md) for:
+See [**docs/DEPLOYMENT.md**](docs/DEPLOYMENT.md) for:
 - Production setup
 - PM2 process manager
 - Docker containerization
@@ -204,7 +208,7 @@ pm2 save
 pm2 startup
 
 # Or systemd
-sudo cp bot.service /etc/systemd/system/
+sudo cp systemd/my-pers-fin-bot.service /etc/systemd/system/
 sudo systemctl enable bot
 sudo systemctl start bot
 ```
@@ -213,14 +217,12 @@ sudo systemctl start bot
 
 ## 🧪 Testing
 
-**Status:** ⚠️ No tests yet (planned)
+**Status:** ✅ Unit + E2E coverage in place (Jest)
 
-**Planned:**
-- Unit tests (Jest)
-- Integration tests
-- E2E tests
-
-See [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for testing roadmap.
+**Commands:**
+- `pnpm test`
+- `pnpm test:coverage`
+- `pnpm test:coverage:ci`
 
 ---
 
@@ -237,28 +239,20 @@ See [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for testing roadmap.
 - [x] Reminders
 
 ### 🚧 In Progress
-- [ ] Internationalization (i18n) - **HIGH PRIORITY**
-- [ ] Testing setup
-- [ ] Documentation improvements
+- [ ] Coverage thresholds tuning
+- [ ] Documentation cleanup
 
 ### 📋 Planned
-- [ ] Multi-language UI (EN, RU, UK)
+- [ ] Multi-language UI (EN, RU, UK, ES, PL)
 - [ ] Search in transaction history
 - [ ] Advanced filters
 - [ ] Charts & graphs
 - [ ] Mobile app (optional)
 - [ ] Web dashboard (optional)
 
-See [NEXT_STEPS.md](NEXT_STEPS.md) for detailed roadmap.
-
 ---
 
 ## 🐛 Known Issues
-
-See [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for:
-- 10 minor bugs (edge cases)
-- Performance optimization opportunities
-- Security hardening TODOs
 
 **Critical bugs:** None! ✅
 
@@ -322,10 +316,9 @@ ISC License
 ## 📞 Support
 
 **Issues?** Check documentation:
-- [PROJECT_AUDIT.md](PROJECT_AUDIT.md) - Project overview
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment help
-- [VOICE_QUICK_START.md](VOICE_QUICK_START.md) - Voice setup
-- [DEBUG_VOICE.md](DEBUG_VOICE.md) - Voice troubleshooting
+- [docs/README.md](docs/README.md) - Docs index
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment help
+- [docs/DEBUGGING.md](docs/DEBUGGING.md) - Debugging
 
 **Still stuck?** Open an issue on GitHub.
 

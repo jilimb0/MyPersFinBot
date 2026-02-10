@@ -1,10 +1,10 @@
+import { promises as fs } from "node:fs"
+import path from "node:path"
 import axios from "axios"
 import undici from "undici"
-import { promises as fs } from "fs"
-import path from "path"
-import { Currency } from "./types"
-import logger from "./logger"
 import { config } from "./config"
+import logger from "./logger"
+import type { Currency } from "./types"
 
 interface FXRates {
   [currency: string]: number
@@ -121,10 +121,7 @@ async function loadPersistedRates(): Promise<FXCache | null> {
 }
 
 function getRetryDelay(errorCount: number): number {
-  const delay = Math.min(
-    BASE_RETRY_DELAY * Math.pow(2, errorCount),
-    MAX_RETRY_DELAY
-  )
+  const delay = Math.min(BASE_RETRY_DELAY * 2 ** errorCount, MAX_RETRY_DELAY)
   return delay
 }
 
@@ -234,9 +231,7 @@ async function fetchRates(): Promise<FXRates> {
         }
 
         if (attempt > 1 && config.LOG_BOOT_DETAIL) {
-          logger.info(
-            `✅ FX rates fetched successfully on attempt ${attempt}`
-          )
+          logger.info(`✅ FX rates fetched successfully on attempt ${attempt}`)
         }
 
         // ExchangeRate-API возвращает ВСЕ валюты, фильтруем нужные
@@ -363,7 +358,7 @@ export function convertSync(
   if (!rates[from] || !rates[to]) {
     logger.error(`❌ Missing currency rate: from=${from}, to=${to}`)
     if (config.LOG_BOOT_DETAIL) {
-      logger.warn(`⚠️ Using fallback rates...`)
+      logger.warn("⚠️ Using fallback rates...")
     }
 
     rates = FALLBACK_RATES

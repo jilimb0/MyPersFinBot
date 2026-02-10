@@ -2,13 +2,14 @@
  * Income Source Auto-Create Handlers
  */
 
-import type { WizardManager } from "../wizards/wizards"
-import { dbStorage as db } from "../database/storage-db"
-import { showIncomeSourcesMenu } from "../menus-i18n"
 import { AppDataSource } from "../database/data-source"
 import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
-import { IncomeSource } from "../types"
-import { t } from "../i18n"
+import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
+import { showIncomeSourcesMenu } from "../menus-i18n"
+import type { IncomeSource } from "../types"
+import { escapeMarkdown } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 /**
  * Handle auto-income enable/disable toggle
@@ -21,7 +22,7 @@ export async function handleAutoIncomeToggle(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const income = state?.data?.source as IncomeSource
 
@@ -57,7 +58,9 @@ export async function handleAutoIncomeToggle(
     await wizard.sendMessage(
       chatId,
       `${t(lang, "autoIncome.setupTitle")}\n\n` +
-        `${t(lang, "autoIncome.sourceLine", { name: income.name })}\n\n` +
+        `${t(lang, "autoIncome.sourceLine", {
+          name: escapeMarkdown(income.name),
+        })}\n\n` +
         `${t(lang, "autoIncome.selectAccountPrompt")}`,
       {
         parse_mode: "Markdown",
@@ -80,7 +83,9 @@ export async function handleAutoIncomeToggle(
 
     await wizard.sendMessage(
       chatId,
-      t(lang, "autoIncome.disabledMessage", { name: income.name }),
+      t(lang, "autoIncome.disabledMessage", {
+        name: escapeMarkdown(income.name),
+      }),
       { parse_mode: "Markdown" }
     )
 
@@ -103,7 +108,7 @@ export async function handleAutoIncomeAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const income = state?.data?.source as IncomeSource
 
   // Extract account name from "AccountName (CURRENCY)"
@@ -133,9 +138,13 @@ export async function handleAutoIncomeAccountSelect(
   await wizard.sendMessage(
     chatId,
     `${t(lang, "autoIncome.amountTitle")}\n\n` +
-      `${t(lang, "autoIncome.sourceLine", { name: income.name })}\n` +
+      `${t(lang, "autoIncome.sourceLine", {
+        name: escapeMarkdown(income.name),
+      })}\n` +
       `${t(lang, "autoIncome.toLine", {
-        account: accountId?.trim() || t(lang, "common.notAvailable"),
+        account: escapeMarkdown(
+          accountId?.trim() || t(lang, "common.notAvailable")
+        ),
       })}\n\n` +
       `${t(lang, "autoIncome.amountPrompt")}`,
     {
@@ -166,13 +175,13 @@ export async function handleAutoIncomeAmountInput(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source || !state?.data?.autoIncomeAccountId) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const income = state?.data?.source as IncomeSource
   // const accountId = state?.data?.autoIncomeAccountId as string
 
   const amount = parseFloat(text)
-  if (isNaN(amount) || amount <= 0) {
+  if (Number.isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
       t(lang, "errors.invalidAmount"),
@@ -195,7 +204,9 @@ export async function handleAutoIncomeAmountInput(
   await wizard.sendMessage(
     chatId,
     `${t(lang, "autoIncome.selectDayTitle")}\n\n` +
-      `${t(lang, "autoIncome.sourceLine", { name: income.name })}\n` +
+      `${t(lang, "autoIncome.sourceLine", {
+        name: escapeMarkdown(income.name),
+      })}\n` +
       `${t(lang, "autoIncome.amountLine", {
         amount,
         currency: income.currency || "USD",
@@ -232,19 +243,19 @@ export async function handleAutoIncomeDaySelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.source) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const income = state?.data?.source as IncomeSource
   const accountId = state?.data?.autoIncomeAccountId as string
   const amount = state?.data?.autoIncomeAmount as number
 
-  let dayOfMonth = parseInt(text)
+  let dayOfMonth = parseInt(text, 10)
 
   if (text === t(lang, "autoIncome.lastDay")) {
     dayOfMonth = 31 // Will be handled in manager
   }
 
-  if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+  if (Number.isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
       t(lang, "errors.invalidDay"),
@@ -259,12 +270,16 @@ export async function handleAutoIncomeDaySelect(
   await wizard.sendMessage(
     chatId,
     `${t(lang, "autoIncome.enabledTitle")}\n\n` +
-      `${t(lang, "autoIncome.sourceLine", { name: income.name })}\n` +
+      `${t(lang, "autoIncome.sourceLine", {
+        name: escapeMarkdown(income.name),
+      })}\n` +
       `${t(lang, "autoIncome.amountLine", {
         amount,
         currency: income.currency || "USD",
       })}\n` +
-      `${t(lang, "autoIncome.toLine", { account: accountId })}\n` +
+      `${t(lang, "autoIncome.toLine", {
+        account: escapeMarkdown(accountId),
+      })}\n` +
       `${t(lang, "autoIncome.dayLine", {
         day:
           text === t(lang, "autoIncome.lastDay")

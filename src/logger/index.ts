@@ -10,15 +10,15 @@
  * - Error tracking
  */
 
-export { Logger, logger, createLogger } from "./logger.service"
+export { loggerConfig } from "./config"
+export { createLogger, Logger, logger } from "./logger.service"
 export {
-  loggingMiddleware,
-  logPerformance,
   createLogContext,
   getRequestLogger,
+  loggingMiddleware,
+  logPerformance,
 } from "./middleware"
-export { LogLevel, LogContext, LoggerOptions, LogEntry } from "./types"
-export { loggerConfig } from "./config"
+export { LogContext, LogEntry, LoggerOptions, LogLevel } from "./types"
 
 // Export default logger
 import { logger } from "./logger.service"

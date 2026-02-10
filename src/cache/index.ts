@@ -3,16 +3,16 @@
  * Automatically selects Redis or In-Memory cache based on availability
  */
 
-import logger from "../logger"
 import { config as appConfig } from "../config"
-import { CacheInterface, CacheConfig } from "./cache.interface"
-import { RedisCacheService } from "./redis-cache.service"
+import logger from "../logger"
+import type { CacheConfig, CacheInterface } from "./cache.interface"
 import { MemoryCacheService } from "./memory-cache.service"
+import { RedisCacheService } from "./redis-cache.service"
 
 // Export types
 export * from "./cache.interface"
-export { RedisCacheService } from "./redis-cache.service"
 export { MemoryCacheService } from "./memory-cache.service"
+export { RedisCacheService } from "./redis-cache.service"
 
 // Cache instance
 let cacheInstance: CacheInterface | null = null
@@ -129,11 +129,11 @@ export async function clearCache(pattern?: string): Promise<void> {
  * Usage: @cache('key', 3600)
  */
 export function cache(keyPrefix: string, ttl: number = 3600) {
-  return function (
+  return (
     _target: any,
     _propertyKey: string,
     descriptor: PropertyDescriptor
-  ) {
+  ) => {
     const originalMethod = descriptor.value
 
     descriptor.value = async function (...args: any[]) {

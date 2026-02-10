@@ -1,7 +1,7 @@
+import { existsSync, readFileSync, statSync } from "node:fs"
 import axios from "axios"
-import logger from "../logger"
 import { config } from "../config"
-import { readFileSync, existsSync, statSync } from "fs"
+import logger from "../logger"
 
 interface AssemblyAIConfig {
   apiKey: string
@@ -45,7 +45,7 @@ export class AssemblyAIService {
 
       // Read file as raw binary data (Buffer)
       // AssemblyAI requires binary upload, NOT FormData!
-      console.log(`📚 Reading file as binary...`)
+      console.log("📚 Reading file as binary...")
       const audioData = readFileSync(filePath)
       console.log(`🚀 Uploading ${audioData.length} bytes...`)
 

@@ -1,8 +1,8 @@
-import TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "./database/storage-db"
-import { WizardManager } from "./wizards/wizards"
-import { Language } from "./i18n"
+import type { Language } from "./i18n"
 import * as menusI18n from "./menus-i18n"
+import type { WizardManager } from "./wizards/wizards"
 
 async function resolveLangByUser(userId: string): Promise<Language> {
   try {

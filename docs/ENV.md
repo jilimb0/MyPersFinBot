@@ -34,6 +34,7 @@
 - `LOG_BOOT_DETAIL` (`true|false`)
 - `LOG_CACHE_VERBOSE` (`true|false`)
 - `LOG_SCHEDULER_TICK` (`true|false`)
+- `LOG_DIR` (default: `logs`)
 
 ## Cache/Redis
 - `USE_REDIS` (`true|false`)

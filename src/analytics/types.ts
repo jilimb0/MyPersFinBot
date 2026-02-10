@@ -2,7 +2,7 @@
  * Analytics types
  */
 
-import { Currency, TransactionCategory } from "../types"
+import type { Currency, TransactionCategory } from "../types"
 
 export interface PeriodStats {
   income: number

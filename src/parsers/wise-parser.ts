@@ -1,5 +1,5 @@
+import type { BankParserResult, BankType, ParsedTransaction } from "../types"
 import { BankParser } from "./base-parser"
-import { ParsedTransaction, BankParserResult, BankType } from "../types"
 
 export class WiseParser extends BankParser {
   get bankType(): BankType {
@@ -23,7 +23,7 @@ export class WiseParser extends BankParser {
         if (parsed) {
           transactions.push(parsed)
         }
-      } catch (error) {
+      } catch (_error) {
         this.errors.push(`Failed to parse line: ${line}`)
       }
     }

@@ -1,10 +1,12 @@
 import NodeCache from "node-cache"
-import logger from "../logger"
 import { config as appConfig } from "../config"
-import { CacheInterface, CacheConfig, CacheStats } from "./cache.interface"
+import logger from "../logger"
+import type { CacheConfig, CacheInterface, CacheStats } from "./cache.interface"
 
 /**
  * In-Memory Cache Service (fallback if Redis is not available)
+ * Note: Methods are async to match CacheService interface for Redis compatibility,
+ * even though memory operations are synchronous
  */
 export class MemoryCacheService implements CacheInterface {
   private cache: NodeCache

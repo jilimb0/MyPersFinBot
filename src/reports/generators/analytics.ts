@@ -2,13 +2,13 @@
  * Analytics report generation
  */
 
-import { Transaction, TransactionType, Currency } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
-import { formatMoney, formatAmount } from "../../utils"
 import { convertBatchSync } from "../../fx"
+import { getCategoryLabel, getLocale, type Language, t } from "../../i18n"
+import { type Currency, type Transaction, TransactionType } from "../../types"
+import { formatAmount, formatMoney } from "../../utils"
 import { createProgressBar } from "../helpers"
-import { CategoryTotals } from "../types"
-import { Language, getLocale, t, getCategoryLabel } from "../../i18n"
+import type { CategoryTotals } from "../types"
 
 type AnalyticsPeriod = {
   preset?: "LAST_7_DAYS" | "LAST_30_DAYS"
@@ -101,7 +101,7 @@ export async function generateAnalyticsReport(
     count: transactions.length,
   })}\n\n`
 
-  msg += `──────────────\n\n`
+  msg += "──────────────\n\n"
 
   // Summary
   msg += `${t(lang, "reports.analyticsReport.incomeLine", {
@@ -115,7 +115,7 @@ export async function generateAnalyticsReport(
     emoji: netBalance >= 0 ? "📈" : "📉",
   })}\n\n`
 
-  msg += `──────────────\n\n`
+  msg += "──────────────\n\n"
 
   // Top Expenses
   if (expensesByCategory.length > 0) {
@@ -131,7 +131,7 @@ export async function generateAnalyticsReport(
       msg += `   ${bar}\n\n`
     })
 
-    msg += `──────────────\n\n`
+    msg += "──────────────\n\n"
   }
 
   // Income breakdown
@@ -147,7 +147,7 @@ export async function generateAnalyticsReport(
       )}%)\n`
     })
 
-    msg += `\n──────────────\n\n`
+    msg += "\n──────────────\n\n"
   }
 
   // Daily average
@@ -204,7 +204,7 @@ function groupByCategory(
     if (!categoryTotals[tx.category]) {
       categoryTotals[tx.category] = {}
     }
-    if (!categoryTotals[tx.category]![tx.currency]) {
+    if (!categoryTotals[tx.category]?.[tx.currency]) {
       categoryTotals[tx.category]![tx.currency] = 0
     }
     categoryTotals[tx.category]![tx.currency]! += tx.amount

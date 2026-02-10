@@ -1,10 +1,10 @@
 import { AnalyticsService } from "../../analytics/analytics.service"
 import {
-  getPeriodRange,
   calculatePercentChange,
-  getTrend,
   formatAmount,
   formatPercent,
+  getPeriodRange,
+  getTrend,
 } from "../../analytics/helpers"
 
 // Mock database
@@ -16,10 +16,10 @@ jest.mock("../../database/storage-db", () => ({
 
 import { dbStorage } from "../../database/storage-db"
 import {
-  Transaction,
-  TransactionType,
   ExpenseCategory,
   IncomeCategory,
+  type Transaction,
+  TransactionType,
 } from "../../types"
 
 const mockGetTransactions = dbStorage.getTransactions as jest.MockedFunction<

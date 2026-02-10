@@ -1,7 +1,7 @@
-import TelegramBot from "node-telegram-bot-api"
-import { WizardManager } from "../../wizards/wizards"
-import { ExpenseCategory } from "../../types"
+import type TelegramBot from "node-telegram-bot-api"
 import { getExpenseCategoryLabel } from "../../i18n"
+import { ExpenseCategory } from "../../types"
+import { WizardManager } from "../../wizards/wizards"
 
 jest.mock("../../security", () => ({
   securityCheck: jest.fn().mockResolvedValue(true),

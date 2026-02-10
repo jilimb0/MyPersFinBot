@@ -16,8 +16,8 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                      MAIN BOT                               │
 │                   (src/index.ts)                            │
-│  • Event Routing                                            │
-│  • Command Registration                                     │
+│  • Bootstrap + Observability                                │
+│  • Routers (message + callback)                             │
 │  • Error Handling                                           │
 └──────┬───────────────┬────────────────┬─────────────────────┘
        │               │                │
@@ -58,22 +58,21 @@
 ### 1. **Main Entry Point** (`src/index.ts`)
 
 **Responsibilities:**
-- Initialize database connection
-- Register bot commands
-- Route incoming messages to appropriate handlers
-- Manage wizard states
-- Start scheduler for recurring tasks
-- Handle graceful shutdown
+- Initialize app context (DB + bot)
+- Initialize observability and services
+- Register routers (message + callback)
+- Register graceful shutdown handlers
 
 **Flow:**
 ```typescript
 Telegram Message → Message Router → Wizard Check → Handler → Database → Response
+Telegram Callback → Callback Router → Handler → Database → Response
 ```
 
 **Key Patterns:**
 - Event-driven architecture
 - State machine for wizards
-- Middleware-like message processing
+- Router-based message/callback dispatch
 
 ---
 
@@ -183,6 +182,7 @@ export async function handleFeature(
   - Auto-deposits to goals
   - Auto-payments for debts
   - Auto-income creation
+  - Notification checks
 
 **Cron Jobs:**
 ```typescript
@@ -212,7 +212,7 @@ Telegram Voice → Download OGA → FFmpeg Convert to WAV → Upload to Assembly
 
 #### **NLP Parser** (`nlp-parser.ts`)
 - Natural language processing
-- Multi-language support (EN, RU, UK)
+- Multi-language support (EN, RU, UK, ES, PL)
 - Pattern matching for transactions
 
 **Examples:**
@@ -228,13 +228,15 @@ Telegram Voice → Download OGA → FFmpeg Convert to WAV → Upload to Assembly
 - `auto-income-manager.ts` - Auto-create income
 - `recurring-manager.ts` - Execute recurring transactions
 - `reminder-manager.ts` - Send reminders
+- `cache-manager.ts` - Cache for balances, stats, FX
+- `user-context.ts` - Per-user context and language
 
 ---
 
 ### 5. **Database Layer** (`src/database/`)
 
 **ORM:** TypeORM  
-**Database:** SQLite (WAL mode for concurrency)
+**Database:** SQLite (WAL mode for concurrency, FK enforced)
 
 **Structure:**
 ```
@@ -333,7 +335,7 @@ generateMonthlyReport(userId)
 
 ---
 
-### 8. **Utilities** (`src/utils.ts`)
+### 8. **Utilities** (`src/utils/`)
 
 **Common helpers:**
 - `formatMoney()` - Format currency
@@ -575,18 +577,23 @@ handleBalance(bot, chatId, userId) // bot injected
 
 ```
 index.ts
-├── wizards/
+├── bootstrap/
+│   ├── app.ts
+│   ├── bot.ts
+│   ├── database.ts
+│   ├── observability.ts
+│   └── routers.ts
 ├── handlers/
-│   ├── services/ (NLP, AssemblyAI)
-│   └── database/
+├── wizards/
 ├── services/
-│   ├── database/
-│   └── handlers/ (cross-dependency)
+│   ├── cache-manager.ts
+│   ├── scheduler.ts
+│   ├── reminder-manager.ts
+│   └── auto-*
 ├── database/
 │   └── entities/
 ├── parsers/
 ├── reports/
-│   └── database/
 ├── utils/
 ├── validators/
 └── fx/
@@ -603,14 +610,13 @@ index.ts
 - ✅ Input validation
 - ✅ SQL injection protection (TypeORM)
 - ✅ File permissions documented
+- ✅ Optional allow/block lists
+- ✅ Optional rate limiting
 
 ### Missing:
 - ❌ User authentication (anyone with bot link can use)
-- ❌ Rate limiting
 - ❌ Data encryption at rest
 - ❌ Audit logs
-
-**See:** [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for security TODOs
 
 ---
 
@@ -623,15 +629,13 @@ index.ts
 - ✅ HTTP/2 for FX API (faster)
 
 ### Potential Bottlenecks:
-- ⚠️ No database indexes (except default)
+- ⚠️ Limited indexes (some basic indexes exist)
 - ⚠️ Loading all transactions for analytics
 - ⚠️ Single SQLite file (fine for single user)
 
-**See:** [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for performance TODOs
-
 ---
 
-## 🧪 Testing Strategy (Planned)
+## 🧪 Testing Strategy
 
 **Unit Tests:**
 - Parsers (NLP, amount, date)
@@ -647,7 +651,7 @@ index.ts
 - Wizard flows
 - Handler scenarios
 
-**Status:** ❌ Not implemented yet
+**Status:** ✅ Unit + integration/E2E coverage in place
 
 ---
 
@@ -672,7 +676,7 @@ index.ts
 │  │                               │  │
 │  │  ┌────────────────────────┐  │  │
 │  │  │  SQLite Database       │  │  │
-│  │  │  data/database.db      │  │  │
+│  │  │  data/database.sqlite  │  │  │
 │  │  └────────────────────────┘  │  │
 │  │                               │  │
 │  │  ┌────────────────────────┐  │  │
@@ -732,8 +736,8 @@ index.ts
 - [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) - Detailed database schema
 - [README.md](README.md) - Project overview
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Production deployment
-- [PROJECT_AUDIT.md](PROJECT_AUDIT.md) - Full project analysis
-- [INTERNATIONALIZATION_PLAN.md](INTERNATIONALIZATION_PLAN.md) - i18n implementation
+- [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) - Release steps
+- [RUNBOOK.md](RUNBOOK.md) - Operational runbook
 
 ---
 
@@ -755,7 +759,7 @@ When adding new features:
 
 ---
 
-**Architecture Last Updated:** January 19, 2026
+**Architecture Last Updated:** February 8, 2026
 
 ## Testing Architecture
 

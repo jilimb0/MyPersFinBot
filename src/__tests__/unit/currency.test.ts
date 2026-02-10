@@ -1,6 +1,6 @@
 import { CurrencyConverter } from "../../currency/converter"
-import { CURRENCY_INFO } from "../../currency/types"
 import { formatConversion, formatRate } from "../../currency/formatters"
+import { CURRENCY_INFO } from "../../currency/types"
 
 // Mock FX service
 jest.mock("../../fx", () => ({

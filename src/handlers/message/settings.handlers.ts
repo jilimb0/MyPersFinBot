@@ -2,10 +2,11 @@
  * Settings message handlers
  */
 
-import { MessageHandler } from "./types"
 import { t } from "../../i18n"
 import { getSettingsKeyboard } from "../../i18n/keyboards"
-import { Debt, Goal } from "../../types"
+import type { Debt, Goal } from "../../types"
+import { escapeMarkdown } from "../../utils"
+import type { MessageHandler } from "./types"
 
 /**
  * Handle settings menu button
@@ -25,7 +26,7 @@ export const handleSettingsMenu: MessageHandler = async (context) => {
 
     await bot.sendMessage(
       chatId,
-      `${t(lang, "advanced.title")}\n\n${goal.name}`,
+      `${t(lang, "advanced.title")}\n\n${escapeMarkdown(goal.name)}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -63,7 +64,7 @@ export const handleSettingsMenu: MessageHandler = async (context) => {
         },
       }
     )
-    return
+    return true
   }
 
   // Special handling for Debt advanced settings
@@ -75,7 +76,7 @@ export const handleSettingsMenu: MessageHandler = async (context) => {
 
     await bot.sendMessage(
       chatId,
-      `${t(lang, "advanced.title")}\n\n${debt.name}`,
+      `${t(lang, "advanced.title")}\n\n${escapeMarkdown(debt.name)}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -125,4 +126,5 @@ export const handleSettingsMenu: MessageHandler = async (context) => {
       reply_markup: getSettingsKeyboard(lang),
     }
   )
+  return true
 }

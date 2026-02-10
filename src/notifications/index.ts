@@ -9,11 +9,11 @@
  * - Custom triggers (user-defined rules)
  */
 
-export * from "./types"
 export * from "./budget-alerts"
-export * from "./smart-alerts"
-export * from "./notification.service"
 export * from "./formatters"
+export * from "./notification.service"
+export * from "./smart-alerts"
+export * from "./types"
 
 // Export default service
 import { notificationService } from "./notification.service"

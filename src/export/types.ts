@@ -2,16 +2,16 @@
  * Export types
  */
 
-import {
-  Currency,
-  TransactionType,
-  TransactionCategory,
-  Transaction,
+import type {
   Balance,
+  Budget,
+  Currency,
   Debt,
   Goal,
-  Budget,
   IncomeSource,
+  Transaction,
+  TransactionCategory,
+  TransactionType,
 } from "../types"
 
 export type ExportFormat = "csv" | "xlsx" | "json"

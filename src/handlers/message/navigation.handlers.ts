@@ -2,10 +2,10 @@
  * Navigation handlers (Back, Cancel, Main Menu)
  */
 
-import { MessageHandler } from "./types"
 import { t } from "../../i18n"
 import { getMainMenuKeyboard, getSettingsKeyboard } from "../../i18n/keyboards"
 import * as menus from "../../menus-i18n"
+import type { MessageHandler } from "./types"
 
 /**
  * Handle Back button
@@ -33,7 +33,7 @@ export const handleBack: MessageHandler = async (context) => {
       await menus.showGoalsMenu(bot, chatId, userId, lang)
       break
 
-    case "settings":
+    case "settings": {
       const currentCurrency = await context.db.getDefaultCurrency(userId)
       await bot.sendMessage(
         chatId,
@@ -44,6 +44,7 @@ export const handleBack: MessageHandler = async (context) => {
         }
       )
       break
+    }
 
     case "automation":
       await menus.showAutomationMenu(wizardManager, chatId, userId, lang)
@@ -52,8 +53,6 @@ export const handleBack: MessageHandler = async (context) => {
     case "advanced":
       await menus.showAdvancedMenu(wizardManager, chatId, userId, lang)
       break
-
-    case "main":
     default:
       await bot.sendMessage(
         chatId,
@@ -62,6 +61,7 @@ export const handleBack: MessageHandler = async (context) => {
       )
       break
   }
+  return true
 }
 
 /**
@@ -73,6 +73,7 @@ export const handleCancel: MessageHandler = async (context) => {
   await bot.sendMessage(chatId, t(lang, "common.cancelled"), {
     reply_markup: getSettingsKeyboard(lang),
   })
+  return true
 }
 
 /**
@@ -83,6 +84,7 @@ export const handleNoCancel: MessageHandler = async (context) => {
 
   await bot.sendMessage(chatId, t(lang, "common.cancelled"))
   await menus.showAdvancedMenu(wizardManager, chatId, userId, lang)
+  return true
 }
 
 /**
@@ -99,4 +101,5 @@ export const handleMainMenu: MessageHandler = async (context) => {
     t(lang, "mainMenu.welcomeBack"),
     getMainMenuKeyboard(lang)
   )
+  return true
 }

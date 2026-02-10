@@ -9,11 +9,11 @@
  */
 
 import {
+  getAnalyticsKeyboard,
+  getBackAndMainKeyboard,
   getMainMenuKeyboard,
   getSettingsKeyboard,
-  getAnalyticsKeyboard,
   getStatsKeyboard,
-  getBackAndMainKeyboard,
 } from "../i18n/keyboards"
 
 // Default language for backwards compatibility

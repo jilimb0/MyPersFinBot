@@ -2,13 +2,13 @@
  * Debts message handlers
  */
 
-import { MessageHandler } from "./types"
-import { Language, t } from "../../i18n"
-import { createProgressBar } from "../../reports"
-import { formatMoney } from "../../utils"
-import { Debt } from "../../types"
+import { type Language, t } from "../../i18n"
 import * as menus from "../../menus-i18n"
+import { createProgressBar } from "../../reports"
+import type { Debt } from "../../types"
+import { escapeMarkdown, formatMoney } from "../../utils"
 import * as helpers from "../../wizards/helpers"
+import type { MessageHandler } from "./types"
 
 const LOCALES: Record<Language, string> = {
   en: "en-US",
@@ -36,6 +36,7 @@ export const handleDebtsMenu: MessageHandler = async (context) => {
   })
 
   await menus.showDebtsMenu(bot, chatId, userId, lang)
+  return true
 }
 
 /**
@@ -57,6 +58,7 @@ export const handleAddDebt: MessageHandler = async (context) => {
     userId,
     wizardManager.getState(userId)!
   )
+  return true
 }
 
 /**
@@ -94,7 +96,7 @@ export const handleDebtSelection: MessageHandler = async (context) => {
       ? t(lang, "wizard.debt.actionPay")
       : t(lang, "wizard.debt.actionReceive")
 
-  let msg = `${emoji} *${name}*\n`
+  let msg = `${emoji} *${escapeMarkdown(name)}*\n`
   msg += `${progress}\n`
 
   if (paidAmount === 0) {

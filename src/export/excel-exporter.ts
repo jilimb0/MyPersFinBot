@@ -2,12 +2,12 @@
  * Excel (XLSX) exporter
  */
 
-import { Transaction, Currency } from "../types"
 import { dbStorage } from "../database/storage-db"
-import { getCategoryLabel } from "../i18n"
 import { convertSync } from "../fx"
-import { ExportFilter, ExportResult } from "./types"
+import { getCategoryLabel } from "../i18n"
 import logger from "../logger"
+import type { Currency, Transaction } from "../types"
+import type { ExportFilter, ExportResult } from "./types"
 
 // We'll use a simple XLSX generation approach
 // For production, consider using 'exceljs' or 'xlsx' library
@@ -102,9 +102,11 @@ export class ExcelExporter {
     // Group by category
     const byCategory = new Map<string, Transaction[]>()
     transactions.forEach((tx) => {
-      const cat = tx.category ? getCategoryLabel(lang as any, tx.category) : "OTHER"
+      const cat = tx.category
+        ? getCategoryLabel(lang as any, tx.category)
+        : "OTHER"
       if (!byCategory.has(cat)) byCategory.set(cat, [])
-      byCategory.get(cat)!.push(tx)
+      byCategory.get(cat)?.push(tx)
     })
 
     // Generate multi-sheet data

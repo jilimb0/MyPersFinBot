@@ -2,9 +2,9 @@
  * Advanced CSV export with filters
  */
 
-import { TransactionType, Currency } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
 import { getCategoryLabel } from "../../i18n"
+import { type Currency, TransactionType } from "../../types"
 
 export interface CSVExportOptions {
   startDate?: Date
@@ -62,17 +62,16 @@ export async function generateAdvancedCSV(
 
   // Headers
   if (includeHeaders) {
-    csv +=
-      [
-        "Date",
-        "Type",
-        "Category",
-        "Amount",
-        "Currency",
-        "From Account",
-        "To Account",
-        "Description",
-      ].join(separator) + "\n"
+    csv += `${[
+      "Date",
+      "Type",
+      "Category",
+      "Amount",
+      "Currency",
+      "From Account",
+      "To Account",
+      "Description",
+    ].join(separator)}\n`
   }
 
   // Rows
@@ -82,17 +81,16 @@ export async function generateAdvancedCSV(
       .replace(/,/g, " ")
       .replace(/"/g, "''")
 
-    csv +=
-      [
-        date,
-        tx.type,
-        tx.category ? getCategoryLabel(lang as any, tx.category) : "",
-        tx.amount.toFixed(2),
-        tx.currency,
-        tx.fromAccountId || "",
-        tx.toAccountId || "",
-        `"${description}"`,
-      ].join(separator) + "\n"
+    csv += `${[
+      date,
+      tx.type,
+      tx.category ? getCategoryLabel(lang as any, tx.category) : "",
+      tx.amount.toFixed(2),
+      tx.currency,
+      tx.fromAccountId || "",
+      tx.toAccountId || "",
+      `"${description}"`,
+    ].join(separator)}\n`
   })
 
   return csv

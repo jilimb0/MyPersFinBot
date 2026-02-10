@@ -2,12 +2,12 @@
  * Advanced CSV exporter with filters
  */
 
-import { Transaction, Currency, TransactionType } from "../types"
 import { dbStorage } from "../database/storage-db"
 import { convertSync } from "../fx"
-import { ExportFilter, ExportResult } from "./types"
 import { getCategoryLabel } from "../i18n"
 import logger from "../logger"
+import { type Currency, type Transaction, TransactionType } from "../types"
+import type { ExportFilter, ExportResult } from "./types"
 
 export class CSVExporter {
   /**
@@ -62,7 +62,7 @@ export class CSVExporter {
       if (!byCategory.has(category)) {
         byCategory.set(category, [])
       }
-      byCategory.get(category)!.push(tx)
+      byCategory.get(category)?.push(tx)
     })
 
     // Generate CSV for each category

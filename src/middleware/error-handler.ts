@@ -3,10 +3,10 @@
  * Centralized error handling for Telegram bot
  */
 
-import TelegramBot from "node-telegram-bot-api"
-import logger from "../logger"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
-import { Language, t } from "../i18n"
+import { type Language, t } from "../i18n"
+import logger from "../logger"
 
 /**
  * Custom error types

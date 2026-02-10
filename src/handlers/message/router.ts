@@ -2,14 +2,14 @@
  * Message Router - handles all incoming text messages
  */
 
-import TelegramBot from "node-telegram-bot-api"
-import { resolveLanguage, Language } from "../../i18n"
-import type { WizardManager } from "../../wizards/wizards"
-import { dbStorage as db } from "../../database/storage-db"
-import { securityCheck } from "../../security"
-import logger from "../../logger"
+import type TelegramBot from "node-telegram-bot-api"
 import { config } from "../../config"
-import { MessageContext, MessageRoute, MessageHandler } from "./types"
+import { dbStorage as db } from "../../database/storage-db"
+import { type Language, resolveLanguage } from "../../i18n"
+import logger from "../../logger"
+import { securityCheck } from "../../security"
+import type { WizardManager } from "../../wizards/wizards"
+import type { MessageContext, MessageHandler, MessageRoute } from "./types"
 
 /**
  * MessageRouter - centralized message routing

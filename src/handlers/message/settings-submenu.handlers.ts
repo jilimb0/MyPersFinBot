@@ -2,14 +2,15 @@
  * Settings sub-menu handlers
  */
 
-import { MessageHandler } from "./types"
+import * as handlers from "../../handlers"
 import { resolveLanguage, t } from "../../i18n"
-import { userContext } from "../../services/user-context"
 import { getSettingsKeyboard } from "../../i18n/keyboards"
 import * as menus from "../../menus-i18n"
-import * as handlers from "../../handlers"
+import { cancelRecurringTransaction, cancelReminder } from "../../queue"
+import { userContext } from "../../services/user-context"
+import type { Currency } from "../../types"
 import { showLanguageMenu } from "../language-handler"
-import { Currency } from "../../types"
+import type { MessageHandler } from "./types"
 
 /**
  * Handle Language settings
@@ -17,6 +18,7 @@ import { Currency } from "../../types"
 export const handleLanguageSettings: MessageHandler = async (context) => {
   const { bot, chatId, userId } = context
   await showLanguageMenu(bot, chatId, userId)
+  return true
 }
 
 /**
@@ -25,6 +27,7 @@ export const handleLanguageSettings: MessageHandler = async (context) => {
 export const handleAutomationMenu: MessageHandler = async (context) => {
   const { chatId, userId, lang, wizardManager } = context
   await menus.showAutomationMenu(wizardManager, chatId, userId, lang)
+  return true
 }
 
 /**
@@ -33,6 +36,7 @@ export const handleAutomationMenu: MessageHandler = async (context) => {
 export const handleAdvancedMenu: MessageHandler = async (context) => {
   const { chatId, userId, lang, wizardManager } = context
   await menus.showAdvancedMenu(wizardManager, chatId, userId, lang)
+  return true
 }
 
 /**
@@ -60,6 +64,7 @@ export const handleHelp: MessageHandler = async (context) => {
       resize_keyboard: true,
     },
   })
+  return true
 }
 
 /**
@@ -76,6 +81,7 @@ export const handleIncomeSourcesMenu: MessageHandler = async (context) => {
   })
 
   await menus.showIncomeSourcesMenu(bot, chatId, userId, lang)
+  return true
 }
 
 /**
@@ -101,6 +107,7 @@ export const handleClearDataConfirm: MessageHandler = async (context) => {
       resize_keyboard: true,
     },
   })
+  return true
 }
 
 /**
@@ -110,6 +117,26 @@ export const handleClearDataExecute: MessageHandler = async (context) => {
   const { bot, chatId, userId, wizardManager } = context
 
   try {
+    // Best-effort cleanup of queued reminders/recurring jobs before data deletion
+    try {
+      const [reminders, recurring] = await Promise.all([
+        context.db.getAllReminders(userId),
+        context.db.getAllRecurringTransactions(userId),
+      ])
+
+      await Promise.all([
+        ...reminders.map((reminder) => cancelReminder(reminder.id)),
+        ...recurring
+          .filter((item) => item.cronExpression)
+          .map((item) =>
+            cancelRecurringTransaction(item.id, item.cronExpression!)
+          ),
+      ])
+    } catch (cleanupError) {
+      // Ignore queue cleanup errors to avoid blocking data purge
+      console.warn("Queue cleanup failed", cleanupError)
+    }
+
     await context.db.clearAllUserData(userId)
     userContext.clearContext(userId)
     wizardManager.clearState(userId)
@@ -131,6 +158,7 @@ export const handleClearDataExecute: MessageHandler = async (context) => {
       reply_markup: getSettingsKeyboard(context.lang),
     })
   }
+  return true
 }
 
 /**
@@ -147,6 +175,7 @@ export const handleNotificationsMenu: MessageHandler = async (context) => {
   })
 
   await handlers.handleNotificationsMenu(wizardManager, chatId, userId)
+  return true
 }
 
 /**
@@ -155,6 +184,7 @@ export const handleNotificationsMenu: MessageHandler = async (context) => {
 export const handleRecurringMenu: MessageHandler = async (context) => {
   const { chatId, userId, lang, wizardManager } = context
   await handlers.handleRecurringMenu(wizardManager, chatId, userId, lang)
+  return true
 }
 
 /**
@@ -163,6 +193,7 @@ export const handleRecurringMenu: MessageHandler = async (context) => {
 export const handleCustomMessagesMenu: MessageHandler = async (context) => {
   const { chatId, userId, wizardManager } = context
   await handlers.handleCustomMessagesMenu(wizardManager, chatId, userId)
+  return true
 }
 
 /**
@@ -197,6 +228,7 @@ export const handleUploadStatement: MessageHandler = async (context) => {
       },
     }
   )
+  return true
 }
 
 /**
@@ -245,6 +277,7 @@ export const handleChangeCurrency: MessageHandler = async (context) => {
       },
     }
   )
+  return true
 }
 
 /**

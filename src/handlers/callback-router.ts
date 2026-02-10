@@ -1,6 +1,6 @@
-import TelegramBot from "node-telegram-bot-api"
-import type { WizardManager } from "../wizards/wizards"
+import type TelegramBot from "node-telegram-bot-api"
 import { safeAnswerCallback } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 import {
   handleReminderDone,
   handleReminderSnooze,
@@ -47,7 +47,8 @@ export function registerCallbackRouter(
       },
       {
         match: (value) => value.startsWith("reminder_done|"),
-        handle: async () => handleReminderDone(bot, query, userId, chatId, data),
+        handle: async () =>
+          handleReminderDone(bot, query, userId, chatId, data),
       },
       {
         match: (value) => value.startsWith("tmpl_edit_amt|"),
@@ -81,38 +82,17 @@ export function registerCallbackRouter(
       {
         match: (value) => value.startsWith("tmpl_use|"),
         handle: async () =>
-          handleTemplateUse(
-            bot,
-            query,
-            userId,
-            chatId,
-            data,
-            wizardManager
-          ),
+          handleTemplateUse(bot, query, userId, chatId, data, wizardManager),
       },
       {
         match: (value) => value.startsWith("tmpl_manage|"),
         handle: async () =>
-          handleTemplateManage(
-            bot,
-            query,
-            userId,
-            chatId,
-            data,
-            wizardManager
-          ),
+          handleTemplateManage(bot, query, userId, chatId, data, wizardManager),
       },
       {
         match: (value) => value.startsWith("tmpl_del|"),
         handle: async () =>
-          handleTemplateDelete(
-            bot,
-            query,
-            userId,
-            chatId,
-            data,
-            wizardManager
-          ),
+          handleTemplateDelete(bot, query, userId, chatId, data, wizardManager),
       },
       {
         match: (value) => value.startsWith("tmpl_edit_acc|"),

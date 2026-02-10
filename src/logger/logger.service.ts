@@ -2,10 +2,10 @@
  * Logger service with Winston
  */
 
+import { randomUUID } from "node:crypto"
 import winston from "winston"
-import { randomUUID } from "crypto"
-import { loggerConfig, exceptionHandlers, rejectionHandlers } from "./config"
-import { LogContext, LoggerOptions, LogLevel } from "./types"
+import { exceptionHandlers, loggerConfig, rejectionHandlers } from "./config"
+import type { LogContext, LoggerOptions, LogLevel } from "./types"
 
 /**
  * Logger class with correlation ID support

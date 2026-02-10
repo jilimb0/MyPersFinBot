@@ -2,6 +2,6 @@
  * Bootstrap module exports
  */
 
-export { initializeApp, shutdownApp, setupShutdownHandlers } from "./app"
 export type { AppContext } from "./app"
+export { initializeApp, setupShutdownHandlers, shutdownApp } from "./app"
 export type { BotContext } from "./bot"

@@ -2,13 +2,13 @@
  * Smart alerts for unusual spending patterns
  */
 
+import { randomUUID } from "node:crypto"
 import { dbStorage } from "../database/storage-db"
 import { convertSync } from "../fx"
-import { Transaction, TransactionCategory, Currency } from "../types"
-import { Notification, SpendingPattern } from "./types"
+import { getCategoryLabel, type Language, t } from "../i18n"
 import logger from "../logger"
-import { randomUUID } from "crypto"
-import { Language, t, getCategoryLabel } from "../i18n"
+import type { Currency, Transaction, TransactionCategory } from "../types"
+import type { Notification, SpendingPattern } from "./types"
 
 export class SmartAlerts {
   /**

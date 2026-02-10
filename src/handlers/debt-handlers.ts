@@ -1,10 +1,10 @@
-import type { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
-import * as validators from "../validators"
-import { formatMoney, handleInsufficientFunds } from "../utils"
+import { resolveLanguage, t } from "../i18n"
 import { showDebtsMenu } from "../menus-i18n"
+import { escapeMarkdown, formatMoney, handleInsufficientFunds } from "../utils"
+import * as validators from "../validators"
+import type { WizardManager } from "../wizards/wizards"
 import * as handlers from "./index"
-import { t } from "../i18n"
 
 export async function handleDebtCreateDetails(
   wizard: WizardManager,
@@ -14,15 +14,12 @@ export async function handleDebtCreateDetails(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const debtType = state?.data?.type
   if (!debtType) {
-    await wizard.sendMessage(
-      chatId,
-      t(state?.lang || "en", "debts.typeNotFound")
-    )
+    await wizard.sendMessage(chatId, t(lang, "debts.typeNotFound"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
@@ -51,7 +48,7 @@ export async function handleDebtCreateDetails(
     await wizard.sendMessage(
       chatId,
       t(lang, "debts.invalidCreateAmountTry", {
-        name,
+        name: escapeMarkdown(name),
         currency: defaultCurrency,
       }),
       wizard.getBackButton(lang)
@@ -64,10 +61,14 @@ export async function handleDebtCreateDetails(
   const existingDebt = userData.debts.find((d) => d.name === name && !d.isPaid)
 
   if (existingDebt) {
-    await wizard.sendMessage(chatId, t(lang, "debts.duplicateName", { name }), {
-      parse_mode: "Markdown",
-      ...wizard.getBackButton(lang),
-    })
+    await wizard.sendMessage(
+      chatId,
+      t(lang, "debts.duplicateName", { name: escapeMarkdown(name) }),
+      {
+        parse_mode: "Markdown",
+        ...wizard.getBackButton(lang),
+      }
+    )
     return true
   }
 
@@ -82,17 +83,17 @@ export async function handleDebtCreateDetails(
   await wizard.sendMessage(
     chatId,
     t(lang, "debts.dueDateCreatePrompt", {
-      name,
+      name: escapeMarkdown(name),
       amount: formatMoney(parsed.amount, parsed.currency),
     }),
     {
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: t(state?.lang || "en", "common.skip") }],
+          [{ text: t(lang, "common.skip") }],
           [
-            { text: t(state?.lang || "en", "common.back") },
-            { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
           ],
         ],
         resize_keyboard: true,
@@ -111,12 +112,12 @@ export async function handleDebtPartialAmount(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const debt = state?.data?.debt
   if (!debt) {
     await wizard.sendMessage(chatId, t(lang, "errors.missingDebtData"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
@@ -166,10 +167,10 @@ export async function handleDebtPartialAmount(
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: t(state?.lang || "en", "transactions.goToBalances") }],
+            [{ text: t(lang, "transactions.goToBalances") }],
             [
-              { text: t(state?.lang || "en", "common.back") },
-              { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
             ],
           ],
           resize_keyboard: true,
@@ -185,8 +186,8 @@ export async function handleDebtPartialAmount(
 
   const promptText =
     debt.type === "I_OWE"
-      ? t(state?.lang || "en", "debts.selectPayAccount")
-      : t(state?.lang || "en", "debts.selectReceiveAccount")
+      ? t(lang, "debts.selectPayAccount")
+      : t(lang, "debts.selectReceiveAccount")
 
   await handlers.handleTxAccount(wizard, chatId, userId, promptText)
   return true
@@ -201,7 +202,7 @@ export async function handleDebtPartialAccount(
   const state = wizard.getState(userId)
   if (!state) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   let cleanText = text
   if (text.startsWith("⭐ ")) {
     cleanText = text.substring(2)
@@ -214,7 +215,7 @@ export async function handleDebtPartialAccount(
   if (!debt || !payAmount) {
     await wizard.sendMessage(chatId, t(lang, "errors.missingDebtData"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
@@ -225,7 +226,9 @@ export async function handleDebtPartialAccount(
     if (!balance) {
       await wizard.sendMessage(
         chatId,
-        t(lang, "errors.accountNotFound", { account: accountName }),
+        t(lang, "errors.accountNotFound", {
+          account: escapeMarkdown(accountName),
+        }),
         wizard.getBackButton(lang)
       )
       return true
@@ -245,10 +248,10 @@ export async function handleDebtPartialAccount(
         {
           reply_markup: {
             keyboard: [
-              [{ text: t(state?.lang || "en", "transactions.goToBalances") }],
+              [{ text: t(lang, "transactions.goToBalances") }],
               [
-                { text: t(state?.lang || "en", "debts.changeAmount") },
-                { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+                { text: t(lang, "debts.changeAmount") },
+                { text: t(lang, "mainMenu.mainMenuButton") },
               ],
             ],
             resize_keyboard: true,
@@ -280,8 +283,8 @@ export async function handleDebtPartialAccount(
   if (updatedDebt?.isPaid) {
     const closeMsg =
       debt.type === "I_OWE"
-        ? t(state?.lang || "en", "debts.fullyPaidClosed")
-        : t(state?.lang || "en", "debts.fullyReceivedClosed")
+        ? t(lang, "debts.fullyPaidClosed")
+        : t(lang, "debts.fullyReceivedClosed")
     await wizard.sendMessage(chatId, closeMsg)
   } else {
     const emoji = debt.type === "I_OWE" ? "💸" : "💰"
@@ -304,7 +307,7 @@ export async function handleDebtPartialAccount(
   }
 
   wizard.clearState(userId)
-  await showDebtsMenu(wizard.getBot(), chatId, userId, state?.lang || "en")
+  await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
 
   return true
 }

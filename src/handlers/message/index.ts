@@ -2,52 +2,52 @@
  * Message handlers registry
  */
 
-import TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "node-telegram-bot-api"
+import { type Language, t } from "../../i18n"
 import type { WizardManager } from "../../wizards/wizards"
-import { t, Language } from "../../i18n"
 import { handleLanguageSelection } from "../language-handler"
-import { MessageRouter } from "./router"
-import { handleStart, handleStartTracking } from "./start.handlers"
-import { handleExpenseStart } from "./expense.handlers"
-import { handleIncomeStart } from "./income.handlers"
-import { handleBalancesMenu, handleAddBalance } from "./balances.handlers"
+import { handleAnalyticsMenu } from "./analytics.handlers"
+import { handleAddBalance, handleBalancesMenu } from "./balances.handlers"
 import { handleBudgetMenu } from "./budget.handlers"
 import {
-  handleDebtsMenu,
-  handleDebtSelection,
   handleAddDebt,
+  handleDebtSelection,
+  handleDebtsMenu,
 } from "./debts.handlers"
+import { handleExpenseStart } from "./expense.handlers"
 import {
-  handleGoalsMenu,
-  handleGoalSelection,
   handleAddGoal,
+  handleGoalSelection,
+  handleGoalsMenu,
 } from "./goals.handlers"
-import { handleAnalyticsMenu } from "./analytics.handlers"
-import { handleSettingsMenu } from "./settings.handlers"
-import { isNLPInput, handleNLPInput } from "./nlp.handlers"
-import {
-  handleLanguageSettings,
-  handleAutomationMenu,
-  handleAdvancedMenu,
-  handleHelp,
-  handleIncomeSourcesMenu,
-  handleClearDataConfirm,
-  handleClearDataExecute,
-  handleNotificationsMenu,
-  handleRecurringMenu,
-  handleCustomMessagesMenu,
-  handleUploadStatement,
-  handleChangeCurrency,
-  handleCurrencyChangeConfirm,
-  handleCurrencyChangeExecute,
-} from "./settings-submenu.handlers"
+import { handleIncomeStart } from "./income.handlers"
 import {
   handleBack,
   handleCancel,
-  handleNoCancel,
   handleMainMenu,
+  handleNoCancel,
 } from "./navigation.handlers"
-import { MessageHandler } from "./types"
+import { handleNLPInput, isNLPInput } from "./nlp.handlers"
+import { MessageRouter } from "./router"
+import { handleSettingsMenu } from "./settings.handlers"
+import {
+  handleAdvancedMenu,
+  handleAutomationMenu,
+  handleChangeCurrency,
+  handleClearDataConfirm,
+  handleClearDataExecute,
+  handleCurrencyChangeConfirm,
+  handleCurrencyChangeExecute,
+  handleCustomMessagesMenu,
+  handleHelp,
+  handleIncomeSourcesMenu,
+  handleLanguageSettings,
+  handleNotificationsMenu,
+  handleRecurringMenu,
+  handleUploadStatement,
+} from "./settings-submenu.handlers"
+import { handleStart, handleStartTracking } from "./start.handlers"
+import type { MessageHandler } from "./types"
 
 /**
  * Create and configure MessageRouter
@@ -164,11 +164,7 @@ function registerAllRoutes(router: MessageRouter): void {
     handleExpenseStart,
     "Command: Expense"
   )
-  router.register(
-    /^\/income(?:@\w+)?$/i,
-    handleIncomeStart,
-    "Command: Income"
-  )
+  router.register(/^\/income(?:@\w+)?$/i, handleIncomeStart, "Command: Income")
 
   // Start tracking button
   router.register(

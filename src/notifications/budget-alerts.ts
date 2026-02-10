@@ -2,14 +2,14 @@
  * Budget alerts
  */
 
+import { randomUUID } from "node:crypto"
+import { BudgetPeriod } from "../database/entities/Budget"
 import { dbStorage } from "../database/storage-db"
 import { convertSync } from "../fx"
-import { Notification, NotificationPriority } from "./types"
+import { getCategoryLabel, type Language, t } from "../i18n"
 import logger from "../logger"
-import { randomUUID } from "crypto"
-import { Budget } from "../types"
-import { BudgetPeriod } from "../database/entities/Budget"
-import { Language, t, getCategoryLabel } from "../i18n"
+import type { Budget } from "../types"
+import type { Notification, NotificationPriority } from "./types"
 
 export class BudgetAlerts {
   /**
@@ -204,11 +204,12 @@ export class BudgetAlerts {
       case "DAILY":
         start.setHours(0, 0, 0, 0)
         break
-      case "WEEKLY":
+      case "WEEKLY": {
         const day = now.getDay()
         start.setDate(now.getDate() - day)
         start.setHours(0, 0, 0, 0)
         break
+      }
       case "MONTHLY":
         start.setDate(1)
         start.setHours(0, 0, 0, 0)

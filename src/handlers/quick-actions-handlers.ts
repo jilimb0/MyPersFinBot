@@ -1,15 +1,16 @@
-import TelegramBot from "node-telegram-bot-api"
-import { TransactionType, ExpenseCategory, IncomeCategory } from "../types"
+import { randomUUID } from "node:crypto"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
-import type { WizardState } from "../wizards/wizards"
-import { formatMoney, handleInsufficientFunds } from "../utils"
-import { randomUUID } from "crypto"
 import {
-  Language,
-  t,
   getExpenseCategoryLabel,
   getIncomeCategoryLabel,
+  type Language,
+  resolveLanguage,
+  t,
 } from "../i18n"
+import { ExpenseCategory, IncomeCategory, TransactionType } from "../types"
+import { formatMoney, handleInsufficientFunds } from "../utils"
+import type { WizardState } from "../wizards/wizards"
 
 export class QuickActionsHandlers {
   private static buildInlineCategoryKeyboard(
@@ -44,8 +45,9 @@ export class QuickActionsHandlers {
       state.data = {}
     }
 
+    const lang = resolveLanguage(state?.lang)
+
     if (!state?.data?.topCategoriesShown) {
-      const lang = state?.lang || "en"
       const topCategories = await db.getTopCategories(
         userId,
         state.txType!,
@@ -53,7 +55,9 @@ export class QuickActionsHandlers {
         30
       )
 
-      const defaultCategories = this.getDefaultTopCategories(state.txType!)
+      const defaultCategories = QuickActionsHandlers.getDefaultTopCategories(
+        state.txType!
+      )
 
       for (const category of defaultCategories) {
         if (!topCategories.includes(category) && topCategories.length < 5) {
@@ -76,7 +80,8 @@ export class QuickActionsHandlers {
         )}`,
         {
           reply_markup: {
-            inline_keyboard: this.buildInlineCategoryKeyboard(items),
+            inline_keyboard:
+              QuickActionsHandlers.buildInlineCategoryKeyboard(items),
           },
         }
       )
@@ -87,7 +92,7 @@ export class QuickActionsHandlers {
       return { handled: true }
     }
 
-    if (text === t(state?.lang || "en", "transactions.moreCategories")) {
+    if (text === t(lang, "transactions.moreCategories")) {
       return { handled: true, showAllCategories: true }
     }
 
@@ -107,7 +112,7 @@ export class QuickActionsHandlers {
       }
     }
 
-    const lang = state?.lang || "en"
+    const lang = resolveLanguage(state?.lang)
     const balances = await db.getBalancesList(userId)
     const balancesCount = balances.length
 
@@ -503,7 +508,8 @@ export class QuickActionsHandlers {
       )}`,
       {
         reply_markup: {
-          inline_keyboard: this.buildInlineCategoryKeyboard(items),
+          inline_keyboard:
+            QuickActionsHandlers.buildInlineCategoryKeyboard(items),
         },
       }
     )

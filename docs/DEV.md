@@ -22,7 +22,11 @@ pnpm dev
 ## Useful Commands
 - `pnpm type-check`
 - `pnpm test`
+- `pnpm test:coverage`
+- `pnpm test:coverage:ci`
 - `pnpm lint`
+- `pnpm i18n:check`
+- `pnpm i18n:prune`
 
 ## Local Services
 - Redis is optional. If unavailable, in‑memory cache is used.

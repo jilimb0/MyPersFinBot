@@ -2,12 +2,12 @@
  * Reminder Settings Handlers
  */
 
-import type { WizardManager } from "../wizards/wizards"
 import { AppDataSource } from "../database/data-source"
 import { User } from "../database/entities/User"
-import { ReminderSettings } from "../types"
-import { t } from "../i18n"
+import { resolveLanguage, t } from "../i18n"
 import { getReminderTimeKeyboard } from "../i18n/keyboards"
+import type { ReminderSettings } from "../types"
+import type { WizardManager } from "../wizards/wizards"
 
 /**
  * Show notifications settings menu
@@ -20,7 +20,7 @@ export async function handleNotificationsMenu(
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const settings = user?.reminderSettings || {
     enabled: false,
@@ -88,7 +88,7 @@ export async function handleNotificationsToggle(
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!user) return false
 
@@ -133,7 +133,7 @@ export async function handleReminderTimeSelect(
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const currentTime = user?.reminderSettings?.time || "09:00"
 
@@ -163,7 +163,7 @@ export async function handleReminderTimeSave(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
   if (!timeRegex.test(text)) {
     await wizard.sendMessage(
@@ -215,7 +215,7 @@ export async function handleTimezoneSelect(
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const currentTimezone = user?.reminderSettings?.timezone || "Asia/Tbilisi"
 
@@ -261,7 +261,7 @@ export async function handleTimezoneSave(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const match = text.match(/([A-Za-z_]+\/[A-Za-z_]+)/)
   if (!match) {
     await wizard.sendMessage(

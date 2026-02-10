@@ -1,13 +1,17 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm"
+import type {
+  Currency,
+  TransactionCategory,
+  TransactionType,
+} from "../../types"
 import { User } from "./User"
-import { Currency, TransactionCategory, TransactionType } from "../../types"
 
 @Entity("recurring_transactions")
 export class RecurringTransaction {

@@ -2,7 +2,7 @@
  * Analytics (Stats) message handlers
  */
 
-import { MessageHandler } from "./types"
+import type { MessageHandler } from "./types"
 
 /**
  * Handle analytics menu button
@@ -18,4 +18,5 @@ export const handleAnalyticsMenu: MessageHandler = async (context) => {
   })
 
   await wizardManager.handleWizardInput(chatId, userId, "")
+  return true
 }

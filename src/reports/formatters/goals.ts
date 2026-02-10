@@ -3,10 +3,10 @@
  */
 
 import { dbStorage as db } from "../../database/storage-db"
-import { Goal } from "../../types"
-import { formatMoney } from "../../utils"
-import { createProgressBar, getProgressEmoji } from "../helpers"
 import { t } from "../../i18n"
+import type { Goal } from "../../types"
+import { escapeMarkdown, formatMoney } from "../../utils"
+import { createProgressBar, getProgressEmoji } from "../helpers"
 
 /**
  * Formats active goals for a user
@@ -19,10 +19,7 @@ export async function formatGoals(userId: string): Promise<string> {
   const activeGoals = userData.goals.filter((g: Goal) => g.status === "ACTIVE")
 
   if (activeGoals.length === 0) {
-    return `${t(lang, "reports.goals.empty")}\n\n${t(
-      lang,
-      "goals.emptyHint"
-    )}`
+    return `${t(lang, "reports.goals.empty")}\n\n${t(lang, "goals.emptyHint")}`
   }
 
   let msg = `${t(lang, "reports.goals.title")}\n\n`
@@ -32,7 +29,7 @@ export async function formatGoals(userId: string): Promise<string> {
     const progress = createProgressBar(g.currentAmount, g.targetAmount)
     const statusEmoji = getProgressEmoji(g.currentAmount, g.targetAmount)
 
-    msg += `${statusEmoji} *${g.name}*\n`
+    msg += `${statusEmoji} *${escapeMarkdown(g.name)}*\n`
     msg += `${progress}\n`
 
     if (g.currentAmount === 0) {

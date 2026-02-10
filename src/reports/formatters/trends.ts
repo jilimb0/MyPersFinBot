@@ -2,10 +2,10 @@
  * Trends formatting (analytics)
  */
 
-import { Transaction } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
-import { formatMoney } from "../../utils"
 import { t } from "../../i18n"
+import type { Transaction } from "../../types"
+import { formatMoney } from "../../utils"
 
 /**
  * Formats trends comparing current month to last month

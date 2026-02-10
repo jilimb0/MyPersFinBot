@@ -1,20 +1,25 @@
-import type { WizardManager } from "../wizards/wizards"
-import {
-  TransactionType,
-  IncomeCategory,
-  Transaction,
-  InternalCategory,
-  TransactionCategory,
-  ExpenseCategory,
-} from "../types"
+import { randomUUID } from "node:crypto"
 import { dbStorage as db } from "../database/storage-db"
-import * as validators from "../validators"
+import {
+  getExpenseCategoryLabel,
+  getIncomeCategoryLabel,
+  resolveLanguage,
+  t,
+} from "../i18n"
+import { showBalancesMenu, showMainMenu } from "../menus-i18n"
+import {
+  type ExpenseCategory,
+  IncomeCategory,
+  InternalCategory,
+  type Transaction,
+  type TransactionCategory,
+  TransactionType,
+} from "../types"
 import { formatMoney, handleInsufficientFunds } from "../utils"
-import { showMainMenu, showBalancesMenu } from "../menus-i18n"
-import { QuickActionsHandlers } from "./quick-actions-handlers"
+import * as validators from "../validators"
 import * as helpers from "../wizards/helpers"
-import { randomUUID } from "crypto"
-import { t, getExpenseCategoryLabel, getIncomeCategoryLabel } from "../i18n"
+import type { WizardManager } from "../wizards/wizards"
+import { QuickActionsHandlers } from "./quick-actions-handlers"
 
 export async function handleTxCategory(
   wizard: WizardManager,
@@ -25,7 +30,7 @@ export async function handleTxCategory(
   const state = wizard.getState(userId)
   if (!state) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const txType = (state?.data?.txType || state.txType) as TransactionType
 
   const quickResult = await QuickActionsHandlers.handleQuickCategory(
@@ -79,7 +84,7 @@ export async function handleTxCategory(
 
   const stateAfterGoTo = wizard.getState(userId)
   if (stateAfterGoTo?.data?.showedAllCategories) {
-    delete stateAfterGoTo.data.showedAllCategories
+    stateAfterGoTo.data.showedAllCategories = undefined
     wizard.setState(userId, stateAfterGoTo)
   }
 
@@ -113,7 +118,7 @@ export async function handleTxAmount(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const cleanText = text.replace(/^[^\d\s]+\s*/, "").trim()
 
@@ -182,10 +187,10 @@ export async function handleTxAmount(
     currency: parsed.currency,
   }
   if (state.data) {
-    delete state.data.topCategoriesShown
-    delete state.data!.accountsShown
-    delete state.data!.toAccountsShown
-    delete state.data.showedAllCategories
+    state.data.topCategoriesShown = undefined
+    delete state.data?.accountsShown
+    delete state.data?.toAccountsShown
+    state.data.showedAllCategories = undefined
   }
 
   wizard.setState(userId, state)
@@ -227,7 +232,7 @@ export async function handleTxAccount(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const txType = (state?.data?.txType || state.txType) as TransactionType
 
   if (!state?.data?.accountsShown) {
@@ -278,8 +283,8 @@ export async function handleTxAccount(
       ]
     })
     buttons.push([
-      { text: t(state?.lang || "en", "common.back") },
-      { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
     ])
 
     await wizard.sendMessage(chatId, text, {
@@ -338,10 +343,10 @@ export async function handleTxAccount(
         {
           reply_markup: {
             keyboard: [
-              [{ text: t(state?.lang || "en", "common.goToBalances") }],
+              [{ text: t(lang, "common.goToBalances") }],
               [
                 { text: t(lang, "buttons.changeAmount") },
-                { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+                { text: t(lang, "mainMenu.mainMenuButton") },
               ],
             ],
             resize_keyboard: true,
@@ -376,7 +381,7 @@ export async function handleTxAccount(
       })
     )
     wizard.clearState(userId)
-    await showMainMenu(wizard.getBot(), chatId, state?.lang || "en")
+    await showMainMenu(wizard.getBot(), chatId, lang)
 
     return true
   }
@@ -467,7 +472,7 @@ export async function handleTxAccount(
               ),
             },
           ],
-          [{ text: t(state?.lang || "en", "mainMenu.mainMenuButton") }],
+          [{ text: t(lang, "mainMenu.mainMenuButton") }],
         ],
         resize_keyboard: true,
       },
@@ -486,7 +491,7 @@ export async function handleTxToAccount(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   // Show accounts list if not shown yet
   if (!state?.data?.toAccountsShown) {
     state.data!.toAccountsShown = true
@@ -507,8 +512,8 @@ export async function handleTxToAccount(
       ]
     })
     buttons.push([
-      { text: t(state?.lang || "en", "common.back") },
-      { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
     ])
 
     await wizard.sendMessage(chatId, text, {
@@ -523,7 +528,7 @@ export async function handleTxToAccount(
   if (accountName === state?.data?.fromAccountId) {
     await wizard.sendMessage(
       chatId,
-      t(state?.lang || "en", "errors.cannotTransferSameAccount"),
+      t(lang, "errors.cannotTransferSameAccount"),
       wizard.getBackButton(lang)
     )
     return true
@@ -543,7 +548,7 @@ export async function handleTxToAccount(
 
   await db.addTransaction(userId, transaction)
   wizard.clearState(userId)
-  await showBalancesMenu(wizard, chatId, userId, state?.lang || "en")
+  await showBalancesMenu(wizard, chatId, userId, lang)
 
   return true
 }

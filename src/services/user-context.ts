@@ -3,8 +3,8 @@
  * Manages user-specific data like language preferences
  */
 
-import { Language } from "../i18n"
 import { dbStorage as db } from "../database/storage-db"
+import type { Language } from "../i18n"
 
 class UserContextService {
   private contexts: Map<string, UserContext> = new Map()

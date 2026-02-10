@@ -2,13 +2,13 @@
  * Unified export service
  */
 
-import { promises as fs } from "fs"
-import path from "path"
+import { promises as fs } from "node:fs"
+import path from "node:path"
 import logger from "../../logger"
 import {
+  type CSVExportOptions,
   generateAdvancedCSV,
   generateCSVByType,
-  CSVExportOptions,
 } from "./csv-advanced"
 import { generateExcel } from "./excel"
 import { createBackup, createTransactionsBackup } from "./json-backup"
@@ -235,7 +235,7 @@ export async function getExportInfo(filePath: string): Promise<{
       size: stats.size,
       created: stats.birthtime,
     }
-  } catch (error) {
+  } catch (_error) {
     return { exists: false }
   }
 }

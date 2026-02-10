@@ -2,15 +2,15 @@
  * Currency formatters for Telegram
  */
 
-import { Currency } from "../types"
+import { getLocale, type Language, t } from "../i18n"
+import type { Currency } from "../types"
 import {
-  ConversionResult,
-  ExchangeRate,
+  type ConversionResult,
   CURRENCY_INFO,
-  CurrencyStats,
-  RateHistory,
+  type CurrencyStats,
+  type ExchangeRate,
+  type RateHistory,
 } from "./types"
-import { Language, getLocale, t } from "../i18n"
 
 /**
  * Format conversion result

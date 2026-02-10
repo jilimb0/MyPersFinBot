@@ -2,10 +2,14 @@
  * Advanced currency converter
  */
 
-import { Currency } from "../types"
 import { convertSync } from "../fx"
 import logger from "../logger"
-import { ConversionResult, ExchangeRate, CURRENCY_INFO } from "./types"
+import type { Currency } from "../types"
+import {
+  type ConversionResult,
+  CURRENCY_INFO,
+  type ExchangeRate,
+} from "./types"
 
 export class CurrencyConverter {
   /**

@@ -2,11 +2,11 @@
  * Net worth formatting
  */
 
-import { Balance, Debt } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
-import { formatMoney } from "../../utils"
 import { convertBatchSync } from "../../fx"
 import { t } from "../../i18n"
+import type { Balance, Debt } from "../../types"
+import { formatMoney } from "../../utils"
 
 /**
  * Formats net worth for a user
@@ -88,7 +88,7 @@ export async function formatNetWorth(userId: string): Promise<string> {
         }
       }
     })
-    breakdown.push(`  ──────────────`)
+    breakdown.push("  ──────────────")
     breakdown.push(
       t(lang, "reports.netWorth.totalBalances", {
         amount: formatMoney(totalBalances, defaultCurrency),

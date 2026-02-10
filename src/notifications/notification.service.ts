@@ -2,17 +2,17 @@
  * Main notification service
  */
 
+import type TelegramBot from "node-telegram-bot-api"
+import { dbStorage } from "../database/storage-db"
+import { type Language, t } from "../i18n"
+import logger from "../logger"
 import { budgetAlerts } from "./budget-alerts"
 import { smartAlerts } from "./smart-alerts"
 import {
-  Notification,
-  NotificationConfig,
   DEFAULT_NOTIFICATION_CONFIG,
+  type Notification,
+  type NotificationConfig,
 } from "./types"
-import { dbStorage } from "../database/storage-db"
-import logger from "../logger"
-import TelegramBot from "node-telegram-bot-api"
-import { Language, t } from "../i18n"
 
 export class NotificationService {
   private config: Map<string, NotificationConfig> = new Map()

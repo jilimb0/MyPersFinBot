@@ -10,13 +10,13 @@
  * - Usage tracking
  */
 
+export { getRateLimitStatus, rateLimiterMiddleware } from "./middleware"
 export { RateLimiterService, rateLimiter } from "./rate-limiter.service"
-export { rateLimiterMiddleware, getRateLimitStatus } from "./middleware"
 export {
+  RateLimitAction,
   RateLimitConfig,
   RateLimitInfo,
   RateLimitResult,
-  RateLimitAction,
 } from "./types"
 
 // Export default

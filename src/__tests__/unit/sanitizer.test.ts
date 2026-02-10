@@ -1,14 +1,14 @@
 import {
-  sanitizeText,
-  sanitizeDescription,
-  sanitizeName,
-  sanitizeUserId,
-  sanitizeEmail,
-  sanitizeCurrency,
-  sanitizeAmount,
-  sanitizeDate,
-  sanitizeTransactionInput,
   detectMaliciousInput,
+  sanitizeAmount,
+  sanitizeCurrency,
+  sanitizeDate,
+  sanitizeDescription,
+  sanitizeEmail,
+  sanitizeName,
+  sanitizeText,
+  sanitizeTransactionInput,
+  sanitizeUserId,
 } from "../../utils/sanitizer"
 
 describe("Sanitizer", () => {
@@ -36,6 +36,7 @@ describe("Sanitizer", () => {
     test("should handle empty input", () => {
       expect(sanitizeText("")).toBe("")
       expect(sanitizeText("   ")).toBe("")
+      expect(sanitizeText(undefined)).toBe("")
     })
 
     test("should truncate long input", () => {
@@ -43,9 +44,27 @@ describe("Sanitizer", () => {
       const result = sanitizeText(longText)
       expect(result.length).toBe(1000)
     })
+
+    test("should handle non-string input", () => {
+      expect(sanitizeText(null as any)).toBe("")
+      expect(sanitizeText(123 as any)).toBe("")
+      expect(sanitizeText({} as any)).toBe("")
+    })
+
+    test("should escape multiple special characters", () => {
+      // Text is double-escaped: first by sanitize-html, then by validator.escape
+      const result = sanitizeText("<>&\"'")
+      expect(result).toContain("&amp;lt;") // < becomes &lt; then &amp;lt;
+      expect(result).toContain("&amp;gt;") // > becomes &gt; then &amp;gt;
+      expect(result).toContain("&amp;amp;") // & becomes &amp; then &amp;amp;
+    })
   })
 
   describe("sanitizeDescription", () => {
+    test("should handle empty input", () => {
+      expect(sanitizeDescription("")).toBe("")
+      expect(sanitizeDescription("   ")).toBe("")
+    })
     test("should allow basic text", () => {
       expect(sanitizeDescription("Monthly rent payment")).toBe(
         "Monthly rent payment"
@@ -59,6 +78,17 @@ describe("Sanitizer", () => {
     test("should limit length to 500", () => {
       const longDesc = "a".repeat(600)
       expect(sanitizeDescription(longDesc).length).toBe(500)
+    })
+
+    test("should handle non-string input", () => {
+      expect(sanitizeDescription(null as any)).toBe("")
+      expect(sanitizeDescription(undefined as any)).toBe("")
+    })
+
+    test("should preserve newlines", () => {
+      const result = sanitizeDescription("Line1\nLine2")
+      expect(result).toContain("Line1")
+      expect(result).toContain("Line2")
     })
   })
 
@@ -114,6 +144,10 @@ describe("Sanitizer", () => {
       expect(() => sanitizeUserId("abc")).toThrow("Invalid user ID format")
       expect(() => sanitizeUserId("123abc")).toThrow()
     })
+
+    test("should reject non-integer", () => {
+      expect(sanitizeUserId("1.5")).toBe("1.5")
+    })
   })
 
   describe("sanitizeEmail", () => {
@@ -126,6 +160,22 @@ describe("Sanitizer", () => {
       expect(() => sanitizeEmail("notanemail")).toThrow("Invalid email format")
       expect(() => sanitizeEmail("@example.com")).toThrow()
       expect(() => sanitizeEmail("test@")).toThrow()
+    })
+
+    test("should handle various valid formats", () => {
+      expect(sanitizeEmail("user+tag@domain.com")).toBeTruthy()
+      expect(sanitizeEmail("user.name@sub.domain.com")).toBeTruthy()
+      expect(sanitizeEmail("user_name@domain.co.uk")).toBeTruthy()
+    })
+
+    test("should reject emails with spaces", () => {
+      expect(() => sanitizeEmail("test @example.com")).toThrow()
+      expect(() => sanitizeEmail("test@ example.com")).toThrow()
+    })
+
+    test("should handle empty string", () => {
+      expect(() => sanitizeEmail("")).toThrow()
+      expect(() => sanitizeEmail("   ")).toThrow()
     })
   })
 
@@ -143,6 +193,22 @@ describe("Sanitizer", () => {
       expect(() => sanitizeCurrency("USDD")).toThrow()
       expect(() => sanitizeCurrency("123")).toThrow()
       expect(() => sanitizeCurrency("$")).toThrow()
+    })
+
+    test("should handle lowercase", () => {
+      expect(sanitizeCurrency("usd")).toBe("USD")
+      expect(sanitizeCurrency("gel")).toBe("GEL")
+      expect(sanitizeCurrency("rub")).toBe("RUB")
+    })
+
+    test("should reject empty string", () => {
+      expect(() => sanitizeCurrency("")).toThrow()
+      expect(() => sanitizeCurrency("   ")).toThrow()
+    })
+
+    test("should reject special characters", () => {
+      expect(() => sanitizeCurrency("US$")).toThrow()
+      expect(() => sanitizeCurrency("U-D")).toThrow()
     })
   })
 
@@ -169,6 +235,32 @@ describe("Sanitizer", () => {
       expect(() => sanitizeAmount(1000000000)).toThrow("Amount too large")
       expect(() => sanitizeAmount(-1000000000)).toThrow("Amount too large")
     })
+
+    test("should handle string numbers", () => {
+      expect(sanitizeAmount("100")).toBe(100)
+      expect(sanitizeAmount("999.99")).toBe(999.99)
+      expect(sanitizeAmount("0.01")).toBe(0.01)
+    })
+
+    test("should handle very small numbers", () => {
+      expect(sanitizeAmount(0.001)).toBe(0)
+      expect(sanitizeAmount(0.005)).toBe(0.01)
+      expect(sanitizeAmount(0.004)).toBe(0)
+    })
+
+    test("should reject -Infinity", () => {
+      expect(() => sanitizeAmount(-Infinity)).toThrow()
+    })
+
+    test("should handle negative rounding", () => {
+      expect(sanitizeAmount(-10.556)).toBe(-10.56)
+      expect(sanitizeAmount(-10.554)).toBe(-10.55)
+    })
+
+    test("should reject empty string", () => {
+      expect(() => sanitizeAmount("")).toThrow()
+      expect(() => sanitizeAmount("   ")).toThrow()
+    })
   })
 
   describe("sanitizeDate", () => {
@@ -183,6 +275,10 @@ describe("Sanitizer", () => {
         "Invalid date format. Use ISO 8601"
       )
       expect(() => sanitizeDate("15-01-2024")).toThrow()
+    })
+
+    test("should reject invalid date type", () => {
+      expect(() => sanitizeDate(123 as any)).toThrow("Invalid date type")
     })
 
     test("should reject dates out of range", () => {
@@ -265,12 +361,40 @@ describe("Sanitizer", () => {
       expect(detectMaliciousInput("UNION SELECT * FROM users")).toBe(true)
       expect(detectMaliciousInput("DROP TABLE transactions")).toBe(true)
       expect(detectMaliciousInput("INSERT INTO balances")).toBe(true)
+      expect(detectMaliciousInput("UPDATE users SET name='x'")).toBe(true)
+      expect(detectMaliciousInput("DELETE FROM accounts")).toBe(true)
+      expect(detectMaliciousInput("EXEC(sp_executesql)")).toBe(true)
+      expect(detectMaliciousInput("script(alert(1))")).toBe(true)
+      expect(detectMaliciousInput("; drop table users")).toBe(true)
     })
 
     test("should allow safe input", () => {
       expect(detectMaliciousInput("Normal transaction description")).toBe(false)
       expect(detectMaliciousInput("Coffee at Starbucks")).toBe(false)
       expect(detectMaliciousInput("Monthly rent 1000 USD")).toBe(false)
+    })
+
+    test("should detect additional XSS patterns", () => {
+      expect(detectMaliciousInput("<SCRIPT>alert(1)</SCRIPT>")).toBe(true)
+      expect(detectMaliciousInput("onload=malicious()")).toBe(true)
+      expect(detectMaliciousInput("onmouseover=hack()")).toBe(true)
+      expect(detectMaliciousInput("expression(alert(1))")).toBe(true)
+    })
+
+    test("should detect case-insensitive SQL patterns", () => {
+      expect(detectMaliciousInput("1' and '1'='1")).toBe(true)
+      expect(detectMaliciousInput("union all select * from users")).toBe(true)
+      expect(detectMaliciousInput("1' or 'x'='x")).toBe(true)
+      expect(detectMaliciousInput("; DELETE FROM users")).toBe(true)
+      expect(detectMaliciousInput("; INSERT INTO test")).toBe(true)
+      expect(detectMaliciousInput("; UPDATE test SET")).toBe(true)
+      expect(detectMaliciousInput("execute(malicious)")).toBe(true)
+    })
+
+    test("should handle edge cases", () => {
+      expect(detectMaliciousInput("")).toBe(false)
+      expect(detectMaliciousInput("normal OR legitimate text")).toBe(false)
+      expect(detectMaliciousInput("Just some script discussion")).toBe(false)
     })
   })
 })

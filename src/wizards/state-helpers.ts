@@ -2,14 +2,14 @@
  * Safe state helpers
  */
 
-import { Language } from "../i18n"
-import { WizardState, WizardData } from "../wizards/wizards"
+import { type Language, resolveLanguage } from "../i18n"
+import type { WizardData, WizardState } from "../wizards/wizards"
 
 /**
  * Get lang with fallback
  */
 export function getLang(state: WizardState | undefined): Language {
-  return state?.lang || "en"
+  return resolveLanguage(state?.lang)
 }
 
 /**

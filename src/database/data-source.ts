@@ -1,19 +1,19 @@
 import "reflect-metadata"
+import path from "node:path"
 import { DataSource } from "typeorm"
-import path from "path"
-import { User } from "../database/entities/User"
+import { config } from "../config"
 import { Balance } from "../database/entities/Balance"
-import { Transaction } from "../database/entities/Transaction"
+import { Budget } from "../database/entities/Budget"
+import { CategoryPreference } from "../database/entities/CategoryPreference"
 import { Debt } from "../database/entities/Debt"
 import { Goal } from "../database/entities/Goal"
 import { IncomeSource } from "../database/entities/IncomeSource"
-import { CategoryPreference } from "../database/entities/CategoryPreference"
-import { Budget } from "../database/entities/Budget"
 import { RecurringTransaction } from "../database/entities/RecurringTransaction"
 import { Reminder } from "../database/entities/Reminder"
-import { CustomQueryLogger } from "../monitoring"
-import { config } from "../config"
+import { Transaction } from "../database/entities/Transaction"
+import { User } from "../database/entities/User"
 import logger from "../logger"
+import { CustomQueryLogger } from "../monitoring"
 
 const DB_PATH = path.resolve(__dirname, "../../data/database.sqlite")
 
@@ -55,6 +55,7 @@ export async function initializeDatabase() {
       await AppDataSource.query("PRAGMA synchronous = NORMAL;")
       await AppDataSource.query("PRAGMA cache_size = 10000;")
       await AppDataSource.query("PRAGMA temp_store = MEMORY;")
+      await AppDataSource.query("PRAGMA foreign_keys = ON;")
 
       if (config.LOG_BOOT_DETAIL) {
         logger.info("✅ Database initialized successfully (WAL mode enabled)")

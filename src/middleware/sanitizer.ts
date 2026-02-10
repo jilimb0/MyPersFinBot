@@ -1,6 +1,6 @@
-import TelegramBot from "node-telegram-bot-api"
-import { sanitizeText, sanitizeAmount } from "../utils"
+import type TelegramBot from "node-telegram-bot-api"
 import logger from "../logger"
+import { sanitizeAmount, sanitizeText } from "../utils"
 
 /**
  * Middleware to sanitize user input for node-telegram-bot-api

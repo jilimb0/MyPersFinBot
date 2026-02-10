@@ -23,6 +23,11 @@
 - Integration: `src/__tests__/integration/**/*.test.ts`
 - E2E flows: expense, income, transfer, analytics, export
 
+## Commands
+- `pnpm test`
+- `pnpm test:coverage`
+- `pnpm test:coverage:ci`
+
 ## E2E Scenarios
 1. Expense flow: amount -> category (inline) -> account
 2. Income flow: amount -> category (inline) -> account

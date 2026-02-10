@@ -2,22 +2,22 @@
  * Analytics formatters for Telegram messages
  */
 
-import {
-  AnalyticsSummary,
-  ComparisonResult,
-  CategoryStats,
-  SpendingPattern,
-  MonthlyStats,
-} from "./types"
+import { type Language, t } from "../i18n"
+import type { TransactionCategory } from "../types"
 import {
   formatAmount,
-  formatPercent,
   formatDateRange,
+  formatPercent,
   getDayName,
   getMonthName,
 } from "./helpers"
-import { TransactionCategory } from "../types"
-import { Language, t } from "../i18n"
+import type {
+  AnalyticsSummary,
+  CategoryStats,
+  ComparisonResult,
+  MonthlyStats,
+  SpendingPattern,
+} from "./types"
 
 /**
  * Category emoji map
@@ -221,7 +221,7 @@ export function formatMonthlyTrend(
 
   trend.forEach((month) => {
     const [year, monthNum] = month.month.split("-")
-    const date = new Date(parseInt(year!), parseInt(monthNum!) - 1, 1)
+    const date = new Date(parseInt(year!, 10), parseInt(monthNum!, 10) - 1, 1)
     const monthName = getMonthName(date, lang)
 
     message += `*${monthName} ${year}*\n`

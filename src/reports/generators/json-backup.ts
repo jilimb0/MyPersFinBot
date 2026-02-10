@@ -3,8 +3,8 @@
  */
 
 import { dbStorage as db } from "../../database/storage-db"
-import { ExpenseCategory, UserData } from "../../types"
 import { normalizeCategoryValue } from "../../i18n/categories"
+import type { ExpenseCategory, UserData } from "../../types"
 
 export interface BackupData {
   version: string

@@ -1,11 +1,11 @@
-import { BankParser } from "./base-parser"
 import {
-  ParsedTransaction,
-  BankParserResult,
-  BankType,
+  type BankParserResult,
+  type BankType,
+  type Currency,
+  type ParsedTransaction,
   TransactionType,
-  Currency,
 } from "../types"
+import { BankParser } from "./base-parser"
 
 interface MonobankJSONTransaction {
   time: number // Unix timestamp in seconds
@@ -120,7 +120,7 @@ export class MonobankParser extends BankParser {
         if (parsed) {
           transactions.push(parsed)
         }
-      } catch (error) {
+      } catch (_error) {
         this.errors.push(`Failed to parse CSV line: ${line}`)
       }
     }

@@ -2,7 +2,7 @@
  * Queue job types and data structures
  */
 
-import { Currency, TransactionCategory, TransactionType } from "../types"
+import type { Currency, TransactionCategory, TransactionType } from "../types"
 
 /**
  * Job names

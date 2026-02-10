@@ -2,22 +2,22 @@
  * Monthly statistics formatting
  */
 
-import {
-  Transaction,
-  TransactionType,
-  IncomeSource,
-  Currency,
-} from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
-import { formatMoney, formatAmount } from "../../utils"
+import { getCategoryLabel, type Language, t } from "../../i18n"
 import {
-  getCategoryEmoji,
+  type Currency,
+  type IncomeSource,
+  type Transaction,
+  TransactionType,
+} from "../../types"
+import { formatAmount, formatMoney } from "../../utils"
+import {
   convertToDefaultCurrency,
-  sumConverted,
   createProgressBar,
+  getCategoryEmoji,
+  sumConverted,
 } from "../helpers"
-import { CategoryTotals, MonthlyStatsData } from "../types"
-import { Language, t, getCategoryLabel } from "../../i18n"
+import type { CategoryTotals, MonthlyStatsData } from "../types"
 
 /**
  * Fetches monthly stats data
@@ -334,7 +334,7 @@ export async function formatMonthlyStats(userId: string): Promise<string> {
     if (!targetMap[tx.category]) {
       targetMap[tx.category] = {}
     }
-    if (!targetMap[tx.category]![tx.currency]) {
+    if (!targetMap[tx.category]?.[tx.currency]) {
       targetMap[tx.category]![tx.currency] = 0
     }
 

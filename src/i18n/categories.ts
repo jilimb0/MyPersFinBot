@@ -2,9 +2,9 @@ import {
   ExpenseCategory,
   IncomeCategory,
   InternalCategory,
-  TransactionCategory,
+  type TransactionCategory,
 } from "../types"
-import { Language, t } from "./index"
+import { type Language, t } from "./index"
 
 const LANGS: Language[] = ["en", "ru", "uk", "es", "pl"]
 
@@ -184,9 +184,7 @@ export function getExpenseCategoryByLabel(
   return null
 }
 
-export function getIncomeCategoryByLabel(
-  label: string
-): IncomeCategory | null {
+export function getIncomeCategoryByLabel(label: string): IncomeCategory | null {
   const text = normalizeText(label)
   const keys = Object.keys(IncomeCategory) as IncomeKey[]
   for (const lang of LANGS) {

@@ -2,13 +2,13 @@
  * Goals message handlers
  */
 
-import { MessageHandler } from "./types"
-import { Language, t } from "../../i18n"
-import { createProgressBar } from "../../reports"
-import { formatMoney } from "../../utils"
-import { Goal } from "../../types"
+import { type Language, t } from "../../i18n"
 import * as menus from "../../menus-i18n"
+import { createProgressBar } from "../../reports"
+import type { Goal } from "../../types"
+import { escapeMarkdown, formatMoney } from "../../utils"
 import * as helpers from "../../wizards/helpers"
+import type { MessageHandler } from "./types"
 
 const LOCALES: Record<Language, string> = {
   en: "en-US",
@@ -36,6 +36,7 @@ export const handleGoalsMenu: MessageHandler = async (context) => {
   })
 
   await menus.showGoalsMenu(bot, chatId, userId, lang)
+  return true
 }
 
 /**
@@ -57,6 +58,7 @@ export const handleAddGoal: MessageHandler = async (context) => {
     userId,
     wizardManager.getState(userId)!
   )
+  return true
 }
 
 /**
@@ -89,7 +91,7 @@ export const handleGoalSelection: MessageHandler = async (context) => {
   const progress = createProgressBar(currentAmount, targetAmount)
   const progressPercent = Math.round((currentAmount / targetAmount) * 100)
 
-  let msg = `🎯 *${name}*\n`
+  let msg = `🎯 *${escapeMarkdown(name)}*\n`
   msg += `${progress} ${progressPercent}%\n\n`
 
   if (currentAmount === 0) {

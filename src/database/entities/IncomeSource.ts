@@ -1,13 +1,13 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm"
+import type { Currency } from "../../types"
 import { User } from "./User"
-import { Currency } from "../../types"
 
 @Entity("income_sources")
 export class IncomeSource {
@@ -49,7 +49,10 @@ export class IncomeSource {
   reminderEnabled?: boolean
 
   // Relations
-  @ManyToOne(() => User, (user) => user.incomeSources)
+  @ManyToOne(
+    () => User,
+    (user) => user.incomeSources
+  )
   @JoinColumn({ name: "userId" })
   user!: User
 }

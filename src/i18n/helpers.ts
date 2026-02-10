@@ -3,8 +3,8 @@
  * Simplified translation functions with automatic language detection
  */
 
-import { t, Language } from "./index"
 import { userContext } from "../services/user-context"
+import { type Language, t } from "./index"
 
 /**
  * Translate with automatic language detection from user context

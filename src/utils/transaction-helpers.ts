@@ -2,8 +2,8 @@
  * Transaction helper functions
  */
 
-import { Transaction, TransactionType } from "../types"
-import { Language, t, getCategoryLabel } from "../i18n"
+import { getCategoryLabel, type Language, t } from "../i18n"
+import { type Transaction, TransactionType } from "../types"
 
 /**
  * Match transaction against filters
@@ -41,7 +41,10 @@ export const getTransactionSign = (type: TransactionType): string => {
 /**
  * Get transaction label (with special handling for goals and debts)
  */
-export const getTransactionLabel = (lang: Language, tx: Transaction): string => {
+export const getTransactionLabel = (
+  lang: Language,
+  tx: Transaction
+): string => {
   if (
     tx.category === "GOAL_DEPOSIT" &&
     tx.description?.startsWith("Goal Deposit:")

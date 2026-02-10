@@ -8,8 +8,8 @@ jest.mock("../../health-server", () => ({
   startHealthServer: jest.fn(),
 }))
 
-import { initSentry } from "../../sentry"
 import { startHealthServer } from "../../health-server"
+import { initSentry } from "../../sentry"
 
 describe("initObservability", () => {
   test("initializes sentry and health server", () => {

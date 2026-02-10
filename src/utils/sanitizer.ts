@@ -164,7 +164,7 @@ export function sanitizeCurrency(currency: string): string {
 export function sanitizeAmount(amount: number | string): number {
   const num = typeof amount === "string" ? parseFloat(amount) : amount
 
-  if (isNaN(num) || !isFinite(num)) {
+  if (Number.isNaN(num) || !Number.isFinite(num)) {
     throw new Error("Invalid amount: must be a valid number")
   }
 
@@ -195,7 +195,7 @@ export function sanitizeDate(date: string | Date): Date {
     parsedDate = new Date(date)
 
     // Check if date is valid after parsing (catches invalid dates like 2024-13-45)
-    if (isNaN(parsedDate.getTime())) {
+    if (Number.isNaN(parsedDate.getTime())) {
       throw new Error("Invalid date value")
     }
   } else {
@@ -203,7 +203,7 @@ export function sanitizeDate(date: string | Date): Date {
   }
 
   // Additional check for already-parsed Date objects
-  if (isNaN(parsedDate.getTime())) {
+  if (Number.isNaN(parsedDate.getTime())) {
     throw new Error("Invalid date value")
   }
 

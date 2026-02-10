@@ -1,13 +1,13 @@
-import TelegramBot from "node-telegram-bot-api"
-import { WizardManager } from "../wizards/wizards"
-import { dbStorage as db } from "../database/storage-db"
-import { recurringManager } from "../services/recurring-manager"
-import { TransactionType, TransactionCategory } from "../types"
-import * as validators from "../validators"
-import { SETTINGS_KEYBOARD } from "../constants"
-import { formatDateDisplay } from "../utils"
 import dayjs from "dayjs"
-import { Language, t } from "../i18n"
+import type TelegramBot from "node-telegram-bot-api"
+import { SETTINGS_KEYBOARD } from "../constants"
+import { dbStorage as db } from "../database/storage-db"
+import { type Language, resolveLanguage, t } from "../i18n"
+import { recurringManager } from "../services/recurring-manager"
+import { type TransactionCategory, TransactionType } from "../types"
+import { escapeMarkdown, formatDateDisplay } from "../utils"
+import * as validators from "../validators"
+import type { WizardManager } from "../wizards/wizards"
 
 // Show recurring transactions menu
 export async function handleRecurringMenu(
@@ -18,15 +18,15 @@ export async function handleRecurringMenu(
 ): Promise<boolean> {
   const recurring = await recurringManager.getUserRecurring(userId)
 
-  let msg = t(lang, "recurring.title") + "\n\n"
+  let msg = `${t(lang, "recurring.title")}\n\n`
 
   if (!recurring.length) {
-    msg += t(lang, "recurring.noTransactions") + "\n\n"
-    msg += t(lang, "recurring.setupInfo") + "\n"
-    msg += t(lang, "recurring.setupExamples") + "\n\n"
+    msg += `${t(lang, "recurring.noTransactions")}\n\n`
+    msg += `${t(lang, "recurring.setupInfo")}\n`
+    msg += `${t(lang, "recurring.setupExamples")}\n\n`
     msg += t(lang, "recurring.tapToStart")
   } else {
-    msg += t(lang, "recurring.yourTransactions") + "\n\n"
+    msg += `${t(lang, "recurring.yourTransactions")}\n\n`
     recurring.forEach((r, idx) => {
       const typeEmoji = r.type === TransactionType.EXPENSE ? "💸" : "💰"
       const statusEmoji = r.isActive ? "▶️" : "⏸"
@@ -35,8 +35,9 @@ export async function handleRecurringMenu(
         `recurring.frequency.${r.frequency.toLowerCase()}`
       )
       const name = r.description || t(lang, "recurring.unnamed")
+      const safeName = escapeMarkdown(name)
 
-      msg += `${idx + 1}. ${statusEmoji} ${typeEmoji} *${name}*\n`
+      msg += `${idx + 1}. ${statusEmoji} ${typeEmoji} *${safeName}*\n`
       msg += `   ${t(lang, "recurring.listItemAmountLine", {
         amount: r.amount,
         currency: r.currency,
@@ -46,7 +47,7 @@ export async function handleRecurringMenu(
         date: formatDateDisplay(r.nextExecutionDate),
       })}\n\n`
     })
-    msg += "\n" + t(lang, "recurring.tapToManage")
+    msg += `\n${t(lang, "recurring.tapToManage")}`
   }
 
   const buttons: TelegramBot.KeyboardButton[][] = []
@@ -90,7 +91,7 @@ export async function handleRecurringSelect(
   text: string
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const recurring = await recurringManager.getUserRecurring(userId)
   const selected = recurring.find(
     (r) =>
@@ -116,10 +117,11 @@ export async function handleRecurringSelect(
     `recurring.frequency.${selected.frequency.toLowerCase()}`
   )
   const name = selected.description || t(lang, "recurring.unnamed")
+  const safeName = escapeMarkdown(name)
 
   let msg = `${t(lang, "recurring.detailsTitle", {
     emoji: typeEmoji,
-    name,
+    name: safeName,
   })}\n\n`
   msg += `${t(lang, "recurring.statusLine", { status: statusLabel })}\n`
   msg += `${t(lang, "recurring.amountLine", {
@@ -127,7 +129,7 @@ export async function handleRecurringSelect(
     currency: selected.currency,
   })}\n`
   msg += `${t(lang, "recurring.accountLine", {
-    account: selected.accountId,
+    account: escapeMarkdown(selected.accountId),
   })}\n`
   msg += `${t(lang, "recurring.frequencyLine", {
     frequency: freqLabel,
@@ -174,7 +176,7 @@ export async function handleRecurringItemAction(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state?.data?.recurringId) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const recurringId = state?.data?.recurringId
   const recurring = state?.data?.recurring
 
@@ -209,7 +211,9 @@ export async function handleRecurringItemAction(
       chatId,
       `${t(lang, "recurring.deleteConfirmTitle")}\n\n` +
         t(lang, "recurring.deleteConfirmBody", {
-          name: recurring.description || t(lang, "recurring.unnamed"),
+          name: escapeMarkdown(
+            recurring.description || t(lang, "recurring.unnamed")
+          ),
           amount: recurring.amount,
           currency: recurring.currency,
         }),
@@ -239,7 +243,7 @@ export async function handleRecurringDeleteConfirm(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state?.data?.recurringId) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   if (text === t(lang, "common.yesDelete")) {
     await recurringManager.deleteRecurring(state?.data?.recurringId)
 
@@ -270,7 +274,7 @@ export async function handleRecurringCreateStart(
   userId: string
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_DESCRIPTION",
     data: {},
@@ -303,7 +307,7 @@ export async function handleRecurringDescription(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   wizardManager.setState(userId, {
     step: "RECURRING_CREATE_TYPE",
     data: { ...state?.data, description: text },
@@ -339,7 +343,7 @@ export async function handleRecurringType(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   let type: TransactionType
   if (text === t(lang, "recurring.expense")) {
     type = TransactionType.EXPENSE
@@ -376,7 +380,7 @@ export async function handleRecurringAmount(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const defaultCurrency = await db.getDefaultCurrency(userId)
   const parsed = validators.parseAmountWithCurrency(text, defaultCurrency)
 
@@ -442,7 +446,7 @@ export async function handleRecurringAccount(
   const state = wizardManager.getState(userId)
   if (!state) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const accountId = text.replace("💳 ", "")
   const balances = await db.getBalancesList(userId)
   const account = balances.find((b) => b.accountId === accountId)
@@ -486,7 +490,7 @@ export async function handleRecurringCategory(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const validCategories = await db.getTopCategories(userId, state?.data?.type)
 
   if (!validCategories.includes(text as TransactionCategory)) return false
@@ -522,9 +526,9 @@ export async function handleRecurringDay(
 ): Promise<boolean> {
   const state = wizardManager.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
-  const day = parseInt(text)
-  if (isNaN(day) || day < 1 || day > 31) {
+  const lang = resolveLanguage(state?.lang)
+  const day = parseInt(text, 10)
+  if (Number.isNaN(day) || day < 1 || day > 31) {
     await wizardManager.sendMessage(
       chatId,
       t(lang, "errors.invalidDay"),
@@ -560,13 +564,13 @@ export async function handleRecurringDay(
   await wizardManager.sendMessage(
     chatId,
     `${t(lang, "recurring.createdTitle")}\n\n` +
-      `${typeEmoji} ${state?.data?.description}\n` +
+      `${typeEmoji} ${escapeMarkdown(state?.data?.description || "")}\n` +
       `${t(lang, "recurring.amountLine", {
         amount: state?.data?.amount,
         currency: state?.data?.currency,
       })}\n` +
       `${t(lang, "recurring.accountLine", {
-        account: state?.data?.accountId,
+        account: escapeMarkdown(state?.data?.accountId || ""),
       })}\n` +
       `${t(lang, "recurring.dayOfMonthLine", { day })}\n` +
       `${t(lang, "recurring.nextLine", {

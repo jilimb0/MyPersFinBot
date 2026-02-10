@@ -2,12 +2,12 @@
  * Rate limiter middleware for Telegram bot
  */
 
-import TelegramBot from "node-telegram-bot-api"
-import { rateLimiter } from "./rate-limiter.service"
-import logger from "../logger"
-import { RateLimitResult } from "./types"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
-import { Language, t } from "../i18n"
+import { type Language, t } from "../i18n"
+import logger from "../logger"
+import { rateLimiter } from "./rate-limiter.service"
+import type { RateLimitResult } from "./types"
 
 /**
  * Rate limiter middleware
@@ -167,9 +167,9 @@ export async function getRateLimitStatus(userId: string): Promise<string> {
     const info = await rateLimiter.getInfo(userId)
     const config = rateLimiter.getConfig()
 
-    if (info.blocked) {
+    if (info.blocked && info.blockedUntil) {
       const minutesLeft = Math.ceil(
-        (info.blockedUntil!.getTime() - Date.now()) / 60000
+        (info.blockedUntil.getTime() - Date.now()) / 60000
       )
       return t(lang, "rateLimiter.blocked", {
         minutes: minutesLeft,

@@ -15,16 +15,17 @@ module.exports = {
     "!src/index.ts",
   ],
   coverageDirectory: "coverage",
-  coverageReporters: ["text", "lcov", "html", "json"],
+  coverageReporters: ["text", "text-summary", "lcov", "html", "json"],
   coverageThreshold: {
     global: {
-      branches: 20,
-      functions: 20,
-      lines: 20,
-      statements: 20,
+      branches: 60,
+      functions: 85,
+      lines: 75,
+      statements: 75,
     },
   },
   setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.ts"],
   verbose: true,
   testTimeout: 10000,
+  // reporters: ["default"], // Using default reporter
 }

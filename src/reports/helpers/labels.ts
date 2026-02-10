@@ -2,8 +2,8 @@
  * Transaction label and sign utilities
  */
 
-import { Transaction, TransactionType } from "../../types"
 import { getCategoryLabel } from "../../i18n"
+import { type Transaction, TransactionType } from "../../types"
 
 /**
  * Gets the sign for a transaction type
@@ -29,10 +29,7 @@ export function getTransactionSign(type: TransactionType): string {
  * @param tx - Transaction object
  * @returns Formatted label string
  */
-export function getTransactionLabel(
-  lang: string,
-  tx: Transaction
-): string {
+export function getTransactionLabel(lang: string, tx: Transaction): string {
   // Handle Goal deposits
   if (
     tx.category === "GOAL_DEPOSIT" &&

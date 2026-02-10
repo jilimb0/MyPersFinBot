@@ -1,6 +1,6 @@
+import { closeCache, initializeCache } from "../../cache"
 import { RateLimiterService } from "../../rate-limiter/rate-limiter.service"
-import { RateLimitConfig } from "../../rate-limiter/types"
-import { initializeCache, closeCache } from "../../cache"
+import type { RateLimitConfig } from "../../rate-limiter/types"
 
 // Mock Redis
 const mockRedis = {

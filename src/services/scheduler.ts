@@ -1,14 +1,14 @@
-import TelegramBot from "node-telegram-bot-api"
 import * as cron from "node-cron"
-import { reminderManager } from "./reminder-manager"
-import { recurringManager } from "./recurring-manager"
-import { autoDepositManager } from "./auto-deposit-manager"
-import { autoIncomeManager } from "./auto-income-manager"
-import { autoDebtPaymentManager } from "./auto-debt-payment"
-import logger from "../logger"
+import type TelegramBot from "node-telegram-bot-api"
 import { config } from "../config"
 import { dbStorage as db } from "../database/storage-db"
 import { getCategoryLabel } from "../i18n"
+import logger from "../logger"
+import { autoDebtPaymentManager } from "./auto-debt-payment"
+import { autoDepositManager } from "./auto-deposit-manager"
+import { autoIncomeManager } from "./auto-income-manager"
+import { recurringManager } from "./recurring-manager"
+import { reminderManager } from "./reminder-manager"
 
 export class Scheduler {
   private bot: TelegramBot
@@ -49,7 +49,9 @@ export class Scheduler {
       try {
         const transactions = await recurringManager.getDueRecurring()
         if (config.LOG_SCHEDULER_TICK) {
-          logger.debug(`Found ${transactions.length} due recurring transactions`)
+          logger.debug(
+            `Found ${transactions.length} due recurring transactions`
+          )
         }
 
         for (const tx of transactions) {
@@ -62,9 +64,9 @@ export class Scheduler {
             const lang = await db.getUserLanguage(tx.userId)
             await this.bot.sendMessage(
               tx.userId,
-              `🔄 *Recurring Transaction Due*\n\n` +
+              "🔄 *Recurring Transaction Due*\n\n" +
                 `${getCategoryLabel(lang, tx.category)}: ${tx.amount} ${tx.currency}\n\n` +
-                `Execute now?`,
+                "Execute now?",
               { parse_mode: "Markdown" }
             )
           }
@@ -82,9 +84,7 @@ export class Scheduler {
       try {
         const dueGoals = await autoDepositManager.getDueAutoDeposits()
         if (config.LOG_SCHEDULER_TICK) {
-          logger.debug(
-            `Found ${dueGoals.length} goals with due auto-deposits`
-          )
+          logger.debug(`Found ${dueGoals.length} goals with due auto-deposits`)
         }
 
         for (const goal of dueGoals) {

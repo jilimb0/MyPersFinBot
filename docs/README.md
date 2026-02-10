@@ -8,6 +8,5 @@
 - [Development](DEV.md)
 - [Environment Variables](ENV.md)
 - [Logging](LOGGING.md)
-
-Legacy:
-- [DEPLOYMENT_LEGACY.md](DEPLOYMENT_LEGACY.md)
+- [Release Checklist](RELEASE_CHECKLIST.md)
+- [Operational Runbook](RUNBOOK.md)

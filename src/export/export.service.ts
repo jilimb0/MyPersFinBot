@@ -3,12 +3,12 @@
  * Coordinates all export operations
  */
 
+import logger from "../logger"
+import { TransactionType } from "../types"
 import { csvExporter } from "./csv-exporter"
 import { excelExporter } from "./excel-exporter"
 import { jsonExporter } from "./json-exporter"
-import { ExportOptions, ExportResult, ExportFormat } from "./types"
-import logger from "../logger"
-import { TransactionType } from "../types"
+import type { ExportFormat, ExportOptions, ExportResult } from "./types"
 
 export class ExportService {
   /**

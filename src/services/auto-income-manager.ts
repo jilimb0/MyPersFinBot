@@ -3,14 +3,14 @@
  * Handles automatic income transactions from income sources
  */
 
+import { randomUUID } from "node:crypto"
+import type TelegramBot from "node-telegram-bot-api"
 import { AppDataSource } from "../database/data-source"
 import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
 import { Transaction as TransactionEntity } from "../database/entities/Transaction"
 import { dbStorage as db } from "../database/storage-db"
-import { TransactionType, IncomeCategory } from "../types"
-import { randomUUID } from "crypto"
-import TelegramBot from "node-telegram-bot-api"
-import { formatMoney } from "../utils"
+import { IncomeCategory, TransactionType } from "../types"
+import { escapeMarkdown, formatMoney } from "../utils"
 
 class AutoIncomeManager {
   /**
@@ -65,9 +65,9 @@ class AutoIncomeManager {
         if (bot) {
           await bot.sendMessage(
             income.userId,
-            `⚠️ *Auto-Income Failed*\n\n` +
-              `Source: *${name}*\n` +
-              `Reason: Currency not set.`,
+            "⚠️ *Auto-Income Failed*\n\n" +
+              `Source: *${escapeMarkdown(name)}*\n` +
+              "Reason: Currency not set.",
             { parse_mode: "Markdown" }
           )
         }
@@ -80,9 +80,9 @@ class AutoIncomeManager {
         if (bot) {
           await bot.sendMessage(
             income.userId,
-            `⚠️ *Auto-Income Failed*\n\n` +
-              `Source: *${name}*\n` +
-              `Reason: Account "${accountId}" not found.`,
+            "⚠️ *Auto-Income Failed*\n\n" +
+              `Source: *${escapeMarkdown(name)}*\n` +
+              `Reason: Account "${escapeMarkdown(accountId)}" not found.`,
             { parse_mode: "Markdown" }
           )
         }
@@ -116,12 +116,12 @@ class AutoIncomeManager {
       if (bot) {
         await bot.sendMessage(
           income.userId,
-          `💰 *Auto-Income Added*\n\n` +
-            `💼 *${name}*\n\n` +
+          "💰 *Auto-Income Added*\n\n" +
+            `💼 *${escapeMarkdown(name)}*\n\n` +
             `Amount: ${formatMoney(amount, currency)}\n` +
-            `To: ${accountId}\n` +
+            `To: ${escapeMarkdown(accountId)}\n` +
             `Frequency: ${income.frequency}\n\n` +
-            `✅ Income transaction created successfully!`,
+            "✅ Income transaction created successfully!",
           { parse_mode: "Markdown" }
         )
       }

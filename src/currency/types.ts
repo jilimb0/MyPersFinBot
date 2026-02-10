@@ -2,7 +2,7 @@
  * Currency exchange types
  */
 
-import { Currency } from "../types"
+import type { Currency } from "../types"
 
 export interface ExchangeRate {
   from: Currency

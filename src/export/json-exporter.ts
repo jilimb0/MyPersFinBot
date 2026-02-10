@@ -3,8 +3,8 @@
  */
 
 import { dbStorage } from "../database/storage-db"
-import { BackupData, ExportResult } from "./types"
 import logger from "../logger"
+import type { BackupData, ExportResult } from "./types"
 
 const BACKUP_VERSION = "1.0.0"
 
@@ -138,7 +138,7 @@ export class JSONExporter {
         transactionCount: backup.transactions.length,
         exportDate: new Date(backup.exportDate),
       }
-    } catch (error) {
+    } catch (_error) {
       return { valid: false, error: "Invalid JSON format" }
     }
   }

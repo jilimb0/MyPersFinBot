@@ -1,14 +1,18 @@
-import TelegramBot from "node-telegram-bot-api"
+import { randomUUID } from "node:crypto"
+import type TelegramBot from "node-telegram-bot-api"
+import type { Balance } from "../database/entities/Balance"
 import { dbStorage as db } from "../database/storage-db"
-import * as validators from "../validators"
-import { formatMoney } from "../utils"
-import { Currency, Transaction } from "../types"
-import { WizardManager } from "../wizards/wizards"
+import { type Language, resolveLanguage, t } from "../i18n"
 import { showBalancesMenu } from "../menus-i18n"
-import { TransactionType, InternalCategory } from "../types"
-import { randomUUID } from "crypto"
-import { Balance } from "../database/entities/Balance"
-import { t, Language } from "../i18n"
+import {
+  type Currency,
+  InternalCategory,
+  type Transaction,
+  TransactionType,
+} from "../types"
+import { escapeMarkdown, formatMoney } from "../utils"
+import * as validators from "../validators"
+import type { WizardManager } from "../wizards/wizards"
 
 /**
  * Handle one-step balance creation like goals and debts
@@ -36,7 +40,7 @@ export async function handleBalanceCreate(
       const accountId = match[1].trim()
       const amount = parseFloat(match[2])
 
-      if (accountId && !isNaN(amount) && amount >= 0) {
+      if (accountId && !Number.isNaN(amount) && amount >= 0) {
         // Valid input without currency
         const existing = await db.getBalance(userId, accountId, defaultCurrency)
 
@@ -181,7 +185,7 @@ export async function handleBalanceSelection(
   // Get state and lang
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   // Парсим текст вида "Card (USD)"
   const match = text.match(/^(.+?)\s+\(([A-Z]{3})\)$/)
@@ -224,7 +228,10 @@ export async function handleBalanceSelection(
 
   await wizard.sendMessage(
     chatId,
-    `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+    `${t(lang, "balances.editTitle", {
+      accountId: escapeMarkdown(accountId),
+      currency,
+    })}\n\n` +
       `${t(lang, "balances.balanceLine", {
         amount: formatMoney(balance.amount, currency),
       })}\n\n` +
@@ -256,7 +263,7 @@ export async function handleBalanceEditMenu(
   // Get state and lang
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!state.data) return true
   const { accountId, currency, currentAmount } = state.data
@@ -300,7 +307,10 @@ export async function handleBalanceEditMenu(
     )
 
     const msg =
-      t(lang, "balances.setToZeroConfirm", { accountId, currency }) +
+      t(lang, "balances.setToZeroConfirm", {
+        accountId: escapeMarkdown(accountId),
+        currency,
+      }) +
       "\n\n" +
       `${t(lang, "balances.currentLine", {
         amount: formatMoney(currentAmount, currency),
@@ -348,7 +358,9 @@ export async function handleBalanceEditMenu(
     )
 
     const msg =
-      t(lang, "balances.deleteConfirmTitle", { accountId }) +
+      t(lang, "balances.deleteConfirmTitle", {
+        accountId: escapeMarkdown(accountId),
+      }) +
       (currentAmount > 0
         ? `\n\n${t(lang, "balances.currentBalanceLine", {
             amount: formatMoney(currentAmount, currency),
@@ -429,7 +441,7 @@ export async function handleBalanceEditMenu(
     if (duplicate) {
       await wizard.sendMessage(
         chatId,
-        t(lang, "balances.renameDuplicate", { name: newName }),
+        t(lang, "balances.renameDuplicate", { name: escapeMarkdown(newName) }),
         wizard.getBackButton(lang)
       )
       return true
@@ -446,8 +458,12 @@ export async function handleBalanceEditMenu(
     await wizard.sendMessage(
       chatId,
       `${t(lang, "balances.confirmRenameTitle")}\n\n` +
-        `${t(lang, "balances.confirmRenameOld", { name: accountId })}\n` +
-        `${t(lang, "balances.confirmRenameNew", { name: newName })}\n\n` +
+        `${t(lang, "balances.confirmRenameOld", {
+          name: escapeMarkdown(accountId),
+        })}\n` +
+        `${t(lang, "balances.confirmRenameNew", {
+          name: escapeMarkdown(newName),
+        })}\n\n` +
         `${t(lang, "balances.confirmYesNo")}`,
       {
         parse_mode: "Markdown",
@@ -487,7 +503,7 @@ export async function handleBalanceConfirmAmount(
   // Get state and lang
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!state.data) return true
   const { accountId, currency, newAmount, currentAmount } = state.data
@@ -508,7 +524,10 @@ export async function handleBalanceConfirmAmount(
 
     await wizard.sendMessage(
       chatId,
-      `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+      `${t(lang, "balances.editTitle", {
+        accountId: escapeMarkdown(accountId),
+        currency,
+      })}\n\n` +
         `${t(lang, "balances.balanceLine", {
           amount: formatMoney(state?.data?.currentAmount, currency),
         })}\n\n` +
@@ -555,7 +574,10 @@ export async function handleBalanceConfirmAmount(
 
   await wizard.sendMessage(
     chatId,
-    `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+    `${t(lang, "balances.editTitle", {
+      accountId: escapeMarkdown(accountId),
+      currency,
+    })}\n\n` +
       `${t(lang, "balances.balanceLine", {
         amount: formatMoney(currentAmount, currency),
       })}\n\n` +
@@ -585,7 +607,7 @@ export async function handleBalanceConfirmRename(
   // Get state and lang
   const state = wizard.getState(userId)
   if (!state) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!state.data) return true
   const { accountId, currency, newName, currentAmount } = state.data
@@ -607,7 +629,10 @@ export async function handleBalanceConfirmRename(
 
     await wizard.sendMessage(
       chatId,
-      `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+      `${t(lang, "balances.editTitle", {
+        accountId: escapeMarkdown(accountId),
+        currency,
+      })}\n\n` +
         `${t(lang, "balances.balanceLine", {
           amount: formatMoney(currentAmount, currency),
         })}\n\n` +
@@ -653,7 +678,10 @@ export async function handleBalanceConfirmRename(
 
   await wizard.sendMessage(
     chatId,
-    `${t(lang, "balances.editTitle", { accountId, currency })}\n\n` +
+    `${t(lang, "balances.editTitle", {
+      accountId: escapeMarkdown(accountId),
+      currency,
+    })}\n\n` +
       `${t(lang, "balances.balanceLine", {
         amount: formatMoney(currentAmount, currency),
       })}\n\n` +
@@ -683,7 +711,7 @@ export async function handleBalanceSetToZero(
   const state = wizard.getState(userId)
   if (!state?.data) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const { accountId, currency, amount, hasOtherBalances } = state.data
 
@@ -749,7 +777,7 @@ export async function handleBalanceDelete(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const { accountId, currency, amount, hasOtherBalances } = state.data
 
@@ -815,7 +843,7 @@ export async function handleBalanceDeleteSelectTarget(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const match = text.match(/^(.+?)\s+([A-Z]{3})$/)
   if (!match) {
@@ -873,7 +901,7 @@ export async function handleBalanceZeroSelectTarget(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   const match = text.match(/^(.+?)\s+([A-Z]{3})$/)
   if (!match) {

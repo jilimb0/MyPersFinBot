@@ -2,8 +2,8 @@
  * Analytics helper functions
  */
 
-import { AnalyticsPeriod } from "./types"
-import { Language, getLocale } from "../i18n"
+import { getLocale, type Language } from "../i18n"
+import type { AnalyticsPeriod } from "./types"
 
 /**
  * Get date range for analytics period
@@ -134,7 +134,7 @@ export function groupByDay<T extends { date: Date | string }>(
     if (!groups.has(key)) {
       groups.set(key, [])
     }
-    groups.get(key)!.push(item)
+    groups.get(key)?.push(item)
   })
 
   return groups
@@ -155,7 +155,7 @@ export function groupByMonth<T extends { date: Date | string }>(
     if (!groups.has(key)) {
       groups.set(key, [])
     }
-    groups.get(key)!.push(item)
+    groups.get(key)?.push(item)
   })
 
   return groups

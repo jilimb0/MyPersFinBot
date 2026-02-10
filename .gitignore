@@ -34,6 +34,7 @@ pnpm-debug.log*
 
 # Testing
 coverage/
+test-reports/
 
 # Database
 db.json.backup
@@ -69,6 +70,13 @@ data/cache/
 node_modules/.cache/
 
 translation-coverage.js
+translation-report.txt
+test-reports/
+
+# Migration artifacts
+.biome-migration.md
+BIOME_MIGRATION_COMPLETE.md
+*.old
 
 #
 

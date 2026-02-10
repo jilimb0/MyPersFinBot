@@ -1,24 +1,30 @@
-import TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "./database/storage-db"
-import { formatGoals, formatMonthlyStats } from "./reports"
 import {
-  Debt,
-  Goal,
-  IncomeSource,
-  ExpenseCategory,
-  Transaction,
-  Balance,
-} from "./types"
+  getCategoryLabel,
+  getExpenseCategoryLabel,
+  getLocale,
+  type Language,
+  t,
+} from "./i18n"
 import {
   getAnalyticsKeyboard,
   getBackAndMainKeyboard,
+  getMainMenuKeyboard,
   getSettingsKeyboard,
   getStatsKeyboard,
 } from "./i18n/keyboards"
-import { WizardManager } from "./wizards/wizards"
-import { createListButtons, formatMoney } from "./utils"
-import { Language, getLocale, t, getExpenseCategoryLabel, getCategoryLabel } from "./i18n"
-import { getMainMenuKeyboard } from "./i18n/keyboards"
+import { formatGoals, formatMonthlyStats } from "./reports"
+import {
+  type Balance,
+  type Debt,
+  ExpenseCategory,
+  type Goal,
+  type IncomeSource,
+  type Transaction,
+} from "./types"
+import { createListButtons, escapeMarkdown, formatMoney } from "./utils"
+import type { WizardManager } from "./wizards/wizards"
 
 export async function showMainMenu(
   bot: TelegramBot,
@@ -93,7 +99,7 @@ export async function showDebtsMenu(
     0
   )
 
-  let msg = t(lang, "debts.title") + "\n\n"
+  let msg = `${t(lang, "debts.title")}\n\n`
 
   if (youOwe.length > 0) {
     msg += `${t(lang, "debts.youOwe")} ${formatMoney(-youOweTotal, userData.defaultCurrency)}\n`
@@ -102,7 +108,7 @@ export async function showDebtsMenu(
       const dueDateStr = d.dueDate
         ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(getLocale(lang))}`
         : ""
-      msg += `└─ ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
+      msg += `└─ ${escapeMarkdown(d?.name || "")}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
     })
     msg += "\n"
   }
@@ -115,18 +121,18 @@ export async function showDebtsMenu(
       const dueDateStr = d.dueDate
         ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(getLocale(lang))}`
         : ""
-      msg += `${prefix} ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
+      msg += `${prefix} ${escapeMarkdown(d?.name || "")}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
     })
     msg += "\n"
   }
 
   if (activeDebts.length === 0) {
-    msg += t(lang, "debts.noActiveDebts") + "\n\n"
+    msg += `${t(lang, "debts.noActiveDebts")}\n\n`
   } else {
     const netDebt = theyOweTotal - youOweTotal
     const netLabel =
       netDebt > 0 ? t(lang, "debts.netTheyOwe") : t(lang, "debts.netYouOwe")
-    msg += `──────────────────\n`
+    msg += "──────────────────\n"
     msg += `${t(lang, "debts.net")} ${formatMoney(Math.abs(netDebt), userData.defaultCurrency)} (${netLabel})\n\n`
   }
 
@@ -223,7 +229,7 @@ export async function showStatsMenu(
 ): Promise<void> {
   await bot.sendMessage(
     chatId,
-    t(lang, "analytics.title") + "\n\n" + t(lang, "analytics.viewInsights"),
+    `${t(lang, "analytics.title")}\n\n${t(lang, "analytics.viewInsights")}`,
     {
       parse_mode: "Markdown",
       reply_markup: getStatsKeyboard(lang),
@@ -264,7 +270,7 @@ export async function showHistoryMenu(
         ? t(lang, "history.title") +
           "\n\n" +
           t(lang, "history.noFilteredTransactions")
-        : t(lang, "history.title") + "\n\n" + t(lang, "history.noTransactions")
+        : `${t(lang, "history.title")}\n\n${t(lang, "history.noTransactions")}`
 
     await wizard.sendMessage(chatId, msg, {
       parse_mode: "Markdown",
@@ -305,9 +311,10 @@ export async function showHistoryMenu(
     const emoji =
       tx.type === "EXPENSE" ? "📉" : tx.type === "INCOME" ? "📈" : "↔️"
     const date = new Date(tx.date).toLocaleDateString(getLocale(lang))
-    const account =
+    const accountRaw =
       tx.fromAccountId || tx.toAccountId || t(lang, "common.notAvailable")
-    const categoryLabel = getCategoryLabel(lang, tx.category)
+    const account = escapeMarkdown(accountRaw)
+    const categoryLabel = escapeMarkdown(getCategoryLabel(lang, tx.category))
     msg += `${emoji} *${categoryLabel}* - ${formatMoney(tx.amount, tx.currency)}\n`
     msg += `   💳 ${account} | 📅 ${date}\n`
     if (i < transactions.length - 1) msg += "\n"
@@ -469,12 +476,15 @@ export async function showNetWorthMenu(
   if (view === "summary") {
     msg += `${t(lang, "netWorth.assets")} ${formatMoney(totalAssets, defaultCurrency)} (${balances.length} ${t(lang, "netWorth.accounts")})\n`
     msg += `${t(lang, "netWorth.debts")} ${formatMoney(netDebt, defaultCurrency)} (${debts.length} ${t(lang, "netWorth.debtsCount")})\n`
-    msg += `──────────────────\n`
+    msg += "──────────────────\n"
     msg += `${t(lang, "netWorth.net")} ${formatMoney(netWorth, defaultCurrency)}\n`
   } else if (view === "assets") {
     msg += `${t(lang, "netWorth.assetsDetail")} ${formatMoney(totalAssets, defaultCurrency)}\n\n`
     balances.forEach((b: Balance) => {
-      msg += `• ${b.accountId}: ${formatMoney(b.amount, b.currency)}\n`
+      msg += `• ${escapeMarkdown(b.accountId)}: ${formatMoney(
+        b.amount,
+        b.currency
+      )}\n`
     })
   } else if (view === "debts") {
     msg += `${t(lang, "netWorth.debtsDetail")}\n\n`
@@ -486,7 +496,7 @@ export async function showNetWorthMenu(
         const dueDateStr = d.dueDate
           ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(getLocale(lang))}`
           : ""
-        msg += `└─ ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
+        msg += `└─ ${escapeMarkdown(d?.name || "")}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
       })
       msg += "\n"
     }
@@ -499,18 +509,21 @@ export async function showNetWorthMenu(
         const dueDateStr = d.dueDate
           ? ` | 📅 ${new Date(d.dueDate).toLocaleDateString(getLocale(lang))}`
           : ""
-        msg += `${prefix} ${d?.name}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
+        msg += `${prefix} ${escapeMarkdown(d?.name || "")}: ${formatMoney(remaining, d.currency)}${dueDateStr}\n`
       })
     }
 
     if (debts.length > 0) {
-      msg += `\n──────────────────\n`
+      msg += "\n──────────────────\n"
       msg += `${t(lang, "netWorth.netDebts")} ${formatMoney(Math.abs(netDebt), defaultCurrency)} ${netDebt > 0 ? `(${t(lang, "debts.netTheyOwe")})` : `(${t(lang, "debts.netYouOwe")})`}\n`
     }
   } else if (view === "full") {
     msg += `${t(lang, "netWorth.assetsDetail")}\n`
     balances.forEach((b: Balance) => {
-      msg += `• ${b.accountId}: ${formatMoney(b.amount, b.currency)}\n`
+      msg += `• ${escapeMarkdown(b.accountId)}: ${formatMoney(
+        b.amount,
+        b.currency
+      )}\n`
     })
     msg += `${t(lang, "common.total")} ${formatMoney(totalAssets, defaultCurrency)}\n\n`
 
@@ -523,7 +536,7 @@ export async function showNetWorthMenu(
     }
     msg += `${t(lang, "netWorth.net")} ${formatMoney(netDebt, defaultCurrency)}\n\n`
 
-    msg += `──────────────────\n`
+    msg += "──────────────────\n"
     msg += `${t(lang, "netWorth.title")} ${formatMoney(netWorth, defaultCurrency)}\n`
   }
 
@@ -568,13 +581,13 @@ export async function showActiveRemindersMenu(
   const { reminderManager } = await import("./services/reminder-manager")
   const data = await reminderManager.getUserReminders(userId)
 
-  let msg = t(lang, "reminders.title") + "\n\n"
+  let msg = `${t(lang, "reminders.title")}\n\n`
 
   // Debts
   if (data.debts.length > 0) {
-    msg += t(lang, "reminders.debtsSection") + "\n"
+    msg += `${t(lang, "reminders.debtsSection")}\n`
     for (const { debt, reminders } of data.debts) {
-      msg += `└─ ${debt.name}\n`
+      msg += `└─ ${escapeMarkdown(debt.name)}\n`
       for (const r of reminders) {
         const dateStr = new Date(r.reminderDate).toLocaleDateString(
           getLocale(lang)
@@ -587,9 +600,9 @@ export async function showActiveRemindersMenu(
 
   // Goals
   if (data.goals.length > 0) {
-    msg += t(lang, "reminders.goalsSection") + "\n"
+    msg += `${t(lang, "reminders.goalsSection")}\n`
     for (const { goal, reminders } of data.goals) {
-      msg += `└─ ${goal.name}\n`
+      msg += `└─ ${escapeMarkdown(goal.name)}\n`
       for (const r of reminders) {
         const dateStr = new Date(r.reminderDate).toLocaleDateString(
           getLocale(lang)
@@ -601,7 +614,7 @@ export async function showActiveRemindersMenu(
   }
 
   if (data.debts.length === 0 && data.goals.length === 0) {
-    msg += t(lang, "reminders.noReminders") + "\n"
+    msg += `${t(lang, "reminders.noReminders")}\n`
   }
 
   wizard.setState(userId, {
@@ -631,7 +644,7 @@ export async function showAutomationMenu(
 
   await wizard.sendMessage(
     chatId,
-    t(lang, "automation.title") + "\n\n" + t(lang, "automation.description"),
+    `${t(lang, "automation.title")}\n\n${t(lang, "automation.description")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -664,7 +677,7 @@ export async function showAdvancedMenu(
 
   await wizard.sendMessage(
     chatId,
-    t(lang, "advanced.title") + "\n\n" + t(lang, "advanced.description"),
+    `${t(lang, "advanced.title")}\n\n${t(lang, "advanced.description")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {

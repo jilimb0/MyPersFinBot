@@ -2,9 +2,9 @@
  * Winston logger configuration
  */
 
+import path from "node:path"
 import winston from "winston"
 import DailyRotateFile from "winston-daily-rotate-file"
-import path from "path"
 import { LogLevel } from "./types"
 
 const LOG_DIR = process.env.LOG_DIR || "logs"

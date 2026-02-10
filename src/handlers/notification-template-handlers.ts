@@ -1,7 +1,8 @@
-import { WizardManager } from "../wizards/wizards"
-import { dbStorage as db } from "../database/storage-db"
 import { SETTINGS_KEYBOARD } from "../constants"
+import { dbStorage as db } from "../database/storage-db"
 import { resolveLanguage, t } from "../i18n"
+import { escapeMarkdown } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 // Show custom messages menu
 export async function handleCustomMessagesMenu(
@@ -14,37 +15,42 @@ export async function handleCustomMessagesMenu(
   const settings = await db.getReminderSettings(userId)
   const customMessages = settings?.customMessages || {}
 
-  let msg = t(state?.lang || "en", "notifications.customMessagesTitle") + "\n\n"
-  msg += t(state?.lang || "en", "notifications.customizeReminders") + "\n\n"
+  let msg = `${t(lang, "notifications.customMessagesTitle")}\n\n`
+  msg += `${t(lang, "notifications.customizeReminders")}\n\n`
 
-  msg += t(state?.lang || "en", "notifications.debtReminder")
-  msg +=
-    customMessages.debt ||
-    t(state?.lang || "en", "notifications.usingDefaultTemplate") + "\n"
+  msg += t(lang, "notifications.debtReminder")
+  msg += `${
+    customMessages.debt
+      ? escapeMarkdown(customMessages.debt)
+      : t(lang, "notifications.usingDefaultTemplate")
+  }\n`
   msg += "\n"
 
-  msg += t(state?.lang || "en", "notifications.goalReminder")
-  msg +=
-    customMessages.goal ||
-    t(state?.lang || "en", "notifications.usingDefaultTemplate") + "\n"
+  msg += t(lang, "notifications.goalReminder")
+  msg += `${
+    customMessages.goal
+      ? escapeMarkdown(customMessages.goal)
+      : t(lang, "notifications.usingDefaultTemplate")
+  }\n`
   msg += "\n"
 
-  msg += t(state?.lang || "en", "notifications.incomeReminder")
-  msg +=
-    customMessages.income ||
-    t(state?.lang || "en", "notifications.usingDefaultTemplate") + "\n"
+  msg += t(lang, "notifications.incomeReminder")
+  msg += `${
+    customMessages.income
+      ? escapeMarkdown(customMessages.income)
+      : t(lang, "notifications.usingDefaultTemplate")
+  }\n`
   msg += "\n\n"
 
-  msg += t(state?.lang || "en", "notifications.availablePlaceholders") + "\n"
-  msg += t(state?.lang || "en", "notifications.placeholders.name") + "\n"
-  msg += t(state?.lang || "en", "notifications.placeholders.amount") + "\n"
-  msg += t(state?.lang || "en", "notifications.placeholders.currency") + "\n"
-  msg += t(state?.lang || "en", "notifications.placeholders.dueDate") + "\n"
-  msg += t(state?.lang || "en", "notifications.placeholders.remaining") + "\n"
-  msg += t(state?.lang || "en", "notifications.placeholders.target") + "\n"
-  msg +=
-    t(state?.lang || "en", "notifications.placeholders.monthlyAmount") + "\n"
-  msg += t(state?.lang || "en", "notifications.placeholders.monthsLeft") + "\n"
+  msg += `${t(lang, "notifications.availablePlaceholders")}\n`
+  msg += `${t(lang, "notifications.placeholders.name")}\n`
+  msg += `${t(lang, "notifications.placeholders.amount")}\n`
+  msg += `${t(lang, "notifications.placeholders.currency")}\n`
+  msg += `${t(lang, "notifications.placeholders.dueDate")}\n`
+  msg += `${t(lang, "notifications.placeholders.remaining")}\n`
+  msg += `${t(lang, "notifications.placeholders.target")}\n`
+  msg += `${t(lang, "notifications.placeholders.monthlyAmount")}\n`
+  msg += `${t(lang, "notifications.placeholders.monthsLeft")}\n`
 
   wizardManager.setState(userId, {
     step: "CUSTOM_MESSAGES_MENU",
@@ -57,13 +63,13 @@ export async function handleCustomMessagesMenu(
     parse_mode: "Markdown",
     reply_markup: {
       keyboard: [
-        [{ text: t(state?.lang || "en", "notifications.editDebtTemplate") }],
-        [{ text: t(state?.lang || "en", "notifications.editGoalTemplate") }],
-        [{ text: t(state?.lang || "en", "notifications.editIncomeTemplate") }],
-        [{ text: t(state?.lang || "en", "notifications.resetToDefaults") }],
+        [{ text: t(lang, "notifications.editDebtTemplate") }],
+        [{ text: t(lang, "notifications.editGoalTemplate") }],
+        [{ text: t(lang, "notifications.editIncomeTemplate") }],
+        [{ text: t(lang, "notifications.resetToDefaults") }],
         [
-          { text: t(state?.lang || "en", "common.back") },
-          { text: t(state?.lang || "en", "mainMenu.mainMenuButton") },
+          { text: t(lang, "common.back") },
+          { text: t(lang, "mainMenu.mainMenuButton") },
         ],
       ],
       resize_keyboard: true,
@@ -81,7 +87,7 @@ export async function handleCustomMessagesAction(
   const state = wizardManager.getState(userId)
   if (!state || state.step !== "CUSTOM_MESSAGES_MENU") return false
   const lang = resolveLanguage(state?.lang)
-  if (text === t(state?.lang || "en", "notifications.editDebtTemplate")) {
+  if (text === t(lang, "notifications.editDebtTemplate")) {
     wizardManager.setState(userId, {
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "debt" },
@@ -91,14 +97,14 @@ export async function handleCustomMessagesAction(
 
     await wizardManager.sendMessage(
       chatId,
-      t(state?.lang || "en", "common.enterCustomDebtReminder") +
-        t(state?.lang || "en", "notifications.exampleTitle") +
+      t(lang, "common.enterCustomDebtReminder") +
+        t(lang, "notifications.exampleTitle") +
         "\n" +
-        t(state?.lang || "en", "notifications.examples.debt") +
+        t(lang, "notifications.examples.debt") +
         "\n\n" +
-        t(state?.lang || "en", "notifications.availablePlaceholders") +
+        t(lang, "notifications.availablePlaceholders") +
         "\n" +
-        t(state?.lang || "en", "notifications.placeholdersList.debt"),
+        t(lang, "notifications.placeholdersList.debt"),
       {
         parse_mode: "Markdown",
         ...wizardManager.getBackButton(lang),
@@ -107,7 +113,7 @@ export async function handleCustomMessagesAction(
     return true
   }
 
-  if (text === t(state?.lang || "en", "notifications.editGoalTemplate")) {
+  if (text === t(lang, "notifications.editGoalTemplate")) {
     wizardManager.setState(userId, {
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "goal" },
@@ -117,14 +123,14 @@ export async function handleCustomMessagesAction(
 
     await wizardManager.sendMessage(
       chatId,
-      t(state?.lang || "en", "common.enterCustomGoalReminder") +
-        t(state?.lang || "en", "notifications.exampleTitle") +
+      t(lang, "common.enterCustomGoalReminder") +
+        t(lang, "notifications.exampleTitle") +
         "\n" +
-        t(state?.lang || "en", "notifications.examples.goal") +
+        t(lang, "notifications.examples.goal") +
         "\n\n" +
-        t(state?.lang || "en", "notifications.availablePlaceholders") +
+        t(lang, "notifications.availablePlaceholders") +
         "\n" +
-        t(state?.lang || "en", "notifications.placeholdersList.goal"),
+        t(lang, "notifications.placeholdersList.goal"),
       {
         parse_mode: "Markdown",
         ...wizardManager.getBackButton(lang),
@@ -133,7 +139,7 @@ export async function handleCustomMessagesAction(
     return true
   }
 
-  if (text === t(state?.lang || "en", "notifications.editIncomeTemplate")) {
+  if (text === t(lang, "notifications.editIncomeTemplate")) {
     wizardManager.setState(userId, {
       step: "CUSTOM_MESSAGE_EDIT",
       data: { type: "income" },
@@ -143,14 +149,14 @@ export async function handleCustomMessagesAction(
 
     await wizardManager.sendMessage(
       chatId,
-      t(state?.lang || "en", "common.enterCustomIncomeReminder") +
-        t(state?.lang || "en", "notifications.exampleTitle") +
+      t(lang, "common.enterCustomIncomeReminder") +
+        t(lang, "notifications.exampleTitle") +
         "\n" +
-        t(state?.lang || "en", "notifications.examples.income") +
+        t(lang, "notifications.examples.income") +
         "\n\n" +
-        t(state?.lang || "en", "notifications.availablePlaceholders") +
+        t(lang, "notifications.availablePlaceholders") +
         "\n" +
-        t(state?.lang || "en", "notifications.placeholdersList.income"),
+        t(lang, "notifications.placeholdersList.income"),
       {
         parse_mode: "Markdown",
         ...wizardManager.getBackButton(lang),
@@ -159,7 +165,7 @@ export async function handleCustomMessagesAction(
     return true
   }
 
-  if (text === t(state?.lang || "en", "notifications.resetToDefaults")) {
+  if (text === t(lang, "notifications.resetToDefaults")) {
     const settings = await db.getReminderSettings(userId)
     if (settings) {
       settings.customMessages = undefined
@@ -168,7 +174,7 @@ export async function handleCustomMessagesAction(
 
     await wizardManager.sendMessage(
       chatId,
-      t(state?.lang || "en", "notifications.templatesReset"),
+      t(lang, "notifications.templatesReset"),
       { reply_markup: SETTINGS_KEYBOARD }
     )
     wizardManager.clearState(userId)
@@ -195,7 +201,7 @@ export async function handleCustomMessageSave(
   if (!text.includes("{") || !text.includes("}")) {
     await wizardManager.sendMessage(
       chatId,
-      t(state?.lang || "en", "notifications.templatePlaceholderWarning"),
+      t(lang, "notifications.templatePlaceholderWarning"),
       {
         parse_mode: "Markdown",
         ...wizardManager.getBackButton(lang),
@@ -225,9 +231,9 @@ export async function handleCustomMessageSave(
 
   await wizardManager.sendMessage(
     chatId,
-    t(state?.lang || "en", "notifications.templateSaved", {
-      type: t(state?.lang || "en", `notifications.templateTypes.${type}`),
-      template: text,
+    t(lang, "notifications.templateSaved", {
+      type: t(lang, `notifications.templateTypes.${type}`),
+      template: escapeMarkdown(text),
     }),
     {
       parse_mode: "Markdown",

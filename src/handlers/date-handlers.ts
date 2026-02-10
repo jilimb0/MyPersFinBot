@@ -1,19 +1,19 @@
-import type { WizardManager } from "../wizards/wizards"
+import { randomUUID } from "node:crypto"
+import dayjs from "dayjs"
+import { AppDataSource } from "../database/data-source"
+import { Debt as DebtEntity } from "../database/entities/Debt"
+import { Goal as GoalEntity } from "../database/entities/Goal"
+import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
 import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
 import {
   showDebtsMenu,
   showGoalsMenu,
   showIncomeSourcesMenu,
 } from "../menus-i18n"
 import { reminderManager } from "../services/reminder-manager"
-import { AppDataSource } from "../database/data-source"
-import { Debt as DebtEntity } from "../database/entities/Debt"
-import { Goal as GoalEntity } from "../database/entities/Goal"
-import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
-import { formatDateDisplay, formatMoney } from "../utils"
-import { randomUUID } from "crypto"
-import dayjs from "dayjs"
-import { resolveLanguage, t } from "../i18n"
+import { escapeMarkdown, formatDateDisplay, formatMoney } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 // Helper function to parse DD.MM.YYYY format
 function parseDateDDMMYYYY(text: string): Date | null {
@@ -26,7 +26,7 @@ function parseDateDDMMYYYY(text: string): Date | null {
     `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
   )
 
-  if (isNaN(date.getTime())) return null
+  if (Number.isNaN(date.getTime())) return null
   return date
 }
 
@@ -87,7 +87,7 @@ export async function handleDebtDueDate(
       `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
     )
 
-    if (isNaN(dueDate.getTime())) {
+    if (Number.isNaN(dueDate.getTime())) {
       await wizard.sendMessage(
         chatId,
         t(lang, "errors.invalidDateFormat"),
@@ -187,7 +187,7 @@ export async function handleDebtDueDateEdit(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const debt = state?.data?.debt
   const parsed = parseDateDDMMYYYY(text)
 
@@ -245,7 +245,7 @@ export async function handleGoalDeadlineEdit(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const goal = state?.data?.goal
   const parsed = parseDateDDMMYYYY(text)
 
@@ -346,7 +346,7 @@ export async function handleGoalDeadline(
       `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
     )
 
-    if (isNaN(deadline.getTime())) {
+    if (Number.isNaN(deadline.getTime())) {
       await wizard.sendMessage(
         chatId,
         t(lang, "errors.invalidDateFormat"),
@@ -390,7 +390,7 @@ export async function handleGoalDeadline(
     await wizard.sendMessage(
       chatId,
       t(lang, "goals.deadlineSetMessage", {
-        name,
+        name: escapeMarkdown(name),
         date: formatDateDisplay(deadline),
       }),
       { parse_mode: "Markdown" }
@@ -398,7 +398,9 @@ export async function handleGoalDeadline(
   } else {
     await wizard.sendMessage(
       chatId,
-      t(lang, "goals.createdWithoutDeadline", { name }),
+      t(lang, "goals.createdWithoutDeadline", {
+        name: escapeMarkdown(name),
+      }),
       { parse_mode: "Markdown" }
     )
   }
@@ -433,8 +435,8 @@ export async function handleIncomeExpectedDate(
   if (text === t(lang, "common.skip")) {
     expectedDate = undefined
   } else {
-    const day = parseInt(text)
-    if (isNaN(day) || day < 1 || day > 31) {
+    const day = parseInt(text, 10)
+    if (Number.isNaN(day) || day < 1 || day > 31) {
       await wizard.sendMessage(chatId, t(lang, "dates.invalidDayWithSkip"), {
         reply_markup: {
           keyboard: [
@@ -475,7 +477,7 @@ export async function handleIncomeExpectedDate(
     await wizard.sendMessage(
       chatId,
       t(lang, "incomeSources.reminderSet", {
-        name,
+        name: escapeMarkdown(name),
         day: expectedDate,
       }),
       { parse_mode: "Markdown" }
@@ -483,17 +485,14 @@ export async function handleIncomeExpectedDate(
   } else {
     await wizard.sendMessage(
       chatId,
-      t(lang, "incomeSources.createdWithoutReminder", { name }),
+      t(lang, "incomeSources.createdWithoutReminder", {
+        name: escapeMarkdown(name),
+      }),
       { parse_mode: "Markdown" }
     )
   }
 
   wizard.clearState(userId)
-  await showIncomeSourcesMenu(
-    wizard.getBot(),
-    chatId,
-    userId,
-    state?.lang || "en"
-  )
+  await showIncomeSourcesMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }

@@ -1,7 +1,7 @@
-import TelegramBot from "node-telegram-bot-api"
-import { logger as log } from "./logger"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "./database/storage-db"
-import { Language, t } from "./i18n"
+import { type Language, t } from "./i18n"
+import { logger as log } from "./logger"
 
 export enum ErrorType {
   TELEGRAM_API = "TELEGRAM_API",

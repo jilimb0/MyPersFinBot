@@ -2,8 +2,8 @@
  * Notification formatters for Telegram
  */
 
-import { Notification, NotificationConfig } from "./types"
-import { Language, t, getCategoryLabel } from "../i18n"
+import { getCategoryLabel, type Language, t } from "../i18n"
+import type { Notification, NotificationConfig } from "./types"
 
 /**
  * Format notification settings
@@ -154,7 +154,7 @@ export function formatDailyDigest(
 ): string {
   let message = `${t(lang, "notifications.dailyDigest.title")}\n\n`
 
-  message += summary + "\n\n"
+  message += `${summary}\n\n`
 
   if (notifications.length > 0) {
     message += `${t(lang, "notifications.dailyDigest.importantTitle")}\n\n`

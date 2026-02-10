@@ -2,8 +2,8 @@
  * Type guards and helpers for wizard state
  */
 
-import { Language } from "../i18n"
-import { WizardData, WizardState } from "./wizards"
+import type { Language } from "../i18n"
+import type { WizardData, WizardState } from "./wizards"
 
 /**
  * Check if state has data

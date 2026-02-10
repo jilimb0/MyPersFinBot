@@ -9,9 +9,9 @@
  * - Beautiful Telegram formatting
  */
 
-export * from "./types"
 export * from "./converter"
 export * from "./formatters"
+export * from "./types"
 
 // Export default converter
 import { currencyConverter } from "./converter"

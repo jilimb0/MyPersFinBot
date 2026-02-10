@@ -1,7 +1,7 @@
 /**
  * Formatting utilities
  */
-import { Language, t } from "../i18n"
+import { type Language, t } from "../i18n"
 
 /**
  * Currency symbols map for custom formatting
@@ -23,7 +23,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
  * Format amount to string with proper decimal places
  */
 export function formatAmount(amount: number | undefined | null): string {
-  if (amount == null || isNaN(amount)) return "0.00"
+  if (amount == null || Number.isNaN(amount)) return "0.00"
   return Number(amount) % 1 === 0
     ? Number(amount).toString()
     : Number(amount).toFixed(2)
@@ -103,7 +103,7 @@ export function formatDate(date: Date): string {
  */
 export function formatDateDisplay(date: Date | string): string {
   const value = typeof date === "string" ? new Date(date) : date
-  if (isNaN(value.getTime())) return ""
+  if (Number.isNaN(value.getTime())) return ""
   const day = String(value.getDate()).padStart(2, "0")
   const month = String(value.getMonth() + 1).padStart(2, "0")
   const year = value.getFullYear()
@@ -132,7 +132,7 @@ export function calculatePercentage(value: number, total: number): number {
  * Round to decimal places
  */
 export function roundToDecimal(value: number, decimals: number): number {
-  const multiplier = Math.pow(10, decimals)
+  const multiplier = 10 ** decimals
   return Math.round(value * multiplier) / multiplier
 }
 
@@ -156,5 +156,5 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) {
     return str
   }
-  return str.substring(0, maxLength - 3) + "..."
+  return `${str.substring(0, maxLength - 3)}...`
 }

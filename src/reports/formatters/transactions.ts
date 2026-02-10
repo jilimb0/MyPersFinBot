@@ -2,16 +2,16 @@
  * Transaction history formatting
  */
 
-import { Transaction } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
+import { type Language, t } from "../../i18n"
+import type { Transaction } from "../../types"
 import { formatMoney } from "../../utils"
-import { Language, t } from "../../i18n"
 import {
   formatDate,
   getCategoryEmoji,
-  getTransactionSign,
-  getTransactionLabel,
   getTransactionAccount,
+  getTransactionLabel,
+  getTransactionSign,
 } from "../helpers"
 
 /**

@@ -3,8 +3,8 @@
  */
 
 import TelegramBot from "node-telegram-bot-api"
-import logger from "../logger"
 import { config } from "../config"
+import logger from "../logger"
 
 export interface BotContext {
   bot: TelegramBot

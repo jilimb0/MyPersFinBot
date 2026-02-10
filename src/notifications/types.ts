@@ -2,7 +2,7 @@
  * Notification types
  */
 
-import { Currency, TransactionCategory } from "../types"
+import type { Currency, TransactionCategory } from "../types"
 
 export type NotificationType =
   | "BUDGET_EXCEEDED"

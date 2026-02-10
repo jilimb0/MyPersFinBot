@@ -1,7 +1,6 @@
-import http from "http"
-import { config } from "./config"
+import http from "node:http"
+import { config as appConfig, config } from "./config"
 import logger from "./logger"
-import { config as appConfig } from "./config"
 
 let server: http.Server | null = null
 

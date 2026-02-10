@@ -2,16 +2,16 @@
  * Queue module entry point
  */
 
-import TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "node-telegram-bot-api"
+import { dbStorage } from "../database/storage-db"
+import logger from "../logger"
+import { processRecurringTransaction, processReminder } from "./processors"
 import { getQueueService } from "./queue.service"
 import { JobName } from "./types"
-import { processRecurringTransaction, processReminder } from "./processors"
-import logger from "../logger"
-import { dbStorage } from "../database/storage-db"
 
+export * from "./processors"
 export * from "./queue.service"
 export * from "./types"
-export * from "./processors"
 
 /**
  * Initialize queue with processors

@@ -2,17 +2,17 @@
  * Unit tests for CacheManager
  */
 
+import type { CacheInterface } from "../../cache/cache.interface"
+import type { Language } from "../../i18n"
 import { CacheManager } from "../../services/cache-manager"
-import { CacheInterface } from "../../cache/cache.interface"
 import {
-  Balance,
-  Transaction,
-  TransactionType,
-  Currency,
+  type Balance,
+  type Currency,
   ExpenseCategory,
   IncomeCategory,
+  type Transaction,
+  TransactionType,
 } from "../../types"
-import { Language } from "../../i18n"
 
 // Mock cache implementation
 class MockCache implements CacheInterface {

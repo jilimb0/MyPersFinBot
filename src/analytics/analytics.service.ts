@@ -4,30 +4,30 @@
  */
 
 import { dbStorage } from "../database/storage-db"
-import {
-  TransactionType,
-  Currency,
-  TransactionCategory,
-  Transaction,
-} from "../types"
 import logger from "../logger"
 import {
-  AnalyticsSummary,
-  PeriodStats,
-  CategoryStats,
-  DailyStats,
-  MonthlyStats,
-  ComparisonResult,
-  SpendingPattern,
-  AnalyticsPeriod,
-} from "./types"
+  type Currency,
+  type Transaction,
+  type TransactionCategory,
+  TransactionType,
+} from "../types"
 import {
+  calculatePercentChange,
   getPeriodRange,
   getPreviousPeriodRange,
-  calculatePercentChange,
   groupByDay,
   groupByMonth,
 } from "./helpers"
+import type {
+  AnalyticsPeriod,
+  AnalyticsSummary,
+  CategoryStats,
+  ComparisonResult,
+  DailyStats,
+  MonthlyStats,
+  PeriodStats,
+  SpendingPattern,
+} from "./types"
 
 export class AnalyticsService {
   /**

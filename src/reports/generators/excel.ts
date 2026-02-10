@@ -3,10 +3,10 @@
  */
 
 import ExcelJS from "exceljs"
-import { Transaction, TransactionType } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
 import { getCategoryLabel } from "../../i18n"
-import { CSVExportOptions } from "./csv-advanced"
+import { type Transaction, TransactionType } from "../../types"
+import type { CSVExportOptions } from "./csv-advanced"
 
 /**
  * Generate Excel workbook with transactions
@@ -282,7 +282,10 @@ async function createSummarySheet(
   const balance = totalIncome - totalExpenses
 
   sheet.addRow(["Тип", "Количество", "Сумма"])
-  sheet.getRow(sheet.lastRow!.number).font = { bold: true }
+  const lastRowNum = sheet.lastRow?.number
+  if (lastRowNum) {
+    sheet.getRow(lastRowNum).font = { bold: true }
+  }
 
   sheet.addRow(["Доходы", income.length, totalIncome])
   sheet.addRow(["Расходы", expenses.length, totalExpenses])

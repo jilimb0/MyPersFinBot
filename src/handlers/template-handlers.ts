@@ -1,10 +1,13 @@
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
-import { formatMoney, safeAnswerCallback } from "../utils"
+import { getCategoryLabel, type Language, resolveLanguage, t } from "../i18n"
+import {
+  type Currency,
+  type TransactionCategory,
+  TransactionType,
+} from "../types"
+import { escapeMarkdown, formatMoney, safeAnswerCallback } from "../utils"
 import type { WizardManager } from "../wizards/wizards"
-
-import TelegramBot from "node-telegram-bot-api"
-import { TransactionType, Currency, TransactionCategory } from "../types"
-import { Language, t, getCategoryLabel } from "../i18n"
 
 /**
  * Обработчик редактирования суммы шаблона
@@ -22,7 +25,7 @@ export async function handleTemplateEditAmount(
   const template = templates.find((t) => t.id === templateId)
 
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!template) {
     await safeAnswerCallback(bot, {
@@ -102,7 +105,7 @@ export async function handleTemplateSave(
   const accountId = parts[5]
   const amount = Number(amountStr)
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!amount || !category || !kind) {
     await safeAnswerCallback(bot, {
@@ -145,7 +148,7 @@ export async function handleTemplateUse(
   const template = templates.find((t) => t.id === templateId)
 
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!template) {
     await safeAnswerCallback(bot, {
@@ -192,8 +195,8 @@ export async function handleTemplateUse(
   const text = t(lang, "templates.useMessage", {
     emoji,
     amount: formatted,
-    category: getCategoryLabel(lang, template.category),
-    account: smartAccount || "",
+    category: escapeMarkdown(getCategoryLabel(lang, template.category)),
+    account: escapeMarkdown(smartAccount || ""),
   })
 
   await safeAnswerCallback(bot, {
@@ -217,7 +220,7 @@ export async function handleTemplateManage(
   const template = templates.find((t) => t.id === templateId)
 
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   if (!template) {
     await safeAnswerCallback(bot, {
       callback_query_id: query.id,
@@ -229,14 +232,18 @@ export async function handleTemplateManage(
 
   const formatted = formatMoney(template.amount, template.currency)
   const accountText = template.accountId
-    ? t(lang, "templates.accountLine", { account: template.accountId })
+    ? t(lang, "templates.accountLine", {
+        account: escapeMarkdown(template.accountId),
+      })
     : t(lang, "templates.noDefaultAccount")
 
   await safeAnswerCallback(bot, { callback_query_id: query.id })
   await bot.sendMessage(
     chatId,
     `${t(lang, "templates.manageTitle")}\n\n` +
-      `${t(lang, "templates.nameLine", { name: template.name })}\n` +
+      `${t(lang, "templates.nameLine", {
+        name: escapeMarkdown(template.name),
+      })}\n` +
       `${t(lang, "templates.amountLine", { amount: formatted })}\n` +
       `${accountText}\n\n` +
       `${t(lang, "templates.selectAction")}`,
@@ -265,7 +272,7 @@ export async function handleTemplateManage(
           [
             {
               text: t(lang, "common.cancel"),
-              callback_data: `tmpl_list`,
+              callback_data: "tmpl_list",
             },
           ],
         ],
@@ -285,7 +292,7 @@ export async function handleTemplateDelete(
   const templateId = data.replace("tmpl_del|", "")
   const success = await db.deleteTemplate(userId, templateId)
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (success) {
     await safeAnswerCallback(bot, {
@@ -299,9 +306,9 @@ export async function handleTemplateDelete(
     if (templates.length === 0) {
       await bot.sendMessage(
         chatId,
-        t(lang, "commands.templates.empty", {
+        `${t(lang, "commands.templates.empty", {
           saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
-        }) + `\n\n${t(lang, "templates.emptyHint")}`,
+        })}\n\n${t(lang, "templates.emptyHint")}`,
         { parse_mode: "Markdown" }
       )
     } else {
@@ -349,7 +356,7 @@ export async function handleTemplateEditAccount(
   const balances = await db.getBalancesList(userId)
 
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (balances.length === 0) {
     await safeAnswerCallback(bot, {
@@ -395,7 +402,7 @@ export async function handleTemplateSetAccount(
   wizard: WizardManager
 ) {
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
   const [_, templateId, accountId] = data.split("|")
   const success = await db.updateTemplateAccount(
     userId,
@@ -435,9 +442,9 @@ export async function showTemplatesList(
   if (templates.length === 0) {
     await bot.sendMessage(
       chatId,
-      t(lang, "commands.templates.empty", {
+      `${t(lang, "commands.templates.empty", {
         saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
-      }) + `\n\n${t(lang, "templates.emptyHint")}`,
+      })}\n\n${t(lang, "templates.emptyHint")}`,
       { parse_mode: "Markdown" }
     )
     return
@@ -476,7 +483,7 @@ export async function showTemplateManageMenu(
   const template = templates.find((t) => t.id === templateId)
 
   const state = wizard.getState(userId)
-  const lang = state?.lang || "en"
+  const lang = resolveLanguage(state?.lang)
 
   if (!template) {
     await bot.sendMessage(chatId, t(lang, "errors.templateNotFound"))
@@ -485,13 +492,17 @@ export async function showTemplateManageMenu(
 
   const formatted = formatMoney(template.amount, template.currency)
   const accountText = template.accountId
-    ? t(lang, "templates.accountLine", { account: template.accountId })
+    ? t(lang, "templates.accountLine", {
+        account: escapeMarkdown(template.accountId),
+      })
     : t(lang, "templates.noDefaultAccount")
 
   await bot.sendMessage(
     chatId,
     `${t(lang, "templates.manageTitle")}\n\n` +
-      `${t(lang, "templates.nameLine", { name: template.name })}\n` +
+      `${t(lang, "templates.nameLine", {
+        name: escapeMarkdown(template.name),
+      })}\n` +
       `${t(lang, "templates.amountLine", { amount: formatted })}\n` +
       `${accountText}\n\n` +
       `${t(lang, "templates.selectAction")}`,
@@ -520,7 +531,7 @@ export async function showTemplateManageMenu(
           [
             {
               text: t(lang, "common.cancel"),
-              callback_data: `tmpl_list`,
+              callback_data: "tmpl_list",
             },
           ],
         ],

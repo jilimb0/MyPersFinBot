@@ -8,7 +8,7 @@ import {
   getStartTrackingKeyboard,
 } from "../../i18n/keyboards"
 import { detectAndSetLanguage } from "../language-handler"
-import { MessageHandler } from "./types"
+import type { MessageHandler } from "./types"
 
 /**
  * Handle /start command
@@ -45,6 +45,7 @@ export const handleStart: MessageHandler = async (context) => {
       }
     )
   }
+  return true
 }
 
 /**
@@ -61,4 +62,5 @@ export const handleStartTracking: MessageHandler = async (context) => {
       ...getMainMenuKeyboard(lang),
     }
   )
+  return true
 }

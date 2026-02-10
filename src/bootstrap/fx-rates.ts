@@ -2,14 +2,14 @@
  * FX rates initialization module
  */
 
+import { config } from "../config"
 import {
-  preloadRates,
-  getCacheStatus,
   getCacheHitRate,
+  getCacheStatus,
+  preloadRates,
   stopAutoRefresh,
 } from "../fx"
 import logger from "../logger"
-import { config } from "../config"
 
 /**
  * Preload FX rates and show cache status

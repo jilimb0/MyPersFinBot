@@ -2,8 +2,26 @@
  * Telegram Bot helper functions
  */
 
-import TelegramBot, { AnswerCallbackQueryOptions } from "node-telegram-bot-api"
-import { Language, t } from "../i18n"
+import type TelegramBot from "node-telegram-bot-api"
+import type { AnswerCallbackQueryOptions } from "node-telegram-bot-api"
+import { type Language, t } from "../i18n"
+
+/**
+ * Escape Telegram Markdown special chars in user-provided strings.
+ * Use only for values injected into Markdown messages.
+ */
+export function escapeMarkdown(text: string): string {
+  if (!text) return ""
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/\*/g, "\\*")
+    .replace(/_/g, "\\_")
+    .replace(/\[/g, "\\[")
+    .replace(/]/g, "\\]")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)")
+    .replace(/`/g, "\\`")
+}
 
 /**
  * Safely answer callback query (ignores outdated queries)

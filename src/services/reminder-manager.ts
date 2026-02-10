@@ -1,17 +1,17 @@
+import { randomUUID } from "node:crypto"
+import dayjs from "dayjs"
+import timezone from "dayjs/plugin/timezone"
+import utc from "dayjs/plugin/utc"
+import type TelegramBot from "node-telegram-bot-api"
 import { AppDataSource } from "../database/data-source"
-import { Reminder } from "../database/entities/Reminder"
-import { User } from "../database/entities/User"
 import { Debt } from "../database/entities/Debt"
 import { Goal } from "../database/entities/Goal"
 import { IncomeSource } from "../database/entities/IncomeSource"
-import { ReminderSettings } from "../types"
-import TelegramBot from "node-telegram-bot-api"
-import { randomUUID } from "crypto"
-import dayjs from "dayjs"
-import utc from "dayjs/plugin/utc"
-import timezone from "dayjs/plugin/timezone"
+import { Reminder } from "../database/entities/Reminder"
+import { User } from "../database/entities/User"
 import { resolveLanguage, t } from "../i18n"
-import { formatDateDisplay } from "../utils"
+import type { ReminderSettings } from "../types"
+import { escapeMarkdown, formatDateDisplay } from "../utils"
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -235,7 +235,9 @@ export class ReminderManager {
     const emoji = debt.type === "I_OWE" ? "💸" : "💰"
     const title = t(lang, "reminders.messages.debtMonthlyTitle", { emoji })
     const lines = [
-      t(lang, "reminders.messages.debtLine", { name: debt.name }),
+      t(lang, "reminders.messages.debtLine", {
+        name: escapeMarkdown(debt.name),
+      }),
       t(lang, "reminders.messages.totalRemainingLine", {
         amount: remaining.toFixed(2),
         currency: debt.currency,
@@ -276,7 +278,9 @@ export class ReminderManager {
     const emoji = debt.type === "I_OWE" ? "⚠️" : "💰"
     const title = t(lang, "reminders.messages.debtFinalTitle", { emoji })
     const lines = [
-      t(lang, "reminders.messages.debtLine", { name: debt.name }),
+      t(lang, "reminders.messages.debtLine", {
+        name: escapeMarkdown(debt.name),
+      }),
       t(lang, "reminders.messages.amountLine", {
         amount: remaining.toFixed(2),
         currency: debt.currency,
@@ -316,7 +320,9 @@ export class ReminderManager {
 
     const title = t(lang, "reminders.messages.goalMonthlyTitle")
     const lines = [
-      t(lang, "reminders.messages.goalLine", { name: goal.name }),
+      t(lang, "reminders.messages.goalLine", {
+        name: escapeMarkdown(goal.name),
+      }),
       t(lang, "reminders.messages.totalRemainingLine", {
         amount: remaining.toFixed(2),
         currency: goal.currency,
@@ -357,7 +363,9 @@ export class ReminderManager {
 
     const title = t(lang, "reminders.messages.goalFinalTitle")
     const lines = [
-      t(lang, "reminders.messages.goalLine", { name: goal.name }),
+      t(lang, "reminders.messages.goalLine", {
+        name: escapeMarkdown(goal.name),
+      }),
       t(lang, "reminders.messages.remainingLine", {
         amount: remaining.toFixed(2),
         currency: goal.currency,
@@ -390,7 +398,9 @@ export class ReminderManager {
 
     const title = t(lang, "reminders.messages.incomeTitle")
     const lines = [
-      t(lang, "reminders.messages.sourceLine", { name: income.name }),
+      t(lang, "reminders.messages.sourceLine", {
+        name: escapeMarkdown(income.name),
+      }),
       t(lang, "reminders.messages.expectedAmountLine", {
         amount: income.expectedAmount?.toFixed(2) || "0",
         currency: income.currency || "USD",
@@ -573,7 +583,7 @@ export class ReminderManager {
       if (typeof entityId !== "string") continue
 
       const inc = await incomeRepo.findOne({
-        where: { id: parseInt(entityId).toString(), userId },
+        where: { id: parseInt(entityId, 10).toString(), userId },
       })
       if (inc) {
         income.push({

@@ -2,8 +2,8 @@
  * Export formatters for Telegram messages
  */
 
-import { ExportResult, ExportFormat } from "./types"
-import { Language, t } from "../i18n"
+import { type Language, t } from "../i18n"
+import type { ExportFormat, ExportResult } from "./types"
 
 function getLocale(lang: Language): string {
   switch (lang) {
@@ -27,17 +27,15 @@ export function formatExportResult(
   lang: Language,
   result: ExportResult
 ): string {
-  let message = t(lang, "export.result.title") + "\n\n"
+  let message = `${t(lang, "export.result.title")}\n\n`
 
-  message += t(lang, "export.result.file", { filename: result.filename }) + "\n"
-  message +=
-    t(lang, "export.result.records", {
-      count: result.recordCount,
-    }) + "\n"
-  message +=
-    t(lang, "export.result.size", {
-      size: formatFileSize(lang, result.data),
-    }) + "\n"
+  message += `${t(lang, "export.result.file", { filename: result.filename })}\n`
+  message += `${t(lang, "export.result.records", {
+    count: result.recordCount,
+  })}\n`
+  message += `${t(lang, "export.result.size", {
+    size: formatFileSize(lang, result.data),
+  })}\n`
 
   return message
 }
@@ -46,26 +44,26 @@ export function formatExportResult(
  * Format export menu
  */
 export function formatExportMenu(lang: Language): string {
-  let message = t(lang, "export.menu.title") + "\n\n"
+  let message = `${t(lang, "export.menu.title")}\n\n`
 
-  message += t(lang, "export.menu.chooseFormat") + "\n\n"
+  message += `${t(lang, "export.menu.chooseFormat")}\n\n`
 
-  message += t(lang, "export.menu.csvTitle") + "\n"
-  message += t(lang, "export.menu.csvAll") + "\n"
-  message += t(lang, "export.menu.csvExpenses") + "\n"
-  message += t(lang, "export.menu.csvIncome") + "\n\n"
+  message += `${t(lang, "export.menu.csvTitle")}\n`
+  message += `${t(lang, "export.menu.csvAll")}\n`
+  message += `${t(lang, "export.menu.csvExpenses")}\n`
+  message += `${t(lang, "export.menu.csvIncome")}\n\n`
 
-  message += t(lang, "export.menu.xlsxTitle") + "\n"
-  message += t(lang, "export.menu.xlsxCategories") + "\n"
-  message += t(lang, "export.menu.xlsxAutoSum") + "\n\n"
+  message += `${t(lang, "export.menu.xlsxTitle")}\n`
+  message += `${t(lang, "export.menu.xlsxCategories")}\n`
+  message += `${t(lang, "export.menu.xlsxAutoSum")}\n\n`
 
-  message += t(lang, "export.menu.jsonTitle") + "\n"
-  message += t(lang, "export.menu.jsonAll") + "\n"
-  message += t(lang, "export.menu.jsonRestore") + "\n\n"
+  message += `${t(lang, "export.menu.jsonTitle")}\n`
+  message += `${t(lang, "export.menu.jsonAll")}\n`
+  message += `${t(lang, "export.menu.jsonRestore")}\n\n`
 
-  message += t(lang, "export.menu.commands") + "\n"
-  message += t(lang, "export.menu.commandCsv") + "\n"
-  message += t(lang, "export.menu.commandXlsx") + "\n"
+  message += `${t(lang, "export.menu.commands")}\n`
+  message += `${t(lang, "export.menu.commandCsv")}\n`
+  message += `${t(lang, "export.menu.commandXlsx")}\n`
   message += t(lang, "export.menu.commandJson")
 
   return message
@@ -75,13 +73,13 @@ export function formatExportMenu(lang: Language): string {
  * Format export presets
  */
 export function formatPresets(lang: Language): string {
-  let message = t(lang, "export.presets.title") + "\n\n"
+  let message = `${t(lang, "export.presets.title")}\n\n`
 
-  message += t(lang, "export.presets.all") + "\n"
-  message += t(lang, "export.presets.expenses") + "\n"
-  message += t(lang, "export.presets.income") + "\n"
-  message += t(lang, "export.presets.month") + "\n"
-  message += t(lang, "export.presets.lastMonth") + "\n"
+  message += `${t(lang, "export.presets.all")}\n`
+  message += `${t(lang, "export.presets.expenses")}\n`
+  message += `${t(lang, "export.presets.income")}\n`
+  message += `${t(lang, "export.presets.month")}\n`
+  message += `${t(lang, "export.presets.lastMonth")}\n`
   message += t(lang, "export.presets.backup")
 
   return message
@@ -109,7 +107,7 @@ function formatFileSize(lang: Language, data: Buffer | string): string {
  * Format export error
  */
 export function formatExportError(lang: Language, error: Error): string {
-  let message = t(lang, "export.error.title") + "\n\n"
+  let message = `${t(lang, "export.error.title")}\n\n`
 
   if (error.message.includes("No transactions")) {
     message += t(lang, "export.error.noTransactions")
@@ -124,14 +122,14 @@ export function formatExportError(lang: Language, error: Error): string {
  * Format backup info
  */
 export function formatBackupInfo(lang: Language, recordCount: number): string {
-  let message = t(lang, "export.backup.title") + "\n\n"
+  let message = `${t(lang, "export.backup.title")}\n\n`
 
-  message += t(lang, "export.backup.records", { count: recordCount }) + "\n"
-  message += t(lang, "export.backup.balances") + "\n"
-  message += t(lang, "export.backup.debts") + "\n"
-  message += t(lang, "export.backup.goals") + "\n"
-  message += t(lang, "export.backup.budgets") + "\n"
-  message += t(lang, "export.backup.incomeSources") + "\n\n"
+  message += `${t(lang, "export.backup.records", { count: recordCount })}\n`
+  message += `${t(lang, "export.backup.balances")}\n`
+  message += `${t(lang, "export.backup.debts")}\n`
+  message += `${t(lang, "export.backup.goals")}\n`
+  message += `${t(lang, "export.backup.budgets")}\n`
+  message += `${t(lang, "export.backup.incomeSources")}\n\n`
 
   message += t(lang, "export.backup.keepSafe")
 
@@ -146,17 +144,16 @@ export function formatRestoreConfirmation(
   backupDate: Date,
   recordCount: number
 ): string {
-  let message = t(lang, "export.restore.title") + "\n\n"
+  let message = `${t(lang, "export.restore.title")}\n\n`
 
-  message +=
-    t(lang, "export.restore.date", {
-      date: backupDate.toLocaleDateString(getLocale(lang)),
-    }) + "\n"
-  message += t(lang, "export.restore.records", { count: recordCount }) + "\n\n"
+  message += `${t(lang, "export.restore.date", {
+    date: backupDate.toLocaleDateString(getLocale(lang)),
+  })}\n`
+  message += `${t(lang, "export.restore.records", { count: recordCount })}\n\n`
 
-  message += t(lang, "export.restore.warningTitle") + "\n"
-  message += t(lang, "export.restore.warningReplace") + "\n"
-  message += t(lang, "export.restore.warningIrreversible") + "\n\n"
+  message += `${t(lang, "export.restore.warningTitle")}\n`
+  message += `${t(lang, "export.restore.warningReplace")}\n`
+  message += `${t(lang, "export.restore.warningIrreversible")}\n\n`
 
   message += t(lang, "export.restore.confirmPrompt")
 

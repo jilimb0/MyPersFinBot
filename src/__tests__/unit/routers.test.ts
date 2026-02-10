@@ -1,4 +1,4 @@
-import TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "node-telegram-bot-api"
 import { registerRouters } from "../../bootstrap/routers"
 
 jest.mock("../../handlers/message", () => ({
@@ -9,8 +9,8 @@ jest.mock("../../handlers/callback-router", () => ({
   registerCallbackRouter: jest.fn(),
 }))
 
-import { createMessageRouter } from "../../handlers/message"
 import { registerCallbackRouter } from "../../handlers/callback-router"
+import { createMessageRouter } from "../../handlers/message"
 
 class MockBot {
   on = jest.fn()

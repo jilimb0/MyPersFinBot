@@ -1,9 +1,6 @@
-import TelegramBot from "node-telegram-bot-api"
+import { randomUUID } from "node:crypto"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "./database/storage-db"
-import { TransactionType, ExpenseCategory, IncomeCategory } from "./types"
-import { formatMoney } from "./utils"
-import { randomUUID } from "crypto"
-import { queryMonitor } from "./monitoring"
 import {
   clearPersistedCache,
   getCacheHitRate,
@@ -12,12 +9,15 @@ import {
   resetMetrics,
 } from "./fx"
 import {
-  Language,
-  t,
+  getCategoryLabel,
   getExpenseCategoryByLabel,
   getIncomeCategoryByLabel,
-  getCategoryLabel,
+  type Language,
+  t,
 } from "./i18n"
+import { queryMonitor } from "./monitoring"
+import { ExpenseCategory, IncomeCategory, TransactionType } from "./types"
+import { escapeMarkdown, formatMoney } from "./utils"
 
 function resolveExpenseCategory(input: string): ExpenseCategory {
   return getExpenseCategoryByLabel(input) || ExpenseCategory.OTHER_EXPENSE
@@ -36,7 +36,7 @@ function parseAmountAndCategory(
   const firstPart = parts[0]
   if (firstPart) {
     const firstAsAmount = parseFloat(firstPart.replace(",", "."))
-    if (!isNaN(firstAsAmount) && firstAsAmount > 0) {
+    if (!Number.isNaN(firstAsAmount) && firstAsAmount > 0) {
       return {
         amount: firstAsAmount,
         category: parts.slice(1).join(" "),
@@ -47,7 +47,7 @@ function parseAmountAndCategory(
   const lastPart = parts[parts.length - 1]
   if (lastPart) {
     const lastAsAmount = parseFloat(lastPart.replace(",", "."))
-    if (!isNaN(lastAsAmount) && lastAsAmount > 0) {
+    if (!Number.isNaN(lastAsAmount) && lastAsAmount > 0) {
       return {
         amount: lastAsAmount,
         category: parts.slice(0, -1).join(" "),
@@ -92,9 +92,9 @@ export function registerCommands(bot: TelegramBot) {
     if (templates.length === 0) {
       await bot.sendMessage(
         chatId,
-        t(lang, "commands.templates.empty", {
+        `${t(lang, "commands.templates.empty", {
           saveAsTemplate: t(lang, "buttons.saveAsTemplate"),
-        }) + `\n\n${t(lang, "templates.emptyHint")}`,
+        })}\n\n${t(lang, "templates.emptyHint")}`,
         { parse_mode: "Markdown" }
       )
       return
@@ -166,8 +166,8 @@ export function registerCommands(bot: TelegramBot) {
     const formatted = formatMoney(amount, currency)
     const text = t(lang, "commands.expense.added", {
       amount: formatted,
-      category: getCategoryLabel(lang, category),
-      account: smartAccount || "",
+      category: escapeMarkdown(getCategoryLabel(lang, category)),
+      account: escapeMarkdown(smartAccount || ""),
     })
 
     const buttons: TelegramBot.InlineKeyboardButton[][] = [
@@ -238,8 +238,8 @@ export function registerCommands(bot: TelegramBot) {
     const formatted = formatMoney(amount, currency)
     const text = t(lang, "commands.income.added", {
       amount: formatted,
-      category: getCategoryLabel(lang, category),
-      account: smartAccount || "",
+      category: escapeMarkdown(getCategoryLabel(lang, category)),
+      account: escapeMarkdown(smartAccount || ""),
     })
 
     const buttons: TelegramBot.InlineKeyboardButton[][] = [

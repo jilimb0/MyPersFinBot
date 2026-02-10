@@ -1,7 +1,8 @@
-import TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage as db } from "../database/storage-db"
-import { Transaction, TransactionType } from "../types"
-import { Language, t, getCategoryLabel } from "../i18n"
+import { getCategoryLabel, type Language, t } from "../i18n"
+import { type Transaction, TransactionType } from "../types"
+import { escapeMarkdown } from "../utils"
 
 const LOCALES: Record<Language, string> = {
   en: "en-US",
@@ -54,7 +55,7 @@ function formatPeriodReport(
       type: typeLabel,
     })}\n`
   }
-  report += `\n`
+  report += "\n"
 
   // Группировка по валюте
   const byCurrency: Record<string, { total: number; count: number }> = {}
@@ -93,7 +94,7 @@ function formatPeriodReport(
     report += `\n${t(lang, "periodReport.topCategoriesHeader")}\n`
     topCategories.forEach(([category, amount]) => {
       report += `${t(lang, "periodReport.topCategoryLine", {
-        category: getCategoryLabel(lang, category),
+        category: escapeMarkdown(getCategoryLabel(lang, category)),
         amount: amount.toFixed(2),
       })}\n`
     })
@@ -128,7 +129,10 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
       endDate.setHours(23, 59, 59, 999) // Включаем конец дня
       const type = match[4] as TransactionType | undefined
 
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      if (
+        Number.isNaN(startDate.getTime()) ||
+        Number.isNaN(endDate.getTime())
+      ) {
         return bot.sendMessage(
           chatId,
           t(lang, "periodReport.invalidDateFormat")
@@ -233,7 +237,7 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
               { month: "long" }
             )
             report += `${t(lang, "periodReport.monthLine", {
-              month: monthName,
+              month: escapeMarkdown(monthName),
               amount: amount.toFixed(2),
             })}\n`
           })

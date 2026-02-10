@@ -1,16 +1,16 @@
-import {
-  ParsedTransaction,
-  BankParserResult,
-  BankType,
-  BankParserOptions,
-  Currency,
-  TransactionType,
-  TransactionCategory,
-  ExpenseCategory,
-  IncomeCategory,
-} from "../types"
 import dayjs from "dayjs"
 import customParseFormat from "dayjs/plugin/customParseFormat"
+import {
+  type BankParserOptions,
+  type BankParserResult,
+  type BankType,
+  type Currency,
+  ExpenseCategory,
+  IncomeCategory,
+  type ParsedTransaction,
+  type TransactionCategory,
+  TransactionType,
+} from "../types"
 
 dayjs.extend(customParseFormat)
 
@@ -66,7 +66,7 @@ export abstract class BankParser {
     const isNegative = cleaned.startsWith("-") || cleaned.startsWith("−")
     const absAmount = Math.abs(parseFloat(cleaned))
 
-    if (isNaN(absAmount)) {
+    if (Number.isNaN(absAmount)) {
       this.errors.push(`Invalid amount: ${amountStr}`)
       return { amount: 0, type: TransactionType.EXPENSE }
     }

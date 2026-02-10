@@ -2,9 +2,9 @@
  * Balances message handlers
  */
 
-import { MessageHandler } from "./types"
 import { t } from "../../i18n"
 import * as menus from "../../menus-i18n"
+import type { MessageHandler } from "./types"
 
 /**
  * Handle balances menu button
@@ -20,6 +20,7 @@ export const handleBalancesMenu: MessageHandler = async (context) => {
   })
 
   await menus.showBalancesMenu(wizardManager, chatId, userId, lang)
+  return true
 }
 
 /**
@@ -37,10 +38,11 @@ export const handleAddBalance: MessageHandler = async (context) => {
 
   await bot.sendMessage(
     chatId,
-    t(lang, "balances.addTitle") + "\n\n" + t(lang, "balances.enterName"),
+    `${t(lang, "balances.addTitle")}\n\n${t(lang, "balances.enterName")}`,
     {
       parse_mode: "Markdown",
       ...wizardManager.getBackButton(lang),
     }
   )
+  return true
 }

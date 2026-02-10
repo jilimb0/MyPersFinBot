@@ -1,8 +1,8 @@
 import { en } from "./locales/en"
-import { ru } from "./locales/ru"
-import { uk } from "./locales/uk"
 import { es } from "./locales/es"
 import { pl } from "./locales/pl"
+import { ru } from "./locales/ru"
+import { uk } from "./locales/uk"
 
 export type Language = "en" | "ru" | "uk" | "es" | "pl"
 export type TranslationKey = typeof en
@@ -140,10 +140,10 @@ export function getTranslationValue(
 // Import keyboards directly where needed: import { ... } from "../i18n/keyboards"
 
 export {
-  getExpenseCategoryLabel,
-  getIncomeCategoryLabel,
-  getExpenseCategoryByLabel,
-  getIncomeCategoryByLabel,
-  getInternalCategoryLabel,
   getCategoryLabel,
+  getExpenseCategoryByLabel,
+  getExpenseCategoryLabel,
+  getIncomeCategoryByLabel,
+  getIncomeCategoryLabel,
+  getInternalCategoryLabel,
 } from "./categories"

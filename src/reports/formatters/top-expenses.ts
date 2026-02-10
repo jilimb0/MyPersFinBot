@@ -2,13 +2,13 @@
  * Top expenses formatting
  */
 
-import { Transaction, TransactionType, Currency } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
-import { formatMoney, formatAmount } from "../../utils"
 import { convertBatchSync } from "../../fx"
+import { getCategoryLabel, t } from "../../i18n"
+import { type Currency, type Transaction, TransactionType } from "../../types"
+import { formatAmount, formatMoney } from "../../utils"
 import { createProgressBar } from "../helpers"
-import { CategoryTotals } from "../types"
-import { t, getCategoryLabel } from "../../i18n"
+import type { CategoryTotals } from "../types"
 
 /**
  * Formats top expenses for the current month
@@ -43,7 +43,7 @@ export async function formatTopExpenses(
     if (!categoryTotals[tx.category]) {
       categoryTotals[tx.category] = {}
     }
-    if (!categoryTotals[tx.category]![tx.currency]) {
+    if (!categoryTotals[tx.category]?.[tx.currency]) {
       categoryTotals[tx.category]![tx.currency] = 0
     }
     categoryTotals[tx.category]![tx.currency]! += tx.amount
@@ -88,7 +88,7 @@ export async function formatTopExpenses(
     msg += `   ${bar}\n\n`
   })
 
-  msg += `──────────────\n`
+  msg += "──────────────\n"
   msg += t(lang, "reports.topExpenses.total", {
     amount: formatMoney(totalExpenses, defaultCurrency),
   })
