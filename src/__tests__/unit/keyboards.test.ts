@@ -17,7 +17,8 @@ describe("keyboards", () => {
     it("should generate main menu keyboard for English", () => {
       const result = getMainMenuKeyboard("en")
       expect(result.reply_markup).toBeDefined()
-      const keyboard = result.reply_markup as import("node-telegram-bot-api").ReplyKeyboardMarkup
+      const keyboard =
+        result.reply_markup as import("node-telegram-bot-api").ReplyKeyboardMarkup
       expect(keyboard.keyboard).toHaveLength(4)
       expect(keyboard.resize_keyboard).toBe(true)
     })
@@ -25,7 +26,8 @@ describe("keyboards", () => {
     it("should generate main menu keyboard for Russian", () => {
       const result = getMainMenuKeyboard("ru")
       expect(result.reply_markup).toBeDefined()
-      const keyboard = result.reply_markup as import("node-telegram-bot-api").ReplyKeyboardMarkup
+      const keyboard =
+        result.reply_markup as import("node-telegram-bot-api").ReplyKeyboardMarkup
       expect(keyboard.keyboard).toHaveLength(4)
     })
   })

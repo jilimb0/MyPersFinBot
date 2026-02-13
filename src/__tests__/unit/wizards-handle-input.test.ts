@@ -160,12 +160,12 @@ jest.mock("../../validators", () => ({
     }
   }),
   validateExpenseCategory: jest.fn((text: string) => {
-    const categories = ["Food", "Transport", "Shopping", "Entertainment"];
-    return categories.includes(text) ? text : null;
+    const categories = ["Food", "Transport", "Shopping", "Entertainment"]
+    return categories.includes(text) ? text : null
   }),
   validateIncomeCategory: jest.fn((text: string) => {
-    const categories = ["Salary", "Freelance", "Bonus"];
-    return categories.includes(text) ? text : null;
+    const categories = ["Salary", "Freelance", "Bonus"]
+    return categories.includes(text) ? text : null
   }),
 }))
 
@@ -1706,9 +1706,11 @@ describe("WizardManager - handleWizardInput", () => {
       ;(dbStorage.getUserData as jest.Mock).mockResolvedValueOnce({
         defaultCurrency: "USD",
         balances: [],
-        incomeSources: [{ name: "Salary", expectedAmount: 5000, currency: "USD" }],
+        incomeSources: [
+          { name: "Salary", expectedAmount: 5000, currency: "USD" },
+        ],
       })
-      
+
       wizard.setState(userId, { step: "INCOME_VIEW", lang: "en" })
 
       const result = await wizard.handleWizardInput(chatId, userId, "Salary")
@@ -1915,7 +1917,11 @@ describe("WizardManager - handleWizardInput", () => {
         lang: "en",
         data: { goal: { id: "goal-1" } },
       })
-      const result = await wizard.handleWizardInput(chatId, userId, "01.03.2026")
+      const result = await wizard.handleWizardInput(
+        chatId,
+        userId,
+        "01.03.2026"
+      )
       expect(handlers.handleGoalDeadlineEdit).toHaveBeenCalled()
       expect(result).toBe(true)
     })
@@ -1946,7 +1952,11 @@ describe("WizardManager - handleWizardInput", () => {
       ["AUTO_PAYMENT_SELECT_DAY", "handleAutoPaymentDaySelect", "10"],
     ])("should handle %s", async (step, handlerName, input) => {
       wizard.setState(userId, { step, lang: "en" } as any)
-      const result = await wizard.handleWizardInput(chatId, userId, input as string)
+      const result = await wizard.handleWizardInput(
+        chatId,
+        userId,
+        input as string
+      )
       expect((handlers as any)[handlerName]).toHaveBeenCalled()
       expect(result).toBe(true)
     })

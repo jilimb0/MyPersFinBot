@@ -242,6 +242,4 @@ describe("MessageRouter - Branch Coverage", () => {
       expect(dbStorage.getUserLanguage).toHaveBeenCalledWith(chatId.toString())
     })
   })
-
 })
-

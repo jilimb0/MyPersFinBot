@@ -117,23 +117,17 @@ describe("Handlers - Edge Cases (Function Existence)", () => {
 
     it("should have handleAutoDepositFrequencySelect", () => {
       expect(handlers.handleAutoDepositFrequencySelect).toBeDefined()
-      expect(typeof handlers.handleAutoDepositFrequencySelect).toBe(
-        "function"
-      )
+      expect(typeof handlers.handleAutoDepositFrequencySelect).toBe("function")
     })
 
     it("should have handleAutoDepositDayWeeklySelect", () => {
       expect(handlers.handleAutoDepositDayWeeklySelect).toBeDefined()
-      expect(typeof handlers.handleAutoDepositDayWeeklySelect).toBe(
-        "function"
-      )
+      expect(typeof handlers.handleAutoDepositDayWeeklySelect).toBe("function")
     })
 
     it("should have handleAutoDepositDayMonthlySelect", () => {
       expect(handlers.handleAutoDepositDayMonthlySelect).toBeDefined()
-      expect(typeof handlers.handleAutoDepositDayMonthlySelect).toBe(
-        "function"
-      )
+      expect(typeof handlers.handleAutoDepositDayMonthlySelect).toBe("function")
     })
 
     it("should have handleAutoPaymentAccountSelect", () => {
