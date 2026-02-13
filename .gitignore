@@ -8,7 +8,13 @@ build/
 
 # Environment and Secrets
 .env
+.env.local
+.env.*.local
 secure.json
+
+# Keep environment templates (safe to commit)
+.env.development
+.env.production
 
 # OS specific
 .DS_Store
@@ -28,6 +34,10 @@ pnpm-debug.log*
 
 # Testing
 coverage/
+test-reports/
+
+# Documentation (generated)
+docs/api/
 
 # Database
 db.json.backup
@@ -36,10 +46,12 @@ db.json.backup
 data/*.db
 data/*.db-shm
 data/*.db-wal
+data/fx-cache.json
 
 # Logs
 logs/
 *.log
+*.log.gz
 
 # Backups
 backups/
@@ -52,3 +64,22 @@ backups/
 # Temp files
 tmp/
 temp/
+
+# Cache files (runtime data, not source code)
+fx-cache.json
+*.cache.json
+data/cache/
+.cache/
+node_modules/.cache/
+
+translation-coverage.js
+translation-report.txt
+test-reports/
+
+# Migration artifacts
+.biome-migration.md
+BIOME_MIGRATION_COMPLETE.md
+*.old
+
+# Audit reports (temporary)
+outdated-packages.txt

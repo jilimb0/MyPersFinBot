@@ -1,6 +1,6 @@
+export { BankParserFactory } from "./bank-parser-factory"
 export { BankParser } from "./base-parser"
-export { TinkoffParser } from "./tinkoff-parser"
 export { MonobankParser } from "./monobank-parser"
 export { RevolutParser } from "./revolut-parser"
+export { TinkoffParser } from "./tinkoff-parser"
 export { WiseParser } from "./wise-parser"
-export { BankParserFactory } from "./bank-parser-factory"

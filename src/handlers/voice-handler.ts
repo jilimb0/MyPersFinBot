@@ -1,59 +1,66 @@
-import TelegramBot from "node-telegram-bot-api"
-import { nlpParser } from "../services/nlp-parser"
-import { assemblyAIService } from "../services/assemblyai-service"
+import { exec } from "node:child_process"
+import { randomUUID } from "node:crypto"
+import fs, { existsSync, unlinkSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { promisify } from "node:util"
+import type TelegramBot from "node-telegram-bot-api"
+import { request } from "undici"
 import { dbStorage as db } from "../database/storage-db"
-import { TransactionCategory, TransactionType } from "../types"
-import { formatMoney } from "../utils"
-import axios from "axios"
-import { unlinkSync, writeFileSync, existsSync } from "fs"
-import { tmpdir } from "os"
-import { join } from "path"
-import { randomUUID } from "crypto"
-import { exec } from "child_process"
-import { promisify } from "util"
-import fs from "fs"
+import { resolveLanguage, t } from "../i18n"
+import { assemblyAIService } from "../services/assemblyai-service"
+import { nlpParser } from "../services/nlp-parser"
+import { type TransactionCategory, TransactionType } from "../types"
+import { escapeMarkdown, formatMoney } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 const execAsync = promisify(exec)
 
 export async function handleVoiceMessage(
   bot: TelegramBot,
-  msg: TelegramBot.Message
+  msg: TelegramBot.Message,
+  wizard: WizardManager
 ): Promise<void> {
   const chatId = msg.chat.id
   const userId = chatId.toString()
   const voice = msg.voice
-
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
   if (!voice) return
 
   try {
-    await bot.sendMessage(chatId, "🎤 Processing voice message...")
+    await bot.sendMessage(chatId, t(lang, "voiceHandler.processing"))
 
     const fileLink = await bot.getFileLink(voice.file_id)
-    const response = await axios.get(fileLink, { responseType: "arraybuffer" })
+
+    // Download voice file using undici
+    const { statusCode, body } = await request(fileLink)
+    if (statusCode !== 200) {
+      throw new Error(`Failed to download voice file: HTTP ${statusCode}`)
+    }
+
+    // Read response body as buffer
+    const chunks = []
+    for await (const chunk of body) {
+      chunks.push(chunk)
+    }
+    const audioData = Buffer.concat(chunks)
 
     const ogaPath = join(tmpdir(), `voice_${Date.now()}.oga`)
-    writeFileSync(ogaPath, response.data)
+    writeFileSync(ogaPath, audioData)
 
     const wavPath = join(tmpdir(), `voice_${Date.now()}.wav`)
 
     try {
       await convertOgaToWav(ogaPath, wavPath)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (conversionError: any) {
       if (existsSync(ogaPath)) {
         unlinkSync(ogaPath)
       }
 
       const errorMsg = conversionError.message.includes("FFmpeg")
-        ? "❌ **FFmpeg is not installed** ⚠️\n\n" +
-        "**Admin needs to install FFmpeg:**\n" +
-        "• macOS: `brew install ffmpeg`\n" +
-        "• Linux: `apt-get install ffmpeg`\n\n" +
-        "**Meanwhile, you can type:**\n" +
-        "• `50 coffee` ☕\n" +
-        "• `100 taxi` 🚕\n" +
-        "• `потратил 200 на еду` 🍔"
-        : "❌ Audio conversion failed. Please try text input."
+        ? t(lang, "voiceHandler.ffmpegNotInstalledMessage")
+        : t(lang, "voiceHandler.conversionFailed")
 
       await bot.sendMessage(chatId, errorMsg, { parse_mode: "Markdown" })
       return
@@ -63,8 +70,7 @@ export async function handleVoiceMessage(
       unlinkSync(ogaPath)
       await bot.sendMessage(
         chatId,
-        "❌ Failed to convert audio. Please use text input.\n\n" +
-        "Examples: `50 coffee`, `100 taxi`, `потратил 200 на еду`",
+        t(lang, "voiceHandler.conversionFailedLong"),
         { parse_mode: "Markdown" }
       )
       return
@@ -81,44 +87,26 @@ export async function handleVoiceMessage(
     if (!text) {
       await bot.sendMessage(
         chatId,
-        "🎤 *Voice transcription not configured*\n\n" +
-        "To enable voice messages, admin needs to set ASSEMBLYAI_API_KEY.\n\n" +
-        "**Meanwhile, you can:**\n\n" +
-        "**Option 1: Use Telegram's transcription** 📝\n" +
-        "1. Tap and hold your voice message\n" +
-        "2. Select \"Transcribe\"\n" +
-        "3. Copy the text and send it to me\n\n" +
-        "**Option 2: Just type** ⌨️\n" +
-        "Examples:\n" +
-        "• `50 coffee` ☕\n" +
-        "• `100 taxi` 🚕\n" +
-        "• `потратил 200 на еду` 🍔\n" +
-        "• `витратив полтинник на каву` ☕\n" +
-        "• `зарплата пришла` 💰",
+        t(lang, "voiceHandler.notConfiguredMessage"),
         { parse_mode: "Markdown" }
       )
       return
     }
 
-    await bot.sendMessage(chatId, `📝 Recognized: "${text}"`)
+    await bot.sendMessage(chatId, t(lang, "voiceHandler.recognized", { text }))
 
-    await handleNLPInput(bot, chatId, userId, text)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await handleNLPInput(bot, chatId, userId, text, wizard)
   } catch (error: any) {
     console.error("Voice processing error:", error)
 
-    let errorMsg = "❌ Failed to process voice message."
+    const state = wizard.getState(userId)
+    const lang = resolveLanguage(state?.lang)
+    let errorMsg = t(lang, "voiceHandler.processingFailed")
 
-    if (error.message && error.message.includes("FFmpeg")) {
-      errorMsg = "❌ FFmpeg is not installed.⚠️" +
-        "**Admin: Install FFmpeg**" +
-        "\u2022 macOS: `brew install ffmpeg`" +
-        "\u2022 Linux: `apt-get install ffmpeg`" +
-        "**You can use text instead:**" +
-        "\u2022 `50 coffee` ☕️" +
-        "\u2022 `100 taxi` 🚕"
+    if (error.message?.includes("FFmpeg")) {
+      errorMsg = t(lang, "voiceHandler.ffmpegMissingMessage")
     } else {
-      errorMsg += " Please try text input."
+      errorMsg += ` ${t(lang, "voiceHandler.tryTextInput")}`
     }
 
     await bot.sendMessage(chatId, errorMsg, { parse_mode: "Markdown" })
@@ -129,8 +117,12 @@ export async function handleNLPInput(
   bot: TelegramBot,
   chatId: number,
   userId: string,
-  text: string
+  text: string,
+  wizard: WizardManager
 ): Promise<void> {
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
+
   try {
     const defaultCurrency = await db.getDefaultCurrency(userId)
 
@@ -139,26 +131,36 @@ export async function handleNLPInput(
     if (!result || !result.amount) {
       await bot.sendMessage(
         chatId,
-        "❓ I couldn't understand that. Try:\n\n" +
-        "• \"50 coffee\"\n" +
-        "• \"потратил 100 на такси\"\n" +
-        "• \"зарплата пришла 5000\"\n" +
-        "• \"витратив полтинник на каву\""
+        t(lang, "voiceHandler.couldNotUnderstandMessage")
       )
       return
     }
 
     const emoji = result.type === TransactionType.INCOME ? "💰" : "💸"
     const sign = result.type === TransactionType.INCOME ? "+" : "-"
-    const typeLabel = result.type === TransactionType.INCOME ? "Income" : "Expense"
+    const typeLabel =
+      result.type === TransactionType.INCOME
+        ? t(lang, "voiceHandler.types.income")
+        : t(lang, "voiceHandler.types.expense")
 
     const confirmMsg =
-      `${emoji} *Confirm ${typeLabel}*\n\n` +
-      `Amount: ${sign}${formatMoney(result.amount, defaultCurrency, true)}\n` +
-      `Category: ${result.category}\n` +
-      `Description: ${result.description}\n` +
-      `Confidence: ${(result.confidence * 100).toFixed(0)}%\n\n` +
-      `Is this correct?`
+      `${t(lang, "voiceHandler.confirm.title", {
+        emoji,
+        type: typeLabel,
+      })}\n\n` +
+      `${t(lang, "voiceHandler.confirm.amount", {
+        amount: `${sign}${formatMoney(result.amount, defaultCurrency, true)}`,
+      })}\n` +
+      `${t(lang, "voiceHandler.confirm.category", {
+        category: escapeMarkdown(result.category),
+      })}\n` +
+      `${t(lang, "voiceHandler.confirm.description", {
+        description: escapeMarkdown(result.description),
+      })}\n` +
+      `${t(lang, "voiceHandler.confirm.confidence", {
+        confidence: (result.confidence * 100).toFixed(0),
+      })}\n\n` +
+      `${t(lang, "voiceHandler.confirm.isCorrect")}`
 
     await bot.sendMessage(chatId, confirmMsg, {
       parse_mode: "Markdown",
@@ -166,19 +168,19 @@ export async function handleNLPInput(
         inline_keyboard: [
           [
             {
-              text: "✅ Yes, Save",
+              text: t(lang, "common.yesSave"),
               callback_data: `nlp_confirm|${result.amount}|${result.type}|${result.category}|${result.description}`,
             },
           ],
           [
             {
-              text: "✏️ Edit Category",
+              text: t(lang, "common.editCategory"),
               callback_data: `nlp_edit_category|${result.amount}|${result.type}|${result.description}`,
             },
           ],
           [
             {
-              text: "❌ Cancel",
+              text: t(lang, "common.cancel"),
               callback_data: "nlp_cancel",
             },
           ],
@@ -187,16 +189,14 @@ export async function handleNLPInput(
     })
   } catch (error) {
     console.error("NLP parsing error:", error)
-    await bot.sendMessage(
-      chatId,
-      "❌ Failed to parse input. Please try again."
-    )
+    await bot.sendMessage(chatId, t(lang, "voiceHandler.failedToParse"))
   }
 }
 
 export async function handleNLPCallback(
   bot: TelegramBot,
-  query: TelegramBot.CallbackQuery
+  query: TelegramBot.CallbackQuery,
+  wizard: WizardManager
 ): Promise<void> {
   const chatId = query.message?.chat.id
   const userId = query.from.id.toString()
@@ -204,9 +204,12 @@ export async function handleNLPCallback(
 
   if (!chatId || !data) return
 
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
+
   try {
     if (data === "nlp_cancel") {
-      await bot.editMessageText("❌ Transaction cancelled", {
+      await bot.editMessageText(t(lang, "voiceHandler.transactionCancelled"), {
         chat_id: chatId,
         message_id: query.message?.message_id,
       })
@@ -216,22 +219,19 @@ export async function handleNLPCallback(
 
     if (data.startsWith("nlp_confirm|")) {
       const [, amountStr, type, category, description] = data.split("|")
-      const amount = parseFloat(amountStr)
+      const amount = parseFloat(amountStr!)
 
       const balances = await db.getBalancesList(userId)
       if (balances.length === 0) {
-        await bot.editMessageText(
-          "❌ No accounts found. Please create a balance account first.",
-          {
-            chat_id: chatId,
-            message_id: query.message?.message_id,
-          }
-        )
+        await bot.editMessageText(t(lang, "voiceHandler.noAccountsFound"), {
+          chat_id: chatId,
+          message_id: query.message?.message_id,
+        })
         await bot.answerCallbackQuery(query.id)
         return
       }
 
-      const defaultAccount = balances[0].accountId
+      const defaultAccount = balances[0]?.accountId
       const currency = await db.getDefaultCurrency(userId)
 
       await db.addTransaction(userId, {
@@ -250,51 +250,78 @@ export async function handleNLPCallback(
       const sign = type === "INCOME" ? "+" : "-"
 
       await bot.editMessageText(
-        `✅ ${emoji} Transaction saved!\n\n` +
-        `${sign}${formatMoney(amount, currency, true)} - ${description}`,
+        t(lang, "voiceHandler.transactionSaved", {
+          emoji,
+          amount: `${sign}${formatMoney(amount, currency, true)}`,
+          description: description || "",
+        }),
         {
           chat_id: chatId,
           message_id: query.message?.message_id,
         }
       )
 
-      await bot.answerCallbackQuery(query.id, { text: "✅ Saved!" })
+      await bot.answerCallbackQuery(query.id, { text: t(lang, "common.save") })
       return
     }
 
     if (data.startsWith("nlp_edit_category|")) {
       const [, amountStr, type, description] = data.split("|")
 
-      await bot.editMessageText(
-        "🏷️ Select category:",
-        {
-          chat_id: chatId,
-          message_id: query.message?.message_id,
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: "🍔 Food", callback_data: `nlp_set_cat|${amountStr}|${type}|Food|${description}` },
-                { text: "🚗 Transport", callback_data: `nlp_set_cat|${amountStr}|${type}|Transport|${description}` },
-              ],
-              [
-                { text: "🛍️ Shopping", callback_data: `nlp_set_cat|${amountStr}|${type}|Shopping|${description}` },
-                { text: "🎮 Entertainment", callback_data: `nlp_set_cat|${amountStr}|${type}|Entertainment|${description}` },
-              ],
-              [
-                { text: "💡 Bills", callback_data: `nlp_set_cat|${amountStr}|${type}|Bills|${description}` },
-                { text: "🏥 Health", callback_data: `nlp_set_cat|${amountStr}|${type}|Health|${description}` },
-              ],
-              [
-                { text: "💼 Salary", callback_data: `nlp_set_cat|${amountStr}|${type}|Salary|${description}` },
-                { text: "📦 Other", callback_data: `nlp_set_cat|${amountStr}|${type}|Other|${description}` },
-              ],
-              [
-                { text: "⬅️ Back", callback_data: `nlp_confirm|${amountStr}|${type}|Other|${description}` },
-              ],
+      await bot.editMessageText(t(lang, "voiceHandler.selectCategory"), {
+        chat_id: chatId,
+        message_id: query.message?.message_id,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: t(lang, "buttons.food"),
+                callback_data: `nlp_set_cat|${amountStr}|${type}|Food|${description}`,
+              },
+              {
+                text: t(lang, "buttons.transport"),
+                callback_data: `nlp_set_cat|${amountStr}|${type}|Transport|${description}`,
+              },
             ],
-          },
-        }
-      )
+            [
+              {
+                text: t(lang, "buttons.shopping"),
+                callback_data: `nlp_set_cat|${amountStr}|${type}|Shopping|${description}`,
+              },
+              {
+                text: t(lang, "buttons.entertainment"),
+                callback_data: `nlp_set_cat|${amountStr}|${type}|Entertainment|${description}`,
+              },
+            ],
+            [
+              {
+                text: t(lang, "buttons.bills"),
+                callback_data: `nlp_set_cat|${amountStr}|${type}|Bills|${description}`,
+              },
+              {
+                text: t(lang, "buttons.health"),
+                callback_data: `nlp_set_cat|${amountStr}|${type}|Health|${description}`,
+              },
+            ],
+            [
+              {
+                text: t(lang, "buttons.salary"),
+                callback_data: `nlp_set_cat|${amountStr}|${type}|Salary|${description}`,
+              },
+              {
+                text: t(lang, "buttons.other"),
+                callback_data: `nlp_set_cat|${amountStr}|${type}|Other|${description}`,
+              },
+            ],
+            [
+              {
+                text: t(lang, "buttons.back"),
+                callback_data: `nlp_confirm|${amountStr}|${type}|Other|${description}`,
+              },
+            ],
+          ],
+        },
+      })
       await bot.answerCallbackQuery(query.id)
       return
     }
@@ -305,19 +332,22 @@ export async function handleNLPCallback(
 
       await bot.answerCallbackQuery(query.id)
 
-      const newQuery = { ...query, confirmData }
-      await handleNLPCallback(bot, newQuery)
+      const newQuery = { ...query, data: confirmData }
+      await handleNLPCallback(bot, newQuery, wizard)
       return
     }
 
     await bot.answerCallbackQuery(query.id)
   } catch (error) {
     console.error("NLP callback error:", error)
-    await bot.answerCallbackQuery(query.id, { text: "❌ Error" })
+    await bot.answerCallbackQuery(query.id, { text: t(lang, "common.error") })
   }
 }
 
-async function convertOgaToWav(ogaPath: string, wavPath: string): Promise<void> {
+async function convertOgaToWav(
+  ogaPath: string,
+  wavPath: string
+): Promise<void> {
   console.log(`🔄 Converting: ${ogaPath} → ${wavPath}`)
 
   try {
@@ -327,7 +357,7 @@ async function convertOgaToWav(ogaPath: string, wavPath: string): Promise<void> 
 
     const command = `ffmpeg -i "${ogaPath}" -acodec pcm_s16le -ar 16000 -ac 1 -f wav -y "${wavPath}" 2>&1`
 
-    console.log(`📞 Running FFmpeg...`)
+    console.log("📞 Running FFmpeg...")
     const { stdout, stderr } = await execAsync(command)
 
     if (!existsSync(wavPath)) {
@@ -344,16 +374,21 @@ async function convertOgaToWav(ogaPath: string, wavPath: string): Promise<void> 
       throw new Error("WAV file is empty")
     }
 
-    console.log(`✅ Converted successfully: ${ogaPath} → ${wavPath} (${fileSizeKB} KB)`)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    console.log(
+      `✅ Converted successfully: ${ogaPath} → ${wavPath} (${fileSizeKB} KB)`
+    )
   } catch (error: any) {
     console.error("❌ FFmpeg conversion error:", error.message)
 
-    if (error.message.includes("command not found") ||
+    if (
+      error.message.includes("command not found") ||
       error.message.includes("not recognized") ||
-      error.code === "ENOENT") {
+      error.code === "ENOENT"
+    ) {
       console.error("💡 FFmpeg is not installed!")
-      console.error("📦 Install: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)")
+      console.error(
+        "📦 Install: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)"
+      )
       throw new Error(
         "FFmpeg is not installed. Install it with: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)"
       )
@@ -368,7 +403,9 @@ async function convertVoiceToText(filePath: string): Promise<string | null> {
     if (!assemblyAIService.isAvailable()) {
       console.log("⚠️ AssemblyAI not configured. Voice file:", filePath)
       console.log("💡 Set ASSEMBLYAI_API_KEY to enable voice transcription")
-      console.log("💡 Or user can use text input: '50 coffee', 'потратил 100 на такси', etc.")
+      console.log(
+        "💡 Or user can use text input: '50 coffee', 'потратил 100 на такси', etc."
+      )
       return null
     }
 

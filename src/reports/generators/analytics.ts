@@ -2,12 +2,13 @@
  * Analytics report generation
  */
 
-import { Transaction, TransactionType, Currency } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
-import { formatMoney, formatAmount } from "../../utils"
 import { convertBatchSync } from "../../fx"
+import { getCategoryLabel, getLocale, type Language, t } from "../../i18n"
+import { type Currency, type Transaction, TransactionType } from "../../types"
+import { formatAmount, formatMoney } from "../../utils"
 import { createProgressBar } from "../helpers"
-import { CategoryTotals } from "../types"
+import type { CategoryTotals } from "../types"
 
 type AnalyticsPeriod = {
   preset?: "LAST_7_DAYS" | "LAST_30_DAYS"
@@ -23,7 +24,8 @@ type AnalyticsPeriod = {
  */
 export async function generateAnalyticsReport(
   userId: string,
-  period: AnalyticsPeriod
+  period: AnalyticsPeriod,
+  lang: Language
 ): Promise<string> {
   let startDate: Date
   let endDate: Date
@@ -34,33 +36,40 @@ export async function generateAnalyticsReport(
     endDate = new Date()
     startDate = new Date()
     startDate.setDate(startDate.getDate() - 7)
-    periodLabel = "Last 7 Days"
+    periodLabel = t(lang, "reports.analyticsReport.periodLast7Days")
   } else if (period.preset === "LAST_30_DAYS") {
     endDate = new Date()
     startDate = new Date()
     startDate.setDate(startDate.getDate() - 30)
-    periodLabel = "Last 30 Days"
+    periodLabel = t(lang, "reports.analyticsReport.periodLast30Days")
   } else if (period.startDate && period.endDate) {
     startDate = new Date(period.startDate)
     endDate = new Date(period.endDate)
-    periodLabel = `${startDate.toLocaleDateString("en-GB")} - ${endDate.toLocaleDateString("en-GB")}`
+    periodLabel = t(lang, "reports.analyticsReport.periodCustomRange", {
+      start: startDate.toLocaleDateString(getLocale(lang)),
+      end: endDate.toLocaleDateString(getLocale(lang)),
+    })
   } else {
     throw new Error("Invalid period configuration")
   }
 
-  // Get all transactions
-  const allTransactions = await db.getAllTransactions(userId)
+  // Get transactions for date range (SQL-filtered - fast!)
+  const transactions = await db.getTransactionsByDateRange(
+    userId,
+    startDate,
+    endDate
+  )
   const userData = await db.getUserData(userId)
   const defaultCurrency = userData.defaultCurrency
 
-  // Filter transactions by date range
-  const transactions = allTransactions.filter((tx: Transaction) => {
-    const txDate = new Date(tx.date)
-    return txDate >= startDate && txDate <= endDate
-  })
-
   if (transactions.length === 0) {
-    return `📊 *Analytics Report*\n\n📅 Period: ${periodLabel}\n\n📭 No transactions found for this period.`
+    return (
+      `${t(lang, "reports.analyticsReport.title")}\n\n` +
+      `${t(lang, "reports.analyticsReport.periodLine", {
+        period: periodLabel,
+      })}\n\n` +
+      t(lang, "reports.analyticsReport.noTransactions")
+    )
   }
 
   // Separate transactions by type
@@ -84,45 +93,61 @@ export async function generateAnalyticsReport(
   const incomeByCategory = groupByCategory(income, defaultCurrency)
 
   // Build report
-  let msg = `📊 *Analytics Report*\n\n`
-  msg += `📅 *Period:* ${periodLabel}\n`
-  msg += `📝 *Transactions:* ${transactions.length}\n\n`
+  let msg = `${t(lang, "reports.analyticsReport.title")}\n\n`
+  msg += `${t(lang, "reports.analyticsReport.periodLine", {
+    period: periodLabel,
+  })}\n`
+  msg += `${t(lang, "reports.analyticsReport.transactionsLine", {
+    count: transactions.length,
+  })}\n\n`
 
-  msg += `──────────────\n\n`
+  msg += "──────────────\n\n"
 
   // Summary
-  msg += `💰 *Income:* ${formatMoney(totalIncome, defaultCurrency)}\n`
-  msg += `💸 *Expenses:* ${formatMoney(totalExpenses, defaultCurrency)}\n`
-  msg += `💎 *Net:* ${formatMoney(netBalance, defaultCurrency)} ${netBalance >= 0 ? "📈" : "📉"}\n\n`
+  msg += `${t(lang, "reports.analyticsReport.incomeLine", {
+    amount: formatMoney(totalIncome, defaultCurrency),
+  })}\n`
+  msg += `${t(lang, "reports.analyticsReport.expensesLine", {
+    amount: formatMoney(totalExpenses, defaultCurrency),
+  })}\n`
+  msg += `${t(lang, "reports.analyticsReport.netLine", {
+    amount: formatMoney(netBalance, defaultCurrency),
+    emoji: netBalance >= 0 ? "📈" : "📉",
+  })}\n\n`
 
-  msg += `──────────────\n\n`
+  msg += "──────────────\n\n"
 
   // Top Expenses
   if (expensesByCategory.length > 0) {
-    msg += `💸 *Top Expense Categories*\n\n`
+    msg += `${t(lang, "reports.analyticsReport.topExpenseCategoriesTitle")}\n\n`
     const topExpenses = expensesByCategory.slice(0, 5)
 
     topExpenses.forEach((item, index) => {
       const percentage = (item.amount / totalExpenses) * 100
       const bar = createProgressBar(item.amount, totalExpenses, 10)
 
-      msg += `${index + 1}. *${item.category}*\n`
+      msg += `${index + 1}. *${getCategoryLabel(lang, item.category)}*\n`
       msg += `   ${formatMoney(item.amount, defaultCurrency)} (${formatAmount(percentage)}%)\n`
       msg += `   ${bar}\n\n`
     })
 
-    msg += `──────────────\n\n`
+    msg += "──────────────\n\n"
   }
 
   // Income breakdown
   if (incomeByCategory.length > 0) {
-    msg += `💰 *Income Sources*\n\n`
+    msg += `${t(lang, "reports.analyticsReport.incomeSourcesTitle")}\n\n`
     incomeByCategory.forEach((item, index) => {
       const percentage = (item.amount / totalIncome) * 100
-      msg += `${index + 1}. *${item.category}*: ${formatMoney(item.amount, defaultCurrency)} (${formatAmount(percentage)}%)\n`
+      msg += `${index + 1}. *${getCategoryLabel(
+        lang,
+        item.category
+      )}*: ${formatMoney(item.amount, defaultCurrency)} (${formatAmount(
+        percentage
+      )}%)\n`
     })
 
-    msg += `\n──────────────\n\n`
+    msg += "\n──────────────\n\n"
   }
 
   // Daily average
@@ -132,12 +157,18 @@ export async function generateAnalyticsReport(
   const avgDailyExpense = daysDiff > 0 ? totalExpenses / daysDiff : 0
   const avgDailyIncome = daysDiff > 0 ? totalIncome / daysDiff : 0
 
-  msg += `📊 *Daily Averages*\n\n`
-  msg += `💰 Income: ${formatMoney(avgDailyIncome, defaultCurrency)}/day\n`
-  msg += `💸 Expenses: ${formatMoney(avgDailyExpense, defaultCurrency)}/day\n`
+  msg += `${t(lang, "reports.analyticsReport.dailyAveragesTitle")}\n\n`
+  msg += `${t(lang, "reports.analyticsReport.dailyIncomeLine", {
+    amount: formatMoney(avgDailyIncome, defaultCurrency),
+  })}\n`
+  msg += `${t(lang, "reports.analyticsReport.dailyExpensesLine", {
+    amount: formatMoney(avgDailyExpense, defaultCurrency),
+  })}\n`
 
   if (transfers.length > 0) {
-    msg += `\n↔️ Transfers: ${transfers.length}\n`
+    msg += `\n${t(lang, "reports.analyticsReport.transfersLine", {
+      count: transfers.length,
+    })}\n`
   }
 
   return msg
@@ -170,10 +201,13 @@ function groupByCategory(
   const categoryTotals: CategoryTotals = {}
 
   transactions.forEach((tx: Transaction) => {
-    if (!categoryTotals[tx.category]) categoryTotals[tx.category] = {}
-    if (!categoryTotals[tx.category][tx.currency])
-      categoryTotals[tx.category][tx.currency] = 0
-    categoryTotals[tx.category][tx.currency] += tx.amount
+    if (!categoryTotals[tx.category]) {
+      categoryTotals[tx.category] = {}
+    }
+    if (!categoryTotals[tx.category]?.[tx.currency]) {
+      categoryTotals[tx.category]![tx.currency] = 0
+    }
+    categoryTotals[tx.category]![tx.currency]! += tx.amount
   })
 
   const categoryAmounts: Array<{ category: string; amount: number }> = []

@@ -1,16 +1,21 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  OneToMany,
   CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
 } from "typeorm"
+import type { Language } from "../../i18n"
+import type {
+  Currency,
+  ReminderSettings,
+  TransactionTemplate,
+} from "../../types"
 import { Balance } from "./Balance"
-import { Transaction } from "./Transaction"
 import { Debt } from "./Debt"
 import { Goal } from "./Goal"
 import { IncomeSource } from "./IncomeSource"
-import { Currency, TransactionTemplate, ReminderSettings } from "../../types"
+import { Transaction } from "./Transaction"
 
 @Entity("users")
 export class User {
@@ -18,7 +23,10 @@ export class User {
   id!: string
 
   @Column({ type: "text", default: "USD" })
-  defaultCurrency: Currency
+  defaultCurrency!: Currency
+
+  @Column({ type: "text", default: "en" })
+  language!: Language
 
   @CreateDateColumn()
   createdAt!: Date
@@ -30,18 +38,33 @@ export class User {
   reminderSettings?: ReminderSettings
 
   // Relations
-  @OneToMany(() => Balance, (balance) => balance.user)
+  @OneToMany(
+    () => Balance,
+    (balance) => balance.user
+  )
   balances!: Balance[]
 
-  @OneToMany(() => Transaction, (transaction) => transaction.user)
+  @OneToMany(
+    () => Transaction,
+    (transaction) => transaction.user
+  )
   transactions!: Transaction[]
 
-  @OneToMany(() => Debt, (debt) => debt.user)
+  @OneToMany(
+    () => Debt,
+    (debt) => debt.user
+  )
   debts!: Debt[]
 
-  @OneToMany(() => Goal, (goal) => goal.user)
+  @OneToMany(
+    () => Goal,
+    (goal) => goal.user
+  )
   goals!: Goal[]
 
-  @OneToMany(() => IncomeSource, (source) => source.user)
+  @OneToMany(
+    () => IncomeSource,
+    (source) => source.user
+  )
   incomeSources!: IncomeSource[]
 }

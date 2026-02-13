@@ -1,14 +1,15 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  Index,
   CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
 } from "typeorm"
 
 export enum BudgetPeriod {
-  MONTHLY = "MONTHLY",
+  DAILY = "DAILY",
   WEEKLY = "WEEKLY",
+  MONTHLY = "MONTHLY",
   YEARLY = "YEARLY",
 }
 

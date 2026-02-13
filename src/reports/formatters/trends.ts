@@ -2,8 +2,9 @@
  * Trends formatting (analytics)
  */
 
-import { Transaction } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
+import { t } from "../../i18n"
+import type { Transaction } from "../../types"
 import { formatMoney } from "../../utils"
 
 /**
@@ -12,6 +13,7 @@ import { formatMoney } from "../../utils"
  * @returns Formatted trends string
  */
 export async function formatTrends(userId: string): Promise<string> {
+  const lang = await db.getUserLanguage(userId)
   const now = new Date()
 
   const thisMonth = await db.getTransactionsByMonth(
@@ -52,15 +54,21 @@ export async function formatTrends(userId: string): Promise<string> {
   const userData = await db.getUserData(userId)
   const defaultCurrency = userData.defaultCurrency
 
-  return `
-📈 *Trends (vs last month)*
+  const incomeTrendEmoji = incomeChange >= 0 ? "📈" : "📉"
+  const expenseTrendEmoji = expenseChange >= 0 ? "📈" : "📉"
+  const incomeSign = incomeChange >= 0 ? "+" : ""
+  const expenseSign = expenseChange >= 0 ? "+" : ""
 
-💰 *Income:* ${formatMoney(thisIncome, defaultCurrency)}
-   ${incomeChange >= 0 ? "📈" : "📉"} ${incomeChange >= 0 ? "+" : ""}${incomeChange}%
-
-📉 *Expenses:* ${formatMoney(thisExpense, defaultCurrency)}
-   ${expenseChange >= 0 ? "📈" : "📉"} ${expenseChange >= 0 ? "+" : ""}${expenseChange}%
-
-*Transactions:* ${thisMonth.length}
-  `
+  return (
+    `${t(lang, "reports.trends.title")}\n\n` +
+    `${t(lang, "reports.trends.income", {
+      amount: formatMoney(thisIncome, defaultCurrency),
+    })}\n` +
+    `   ${incomeTrendEmoji} ${incomeSign}${incomeChange}%\n\n` +
+    `${t(lang, "reports.trends.expenses", {
+      amount: formatMoney(thisExpense, defaultCurrency),
+    })}\n` +
+    `   ${expenseTrendEmoji} ${expenseSign}${expenseChange}%\n\n` +
+    `${t(lang, "reports.trends.transactions", { count: thisMonth.length })}\n`
+  )
 }

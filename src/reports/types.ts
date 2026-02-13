@@ -2,7 +2,7 @@
  * Type definitions for reports
  */
 
-import { Transaction, IncomeSource, Currency } from "../types"
+import type { Currency, IncomeSource, Transaction } from "../types"
 
 export interface CategoryTotals {
   [category: string]: {

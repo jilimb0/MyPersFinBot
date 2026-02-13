@@ -1,5 +1,7 @@
-import axios from "axios"
-import { readFileSync, existsSync, statSync } from "fs"
+import { existsSync, readFileSync, statSync } from "node:fs"
+import { request } from "undici"
+import { config } from "../config"
+import logger from "../logger"
 
 interface AssemblyAIConfig {
   apiKey: string
@@ -28,7 +30,6 @@ export class AssemblyAIService {
   // Upload audio file to AssemblyAI
   private async uploadFile(filePath: string): Promise<string> {
     try {
-
       // Check file exists and get size
       if (!existsSync(filePath)) {
         throw new Error(`File not found: ${filePath}`)
@@ -44,22 +45,32 @@ export class AssemblyAIService {
 
       // Read file as raw binary data (Buffer)
       // AssemblyAI requires binary upload, NOT FormData!
-      console.log(`📚 Reading file as binary...`)
+      console.log("📚 Reading file as binary...")
       const audioData = readFileSync(filePath)
       console.log(`🚀 Uploading ${audioData.length} bytes...`)
 
-      // Upload raw bytes (like official example)
-      const response = await axios.post(`${this.baseUrl}/upload`, audioData, {
+      // Upload raw bytes using undici
+      const { statusCode, body } = await request(`${this.baseUrl}/upload`, {
+        method: "POST",
         headers: {
           authorization: this.apiKey,
         },
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
+        body: audioData,
       })
 
-      console.log(`✅ Upload successful: ${response.data.upload_url}`)
-      return response.data.upload_url
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (statusCode !== 200) {
+        throw new Error(`Upload failed: HTTP ${statusCode}`)
+      }
+
+      // Parse response
+      const chunks = []
+      for await (const chunk of body) {
+        chunks.push(chunk)
+      }
+      const responseData = JSON.parse(Buffer.concat(chunks).toString())
+
+      console.log(`✅ Upload successful: ${responseData.upload_url}`)
+      return responseData.upload_url
     } catch (error: any) {
       console.error("❌ AssemblyAI upload error:", error.message)
       if (error.response) {
@@ -73,21 +84,31 @@ export class AssemblyAIService {
   // Create transcription job
   private async createTranscription(audioUrl: string): Promise<string> {
     try {
-      const response = await axios.post(
-        `${this.baseUrl}/transcript`,
-        {
-          audio_url: audioUrl,
-          language_detection: true, // Auto-detect language
-        },
-        {
-          headers: {
-            authorization: this.apiKey,
-            "content-type": "application/json",
-          },
-        }
-      )
+      const requestBody = JSON.stringify({
+        audio_url: audioUrl,
+        language_detection: true, // Auto-detect language
+      })
 
-      return response.data.id
+      const { statusCode, body } = await request(`${this.baseUrl}/transcript`, {
+        method: "POST",
+        headers: {
+          authorization: this.apiKey,
+          "content-type": "application/json",
+        },
+        body: requestBody,
+      })
+
+      if (statusCode !== 200) {
+        throw new Error(`Create transcription failed: HTTP ${statusCode}`)
+      }
+
+      const chunks = []
+      for await (const chunk of body) {
+        chunks.push(chunk)
+      }
+      const responseData = JSON.parse(Buffer.concat(chunks).toString())
+
+      return responseData.id
     } catch (error) {
       console.error("AssemblyAI transcription error:", error)
       throw new Error("Failed to create transcription")
@@ -103,16 +124,25 @@ export class AssemblyAIService {
 
     for (let i = 0; i < maxAttempts; i++) {
       try {
-        const response = await axios.get(
+        const { statusCode, body } = await request(
           `${this.baseUrl}/transcript/${transcriptionId}`,
           {
+            method: "GET",
             headers: {
               authorization: this.apiKey,
             },
           }
         )
 
-        const result = response.data
+        if (statusCode !== 200) {
+          throw new Error(`Poll transcription failed: HTTP ${statusCode}`)
+        }
+
+        const chunks = []
+        for await (const chunk of body) {
+          chunks.push(chunk)
+        }
+        const result = JSON.parse(Buffer.concat(chunks).toString())
 
         if (result.status === "completed") {
           return {
@@ -193,10 +223,12 @@ const apiKey = process.env.ASSEMBLYAI_API_KEY || "YOUR_ASSEMBLYAI_API_KEY"
 export const assemblyAIService = new AssemblyAIService({ apiKey })
 
 // Log status on import
-if (assemblyAIService.isAvailable()) {
-  console.log("✅ AssemblyAI service configured")
-} else {
-  console.warn(
-    "⚠️ AssemblyAI not configured. Set ASSEMBLYAI_API_KEY to enable voice transcription."
-  )
+if (config.LOG_BOOT_DETAIL) {
+  if (assemblyAIService.isAvailable()) {
+    logger.info("✅ AssemblyAI service configured")
+  } else {
+    logger.warn(
+      "⚠️ AssemblyAI not configured. Set ASSEMBLYAI_API_KEY to enable voice transcription."
+    )
+  }
 }

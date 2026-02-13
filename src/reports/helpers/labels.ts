@@ -2,7 +2,8 @@
  * Transaction label and sign utilities
  */
 
-import { Transaction, TransactionType } from "../../types"
+import { getCategoryLabel } from "../../i18n"
+import { type Transaction, TransactionType } from "../../types"
 
 /**
  * Gets the sign for a transaction type
@@ -28,10 +29,10 @@ export function getTransactionSign(type: TransactionType): string {
  * @param tx - Transaction object
  * @returns Formatted label string
  */
-export function getTransactionLabel(tx: Transaction): string {
+export function getTransactionLabel(lang: string, tx: Transaction): string {
   // Handle Goal deposits
   if (
-    tx.category === "Goal 🎯" &&
+    tx.category === "GOAL_DEPOSIT" &&
     tx.description?.startsWith("Goal Deposit:")
   ) {
     const goalName = tx.description.replace("Goal Deposit: ", "").trim()
@@ -40,7 +41,7 @@ export function getTransactionLabel(tx: Transaction): string {
 
   // Handle Debt repayments
   if (
-    tx.category === "Debt 📉" &&
+    tx.category === "DEBT_REPAYMENT" &&
     tx.description?.startsWith("Debt repayment:")
   ) {
     const debtName = tx.description.replace("Debt repayment: ", "").trim()
@@ -48,7 +49,7 @@ export function getTransactionLabel(tx: Transaction): string {
   }
 
   // Default: return category as-is
-  return tx.category as unknown as string
+  return getCategoryLabel(lang as any, tx.category as unknown as string)
 }
 
 /**

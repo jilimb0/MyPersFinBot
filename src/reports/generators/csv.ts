@@ -2,8 +2,9 @@
  * CSV generation utilities
  */
 
-import { Transaction } from "../../types"
 import { dbStorage as db } from "../../database/storage-db"
+import { getCategoryLabel } from "../../i18n"
+import type { Transaction } from "../../types"
 
 /**
  * Generates CSV export of all transactions
@@ -11,6 +12,7 @@ import { dbStorage as db } from "../../database/storage-db"
  * @returns CSV string with all transactions
  */
 export async function generateCSV(userId: string): Promise<string> {
+  const lang = await db.getUserLanguage(userId)
   const transactions = await db.getAllTransactions(userId)
 
   if (transactions.length === 0) {
@@ -27,7 +29,7 @@ export async function generateCSV(userId: string): Promise<string> {
     return [
       date,
       tx.type,
-      tx.category,
+      tx.category ? getCategoryLabel(lang as any, tx.category) : "",
       tx.amount,
       tx.currency,
       tx.fromAccountId || "",

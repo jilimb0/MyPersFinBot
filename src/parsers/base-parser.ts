@@ -1,6 +1,16 @@
-import { ParsedTransaction, BankParserResult, BankType, BankParserOptions, Currency, TransactionType, TransactionCategory, ExpenseCategory, IncomeCategory, InternalCategory } from "../types"
 import dayjs from "dayjs"
 import customParseFormat from "dayjs/plugin/customParseFormat"
+import {
+  type BankParserOptions,
+  type BankParserResult,
+  type BankType,
+  type Currency,
+  ExpenseCategory,
+  IncomeCategory,
+  type ParsedTransaction,
+  type TransactionCategory,
+  TransactionType,
+} from "../types"
 
 dayjs.extend(customParseFormat)
 
@@ -45,7 +55,10 @@ export abstract class BankParser {
   }
 
   // Parse amount and determine transaction type
-  protected parseAmount(amountStr: string): { amount: number; type: TransactionType } {
+  protected parseAmount(amountStr: string): {
+    amount: number
+    type: TransactionType
+  } {
     // Remove spaces, replace comma with dot
     const cleaned = amountStr.replace(/\s/g, "").replace(",", ".")
 
@@ -53,7 +66,7 @@ export abstract class BankParser {
     const isNegative = cleaned.startsWith("-") || cleaned.startsWith("−")
     const absAmount = Math.abs(parseFloat(cleaned))
 
-    if (isNaN(absAmount)) {
+    if (Number.isNaN(absAmount)) {
       this.errors.push(`Invalid amount: ${amountStr}`)
       return { amount: 0, type: TransactionType.EXPENSE }
     }
@@ -69,32 +82,50 @@ export abstract class BankParser {
     const lower = description.toLowerCase()
 
     // Food & Groceries
-    if (lower.match(/\b(atb|silpo|novus|auchan|carrefour|grocery|supermarket|food|restaurant|cafe|coffee|mcdonald|kfc|burger|pizza)\b/)) {
+    if (
+      lower.match(
+        /\b(atb|silpo|novus|auchan|carrefour|grocery|supermarket|food|restaurant|cafe|coffee|mcdonald|kfc|burger|pizza)\b/
+      )
+    ) {
       return ExpenseCategory.FOOD_DINING
     }
 
     // Transport
-    if (lower.match(/\b(uber|bolt|taxi|metro|bus|fuel|gas|parking|station)\b/)) {
+    if (
+      lower.match(/\b(uber|bolt|taxi|metro|bus|fuel|gas|parking|station)\b/)
+    ) {
       return ExpenseCategory.TRANSPORTATION
     }
 
     // Entertainment
-    if (lower.match(/\b(cinema|movie|netflix|spotify|game|steam|playstation|xbox)\b/)) {
+    if (
+      lower.match(
+        /\b(cinema|movie|netflix|spotify|game|steam|playstation|xbox)\b/
+      )
+    ) {
       return ExpenseCategory.ENTERTAINMENT
     }
 
     // Shopping
-    if (lower.match(/\b(amazon|rozetka|prom|aliexpress|ebay|shop|store|mall)\b/)) {
+    if (
+      lower.match(/\b(amazon|rozetka|prom|aliexpress|ebay|shop|store|mall)\b/)
+    ) {
       return ExpenseCategory.SHOPPING
     }
 
     // Bills & Utilities
-    if (lower.match(/\b(electric|water|gas|internet|mobile|phone|utility|rent|communal)\b/)) {
+    if (
+      lower.match(
+        /\b(electric|water|gas|internet|mobile|phone|utility|rent|communal)\b/
+      )
+    ) {
       return ExpenseCategory.UTILITIES
     }
 
     // Health
-    if (lower.match(/\b(pharmacy|apteka|hospital|clinic|doctor|medical|health)\b/)) {
+    if (
+      lower.match(/\b(pharmacy|apteka|hospital|clinic|doctor|medical|health)\b/)
+    ) {
       return ExpenseCategory.HEALTH
     }
 

@@ -1,15 +1,16 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm"
+import type { Currency } from "../../types"
 import { User } from "./User"
-import { Currency } from "../../types"
 
 @Entity("goals")
+@Index(["userId", "status"])
 export class Goal {
   @PrimaryGeneratedColumn("uuid")
   id!: string
@@ -28,10 +29,10 @@ export class Goal {
   currentAmount!: number
 
   @Column({ type: "text" })
-  currency: Currency
+  currency!: Currency
 
   @Column({ type: "text", default: "ACTIVE" })
-  status: "ACTIVE" | "COMPLETED" | "PAUSED"
+  status!: "ACTIVE" | "COMPLETED" | "PAUSED"
 
   @Column({ type: "datetime", nullable: true })
   deadline?: Date
@@ -47,7 +48,10 @@ export class Goal {
   }
 
   // Relations
-  @ManyToOne(() => User, (user) => user.goals)
+  @ManyToOne(
+    () => User,
+    (user) => user.goals
+  )
   @JoinColumn({ name: "userId" })
   user!: User
 }

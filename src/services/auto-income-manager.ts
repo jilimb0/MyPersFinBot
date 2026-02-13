@@ -3,14 +3,14 @@
  * Handles automatic income transactions from income sources
  */
 
+import { randomUUID } from "node:crypto"
+import type TelegramBot from "node-telegram-bot-api"
 import { AppDataSource } from "../database/data-source"
 import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
 import { Transaction as TransactionEntity } from "../database/entities/Transaction"
 import { dbStorage as db } from "../database/storage-db"
-import { TransactionType, IncomeCategory } from "../types"
-import { randomUUID } from "crypto"
-import TelegramBot from "node-telegram-bot-api"
-import { formatMoney } from "../utils"
+import { IncomeCategory, TransactionType } from "../types"
+import { escapeMarkdown, formatMoney } from "../utils"
 
 class AutoIncomeManager {
   /**
@@ -26,14 +26,21 @@ class AutoIncomeManager {
 
     const today = new Date()
     const dayOfMonth = today.getDate()
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+    const lastDayOfMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0
+    ).getDate()
 
     return incomes.filter((income) => {
       if (!income.autoCreate?.enabled) return false
-      
+
       if (income.frequency === "MONTHLY") {
         // Handle end of month (e.g., day 31 in Feb should execute on last day)
-        const targetDay = Math.min(income.autoCreate.dayOfMonth || 1, lastDayOfMonth)
+        const targetDay = Math.min(
+          income.autoCreate.dayOfMonth || 1,
+          lastDayOfMonth
+        )
         return dayOfMonth === targetDay
       }
 
@@ -44,12 +51,28 @@ class AutoIncomeManager {
   /**
    * Execute auto-income for an income source
    */
-  async executeAutoIncome(income: IncomeSourceEntity, bot?: TelegramBot): Promise<boolean> {
+  async executeAutoIncome(
+    income: IncomeSourceEntity,
+    bot?: TelegramBot
+  ): Promise<boolean> {
     try {
       if (!income.autoCreate) return false
 
       const { currency, name } = income
       const { amount, accountId } = income.autoCreate
+
+      if (!currency) {
+        if (bot) {
+          await bot.sendMessage(
+            income.userId,
+            "⚠️ *Auto-Income Failed*\n\n" +
+              `Source: *${escapeMarkdown(name)}*\n` +
+              "Reason: Currency not set.",
+            { parse_mode: "Markdown" }
+          )
+        }
+        return false
+      }
 
       // Check if TO account exists
       const balance = await db.getBalance(income.userId, accountId, currency)
@@ -57,9 +80,9 @@ class AutoIncomeManager {
         if (bot) {
           await bot.sendMessage(
             income.userId,
-            `⚠️ *Auto-Income Failed*\n\n` +
-            `Source: *${name}*\n` +
-            `Reason: Account "${accountId}" not found.`,
+            "⚠️ *Auto-Income Failed*\n\n" +
+              `Source: *${escapeMarkdown(name)}*\n` +
+              `Reason: Account "${escapeMarkdown(accountId)}" not found.`,
             { parse_mode: "Markdown" }
           )
         }
@@ -93,12 +116,12 @@ class AutoIncomeManager {
       if (bot) {
         await bot.sendMessage(
           income.userId,
-          `💰 *Auto-Income Added*\n\n` +
-          `💼 *${name}*\n\n` +
-          `Amount: ${formatMoney(amount, currency)}\n` +
-          `To: ${accountId}\n` +
-          `Frequency: ${income.frequency}\n\n` +
-          `✅ Income transaction created successfully!`,
+          "💰 *Auto-Income Added*\n\n" +
+            `💼 *${escapeMarkdown(name)}*\n\n` +
+            `Amount: ${formatMoney(amount, currency)}\n` +
+            `To: ${escapeMarkdown(accountId)}\n` +
+            `Frequency: ${income.frequency}\n\n` +
+            "✅ Income transaction created successfully!",
           { parse_mode: "Markdown" }
         )
       }
@@ -116,14 +139,14 @@ class AutoIncomeManager {
   async executeAllDue(bot?: TelegramBot): Promise<void> {
     try {
       const dueIncomes = await this.getDueAutoIncomes()
-      
+
       console.log(`[AutoIncome] Found ${dueIncomes.length} due auto-incomes`)
 
       for (const income of dueIncomes) {
         await this.executeAutoIncome(income, bot)
       }
     } catch (error) {
-      console.error('[AutoIncome] Failed to execute due auto-incomes:', error)
+      console.error("[AutoIncome] Failed to execute due auto-incomes:", error)
     }
   }
 }

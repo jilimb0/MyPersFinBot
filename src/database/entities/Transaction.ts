@@ -1,15 +1,22 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm"
+import type {
+  Currency,
+  TransactionCategory,
+  TransactionType,
+} from "../../types"
 import { User } from "./User"
-import { Currency, TransactionCategory, TransactionType } from "../../types"
 
 @Entity("transactions")
+@Index(["userId", "date"])
+@Index(["userId", "type", "date"])
+@Index(["userId", "category"])
 export class Transaction {
   @PrimaryGeneratedColumn("uuid")
   id!: string
@@ -26,13 +33,13 @@ export class Transaction {
   amount!: number
 
   @Column({ type: "text" })
-  currency: Currency
+  currency!: Currency
 
   @Column({ type: "text" })
-  type: TransactionType
+  type!: TransactionType
 
   @Column({ type: "text", nullable: true })
-  category: TransactionCategory
+  category!: TransactionCategory
 
   @Column({ nullable: true })
   description?: string
@@ -44,7 +51,10 @@ export class Transaction {
   toAccountId?: string
 
   // Relations
-  @ManyToOne(() => User, (user) => user.transactions)
+  @ManyToOne(
+    () => User,
+    (user) => user.transactions
+  )
   @JoinColumn({ name: "userId" })
   user!: User
 }

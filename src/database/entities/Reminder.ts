@@ -1,10 +1,10 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm"
 import { User } from "./User"
 
@@ -18,7 +18,7 @@ export class Reminder {
   userId!: string
 
   @Column({ type: "text" })
-  type: "DEBT" | "GOAL" | "INCOME" | "RECURRING_TX"
+  type!: "DEBT" | "GOAL" | "INCOME" | "RECURRING_TX"
 
   @Column()
   entityId!: string

@@ -1,7 +1,8 @@
-import { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
-import { Debt, Goal } from "../types"
-import { showDebtsMenu, showGoalsMenu } from "../menus"
+import { resolveLanguage, t } from "../i18n"
+import { showDebtsMenu, showGoalsMenu } from "../menus-i18n"
+import type { Debt, Goal } from "../types"
+import type { WizardManager } from "../wizards/wizards"
 
 export async function handleDebtAdvancedMenu(
   wizard: WizardManager,
@@ -10,32 +11,42 @@ export async function handleDebtAdvancedMenu(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
   const debt = state?.data?.debt as Debt | undefined
 
   if (!debt) {
-    await wizard.sendMessage(chatId, "❌ Debt not found.")
+    await wizard.sendMessage(chatId, t(lang, "errors.debtNotFound"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
-  if (text === "📅 Set Due Date" || text === "📅 Change Due Date") {
-    await wizard.goToStep(userId, "DEBT_EDIT_DUE_DATE", state.data)
+  if (
+    text === t(lang, "debts.setDueDate") ||
+    text === t(lang, "debts.changeDueDate")
+  ) {
+    await wizard.goToStep(userId, "DEBT_EDIT_DUE_DATE", state?.data)
     await wizard.sendMessage(
       chatId,
-      `📅 ${text === "📅 Set Due Date" ? "Set" : "Change"} Due Date\n\n` +
-      `Enter new due date (DD.MM.YYYY)\n\n` +
-      `Example: 31.12.2026\n\n` +
-      (text === "📅 Change Due Date" ? "Or tap 🗑 Remove to delete due date.\n\n" : "") +
-      "Or tap ⏭ Skip to cancel.",
+      t(lang, "wizard.debt.dueDatePrompt", {
+        mode:
+          text === t(lang, "debts.setDueDate")
+            ? t(lang, "wizard.debt.dueDateSetTitle")
+            : t(lang, "wizard.debt.dueDateChangeTitle"),
+      }),
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            text === "📅 Change Due Date" ? [{ text: "🗑 Remove Date" }] : [],
-            [{ text: "⏭ Skip" }],
-            [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-          ].filter(row => row.length > 0),
+            text === t(lang, "debts.changeDueDate")
+              ? [{ text: t(lang, "common.removeDate") }]
+              : [],
+            [{ text: t(lang, "common.skip") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
+          ].filter((row) => row.length > 0),
           resize_keyboard: true,
         },
       }
@@ -43,30 +54,30 @@ export async function handleDebtAdvancedMenu(
     return true
   }
 
-  if (text === "🔕 Disable Reminders") {
+  if (text === t(lang, "debts.disableReminders")) {
     // Логика отключения напоминаний
     await db.updateDebtDueDate(userId, debt.id, null)
-    await wizard.sendMessage(
-      chatId,
-      "✅ Reminders disabled and due date removed."
-    )
+    await wizard.sendMessage(chatId, t(lang, "wizard.debt.remindersRemoved"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
-  if (text === "✅ Enable Auto-Payment" || text === "❌ Disable Auto-Payment") {
-    const enable = text === "✅ Enable Auto-Payment"
+  if (
+    text === t(lang, "autoFeatures.enableAutoPayment") ||
+    text === t(lang, "autoFeatures.disableAutoPayment")
+  ) {
+    const enable = text === t(lang, "autoFeatures.enableAutoPayment")
     // TODO: Implement auto-payment logic
     await wizard.sendMessage(
       chatId,
-      `${enable ? "✅ Auto-payment enabled" : "❌ Auto-payment disabled"} (feature in development)`
+      `${enable ? t(lang, "autoFeatures.autoPaymentEnabled") : t(lang, "autoFeatures.autoPaymentDisabled")} ${t(lang, "common.featureInDevelopmentSuffix")}`
     )
     return true
   }
 
   // По умолчанию возвращаемся к DEBT_MENU
-  await wizard.goToStep(userId, "DEBT_MENU", state.data)
+  await wizard.goToStep(userId, "DEBT_MENU", state?.data)
   return false
 }
 
@@ -80,33 +91,43 @@ export async function handleGoalAdvancedMenu(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
   const goal = state?.data?.goal as Goal | undefined
 
   if (!goal) {
-    await wizard.sendMessage(chatId, "❌ Goal not found.")
+    await wizard.sendMessage(chatId, t(lang, "errors.goalNotFound"))
     wizard.clearState(userId)
-    await showGoalsMenu(wizard.getBot(), chatId, userId)
+    await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
   // Обработка кнопок
-  if (text === "📅 Set Deadline" || text === "📅 Change Deadline") {
-    await wizard.goToStep(userId, "GOAL_EDIT_DEADLINE", state.data)
+  if (
+    text === t(lang, "autoFeatures.setDeadline") ||
+    text === t(lang, "autoFeatures.changeDeadline")
+  ) {
+    await wizard.goToStep(userId, "GOAL_EDIT_DEADLINE", state?.data)
     await wizard.sendMessage(
       chatId,
-      `📅 ${text === "📅 Set Deadline" ? "Set" : "Change"} Deadline\n\n` +
-      `Enter new deadline (DD.MM.YYYY)\n\n` +
-      `Example: 31.12.2026\n\n` +
-      (text === "📅 Change Deadline" ? "Or tap 🗑 Remove to delete deadline.\n\n" : "") +
-      "Or tap ⏭ Skip to cancel.",
+      t(lang, "wizard.goal.deadlinePrompt", {
+        mode:
+          text === t(lang, "autoFeatures.setDeadline")
+            ? t(lang, "wizard.goal.deadlineSetTitle")
+            : t(lang, "wizard.goal.deadlineChangeTitle"),
+      }),
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            text === "📅 Change Deadline" ? [{ text: "🗑 Remove Date" }] : [],
-            [{ text: "⏭ Skip" }],
-            [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-          ].filter(row => row.length > 0),
+            text === t(lang, "autoFeatures.changeDeadline")
+              ? [{ text: t(lang, "common.removeDate") }]
+              : [],
+            [{ text: t(lang, "common.skip") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
+          ].filter((row) => row.length > 0),
           resize_keyboard: true,
         },
       }
@@ -114,29 +135,29 @@ export async function handleGoalAdvancedMenu(
     return true
   }
 
-  if (text === "🔕 Disable Reminders") {
+  if (text === t(lang, "goals.disableReminders")) {
     // Логика отключения напоминаний
     await db.updateGoalDeadline(userId, goal.id, null)
-    await wizard.sendMessage(
-      chatId,
-      "✅ Reminders disabled and deadline removed."
-    )
+    await wizard.sendMessage(chatId, t(lang, "wizard.goal.deadlineRemoved"))
     wizard.clearState(userId)
-    await showGoalsMenu(wizard.getBot(), chatId, userId)
+    await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
-  if (text === "✅ Enable Auto-Deposit" || text === "❌ Disable Auto-Deposit") {
-    const enable = text === "✅ Enable Auto-Deposit"
+  if (
+    text === t(lang, "autoFeatures.enableAutoDeposit") ||
+    text === t(lang, "autoFeatures.disableAutoDeposit")
+  ) {
+    const enable = text === t(lang, "autoFeatures.enableAutoDeposit")
     // TODO: Implement auto-deposit logic
     await wizard.sendMessage(
       chatId,
-      `${enable ? "✅ Auto-deposit enabled" : "❌ Auto-deposit disabled"} (feature in development)`
+      `${enable ? t(lang, "autoFeatures.autoDepositEnabled") : t(lang, "autoFeatures.autoDepositDisabled")} ${t(lang, "common.featureInDevelopmentSuffix")}`
     )
     return true
   }
 
   // По умолчанию возвращаемся к GOAL_MENU
-  await wizard.goToStep(userId, "GOAL_MENU", state.data)
+  await wizard.goToStep(userId, "GOAL_MENU", state?.data)
   return false
 }

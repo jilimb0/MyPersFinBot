@@ -2,8 +2,8 @@
  * Currency conversion utilities
  */
 
-import { Currency } from "../../types"
 import { convertBatchSync } from "../../fx"
+import type { Currency } from "../../types"
 
 interface AmountWithCurrency {
   amount: number

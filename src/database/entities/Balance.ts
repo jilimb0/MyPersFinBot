@@ -1,14 +1,14 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
-  UpdateDateColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from "typeorm"
+import type { Currency } from "../../types"
 import { User } from "./User"
-import { Currency } from "../../types"
 
 @Entity("balances")
 @Index(["userId", "accountId", "currency"], { unique: true })
@@ -27,13 +27,16 @@ export class Balance {
   amount!: number
 
   @Column({ type: "text" })
-  currency: Currency
+  currency!: Currency
 
   @UpdateDateColumn()
   lastUpdated!: Date
 
   // Relations
-  @ManyToOne(() => User, (user) => user.balances)
+  @ManyToOne(
+    () => User,
+    (user) => user.balances
+  )
   @JoinColumn({ name: "userId" })
   user!: User
 }

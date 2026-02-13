@@ -1,13 +1,17 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm"
+import type {
+  Currency,
+  TransactionCategory,
+  TransactionType,
+} from "../../types"
 import { User } from "./User"
-import { Currency, TransactionCategory, TransactionType } from "../../types"
 
 @Entity("recurring_transactions")
 export class RecurringTransaction {
@@ -19,22 +23,25 @@ export class RecurringTransaction {
   userId!: string
 
   @Column({ type: "text" })
-  type: TransactionType
+  type!: TransactionType
 
   @Column("real")
   amount!: number
 
   @Column({ type: "text" })
-  currency: Currency
+  currency!: Currency
 
   @Column({ type: "text" })
-  category: TransactionCategory
+  category!: TransactionCategory
 
   @Column()
   accountId!: string
 
   @Column({ type: "text" })
-  frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+  frequency!: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+
+  @Column({ type: "text", nullable: true })
+  cronExpression?: string
 
   @Column("datetime")
   startDate!: Date

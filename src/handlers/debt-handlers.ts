@@ -1,13 +1,10 @@
-import type { WizardManager } from "../wizards/wizards"
 import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
+import { showDebtsMenu } from "../menus-i18n"
+import { escapeMarkdown, formatMoney, handleInsufficientFunds } from "../utils"
 import * as validators from "../validators"
-import { formatAmount, formatMoney, handleInsufficientFunds } from "../utils"
-import { showDebtsMenu } from "../menus"
+import type { WizardManager } from "../wizards/wizards"
 import * as handlers from "./index"
-import { reminderManager } from "../services/reminder-manager"
-import { AppDataSource } from "../database/data-source"
-import { Debt as DebtEntity } from "../database/entities/Debt"
-import { randomUUID } from "crypto"
 
 export async function handleDebtCreateDetails(
   wizard: WizardManager,
@@ -17,12 +14,12 @@ export async function handleDebtCreateDetails(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-
-  const debtType = state.data?.type
+  const lang = resolveLanguage(state?.lang)
+  const debtType = state?.data?.type
   if (!debtType) {
-    await wizard.sendMessage(chatId, "❌ Debt type not found.")
+    await wizard.sendMessage(chatId, t(lang, "debts.typeNotFound"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
@@ -32,13 +29,10 @@ export async function handleDebtCreateDetails(
     const defaultCurrency = await db.getDefaultCurrency(userId)
     await wizard.sendMessage(
       chatId,
-      `❌ Invalid format. Use: Name Amount [Currency]\n\n` +
-      `*Examples:*\n` +
-      `• John 1000\n` +
-      `• Maria 5000 ${defaultCurrency}`,
+      t(lang, "debts.invalidCreateFormat", { currency: defaultCurrency }),
       {
         parse_mode: "Markdown",
-        ...wizard.getBackButton(),
+        ...wizard.getBackButton(lang),
       }
     )
     return true
@@ -46,33 +40,33 @@ export async function handleDebtCreateDetails(
 
   // ✅ Parse: all words except last are name, last word(s) are amount
   const name = parts.slice(0, -1).join(" ").trim()
-  const amountText = parts[parts.length - 1]
+  const amountText = parts[parts.length - 1] || ""
   const defaultCurrency = await db.getDefaultCurrency(userId)
   const parsed = validators.parseAmountWithCurrency(amountText, defaultCurrency)
 
   if (!parsed || parsed.amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      `❌ Invalid format. Try: ${name} 100 or ${name} 100 ${defaultCurrency}`,
-      wizard.getBackButton()
+      t(lang, "debts.invalidCreateAmountTry", {
+        name: escapeMarkdown(name),
+        currency: defaultCurrency,
+      }),
+      wizard.getBackButton(lang)
     )
     return true
   }
 
   // ✅ Check for duplicate debt name
   const userData = await db.getUserData(userId)
-  const existingDebt = userData.debts.find(
-    (d) => d.name === name && !d.isPaid
-  )
+  const existingDebt = userData.debts.find((d) => d.name === name && !d.isPaid)
 
   if (existingDebt) {
     await wizard.sendMessage(
       chatId,
-      `❌ *Debt "${name}" already exists!*\n\n` +
-      `Please choose a different name or manage existing debt in the Debts menu.`,
+      t(lang, "debts.duplicateName", { name: escapeMarkdown(name) }),
       {
         parse_mode: "Markdown",
-        ...wizard.getBackButton(),
+        ...wizard.getBackButton(lang),
       }
     )
     return true
@@ -88,19 +82,19 @@ export async function handleDebtCreateDetails(
 
   await wizard.sendMessage(
     chatId,
-    `📅 Set a due date for this debt?
-
-` +
-    `Debt: *${name}* - ${formatMoney(parsed.amount, parsed.currency)}
-
-` +
-    `Enter date (DD.MM.YYYY) or tap Skip to create without reminder.`,
+    t(lang, "debts.dueDateCreatePrompt", {
+      name: escapeMarkdown(name),
+      amount: formatMoney(parsed.amount, parsed.currency),
+    }),
     {
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: "⏩ Skip" }],
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+          [{ text: t(lang, "common.skip") }],
+          [
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
         ],
         resize_keyboard: true,
       },
@@ -118,12 +112,12 @@ export async function handleDebtPartialAmount(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state) return false
-
-  const debt = state.data.debt
+  const lang = resolveLanguage(state?.lang)
+  const debt = state?.data?.debt
   if (!debt) {
-    await wizard.sendMessage(chatId, "❌ Error: Missing debt data")
+    await wizard.sendMessage(chatId, t(lang, "errors.missingDebtData"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
@@ -132,8 +126,8 @@ export async function handleDebtPartialAmount(
   if (!parsed) {
     await wizard.sendMessage(
       chatId,
-      `❌ Invalid format. Try: 100 or 100 ${defaultCurrency}`,
-      wizard.getBackButton()
+      t(lang, "debts.invalidPaymentFormat", { currency: defaultCurrency }),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -143,8 +137,8 @@ export async function handleDebtPartialAmount(
   if (parsed.amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      `❌ Amount must be greater than zero.`,
-      wizard.getBackButton()
+      t(lang, "errors.amountMustBePositive"),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -152,8 +146,10 @@ export async function handleDebtPartialAmount(
   if (parsed.amount > remaining) {
     await wizard.sendMessage(
       chatId,
-      `❌ Error: Amount (${formatAmount(parsed.amount)}) exceeds remaining debt (${formatMoney(remaining, debt.currency)}).`,
-      wizard.getBackButton()
+      t(lang, "errors.debtAmountExceedsRemaining", {
+        remaining: formatMoney(remaining, debt.currency),
+      }),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -162,18 +158,20 @@ export async function handleDebtPartialAmount(
   if (balanceCount === 0) {
     await wizard.sendMessage(
       chatId,
-      "⚠️ *No Balances Found*\n\n" +
-      "Before making payments, you need at least one balance account.\n\n" +
-      "💡 *Quick Start:*\n" +
-      "1️⃣ Go to 💰 *Balances*\n" +
-      "2️⃣ Tap ✨ *Add Balance*\n" +
-      "3️⃣ Enter account name and amount",
+      `${t(lang, "debts.noBalancesForPayment")}\n\n` +
+        `${t(lang, "debts.quickStartTitle")}\n` +
+        `${t(lang, "debts.quickStartStep1")}\n` +
+        `${t(lang, "debts.quickStartStep2")}\n` +
+        `${t(lang, "debts.quickStartStep3")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
           keyboard: [
-            [{ text: "💳 Go to Balances" }],
-            [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+            [{ text: t(lang, "transactions.goToBalances") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
+            ],
           ],
           resize_keyboard: true,
         },
@@ -188,8 +186,8 @@ export async function handleDebtPartialAmount(
 
   const promptText =
     debt.type === "I_OWE"
-      ? "💳 Select account to pay from:"
-      : "💰 Select account to add to:"
+      ? t(lang, "debts.selectPayAccount")
+      : t(lang, "debts.selectReceiveAccount")
 
   await handlers.handleTxAccount(wizard, chatId, userId, promptText)
   return true
@@ -204,19 +202,20 @@ export async function handleDebtPartialAccount(
   const state = wizard.getState(userId)
   if (!state) return false
 
+  const lang = resolveLanguage(state?.lang)
   let cleanText = text
   if (text.startsWith("⭐ ")) {
     cleanText = text.substring(2)
   }
 
-  const accountName = cleanText.split(" (")[0].trim()
-  const debt = state.data.debt
-  const payAmount = state.data.payAmount
+  const accountName = cleanText.split(" (")[0]?.trim() || ""
+  const debt = state?.data?.debt
+  const payAmount = state?.data?.payAmount
 
   if (!debt || !payAmount) {
-    await wizard.sendMessage(chatId, "❌ Error: Missing debt data")
+    await wizard.sendMessage(chatId, t(lang, "errors.missingDebtData"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
@@ -227,8 +226,10 @@ export async function handleDebtPartialAccount(
     if (!balance) {
       await wizard.sendMessage(
         chatId,
-        `❌ Error: Account "${accountName}" not found.`,
-        wizard.getBackButton()
+        t(lang, "errors.accountNotFound", {
+          account: escapeMarkdown(accountName),
+        }),
+        wizard.getBackButton(lang)
       )
       return true
     }
@@ -237,16 +238,21 @@ export async function handleDebtPartialAccount(
       await wizard.sendMessage(
         chatId,
         handleInsufficientFunds(
+          lang,
           accountName,
           balance.amount,
           balance.currency,
-          state.data.currency
+          payAmount,
+          state?.data?.currency
         ),
         {
           reply_markup: {
             keyboard: [
-              [{ text: "💳 Go to Balances" }],
-              [{ text: "💫 Change Amount" }, { text: "🏠 Main Menu" }],
+              [{ text: t(lang, "transactions.goToBalances") }],
+              [
+                { text: t(lang, "debts.changeAmount") },
+                { text: t(lang, "mainMenu.mainMenuButton") },
+              ],
             ],
             resize_keyboard: true,
           },
@@ -267,8 +273,8 @@ export async function handleDebtPartialAccount(
   if (!result.success) {
     await wizard.sendMessage(
       chatId,
-      result.message || "❌ Error",
-      wizard.getBackButton()
+      result.message || t(lang, "common.error"),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -277,23 +283,31 @@ export async function handleDebtPartialAccount(
   if (updatedDebt?.isPaid) {
     const closeMsg =
       debt.type === "I_OWE"
-        ? "🎉 Debt fully paid and closed!"
-        : "🎉 Debt fully received and closed!"
+        ? t(lang, "debts.fullyPaidClosed")
+        : t(lang, "debts.fullyReceivedClosed")
     await wizard.sendMessage(chatId, closeMsg)
   } else {
     const emoji = debt.type === "I_OWE" ? "💸" : "💰"
-    const action = debt.type === "I_OWE" ? "Paid" : "Received"
+    const action =
+      debt.type === "I_OWE"
+        ? t(lang, "debts.paymentActionPaid")
+        : t(lang, "debts.paymentActionReceived")
     const remaining = updatedDebt
       ? updatedDebt.amount - updatedDebt.paidAmount
       : 0
     await wizard.sendMessage(
       chatId,
-      `✅ ${emoji} ${action} ${formatMoney(payAmount, debt.currency)}. Remaining: ${formatMoney(remaining, debt.currency)}`
+      t(lang, "debts.paymentRecordedWithRemaining", {
+        emoji,
+        action,
+        amount: formatMoney(payAmount, debt.currency),
+        remaining: formatMoney(remaining, debt.currency),
+      })
     )
   }
 
   wizard.clearState(userId)
-  await showDebtsMenu(wizard.getBot(), chatId, userId)
+  await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
 
   return true
 }

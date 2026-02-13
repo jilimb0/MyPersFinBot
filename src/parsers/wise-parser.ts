@@ -1,5 +1,5 @@
+import type { BankParserResult, BankType, ParsedTransaction } from "../types"
 import { BankParser } from "./base-parser"
-import { ParsedTransaction, BankParserResult, BankType, TransactionType } from "../types"
 
 export class WiseParser extends BankParser {
   get bankType(): BankType {
@@ -8,7 +8,7 @@ export class WiseParser extends BankParser {
 
   async parse(content: string): Promise<BankParserResult> {
     const lines = content.trim().split("\n")
-    
+
     if (lines.length < 2) {
       this.errors.push("File is empty or invalid")
       return this.buildResult([])
@@ -23,7 +23,7 @@ export class WiseParser extends BankParser {
         if (parsed) {
           transactions.push(parsed)
         }
-      } catch (error) {
+      } catch (_error) {
         this.errors.push(`Failed to parse line: ${line}`)
       }
     }
@@ -33,13 +33,15 @@ export class WiseParser extends BankParser {
 
   private parseLine(line: string): ParsedTransaction | null {
     // Wise TXT format: Date\tDescription\tAmount\tCurrency\tBalance
-    const parts = line.split("\t").map(p => p.trim())
+    const parts = line.split("\t").map((p) => p.trim())
 
     if (parts.length < 4) {
       return null
     }
 
     const [dateStr, description, amountStr, currencyStr] = parts
+
+    if (!dateStr || !amountStr) return null
 
     // Parse date (Wise uses DD-MM-YYYY)
     const isoDate = this.normalizeDate(dateStr, ["DD-MM-YYYY", "YYYY-MM-DD"])
@@ -48,12 +50,13 @@ export class WiseParser extends BankParser {
     const { amount, type } = this.parseAmount(amountStr)
 
     // Get currency
-    const currency = this.extractCurrency(currencyStr)
+    const currency = this.extractCurrency(currencyStr || "USD")
 
     // Auto-categorize
-    const category = this.options.autoCategorie
-      ? this.categorizeByDescription(description)
-      : undefined
+    const category =
+      this.options.autoCategorie && description
+        ? this.categorizeByDescription(description)
+        : undefined
 
     return {
       date: isoDate,

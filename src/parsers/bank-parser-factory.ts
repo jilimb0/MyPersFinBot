@@ -1,9 +1,9 @@
-import { BankParser } from "./base-parser"
-import { TinkoffParser } from "./tinkoff-parser"
+import type { BankParserOptions, BankType } from "../types"
+import type { BankParser } from "./base-parser"
 import { MonobankParser } from "./monobank-parser"
 import { RevolutParser } from "./revolut-parser"
+import { TinkoffParser } from "./tinkoff-parser"
 import { WiseParser } from "./wise-parser"
-import { BankType, BankParserOptions } from "../types"
 
 export class BankParserFactory {
   static detectBankType(content: string, fileName?: string): BankType {
@@ -43,14 +43,21 @@ export class BankParserFactory {
       return "TINKOFF"
     }
 
-    if (lower.includes("type") && lower.includes("product") && lower.includes("state")) {
+    if (
+      lower.includes("type") &&
+      lower.includes("product") &&
+      lower.includes("state")
+    ) {
       return "REVOLUT"
     }
 
     return "UNKNOWN"
   }
 
-  static createParser(bankType: BankType, options?: BankParserOptions): BankParser {
+  static createParser(
+    bankType: BankType,
+    options?: BankParserOptions
+  ): BankParser {
     switch (bankType) {
       case "TINKOFF":
         return new TinkoffParser(options)
@@ -70,13 +77,13 @@ export class BankParserFactory {
     fileName?: string,
     options?: BankParserOptions
   ) {
-    const bankType = this.detectBankType(content, fileName)
-    
+    const bankType = BankParserFactory.detectBankType(content, fileName)
+
     if (bankType === "UNKNOWN") {
       throw new Error("Could not detect bank type. Please specify manually.")
     }
 
-    const parser = this.createParser(bankType, options)
+    const parser = BankParserFactory.createParser(bankType, options)
     return await parser.parse(content)
   }
 }

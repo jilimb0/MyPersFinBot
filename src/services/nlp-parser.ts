@@ -1,4 +1,11 @@
-import { TransactionType, TransactionCategory, Currency, IncomeCategory, InternalCategory, ExpenseCategory } from "../types"
+import {
+  type Currency,
+  ExpenseCategory,
+  IncomeCategory,
+  InternalCategory,
+  type TransactionCategory,
+  TransactionType,
+} from "../types"
 
 interface NLPResult {
   amount?: number
@@ -10,14 +17,14 @@ interface NLPResult {
 }
 
 export class NLPParser {
-  private defaultCurrency: Currency
+  // private defaultCurrency: Currency
 
-  constructor(defaultCurrency: Currency = "USD") {
-    this.defaultCurrency = defaultCurrency
-  }
+  // constructor(defaultCurrency: Currency = "USD") {
+  //   this.defaultCurrency = defaultCurrency
+  // }
 
   // Main parsing method
-  parse(text: string, userCurrency?: Currency): NLPResult | null {
+  parse(text: string, _userCurrency?: Currency): NLPResult | null {
     const cleaned = text.trim().toLowerCase()
 
     // Try different parsing strategies
@@ -34,8 +41,8 @@ export class NLPParser {
   private parseSimple(text: string): NLPResult | null {
     // Pattern: number + category/description
     const patterns = [
-      /^([\d.,]+)\s*(.+)$/,  // "50 coffee"
-      /^(.+?)\s+([\d.,]+)$/,  // "coffee 50"
+      /^([\d.,]+)\s*(.+)$/, // "50 coffee"
+      /^(.+?)\s+([\d.,]+)$/, // "coffee 50"
     ]
 
     for (const pattern of patterns) {
@@ -46,6 +53,8 @@ export class NLPParser {
         // Determine which is amount and which is description
         let amount: number
         let desc: string
+
+        if (!first || !second) continue
 
         if (this.isNumber(first)) {
           amount = this.parseNumber(first)
@@ -94,7 +103,9 @@ export class NLPParser {
       amount,
       type,
       category,
-      description: this.capitalize(description || this.getCategoryName(category)),
+      description: this.capitalize(
+        description || this.getCategoryName(category)
+      ),
       confidence: 0.75,
     }
   }
@@ -103,45 +114,57 @@ export class NLPParser {
   private extractAmount(text: string): number | null {
     // Numeric patterns
     const numericMatch = text.match(/([\d.,]+)/)
-    if (numericMatch) {
+    if (numericMatch?.[1]) {
       return this.parseNumber(numericMatch[1])
     }
 
     // Word numbers (UA/RU/EN)
     const wordNumbers: Record<string, number> = {
       // Ukrainian
-      "один": 1, "одна": 1, "одне": 1,
-      "два": 2, "дві": 2,
-      "три": 3,
-      "чотири": 4,
-      "п'ять": 5, "пять": 5,
-      "десять": 10,
-      "двадцять": 20,
-      "тридцять": 30,
-      "сорок": 40,
-      "п'ятдесят": 50, "пятьдесят": 50, "полтинник": 50,
-      "сто": 100, "сотня": 100, "сотка": 100,
-      "тисяча": 1000, "тысяча": 1000,
+      один: 1,
+      одна: 1,
+      одне: 1,
+      два: 2,
+      дві: 2,
+      три: 3,
+      чотири: 4,
+      "п'ять": 5,
+      пять: 5,
+      десять: 10,
+      двадцять: 20,
+      тридцять: 30,
+      сорок: 40,
+      "п'ятдесят": 50,
+      пятьдесят: 50,
+      полтинник: 50,
+      сто: 100,
+      сотня: 100,
+      сотка: 100,
+      тисяча: 1000,
+      тысяча: 1000,
 
       // Russian
-      "рубль": 1, "рублей": 1,
-      "гривна": 1, "гривен": 1,
-      "доллар": 1, "долларов": 1,
-      "евро": 1,
+      рубль: 1,
+      рублей: 1,
+      гривна: 1,
+      гривен: 1,
+      доллар: 1,
+      долларов: 1,
+      евро: 1,
 
       // English
-      "one": 1,
-      "two": 2,
-      "three": 3,
-      "four": 4,
-      "five": 5,
-      "ten": 10,
-      "twenty": 20,
-      "thirty": 30,
-      "forty": 40,
-      "fifty": 50,
-      "hundred": 100,
-      "thousand": 1000,
+      one: 1,
+      two: 2,
+      three: 3,
+      four: 4,
+      five: 5,
+      ten: 10,
+      twenty: 20,
+      thirty: 30,
+      forty: 40,
+      fifty: 50,
+      hundred: 100,
+      thousand: 1000,
     }
 
     for (const [word, value] of Object.entries(wordNumbers)) {
@@ -156,7 +179,7 @@ export class NLPParser {
   // Extract description from text
   private extractDescription(text: string, amountStr: string): string {
     // Remove amount and common words
-    let desc = text
+    const desc = text
       .replace(amountStr, "")
       .replace(/потратил|потратила|витратив|витратила|spent|paid/gi, "")
       .replace(/на|on|for|за/gi, "")
@@ -172,22 +195,49 @@ export class NLPParser {
     // Expense keywords
     const expenseKeywords = [
       // UA
-      "витратив", "витратила", "потратил", "потратила", "купив", "купила",
-      "заплатив", "заплатила", "витрата", "расход",
-      // RU  
-      "потратил", "купил", "заплатил", "расход",
+      "витратив",
+      "витратила",
+      "потратил",
+      "потратила",
+      "купив",
+      "купила",
+      "заплатив",
+      "заплатила",
+      "витрата",
+      "расход",
+      // RU
+      "потратил",
+      "купил",
+      "заплатил",
+      "расход",
       // EN
-      "spent", "bought", "paid", "expense",
+      "spent",
+      "bought",
+      "paid",
+      "expense",
     ]
 
     // Income keywords
     const incomeKeywords = [
       // UA
-      "отримав", "отримала", "зарплата", "дохід", "прибуток",
+      "отримав",
+      "отримала",
+      "зарплата",
+      "дохід",
+      "прибуток",
       // RU
-      "получил", "получила", "зарплата", "доход", "зп",
+      "получил",
+      "получила",
+      "зарплата",
+      "доход",
+      "зп",
       // EN
-      "received", "got", "salary", "income", "wage", "earned",
+      "received",
+      "got",
+      "salary",
+      "income",
+      "wage",
+      "earned",
     ]
 
     for (const keyword of expenseKeywords) {
@@ -213,83 +263,201 @@ export class NLPParser {
     // Food & Dining
     const foodKeywords = [
       // UA
-      "їжа", "їсти", "кава", "кафе", "ресторан", "обід", "вечеря", "сніданок",
-      "продукти", "магазин", "супермаркет", "атб", "сільпо", "новус",
+      "їжа",
+      "їсти",
+      "кава",
+      "кафе",
+      "ресторан",
+      "обід",
+      "вечеря",
+      "сніданок",
+      "продукти",
+      "магазин",
+      "супермаркет",
+      "атб",
+      "сільпо",
+      "новус",
       // RU
-      "еда", "кофе", "кафе", "ресторан", "обед", "ужин", "завтрак",
-      "продукты", "магазин", "супермаркет",
+      "еда",
+      "кофе",
+      "кафе",
+      "ресторан",
+      "обед",
+      "ужин",
+      "завтрак",
+      "продукты",
+      "магазин",
+      "супермаркет",
       // EN
-      "food", "eat", "coffee", "cafe", "restaurant", "lunch", "dinner", "breakfast",
-      "grocery", "supermarket", "mcdonald", "kfc", "burger", "pizza",
+      "food",
+      "eat",
+      "coffee",
+      "cafe",
+      "restaurant",
+      "lunch",
+      "dinner",
+      "breakfast",
+      "grocery",
+      "supermarket",
+      "mcdonald",
+      "kfc",
+      "burger",
+      "pizza",
     ]
 
     // Transport
     const transportKeywords = [
       // UA/RU
-      "транспорт", "таксі", "такси", "uber", "bolt", "метро", "автобус",
-      "бензин", "паливо", "заправка", "парковка",
+      "транспорт",
+      "таксі",
+      "такси",
+      "uber",
+      "bolt",
+      "метро",
+      "автобус",
+      "бензин",
+      "паливо",
+      "заправка",
+      "парковка",
       // EN
-      "transport", "taxi", "bus", "metro", "fuel", "gas", "parking",
+      "transport",
+      "taxi",
+      "bus",
+      "metro",
+      "fuel",
+      "gas",
+      "parking",
     ]
 
     // Entertainment
     const entertainmentKeywords = [
       // UA/RU
-      "розваги", "развлечения", "кіно", "кино", "netflix", "spotify",
-      "ігри", "игры", "steam",
+      "розваги",
+      "развлечения",
+      "кіно",
+      "кино",
+      "netflix",
+      "spotify",
+      "ігри",
+      "игры",
+      "steam",
       // EN
-      "entertainment", "cinema", "movie", "game", "fun",
+      "entertainment",
+      "cinema",
+      "movie",
+      "game",
+      "fun",
     ]
 
     // Shopping
     const shoppingKeywords = [
       // UA/RU
-      "покупки", "шопінг", "шопинг", "одяг", "одежда", "взуття", "обувь",
-      "rozetka", "amazon", "aliexpress",
+      "покупки",
+      "шопінг",
+      "шопинг",
+      "одяг",
+      "одежда",
+      "взуття",
+      "обувь",
+      "rozetka",
+      "amazon",
+      "aliexpress",
       // EN
-      "shopping", "clothes", "shoes", "shop", "mall",
+      "shopping",
+      "clothes",
+      "shoes",
+      "shop",
+      "mall",
     ]
 
     // Bills
     const billsKeywords = [
       // UA/RU
-      "комунальні", "коммунальные", "рахунок", "счет", "інтернет", "интернет",
-      "телефон", "електрика", "электричество", "вода", "газ", "оренда", "аренда",
+      "комунальні",
+      "коммунальные",
+      "рахунок",
+      "счет",
+      "інтернет",
+      "интернет",
+      "телефон",
+      "електрика",
+      "электричество",
+      "вода",
+      "газ",
+      "оренда",
+      "аренда",
       // EN
-      "bills", "utilities", "internet", "phone", "electricity", "water", "rent",
+      "bills",
+      "utilities",
+      "internet",
+      "phone",
+      "electricity",
+      "water",
+      "rent",
     ]
 
     // Health
     const healthKeywords = [
       // UA/RU
-      "здоров'я", "здоровье", "аптека", "лікар", "врач", "клініка", "клиника",
-      "ліки", "лекарства", "медицина",
+      "здоров'я",
+      "здоровье",
+      "аптека",
+      "лікар",
+      "врач",
+      "клініка",
+      "клиника",
+      "ліки",
+      "лекарства",
+      "медицина",
       // EN
-      "health", "pharmacy", "doctor", "clinic", "medicine", "hospital",
+      "health",
+      "pharmacy",
+      "doctor",
+      "clinic",
+      "medicine",
+      "hospital",
     ]
 
     // Salary
     const salaryKeywords = [
       // UA/RU
-      "зарплата", "зарплата", "зп", "оклад", "дохід", "доход",
+      "зарплата",
+      "зарплата",
+      "зп",
+      "оклад",
+      "дохід",
+      "доход",
       // EN
-      "salary", "wage", "income", "payment",
+      "salary",
+      "wage",
+      "income",
+      "payment",
     ]
 
     // Check categories
-    if (foodKeywords.some(k => lower.includes(k))) return ExpenseCategory.FOOD_DINING
-    if (transportKeywords.some(k => lower.includes(k))) return ExpenseCategory.TRANSPORTATION
-    if (entertainmentKeywords.some(k => lower.includes(k))) return ExpenseCategory.ENTERTAINMENT
-    if (shoppingKeywords.some(k => lower.includes(k))) return ExpenseCategory.SHOPPING
-    if (billsKeywords.some(k => lower.includes(k))) return ExpenseCategory.UTILITIES
-    if (healthKeywords.some(k => lower.includes(k))) return ExpenseCategory.HEALTH
-    if (salaryKeywords.some(k => lower.includes(k))) return IncomeCategory.SALARY
+    if (foodKeywords.some((k) => lower.includes(k)))
+      return ExpenseCategory.FOOD_DINING
+    if (transportKeywords.some((k) => lower.includes(k)))
+      return ExpenseCategory.TRANSPORTATION
+    if (entertainmentKeywords.some((k) => lower.includes(k)))
+      return ExpenseCategory.ENTERTAINMENT
+    if (shoppingKeywords.some((k) => lower.includes(k)))
+      return ExpenseCategory.SHOPPING
+    if (billsKeywords.some((k) => lower.includes(k)))
+      return ExpenseCategory.UTILITIES
+    if (healthKeywords.some((k) => lower.includes(k)))
+      return ExpenseCategory.HEALTH
+    if (salaryKeywords.some((k) => lower.includes(k)))
+      return IncomeCategory.SALARY
 
     return ExpenseCategory.OTHER_EXPENSE || IncomeCategory.OTHER_INCOME
   }
 
   // Detect type from category
-  private detectType(text: string, category: TransactionCategory): TransactionType {
+  private detectType(
+    text: string,
+    category: TransactionCategory
+  ): TransactionType {
     // Income categories
     if (category === IncomeCategory.SALARY) {
       return TransactionType.INCOME
@@ -297,10 +465,16 @@ export class NLPParser {
 
     // Check for income keywords in text
     const incomeKeywords = [
-      "salary", "зарплата", "дохід", "доход", "received", "отримав", "получил"
+      "salary",
+      "зарплата",
+      "дохід",
+      "доход",
+      "received",
+      "отримав",
+      "получил",
     ]
 
-    if (incomeKeywords.some(k => text.includes(k))) {
+    if (incomeKeywords.some((k) => text.includes(k))) {
       return TransactionType.INCOME
     }
 

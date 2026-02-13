@@ -1,46 +1,69 @@
+import { randomUUID } from "node:crypto"
+import { convertSync } from "../fx"
+import { isValidLanguage, type Language, resolveLanguage, t } from "../i18n"
+import { normalizeCategoryValue } from "../i18n/categories"
+import { getCacheManager } from "../services/cache-manager"
+import {
+  type Balance as BalanceType,
+  type Budget,
+  type CategoryBudget,
+  type Currency,
+  type Debt,
+  type ExpenseCategory,
+  type Goal,
+  type IncomeSource,
+  InternalCategory,
+  type RecurringTransaction,
+  type ReminderSettings,
+  type Transaction,
+  type TransactionCategory,
+  type TransactionTemplate,
+  TransactionType,
+} from "../types"
+import { escapeMarkdown, formatMoney, handleInsufficientFunds } from "../utils"
 import { AppDataSource } from "./data-source"
-import { User } from "./entities/User"
 import { Balance } from "./entities/Balance"
-import { Transaction as TransactionEntity } from "./entities/Transaction"
+import { Budget as BudgetEntity, BudgetPeriod } from "./entities/Budget"
+import { CategoryPreference } from "./entities/CategoryPreference"
 import { Debt as DebtEntity } from "./entities/Debt"
 import { Goal as GoalEntity } from "./entities/Goal"
-import { Budget as BudgetEntity, BudgetPeriod } from "./entities/Budget"
 import { IncomeSource as IncomeSourceEntity } from "./entities/IncomeSource"
-import { CategoryPreference } from "./entities/CategoryPreference"
-import {
-  Balance as BalanceType,
-  Debt,
-  Goal,
-  Transaction,
-  TransactionType,
-  IncomeSource,
-  Currency,
-  InternalCategory,
-  UserData,
-  ExpenseCategory,
-  Budget,
-  CategoryBudget,
-  TransactionTemplate,
-  ReminderSettings
-} from "../types"
-import { convertSync } from "../fx"
-import { formatMoney, handleInsufficientFunds } from "../utils"
-import { randomUUID } from "crypto"
+import { RecurringTransaction as RecurringTransactionEntity } from "./entities/RecurringTransaction"
+import { Reminder } from "./entities/Reminder"
+import { Transaction as TransactionEntity } from "./entities/Transaction"
+import { User } from "./entities/User"
 
 export class DatabaseStorage {
-  private userDataCache = new Map<
-    string,
-    { data: UserData; timestamp: number }
-  >()
-  private balancesCache = new Map<
-    string,
-    { data: BalanceType[]; timestamp: number }
-  >()
-  private readonly CACHE_TTL = 5000 // 5 секунд
+  private _cacheManager: ReturnType<typeof getCacheManager> | null = null
 
-  clearCache(userId: string) {
-    this.userDataCache.delete(userId)
-    this.balancesCache.delete(userId)
+  private get cacheManager() {
+    if (!this._cacheManager) {
+      this._cacheManager = getCacheManager()
+    }
+    return this._cacheManager
+  }
+
+  async clearCache(
+    userId: string,
+    type?: "user" | "balances" | "transactions" | "all"
+  ): Promise<void> {
+    if (!type || type === "all") {
+      await this.cacheManager.invalidateAllUserCaches(userId)
+    } else {
+      switch (type) {
+        case "user":
+          await this.cacheManager.invalidateUserData(userId)
+          await this.cacheManager.invalidateUserSettings(userId)
+          await this.cacheManager.invalidateUserLanguage(userId)
+          break
+        case "balances":
+          await this.cacheManager.invalidateBalances(userId)
+          break
+        case "transactions":
+          await this.cacheManager.invalidateTransactions(userId)
+          break
+      }
+    }
   }
 
   // --- User Methods ---
@@ -55,11 +78,11 @@ export class DatabaseStorage {
         defaultCurrency: "USD",
         reminderSettings: {
           enabled: true,
-          time: '09:00',
-          timezone: 'Asia/Tbilisi',
+          time: "09:00",
+          timezone: "Asia/Tbilisi",
           channels: { telegram: true },
-          notifyBefore: { debts: 1, goals: 3, income: 0 }
-        }
+          notifyBefore: { debts: 1, goals: 3, income: 0 },
+        },
       })
       await userRepo.save(user)
     }
@@ -67,45 +90,40 @@ export class DatabaseStorage {
     return user
   }
 
+  private async resolveUserLanguage(userId: string): Promise<Language> {
+    try {
+      return await this.getUserLanguage(userId)
+    } catch {
+      return "en"
+    }
+  }
+
   async getUserData(userId: string) {
-    const cached = this.userDataCache.get(userId)
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached.data
+    // Check cache first
+    const cached = await this.cacheManager.getUserData(userId)
+    if (cached) {
+      return cached
     }
 
     await this.ensureUser(userId)
 
-    const balances = await AppDataSource.getRepository(Balance).find({
-      where: { userId },
-    })
-    const transactions = await AppDataSource.getRepository(
-      TransactionEntity
-    ).find({ where: { userId } })
-    const debts = await AppDataSource.getRepository(DebtEntity).find({
-      where: { userId },
-    })
-    const goals = await AppDataSource.getRepository(GoalEntity).find({
-      where: { userId },
-    })
-    const incomeSources = await AppDataSource.getRepository(
-      IncomeSourceEntity
-    ).find({ where: { userId } })
-    const user = await AppDataSource.getRepository(User).findOne({
-      where: { id: userId },
-    })
-    const budgets = await AppDataSource.getRepository(BudgetEntity).find({
-      where: { userId },
-    })
+    const [balances, transactions, debts, goals, incomeSources, user, budgets] =
+      await Promise.all([
+        this.getBalancesList(userId),
+        this.getAllTransactions(userId),
+        AppDataSource.getRepository(DebtEntity).find({ where: { userId } }),
+        AppDataSource.getRepository(GoalEntity).find({ where: { userId } }),
+        AppDataSource.getRepository(IncomeSourceEntity).find({
+          where: { userId },
+        }),
+        AppDataSource.getRepository(User).findOne({ where: { id: userId } }),
+        AppDataSource.getRepository(BudgetEntity).find({ where: { userId } }),
+      ])
 
     const result = {
-      balances: balances.map((b) => ({
-        accountId: b.accountId,
-        amount: b.amount,
-        currency: b.currency as Currency,
-        lastUpdated: b.lastUpdated.toISOString(),
-      })),
-      transactions: transactions.map(this.mapTransaction.bind(this)),
-      debts: debts.map((d) => ({
+      balances,
+      transactions,
+      debts: debts.map((d: DebtEntity) => ({
         id: d.id,
         name: d.name,
         amount: d.amount,
@@ -116,9 +134,9 @@ export class DatabaseStorage {
         isPaid: d.isPaid,
         description: d.description,
         dueDate: d.dueDate,
-        autoPayment: d.autoPayment
+        autoPayment: d.autoPayment,
       })),
-      goals: goals.map((g) => ({
+      goals: goals.map((g: GoalEntity) => ({
         id: g.id,
         name: g.name,
         targetAmount: g.targetAmount,
@@ -126,18 +144,18 @@ export class DatabaseStorage {
         currency: g.currency,
         status: g.status,
         deadline: g.deadline,
-        autoDeposit: g.autoDeposit
+        autoDeposit: g.autoDeposit,
       })),
-      incomeSources: incomeSources.map((s) => ({
+      incomeSources: incomeSources.map((s: IncomeSourceEntity) => ({
         id: s.id.toString(),
         name: s.name,
         expectedAmount: s.expectedAmount,
         currency: s.currency,
         frequency: s.frequency,
-        autoCreate: s.autoCreate
+        autoCreate: s.autoCreate,
       })),
       defaultCurrency: user?.defaultCurrency || "USD",
-      budgets: budgets.map((b) => ({
+      budgets: budgets.map((b: BudgetEntity) => ({
         id: b.id,
         category: b.category,
         amount: b.amount,
@@ -149,38 +167,42 @@ export class DatabaseStorage {
       templates: user?.templates ?? [],
     }
 
-    this.userDataCache.set(userId, { data: result, timestamp: Date.now() })
+    await Promise.all([
+      this.cacheManager.setUserSettings(userId, {
+        defaultCurrency: user?.defaultCurrency || "USD",
+        language: user?.language ?? undefined,
+        timezone: user?.reminderSettings?.timezone,
+      }),
+      this.cacheManager.setUserLanguage(userId, user?.language || "en"),
+      this.cacheManager.setUserData(userId, result),
+    ])
 
     return result
   }
 
   async clearAllUserData(userId: string) {
-    const userRepo = AppDataSource.getRepository(User)
-    const balanceRepo = AppDataSource.getRepository(Balance)
-    const transactionRepo = AppDataSource.getRepository(TransactionEntity)
-    const debtRepo = AppDataSource.getRepository(DebtEntity)
-    const goalRepo = AppDataSource.getRepository(GoalEntity)
-    const incomeSourceRepo = AppDataSource.getRepository(IncomeSourceEntity)
-    const categoryPrefRepo = AppDataSource.getRepository(CategoryPreference)
+    await AppDataSource.transaction(async (manager) => {
+      await manager.getRepository(TransactionEntity).delete({ userId })
+      await manager.getRepository(Balance).delete({ userId })
+      await manager.getRepository(DebtEntity).delete({ userId })
+      await manager.getRepository(GoalEntity).delete({ userId })
+      await manager.getRepository(IncomeSourceEntity).delete({ userId })
+      await manager.getRepository(CategoryPreference).delete({ userId })
+      await manager.getRepository(BudgetEntity).delete({ userId })
+      await manager.getRepository(Reminder).delete({ userId })
+      await manager.getRepository(RecurringTransactionEntity).delete({ userId })
+      await manager.getRepository(User).delete({ id: userId })
+    })
 
-    await transactionRepo.delete({ userId })
-    await balanceRepo.delete({ userId })
-    await debtRepo.delete({ userId })
-    await goalRepo.delete({ userId })
-    await incomeSourceRepo.delete({ userId })
-    await categoryPrefRepo.delete({ userId })
-
-    await userRepo.delete({ id: userId })
-
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   // --- Balance Methods ---
 
   async getBalancesList(userId: string): Promise<BalanceType[]> {
-    const cached = this.balancesCache.get(userId)
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached.data
+    const cached = await this.cacheManager.getBalances(userId)
+    if (cached) {
+      return cached
     }
 
     await this.ensureUser(userId)
@@ -188,27 +210,33 @@ export class DatabaseStorage {
       where: { userId },
     })
 
-    const result = balances.map((b) => ({
+    const result = balances.map((b: Balance) => ({
       accountId: b.accountId,
       amount: b.amount,
       currency: b.currency as Currency,
       lastUpdated: b.lastUpdated.toISOString(),
     }))
 
-    this.balancesCache.set(userId, { data: result, timestamp: Date.now() })
+    await this.cacheManager.setBalances(userId, result)
 
     return result
   }
 
   async getBalances(userId: string): Promise<string> {
+    const lang = await this.resolveUserLanguage(userId)
     const balances = await this.getBalancesList(userId)
 
     if (balances.length === 0) {
-      return "No balances recorded."
+      return t(lang, "balances.noBalances")
     }
 
     return balances
-      .map((b) => `💳 *${b.accountId}*: ${formatMoney(b.amount, b.currency)}`)
+      .map((b) =>
+        t(lang, "balances.listItem", {
+          account: escapeMarkdown(b.accountId),
+          amount: formatMoney(b.amount, b.currency),
+        })
+      )
       .join("\n")
   }
 
@@ -233,7 +261,7 @@ export class DatabaseStorage {
       existing.amount = newAmount
       existing.lastUpdated = new Date()
       await balanceRepo.save(existing)
-      this.clearCache(userId)
+      await this.clearCache(userId)
       return { success: true, newBalance: newAmount }
     } else if (amount >= 0) {
       const newBalance = balanceRepo.create({
@@ -243,7 +271,7 @@ export class DatabaseStorage {
         currency,
       })
       await balanceRepo.save(newBalance)
-      this.clearCache(userId)
+      await this.clearCache(userId)
       return { success: true, newBalance: amount }
     }
 
@@ -257,7 +285,7 @@ export class DatabaseStorage {
       balance.amount,
       balance.currency
     )
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async deleteBalance(
@@ -270,7 +298,7 @@ export class DatabaseStorage {
       accountId,
       currency,
     })
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async getBalance(
@@ -312,7 +340,7 @@ export class DatabaseStorage {
       balance.amount = convertedAmount
       balance.lastUpdated = new Date()
       await AppDataSource.getRepository(Balance).save(balance)
-      this.clearCache(userId)
+      await this.clearCache(userId)
     }
   }
 
@@ -331,7 +359,7 @@ export class DatabaseStorage {
       balance.currency = newCurrency
       balance.lastUpdated = new Date()
       await AppDataSource.getRepository(Balance).save(balance)
-      this.clearCache(userId)
+      await this.clearCache(userId)
     }
   }
 
@@ -376,7 +404,7 @@ export class DatabaseStorage {
 
     balance.accountId = newAccountId
     await balanceRepo.save(balance)
-    this.clearCache(userId)
+    await this.clearCache(userId)
     return true
   }
 
@@ -409,7 +437,7 @@ export class DatabaseStorage {
       { toAccountId: newAccountId }
     )
 
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async convertAllBalancesToCurrency(userId: string, newCurrency: Currency) {
@@ -443,10 +471,11 @@ export class DatabaseStorage {
 
     if (balances.length === 0) return null
 
-    if (balances.length === 1) return balances[0].accountId
+    if (balances.length === 1) return balances[0]?.accountId || null
 
     const nonZeroBalances = balances.filter((b) => b.amount > 0)
-    if (nonZeroBalances.length === 1) return nonZeroBalances[0].accountId
+    if (nonZeroBalances.length === 1)
+      return nonZeroBalances[0]?.accountId || null
 
     const preferred = await this.getCategoryPreferredAccount(userId, category)
     if (preferred && balances.find((b) => b.accountId === preferred)) {
@@ -461,10 +490,10 @@ export class DatabaseStorage {
       .limit(1)
       .getOne()
 
-    if (lastTx && lastTx.fromAccountId) {
+    if (lastTx?.fromAccountId) {
       return lastTx.fromAccountId
     }
-    if (lastTx && lastTx.toAccountId) {
+    if (lastTx?.toAccountId) {
       return lastTx.toAccountId
     }
 
@@ -473,7 +502,10 @@ export class DatabaseStorage {
 
   // --- Transaction Methods ---
 
-  async addTransaction(userId: string, transaction: Transaction): Promise<string> {
+  async addTransaction(
+    userId: string,
+    transaction: Transaction
+  ): Promise<string> {
     await this.ensureUser(userId)
 
     const txRepo = AppDataSource.getRepository(TransactionEntity)
@@ -531,7 +563,8 @@ export class DatabaseStorage {
       }
     }
 
-    this.clearCache(userId)
+    await this.clearCache(userId, "balances")
+    await this.clearCache(userId, "transactions")
     return saved.id
   }
 
@@ -599,7 +632,8 @@ export class DatabaseStorage {
       }
 
       await txRepo.remove(tx)
-      this.clearCache(userId)
+      await this.clearCache(userId, "balances")
+      await this.clearCache(userId, "transactions")
       return true
     } catch (error) {
       console.error("Error deleting transaction:", error)
@@ -636,23 +670,56 @@ export class DatabaseStorage {
     year: number,
     month: number
   ): Promise<Transaction[]> {
+    await this.ensureUser(userId)
+
     const startDate = new Date(year, month, 1)
-    const endDate = new Date(year, month + 1, 0, 23, 59, 59)
+    const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999)
 
     const transactions = await AppDataSource.getRepository(TransactionEntity)
+      .createQueryBuilder("tx")
+      .where("tx.userId = :userId", { userId })
+      .andWhere("tx.date >= :startDate", { startDate: startDate.toISOString() })
+      .andWhere("tx.date <= :endDate", { endDate: endDate.toISOString() })
+      .orderBy("tx.date", "DESC")
+      .getMany()
+
+    return transactions.map(this.mapTransaction.bind(this))
+  }
+
+  async getTransactionsByDateRange(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    type?: TransactionType
+  ): Promise<Transaction[]> {
+    await this.ensureUser(userId)
+
+    let query = AppDataSource.getRepository(TransactionEntity)
       .createQueryBuilder("tx")
       .select()
       .where("tx.userId = :userId", { userId })
       .andWhere("tx.date >= :startDate", { startDate })
       .andWhere("tx.date <= :endDate", { endDate })
+
+    // Optional type filter - only add if specified
+    if (type) {
+      query = query.andWhere("tx.type = :type", { type })
+    }
+
+    const transactions = await query
       .orderBy("tx.date", "DESC")
       .cache(true)
       .getMany()
 
-    return transactions.map(this.mapTransaction)
+    return transactions.map(this.mapTransaction.bind(this))
   }
 
   async getAllTransactions(userId: string): Promise<Transaction[]> {
+    const cached = await this.cacheManager.getTransactions(userId)
+    if (cached) {
+      return cached
+    }
+
     await this.ensureUser(userId)
 
     const transactions = await AppDataSource.getRepository(TransactionEntity)
@@ -661,7 +728,11 @@ export class DatabaseStorage {
       .orderBy("tx.date", "DESC")
       .getMany()
 
-    return transactions.map(this.mapTransaction.bind(this))
+    const result = transactions.map(this.mapTransaction.bind(this))
+
+    await this.cacheManager.setTransactions(userId, result)
+
+    return result
   }
 
   async getTransactionById(
@@ -693,16 +764,8 @@ export class DatabaseStorage {
     userId: string,
     limit: number = 5
   ): Promise<Transaction[]> {
-    await this.ensureUser(userId)
-
-    const transactions = await AppDataSource.getRepository(TransactionEntity)
-      .createQueryBuilder("tx")
-      .where("tx.userId = :userId", { userId })
-      .orderBy("tx.date", "DESC")
-      .limit(limit)
-      .getMany()
-
-    return transactions.map(this.mapTransaction.bind(this))
+    const allTransactions = await this.getAllTransactions(userId)
+    return allTransactions.slice(0, limit)
   }
 
   async updateTransaction(
@@ -817,7 +880,8 @@ export class DatabaseStorage {
         }
       }
 
-      this.clearCache(userId)
+      await this.clearCache(userId, "balances")
+      await this.clearCache(userId, "transactions")
       return true
     } catch (error) {
       console.error("Error updating transaction:", error)
@@ -828,27 +892,32 @@ export class DatabaseStorage {
   // --- Debt Methods ---
 
   async getDebts(userId: string): Promise<string> {
+    const lang = await this.resolveUserLanguage(userId)
     await this.ensureUser(userId)
     const debts = await AppDataSource.getRepository(DebtEntity).find({
       where: { userId, isPaid: false },
     })
 
     if (debts.length === 0) {
-      return "You have no active debts."
+      return t(lang, "debts.noDebts")
     }
 
-    const iOwe = debts.filter((d) => d.type === "I_OWE")
-    const owesMe = debts.filter((d) => d.type === "OWES_ME")
+    const iOwe = debts.filter((d: DebtEntity) => d.type === "I_OWE")
+    const owesMe = debts.filter((d: DebtEntity) => d.type === "OWES_ME")
 
     let response = ""
 
     if (iOwe.length > 0) {
-      response += `*Your debt${iOwe.length > 1 ? "s" : ""}:*\n`
+      response +=
+        iOwe.length > 1
+          ? t(lang, "debts.yourDebtTitlePlural")
+          : t(lang, "debts.yourDebtTitleSingular")
+      response += "\n"
       response += iOwe
-        .map((d) => {
-          let result = `*${d.counterparty}*: ${formatMoney(d.amount, d.currency)}`
+        .map((d: DebtEntity) => {
+          let result = `*${d?.counterparty}*: ${formatMoney(d.amount, d.currency)}`
           if (d.paidAmount > 0)
-            result += ` Paid: ${formatMoney(d.paidAmount, d.currency)} Left: ${formatMoney(d.amount - d.paidAmount, d.currency)}`
+            result += ` ${t(lang, "debts.paidLabel")} ${formatMoney(d.paidAmount, d.currency)} ${t(lang, "debts.leftLabel")} ${formatMoney(d.amount - d.paidAmount, d.currency)}`
           return result
         })
         .join("\n")
@@ -856,18 +925,22 @@ export class DatabaseStorage {
     }
 
     if (owesMe.length > 0) {
-      response += `*Debt${owesMe.length > 1 ? "s" : ""} from you:*\n`
+      response +=
+        owesMe.length > 1
+          ? t(lang, "debts.debtsFromYouTitlePlural")
+          : t(lang, "debts.debtsFromYouTitleSingular")
+      response += "\n"
       response += owesMe
-        .map((d) => {
-          let result = `*${d.counterparty}*: ${formatMoney(d.amount, d.currency)}`
+        .map((d: DebtEntity) => {
+          let result = `*${d?.counterparty}*: ${formatMoney(d.amount, d.currency)}`
           if (d.paidAmount > 0)
-            result += ` Paid: ${formatMoney(d.paidAmount, d.currency)} Left: ${formatMoney(d.amount - d.paidAmount, d.currency)}`
+            result += ` ${t(lang, "debts.paidLabel")} ${formatMoney(d.paidAmount, d.currency)} ${t(lang, "debts.leftLabel")} ${formatMoney(d.amount - d.paidAmount, d.currency)}`
           return result
         })
         .join("\n")
     }
 
-    return response || "No debts found."
+    return response || t(lang, "debts.noDebtsRecorded")
   }
 
   async addDebt(userId: string, debt: Debt) {
@@ -887,6 +960,7 @@ export class DatabaseStorage {
     })
 
     await debtRepo.save(newDebt)
+    await this.clearCache(userId)
   }
 
   async updateDebtAmount(
@@ -896,19 +970,23 @@ export class DatabaseStorage {
     accountId: string,
     currency: Currency
   ): Promise<{ success: boolean; message?: string }> {
+    const lang = await this.resolveUserLanguage(userId)
     await this.ensureUser(userId)
 
     const debtRepo = AppDataSource.getRepository(DebtEntity)
     const debt = await debtRepo.findOne({ where: { id: debtId, userId } })
 
     if (!debt) {
-      return { success: false, message: "❌ Debt not found." }
+      return { success: false, message: t(lang, "errors.debtNotFound") }
     }
 
     if (debt.currency !== currency) {
       return {
         success: false,
-        message: `❌ Currency mismatch: debt in ${debt.currency}, payment in ${currency}.`,
+        message: t(lang, "errors.debtCurrencyMismatch", {
+          debtCurrency: debt.currency,
+          paymentCurrency: currency,
+        }),
       }
     }
 
@@ -916,7 +994,9 @@ export class DatabaseStorage {
     if (payAmount > remaining) {
       return {
         success: false,
-        message: `❌ Amount exceeds remaining debt (${formatMoney(remaining, debt.currency)}).`,
+        message: t(lang, "errors.debtAmountExceedsRemaining", {
+          remaining: formatMoney(remaining, debt.currency),
+        }),
       }
     }
 
@@ -929,17 +1009,19 @@ export class DatabaseStorage {
       id: randomUUID(),
       date: new Date(),
       currency: currency,
-      description: `Debt Payment ${debt.name}`,
+      description: t(lang, "transactions.debtPaymentDescription", {
+        name: debt.name,
+      }),
       amount: payAmount,
       type: TransactionType.TRANSFER,
       category: InternalCategory.DEBT_REPAYMENT,
-      fromAccountId: debt.type === "I_OWE" && accountId,
-      toAccountId: debt.type === "OWES_ME" && accountId,
+      fromAccountId: debt.type === "I_OWE" ? accountId : undefined,
+      toAccountId: debt.type === "OWES_ME" ? accountId : undefined,
     }
 
     await this.addTransaction(userId, transaction)
 
-    this.clearCache(userId)
+    await this.clearCache(userId)
     return { success: true }
   }
 
@@ -984,15 +1066,16 @@ export class DatabaseStorage {
     debt.isPaid = debt.paidAmount >= debt.amount
 
     await debtRepo.save(debt)
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async deleteDebt(userId: string, debtId: string): Promise<void> {
+    if (!debtId) return
     await AppDataSource.getRepository(DebtEntity).delete({
       id: debtId,
       userId,
     })
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async updateDebtTotalAmount(
@@ -1001,11 +1084,12 @@ export class DatabaseStorage {
     newAmount: number,
     newCurrency?: Currency
   ): Promise<{ success: boolean; message?: string }> {
+    const lang = await this.resolveUserLanguage(userId)
     const debtRepo = AppDataSource.getRepository(DebtEntity)
     const debt = await debtRepo.findOne({ where: { id: debtId, userId } })
 
     if (!debt) {
-      return { success: false, message: "❌ Debt not found." }
+      return { success: false, message: t(lang, "errors.debtNotFound") }
     }
 
     debt.amount = newAmount
@@ -1020,7 +1104,7 @@ export class DatabaseStorage {
     debt.isPaid = debt.paidAmount >= debt.amount
 
     await debtRepo.save(debt)
-    this.clearCache(userId)
+    await this.clearCache(userId)
 
     return { success: true }
   }
@@ -1028,17 +1112,18 @@ export class DatabaseStorage {
   // --- Goal Methods ---
 
   async getGoals(userId: string): Promise<string> {
+    const lang = await this.resolveUserLanguage(userId)
     await this.ensureUser(userId)
     const goals = await AppDataSource.getRepository(GoalEntity).find({
       where: { userId },
     })
 
     if (goals.length === 0) {
-      return "No active financial goals."
+      return t(lang, "goals.noGoals")
     }
 
     return goals
-      .map((g) => {
+      .map((g: GoalEntity) => {
         const percent =
           g.targetAmount > 0
             ? Math.round((g.currentAmount / g.targetAmount) * 100)
@@ -1046,10 +1131,13 @@ export class DatabaseStorage {
         const bar =
           "▓".repeat(Math.floor(percent / 10)) +
           "░".repeat(10 - Math.floor(percent / 10))
-        return `🎯 *${g.name}*\n${bar} ${percent}%\nTarget: ${formatMoney(
-          g.targetAmount,
-          g.currency
-        )}\nSaved: ${formatMoney(g.currentAmount, g.currency)}`
+        return `🎯 *${g.name}*\n${bar} ${percent}%\n${t(
+          lang,
+          "goals.targetLabel"
+        )} ${formatMoney(g.targetAmount, g.currency)}\n${t(
+          lang,
+          "goals.savedLabel"
+        )} ${formatMoney(g.currentAmount, g.currency)}`
       })
       .join("\n\n")
   }
@@ -1068,6 +1156,7 @@ export class DatabaseStorage {
     })
 
     await goalRepo.save(newGoal)
+    await this.clearCache(userId)
   }
 
   async depositToGoal(
@@ -1077,18 +1166,22 @@ export class DatabaseStorage {
     accountId: string,
     currency: Currency
   ): Promise<{ success: boolean; message?: string }> {
+    const lang = await this.resolveUserLanguage(userId)
     const goalRepo = AppDataSource.getRepository(GoalEntity)
     const goal = await goalRepo.findOne({ where: { id: goalId, userId } })
 
     if (!goal) {
-      return { success: false, message: "❌ Goal not found" }
+      return { success: false, message: t(lang, "errors.goalNotFound") }
     }
 
     const balances = await this.getBalancesList(userId)
     const balance = balances.find((b) => b.accountId === accountId)
 
     if (!balance) {
-      return { success: false, message: `❌ Account "${accountId}" not found` }
+      return {
+        success: false,
+        message: t(lang, "errors.accountNotFound", { account: accountId }),
+      }
     }
 
     const amountInAccountCurrency = convertSync(
@@ -1101,6 +1194,7 @@ export class DatabaseStorage {
       return {
         success: false,
         message: handleInsufficientFunds(
+          lang,
           accountId,
           balance.amount,
           balance.currency,
@@ -1125,7 +1219,7 @@ export class DatabaseStorage {
     goal.status =
       goal.currentAmount >= goal.targetAmount ? "COMPLETED" : "ACTIVE"
     await goalRepo.save(goal)
-    this.clearCache(userId)
+    await this.clearCache(userId)
 
     return { success: true }
   }
@@ -1148,11 +1242,12 @@ export class DatabaseStorage {
   }
 
   async deleteGoal(userId: string, goalId: string): Promise<void> {
+    if (!goalId) return
     await AppDataSource.getRepository(GoalEntity).delete({
       id: goalId,
       userId,
     })
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async updateGoal(
@@ -1182,7 +1277,7 @@ export class DatabaseStorage {
     }
 
     await goalRepo.save(goal)
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async updateGoalTarget(
@@ -1191,17 +1286,21 @@ export class DatabaseStorage {
     newTarget: number,
     newCurrency?: Currency
   ): Promise<{ success: boolean; message?: string }> {
+    const lang = await this.resolveUserLanguage(userId)
     const goalRepo = AppDataSource.getRepository(GoalEntity)
     const goal = await goalRepo.findOne({ where: { id: goalId, userId } })
 
     if (!goal) {
-      return { success: false, message: "❌ Goal not found." }
+      return { success: false, message: t(lang, "errors.goalNotFound") }
     }
 
     if (newTarget < goal.currentAmount) {
       return {
         success: false,
-        message: `❌ New target (${newTarget}) cannot be less than current amount (${goal.currentAmount}).`,
+        message: t(lang, "errors.goalTargetTooLow", {
+          newTarget,
+          currentAmount: goal.currentAmount,
+        }),
       }
     }
 
@@ -1214,7 +1313,7 @@ export class DatabaseStorage {
       goal.currentAmount >= goal.targetAmount ? "COMPLETED" : "ACTIVE"
 
     await goalRepo.save(goal)
-    this.clearCache(userId)
+    await this.clearCache(userId)
 
     return { success: true }
   }
@@ -1226,7 +1325,7 @@ export class DatabaseStorage {
     if (goal) {
       goal.status = "COMPLETED"
       await goalRepo.save(goal)
-      this.clearCache(userId)
+      await this.clearCache(userId)
     }
   }
 
@@ -1243,29 +1342,32 @@ export class DatabaseStorage {
       goal.targetAmount = newTarget
       goal.status = goal.currentAmount >= newTarget ? "COMPLETED" : "ACTIVE"
       await AppDataSource.getRepository(GoalEntity).save(goal)
-      this.clearCache(userId)
+      await this.clearCache(userId)
     }
   }
 
   // --- Income Source Methods ---
 
   async getIncomeSources(userId: string): Promise<string> {
+    const lang = await this.resolveUserLanguage(userId)
     await this.ensureUser(userId)
     const sources = await AppDataSource.getRepository(IncomeSourceEntity).find({
       where: { userId },
     })
 
     if (sources.length === 0) {
-      return "No income sources recorded."
+      return t(lang, "incomeSources.noSources")
     }
 
     return sources
-      .map(
-        (i) =>
-          `💵 *${i.name}*: ${i.expectedAmount && i.currency
-            ? formatMoney(i.expectedAmount, i.currency)
-            : "N/A"
-          }`
+      .map((i: IncomeSourceEntity) =>
+        t(lang, "incomeSources.listItem", {
+          name: escapeMarkdown(i.name),
+          amount:
+            i.expectedAmount && i.currency
+              ? formatMoney(i.expectedAmount, i.currency)
+              : t(lang, "common.notAvailable"),
+        })
       )
       .join("\n")
   }
@@ -1276,12 +1378,70 @@ export class DatabaseStorage {
     const newSource = sourceRepo.create({
       userId,
       name: source.name,
-      expectedAmount: source.expectedAmount,
+      expectedAmount: source.expectedAmount!,
       currency: source.currency,
       frequency: source.frequency,
     })
 
     await sourceRepo.save(newSource)
+    await this.clearCache(userId)
+  }
+
+  async migrateCategoryValues(): Promise<void> {
+    const txRepo = AppDataSource.getRepository(TransactionEntity)
+    const budgetRepo = AppDataSource.getRepository(BudgetEntity)
+    const recurringRepo = AppDataSource.getRepository(
+      RecurringTransactionEntity
+    )
+    const userRepo = AppDataSource.getRepository(User)
+
+    const txs = await txRepo.find()
+    for (const tx of txs) {
+      if (!tx.category) continue
+      const normalized = normalizeCategoryValue(tx.category)
+      if (normalized && normalized !== tx.category) {
+        tx.category = normalized
+        await txRepo.save(tx)
+      }
+    }
+
+    const budgets = await budgetRepo.find()
+    for (const b of budgets) {
+      if (!b.category) continue
+      const normalized = normalizeCategoryValue(b.category)
+      if (normalized && normalized !== b.category) {
+        b.category = normalized
+        await budgetRepo.save(b)
+      }
+    }
+
+    const users = await userRepo.find()
+    for (const u of users) {
+      if (!u.templates || u.templates.length === 0) continue
+      let updated = false
+      u.templates = u.templates.map((tpl) => {
+        if (!tpl.category) return tpl
+        const normalized = normalizeCategoryValue(tpl.category)
+        if (normalized && normalized !== tpl.category) {
+          updated = true
+          return { ...tpl, category: normalized }
+        }
+        return tpl
+      })
+      if (updated) {
+        await userRepo.save(u)
+      }
+    }
+
+    const recurring = await recurringRepo.find()
+    for (const rec of recurring) {
+      if (!rec.category) continue
+      const normalized = normalizeCategoryValue(rec.category)
+      if (normalized && normalized !== rec.category) {
+        rec.category = normalized
+        await recurringRepo.save(rec)
+      }
+    }
   }
 
   async deleteIncomeSource(userId: string, name: string) {
@@ -1304,7 +1464,7 @@ export class DatabaseStorage {
     if (!source) return
     source.name = newName
     await incomeSourceRepo.save(source)
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async updateIncomeSourceAmount(
@@ -1320,13 +1480,26 @@ export class DatabaseStorage {
     source.expectedAmount = amount
     source.currency = currency
     await incomeSourceRepo.save(source)
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   // --- Currency Methods ---
 
   async getDefaultCurrency(userId: string): Promise<Currency> {
+    const cachedSettings = await this.cacheManager.getUserSettings(userId)
+    if (cachedSettings?.defaultCurrency) {
+      return cachedSettings.defaultCurrency
+    }
+
     const user = await this.ensureUser(userId)
+    await Promise.all([
+      this.cacheManager.setUserSettings(userId, {
+        defaultCurrency: user.defaultCurrency,
+        language: user.language ?? undefined,
+        timezone: user.reminderSettings?.timezone,
+      }),
+      this.cacheManager.setUserLanguage(userId, user.language ?? "en"),
+    ])
     return user.defaultCurrency
   }
 
@@ -1334,6 +1507,9 @@ export class DatabaseStorage {
     const user = await this.ensureUser(userId)
     user.defaultCurrency = currency
     await AppDataSource.getRepository(User).save(user)
+    await this.cacheManager.updateUserSettings(userId, {
+      defaultCurrency: currency,
+    })
   }
 
   getCurrencyDenominations(currency: Currency): number[] {
@@ -1373,12 +1549,12 @@ export class DatabaseStorage {
       { count: number; totalAmount: number }
     > = {}
 
-    transactions.forEach((tx) => {
+    transactions.forEach((tx: Transaction) => {
       if (!categoryStats[tx.category]) {
         categoryStats[tx.category] = { count: 0, totalAmount: 0 }
       }
-      categoryStats[tx.category].count++
-      categoryStats[tx.category].totalAmount += tx.amount
+      categoryStats[tx.category]!.count++
+      categoryStats[tx.category]!.totalAmount += tx.amount
     })
 
     const scored = Object.entries(categoryStats)
@@ -1430,7 +1606,7 @@ export class DatabaseStorage {
     }
 
     await repo.save(pref)
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async getCategoryBudgets(
@@ -1441,7 +1617,7 @@ export class DatabaseStorage {
 
     // Группируем бюджеты по категории
     const budgetsByCategory: Record<string, Budget> = {}
-    userData.budgets.forEach((budget) => {
+    userData.budgets.forEach((budget: Budget) => {
       budgetsByCategory[budget.category] = budget
     })
 
@@ -1505,7 +1681,7 @@ export class DatabaseStorage {
       await repo.save(budget)
     }
 
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async clearCategoryBudget(
@@ -1515,13 +1691,13 @@ export class DatabaseStorage {
     await this.ensureUser(userId)
     const repo = AppDataSource.getRepository(BudgetEntity)
     await repo.delete({ userId, category })
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async applyExpenseToBudgets(
     userId: string,
     category: ExpenseCategory,
-    amount: number,
+    _amount: number,
     currency: Currency
   ): Promise<{ overLimit: boolean; remaining?: number; limit?: number }> {
     await this.ensureUser(userId)
@@ -1563,7 +1739,7 @@ export class DatabaseStorage {
 
     // Миграция: добавить currency к старым шаблонам
     let needsSave = false
-    const migratedTemplates = templates.map(t => {
+    const migratedTemplates = templates.map((t) => {
       if (!t.currency) {
         needsSave = true
         return { ...t, currency: user.defaultCurrency }
@@ -1575,7 +1751,7 @@ export class DatabaseStorage {
       const userRepo = AppDataSource.getRepository(User)
       user.templates = migratedTemplates
       await userRepo.save(user)
-      this.clearCache(userId)
+      await this.clearCache(userId)
     }
 
     return migratedTemplates
@@ -1596,7 +1772,7 @@ export class DatabaseStorage {
 
     user.templates = [...existing, newTemplate]
     await userRepo.save(user)
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   async deleteTemplate(userId: string, templateId: string): Promise<boolean> {
@@ -1612,7 +1788,7 @@ export class DatabaseStorage {
 
     user.templates = filtered
     await userRepo.save(user)
-    this.clearCache(userId)
+    await this.clearCache(userId)
     return true
   }
 
@@ -1632,7 +1808,7 @@ export class DatabaseStorage {
     template.amount = newAmount
     user.templates = templates
     await userRepo.save(user)
-    this.clearCache(userId)
+    await this.clearCache(userId)
     return true
   }
 
@@ -1652,7 +1828,7 @@ export class DatabaseStorage {
     template.accountId = accountId
     user.templates = templates
     await userRepo.save(user)
-    this.clearCache(userId)
+    await this.clearCache(userId)
     return true
   }
 
@@ -1770,38 +1946,694 @@ export class DatabaseStorage {
     }
 
     await txRepo.save(transaction)
-    this.clearCache(userId)
+    await this.clearCache(userId)
     return { success: true }
   }
 
   // --- Reminder Settings Methods ---
-  async getReminderSettings(userId: string): Promise<ReminderSettings | undefined> {
-    const userRepo = AppDataSource.getRepository(User)
+  async getReminderSettings(
+    userId: string
+  ): Promise<ReminderSettings | undefined> {
+    // const userRepo = AppDataSource.getRepository(User)
     const user = await this.ensureUser(userId)
     return user.reminderSettings
   }
 
-  async updateReminderSettings(userId: string, settings: ReminderSettings): Promise<void> {
+  async updateReminderSettings(
+    userId: string,
+    settings: ReminderSettings
+  ): Promise<void> {
     const userRepo = AppDataSource.getRepository(User)
     const user = await this.ensureUser(userId)
     user.reminderSettings = settings
     await userRepo.save(user)
-    this.clearCache(userId)
+    await this.clearCache(userId)
   }
 
   // --- Debt/Goal Date Management Methods ---
-  async updateDebtDueDate(userId: string, debtId: string, dueDate: Date | null): Promise<void> {
+  async updateDebtDueDate(
+    userId: string,
+    debtId: string,
+    dueDate: Date | null
+  ): Promise<void> {
     const debtRepo = AppDataSource.getRepository(DebtEntity)
-    await debtRepo.update({ id: debtId, userId }, { dueDate })
-    this.clearCache(userId)
+    await debtRepo.update(
+      { id: debtId, userId },
+      { dueDate: dueDate ?? undefined }
+    )
+    await this.clearCache(userId)
   }
 
-  async updateGoalDeadline(userId: string, goalId: string, deadline: Date | null): Promise<void> {
+  async updateGoalDeadline(
+    userId: string,
+    goalId: string,
+    deadline: Date | null
+  ): Promise<void> {
     const goalRepo = AppDataSource.getRepository(GoalEntity)
-    await goalRepo.update({ id: goalId, userId }, { deadline })
-    this.clearCache(userId)
+    await goalRepo.update(
+      { id: goalId, userId },
+      { deadline: deadline ?? undefined }
+    )
+    await this.clearCache(userId)
   }
 
+  // --- Language Methods (i18n) ---
+  async getUserLanguage(userId: string): Promise<Language> {
+    const cached = await this.cacheManager.getUserLanguage(userId)
+    if (cached && isValidLanguage(cached)) return cached
+
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await userRepo.findOne({ where: { id: userId } })
+    const rawLang = user?.language
+    const lang = resolveLanguage(rawLang)
+    if (rawLang !== lang) {
+      await userRepo.update({ id: userId }, { language: lang })
+    }
+    await Promise.all([
+      this.cacheManager.setUserLanguage(userId, lang),
+      this.cacheManager.setUserSettings(userId, {
+        defaultCurrency: user?.defaultCurrency || "USD",
+        language: lang,
+        timezone: user?.reminderSettings?.timezone,
+      }),
+    ])
+    return lang
+  }
+
+  async setUserLanguage(userId: string, language: Language): Promise<void> {
+    const userRepo = AppDataSource.getRepository(User)
+    await this.ensureUser(userId)
+    const safeLang = resolveLanguage(language)
+    await userRepo.update({ id: userId }, { language: safeLang })
+    await this.cacheManager.setUserLanguage(userId, safeLang)
+    await this.cacheManager.updateUserSettings(userId, { language: safeLang })
+    await this.clearCache(userId)
+  }
+
+  // --- Transaction Pagination Methods ---
+  async getTransactionsPaginated(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+    filters?: {
+      type?: TransactionType
+      category?: string
+      startDate?: Date
+      endDate?: Date
+    }
+  ): Promise<{ transactions: Transaction[]; total: number; hasMore: boolean }> {
+    const query = AppDataSource.getRepository(TransactionEntity)
+      .createQueryBuilder("tx")
+      .where("tx.userId = :userId", { userId })
+
+    if (filters?.type) {
+      query.andWhere("tx.type = :type", { type: filters.type })
+    }
+    if (filters?.category) {
+      query.andWhere("tx.category = :category", { category: filters.category })
+    }
+    if (filters?.startDate) {
+      query.andWhere("tx.date >= :startDate", { startDate: filters.startDate })
+    }
+    if (filters?.endDate) {
+      query.andWhere("tx.date <= :endDate", { endDate: filters.endDate })
+    }
+
+    const skip = (page - 1) * limit
+    const [transactions, total] = await query
+      .orderBy("tx.date", "DESC")
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount()
+
+    return {
+      transactions: transactions.map(this.mapTransaction.bind(this)),
+      total,
+      hasMore: skip + transactions.length < total,
+    }
+  }
+
+  // --- Batch Operations (Priority 8) ---
+  async addTransactionsBatch(
+    userId: string,
+    transactions: Transaction[]
+  ): Promise<{ added: number; errors: string[] }> {
+    if (transactions.length === 0) {
+      return { added: 0, errors: [] }
+    }
+
+    await this.ensureUser(userId)
+
+    const errors: string[] = []
+    let addedCount = 0
+
+    await AppDataSource.transaction(async (manager: any) => {
+      const entities = transactions.map((tx) => {
+        if (!tx.id) {
+          tx.id = randomUUID()
+        }
+
+        return manager.create(TransactionEntity, {
+          id: tx.id,
+          userId,
+          date: tx.date,
+          amount: tx.amount,
+          currency: tx.currency,
+          type: tx.type,
+          category: tx.category,
+          description: tx.description,
+          fromAccountId: tx.fromAccountId,
+          toAccountId: tx.toAccountId,
+        })
+      })
+
+      try {
+        await manager.save(TransactionEntity, entities)
+        addedCount = entities.length
+      } catch (error) {
+        errors.push(`Failed to save transactions: ${error}`)
+        throw error
+      }
+
+      const balanceUpdates = new Map<
+        string,
+        { amount: number; currency: Currency }
+      >()
+
+      transactions.forEach((tx) => {
+        if (tx.type === TransactionType.EXPENSE && tx.fromAccountId) {
+          const key = `${tx.fromAccountId}:${tx.currency}`
+          const current = balanceUpdates.get(key) || {
+            amount: 0,
+            currency: tx.currency as Currency,
+          }
+          balanceUpdates.set(key, {
+            amount: current.amount - tx.amount,
+            currency: tx.currency as Currency,
+          })
+        }
+
+        if (tx.type === TransactionType.INCOME && tx.toAccountId) {
+          const key = `${tx.toAccountId}:${tx.currency}`
+          const current = balanceUpdates.get(key) || {
+            amount: 0,
+            currency: tx.currency as Currency,
+          }
+          balanceUpdates.set(key, {
+            amount: current.amount + tx.amount,
+            currency: tx.currency as Currency,
+          })
+        }
+
+        if (tx.type === TransactionType.TRANSFER) {
+          if (tx.fromAccountId) {
+            const key = `${tx.fromAccountId}:${tx.currency}`
+            const current = balanceUpdates.get(key) || {
+              amount: 0,
+              currency: tx.currency as Currency,
+            }
+            balanceUpdates.set(key, {
+              amount: current.amount - tx.amount,
+              currency: tx.currency as Currency,
+            })
+          }
+          if (tx.toAccountId) {
+            const key = `${tx.toAccountId}:${tx.currency}`
+            const current = balanceUpdates.get(key) || {
+              amount: 0,
+              currency: tx.currency as Currency,
+            }
+            balanceUpdates.set(key, {
+              amount: current.amount + tx.amount,
+              currency: tx.currency as Currency,
+            })
+          }
+        }
+      })
+
+      for (const [key, delta] of balanceUpdates) {
+        const [accountId, currency] = key.split(":")
+
+        try {
+          const balance = await manager.findOne(Balance, {
+            where: { userId, accountId, currency: currency as Currency },
+          })
+
+          if (balance) {
+            balance.amount += delta.amount
+            balance.lastUpdated = new Date()
+            await manager.save(Balance, balance)
+          } else {
+            if (delta.amount >= 0) {
+              const newBalance = manager.create(Balance, {
+                userId,
+                accountId,
+                currency: currency as Currency,
+                amount: delta.amount,
+                lastUpdated: new Date(),
+              })
+              await manager.save(Balance, newBalance)
+            } else {
+              errors.push(`Cannot create negative balance for ${accountId}`)
+            }
+          }
+        } catch (error) {
+          errors.push(`Failed to update balance for ${accountId}: ${error}`)
+          throw error
+        }
+      }
+    })
+
+    await this.clearCache(userId)
+
+    return { added: addedCount, errors }
+  }
+
+  validateTransactionsBatch(transactions: Transaction[]): {
+    valid: Transaction[]
+    invalid: Array<{ transaction: Transaction; reason: string }>
+  } {
+    const valid: Transaction[] = []
+    const invalid: Array<{ transaction: Transaction; reason: string }> = []
+
+    transactions.forEach((tx) => {
+      if (!tx.amount || tx.amount <= 0) {
+        invalid.push({ transaction: tx, reason: "Invalid amount" })
+        return
+      }
+
+      if (!tx.type) {
+        invalid.push({ transaction: tx, reason: "Missing type" })
+        return
+      }
+
+      if (!tx.currency) {
+        invalid.push({ transaction: tx, reason: "Missing currency" })
+        return
+      }
+
+      if (!tx.category) {
+        invalid.push({ transaction: tx, reason: "Missing category" })
+        return
+      }
+
+      if (tx.type === TransactionType.EXPENSE && !tx.fromAccountId) {
+        invalid.push({
+          transaction: tx,
+          reason: "EXPENSE requires fromAccountId",
+        })
+        return
+      }
+
+      if (tx.type === TransactionType.INCOME && !tx.toAccountId) {
+        invalid.push({ transaction: tx, reason: "INCOME requires toAccountId" })
+        return
+      }
+
+      if (tx.type === TransactionType.TRANSFER) {
+        if (!tx.fromAccountId || !tx.toAccountId) {
+          invalid.push({
+            transaction: tx,
+            reason: "TRANSFER requires both accounts",
+          })
+          return
+        }
+      }
+
+      valid.push(tx)
+    })
+
+    return { valid, invalid }
+  }
+
+  async deleteTransactionsBatch(
+    userId: string,
+    transactionIds: string[]
+  ): Promise<{ deleted: number; errors: string[] }> {
+    if (transactionIds.length === 0) {
+      return { deleted: 0, errors: [] }
+    }
+
+    const lang = await this.resolveUserLanguage(userId)
+    const errors: string[] = []
+    let deletedCount = 0
+
+    await AppDataSource.transaction(async (manager: any) => {
+      // 1️⃣ Получаем транзакции для отката балансов
+      const transactions = await manager.find(TransactionEntity, {
+        where: transactionIds.map((id) => ({ id, userId })),
+      })
+
+      if (transactions.length === 0) {
+        errors.push(t(lang, "errors.noTransactionsFound"))
+        return
+      }
+
+      // 2️⃣ Группируем изменения балансов (откат)
+      const balanceUpdates = new Map<
+        string,
+        { amount: number; currency: Currency }
+      >()
+
+      transactions.forEach((tx: TransactionEntity) => {
+        // Откатываем изменения (инвертируем знак)
+        if (tx.type === TransactionType.EXPENSE && tx.fromAccountId) {
+          const key = `${tx.fromAccountId}:${tx.currency}`
+          const current = balanceUpdates.get(key) || {
+            amount: 0,
+            currency: tx.currency as Currency,
+          }
+          balanceUpdates.set(key, {
+            amount: current.amount + tx.amount, // +, т.к. откатываем расход
+            currency: tx.currency as Currency,
+          })
+        }
+
+        if (tx.type === TransactionType.INCOME && tx.toAccountId) {
+          const key = `${tx.toAccountId}:${tx.currency}`
+          const current = balanceUpdates.get(key) || {
+            amount: 0,
+            currency: tx.currency as Currency,
+          }
+          balanceUpdates.set(key, {
+            amount: current.amount - tx.amount, // -, т.к. откатываем доход
+            currency: tx.currency as Currency,
+          })
+        }
+
+        if (tx.type === TransactionType.TRANSFER) {
+          if (tx.fromAccountId) {
+            const key = `${tx.fromAccountId}:${tx.currency}`
+            const current = balanceUpdates.get(key) || {
+              amount: 0,
+              currency: tx.currency as Currency,
+            }
+            balanceUpdates.set(key, {
+              amount: current.amount + tx.amount,
+              currency: tx.currency as Currency,
+            })
+          }
+          if (tx.toAccountId) {
+            const key = `${tx.toAccountId}:${tx.currency}`
+            const current = balanceUpdates.get(key) || {
+              amount: 0,
+              currency: tx.currency as Currency,
+            }
+            balanceUpdates.set(key, {
+              amount: current.amount - tx.amount,
+              currency: tx.currency as Currency,
+            })
+          }
+        }
+      })
+
+      // 3️⃣ Применяем изменения балансов
+      for (const [key, delta] of balanceUpdates) {
+        const [accountId, currency] = key.split(":")
+
+        const balance = await manager.findOne(Balance, {
+          where: { userId, accountId, currency: currency as Currency },
+        })
+
+        if (balance) {
+          balance.amount += delta.amount
+          balance.lastUpdated = new Date()
+          await manager.save(Balance, balance)
+        }
+      }
+
+      // 4️⃣ Удаляем транзакции
+      const result = await manager.delete(TransactionEntity, transactionIds)
+      deletedCount = result.affected || 0
+    })
+
+    await this.clearCache(userId)
+
+    return { deleted: deletedCount, errors }
+  }
+
+  async updateTransactionsBatch(
+    userId: string,
+    updates: Array<{ id: string; category?: string; description?: string }>
+  ): Promise<{ updated: number; errors: string[] }> {
+    if (updates.length === 0) {
+      return { updated: 0, errors: [] }
+    }
+
+    const errors: string[] = []
+    let updatedCount = 0
+
+    await AppDataSource.transaction(async (manager: any) => {
+      for (const update of updates) {
+        try {
+          const tx = await manager.findOne(TransactionEntity, {
+            where: { id: update.id, userId },
+          })
+
+          if (!tx) {
+            errors.push(`Transaction ${update.id} not found`)
+            continue
+          }
+
+          if (update.category)
+            tx.category = update.category as TransactionCategory
+          if (update.description) tx.description = update.description
+
+          await manager.save(TransactionEntity, tx)
+          updatedCount++
+        } catch (error) {
+          errors.push(`Failed to update ${update.id}: ${error}`)
+        }
+      }
+    })
+
+    await this.clearCache(userId)
+
+    return { updated: updatedCount, errors }
+  }
+
+  // --- Reminder Methods ---
+
+  async getReminderById(
+    userId: string,
+    reminderId: string
+  ): Promise<Reminder | null> {
+    await this.ensureUser(userId)
+    const reminderRepo = AppDataSource.getRepository(Reminder)
+    return await reminderRepo.findOne({ where: { id: reminderId, userId } })
+  }
+
+  async updateReminderLastSent(
+    userId: string,
+    reminderId: string
+  ): Promise<void> {
+    const reminderRepo = AppDataSource.getRepository(Reminder)
+    await reminderRepo.update({ id: reminderId, userId }, { isProcessed: true })
+  }
+
+  async createReminder(data: {
+    userId: string
+    type: "DEBT" | "GOAL" | "INCOME" | "RECURRING_TX"
+    entityId: string
+    reminderDate: Date
+    message: string
+  }): Promise<Reminder> {
+    await this.ensureUser(data.userId)
+    const reminderRepo = AppDataSource.getRepository(Reminder)
+    const reminder = reminderRepo.create({
+      ...data,
+      isProcessed: false,
+      createdAt: new Date(),
+    })
+    return await reminderRepo.save(reminder)
+  }
+
+  async deleteReminder(userId: string, reminderId: string): Promise<void> {
+    const reminderRepo = AppDataSource.getRepository(Reminder)
+    await reminderRepo.delete({ id: reminderId, userId })
+  }
+
+  async getPendingReminders(userId: string): Promise<Reminder[]> {
+    await this.ensureUser(userId)
+    const reminderRepo = AppDataSource.getRepository(Reminder)
+    return await reminderRepo.find({
+      where: {
+        userId,
+        isProcessed: false,
+      },
+      order: {
+        reminderDate: "ASC",
+      },
+    })
+  }
+
+  async getAllReminders(userId: string): Promise<Reminder[]> {
+    await this.ensureUser(userId)
+    const reminderRepo = AppDataSource.getRepository(Reminder)
+    return await reminderRepo.find({
+      where: { userId },
+      order: { reminderDate: "ASC" },
+    })
+  }
+
+  // --- Recurring Transaction Methods ---
+
+  async getRecurringTransactionById(
+    userId: string,
+    recurringTransactionId: string
+  ): Promise<RecurringTransaction | null> {
+    await this.ensureUser(userId)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
+    return await repo.findOne({ where: { id: recurringTransactionId, userId } })
+  }
+
+  async updateRecurringTransactionLastExecuted(
+    userId: string,
+    recurringTransactionId: string,
+    nextExecutionDate: Date
+  ): Promise<void> {
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
+    await repo.update(
+      { id: recurringTransactionId, userId },
+      { nextExecutionDate }
+    )
+  }
+
+  async createRecurringTransaction(data: {
+    userId: string
+    type: TransactionType
+    amount: number
+    currency: Currency
+    category: TransactionCategory
+    accountId: string
+    frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+    startDate: Date
+    nextExecutionDate: Date
+    description?: string
+    autoExecute?: boolean
+    dayOfMonth?: number
+    dayOfWeek?: number
+    cronExpression?: string
+  }): Promise<RecurringTransaction> {
+    await this.ensureUser(data.userId)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
+    const recurringTx = repo.create({
+      ...data,
+      isActive: true,
+      autoExecute: data.autoExecute ?? true,
+    })
+    return await repo.save(recurringTx)
+  }
+
+  async deleteRecurringTransaction(
+    userId: string,
+    recurringTransactionId: string
+  ): Promise<void> {
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
+    await repo.delete({ id: recurringTransactionId, userId })
+  }
+
+  async getActiveRecurringTransactions(
+    userId: string
+  ): Promise<RecurringTransaction[]> {
+    await this.ensureUser(userId)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
+    return await repo.find({
+      where: {
+        userId,
+        isActive: true,
+      },
+      order: {
+        nextExecutionDate: "ASC",
+      },
+    })
+  }
+
+  async getAllRecurringTransactions(
+    userId: string
+  ): Promise<RecurringTransaction[]> {
+    await this.ensureUser(userId)
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
+    return await repo.find({
+      where: { userId },
+      order: { nextExecutionDate: "ASC" },
+    })
+  }
+
+  async updateRecurringTransactionStatus(
+    userId: string,
+    recurringTransactionId: string,
+    isActive: boolean
+  ): Promise<void> {
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
+    await repo.update({ id: recurringTransactionId, userId }, { isActive })
+  }
+
+  async updateRecurringTransactionCron(
+    userId: string,
+    recurringTransactionId: string,
+    cronExpression: string
+  ): Promise<void> {
+    const repo = AppDataSource.getRepository(RecurringTransactionEntity)
+    await repo.update(
+      { id: recurringTransactionId, userId },
+      { cronExpression }
+    )
+  }
+
+  async getTransactions(
+    userId: string,
+    filter?: {
+      startDate?: Date
+      endDate?: Date
+      type?: TransactionType
+      category?: TransactionCategory
+      currency?: Currency
+    }
+  ): Promise<Transaction[]> {
+    await this.ensureUser(userId)
+    const txRepo = AppDataSource.getRepository(TransactionEntity)
+
+    const query = txRepo
+      .createQueryBuilder("tx")
+      .where("tx.userId = :userId", { userId })
+
+    if (filter?.startDate) {
+      query.andWhere("tx.date >= :startDate", { startDate: filter.startDate })
+    }
+
+    if (filter?.endDate) {
+      query.andWhere("tx.date <= :endDate", { endDate: filter.endDate })
+    }
+
+    if (filter?.type) {
+      query.andWhere("tx.type = :type", { type: filter.type })
+    }
+
+    if (filter?.category) {
+      query.andWhere("tx.category = :category", { category: filter.category })
+    }
+
+    if (filter?.currency) {
+      query.andWhere("tx.currency = :currency", { currency: filter.currency })
+    }
+
+    query.orderBy("tx.date", "DESC")
+
+    const transactions = await query.getMany()
+
+    return transactions.map((tx: Transaction) => ({
+      id: tx.id,
+      date: tx.date,
+      amount: tx.amount,
+      currency: tx.currency,
+      type: tx.type,
+      category: tx.category,
+      description: tx.description,
+      fromAccountId: tx.fromAccountId,
+      toAccountId: tx.toAccountId,
+    }))
+  }
 }
 
 export const dbStorage = new DatabaseStorage()

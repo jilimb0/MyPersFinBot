@@ -2,10 +2,12 @@
  * Reminder Settings Handlers
  */
 
-import type { WizardManager } from "../wizards/wizards"
 import { AppDataSource } from "../database/data-source"
 import { User } from "../database/entities/User"
-import { ReminderSettings } from "../types"
+import { resolveLanguage, t } from "../i18n"
+import { getReminderTimeKeyboard } from "../i18n/keyboards"
+import type { ReminderSettings } from "../types"
+import type { WizardManager } from "../wizards/wizards"
 
 /**
  * Show notifications settings menu
@@ -17,6 +19,8 @@ export async function handleNotificationsMenu(
 ): Promise<boolean> {
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
 
   const settings = user?.reminderSettings || {
     enabled: false,
@@ -27,15 +31,25 @@ export async function handleNotificationsMenu(
   }
 
   const msg =
-    `🔔 *Notification Settings*\n\n` +
-    `Status: ${settings.enabled ? "✅ Enabled" : "❌ Disabled"}\n` +
-    `Time: ${settings.time}\n` +
-    `Timezone: ${settings.timezone}\n\n` +
-    `*Notify Before:*\n` +
-    `• Debts: ${settings.notifyBefore.debts} days\n` +
-    `• Goals: ${settings.notifyBefore.goals} days\n` +
-    `• Income: ${settings.notifyBefore.income} days\n\n` +
-    `What would you like to change?`
+    `${t(lang, "reminders.settingsTitle")}\n\n` +
+    `${t(lang, "reminders.statusLine", {
+      status: settings.enabled
+        ? t(lang, "common.enabled")
+        : t(lang, "common.disabled"),
+    })}\n` +
+    `${t(lang, "reminders.timeLine", { time: settings.time })}\n` +
+    `${t(lang, "reminders.timezoneLine", { timezone: settings.timezone })}\n\n` +
+    `${t(lang, "reminders.notifyBeforeTitle")}\n` +
+    `${t(lang, "reminders.notifyBeforeDebts", {
+      days: settings.notifyBefore.debts,
+    })}\n` +
+    `${t(lang, "reminders.notifyBeforeGoals", {
+      days: settings.notifyBefore.goals,
+    })}\n` +
+    `${t(lang, "reminders.notifyBeforeIncome", {
+      days: settings.notifyBefore.income,
+    })}\n\n` +
+    `${t(lang, "reminders.changePrompt")}`
 
   await wizard.sendMessage(chatId, msg, {
     parse_mode: "Markdown",
@@ -44,13 +58,16 @@ export async function handleNotificationsMenu(
         [
           {
             text: settings.enabled
-              ? "❌ Disable Notifications"
-              : "✅ Enable Notifications",
+              ? t(lang, "wizard.notifications.disable")
+              : t(lang, "wizard.notifications.enable"),
           },
         ],
-        [{ text: "⏰ Change Time" }],
-        [{ text: "🌍 Change Timezone" }],
-        [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+        [{ text: t(lang, "wizard.notifications.changeTime") }],
+        [{ text: t(lang, "buttons.changeTimezone") }],
+        [
+          { text: t(lang, "common.back") },
+          { text: t(lang, "mainMenu.mainMenuButton") },
+        ],
       ],
       resize_keyboard: true,
     },
@@ -70,6 +87,8 @@ export async function handleNotificationsToggle(
 ): Promise<boolean> {
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
 
   if (!user) return false
 
@@ -81,7 +100,7 @@ export async function handleNotificationsToggle(
     notifyBefore: { debts: 3, goals: 7, income: 1 },
   }
 
-  const newEnabled = text === "✅ Enable Notifications"
+  const newEnabled = text === t(lang, "wizard.notifications.enable")
 
   const updatedSettings: ReminderSettings = {
     ...currentSettings,
@@ -92,7 +111,11 @@ export async function handleNotificationsToggle(
 
   await wizard.sendMessage(
     chatId,
-    `✅ Notifications ${newEnabled ? "enabled" : "disabled"}!`,
+    t(lang, "reminders.toggledMessage", {
+      status: newEnabled
+        ? t(lang, "common.enabled")
+        : t(lang, "common.disabled"),
+    }),
     { parse_mode: "Markdown" }
   )
 
@@ -109,6 +132,8 @@ export async function handleReminderTimeSelect(
 ): Promise<boolean> {
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
 
   const currentTime = user?.reminderSettings?.time || "09:00"
 
@@ -116,21 +141,12 @@ export async function handleReminderTimeSelect(
 
   await wizard.sendMessage(
     chatId,
-    `⏰ *Change Reminder Time*\n\n` +
-      `Current: ${currentTime}\n\n` +
-      `Select a time for daily reminders:`,
+    `${t(lang, "reminders.changeTimeTitle")}\n\n` +
+      `${t(lang, "reminders.currentTimeLine", { time: currentTime })}\n\n` +
+      `${t(lang, "reminders.selectTimePrompt")}`,
     {
       parse_mode: "Markdown",
-      reply_markup: {
-        keyboard: [
-          [{ text: "06:00" }, { text: "07:00" }, { text: "08:00" }],
-          [{ text: "09:00" }, { text: "10:00" }, { text: "11:00" }],
-          [{ text: "12:00" }, { text: "14:00" }, { text: "16:00" }],
-          [{ text: "18:00" }, { text: "20:00" }, { text: "21:00" }],
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
-        ],
-        resize_keyboard: true,
-      },
+      reply_markup: getReminderTimeKeyboard(lang),
     }
   )
 
@@ -146,13 +162,14 @@ export async function handleReminderTimeSave(
   userId: string,
   text: string
 ): Promise<boolean> {
-  // Validate time format (HH:MM)
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
   const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
   if (!timeRegex.test(text)) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid time format. Please select from the options or enter in HH:MM format (e.g., 09:00).",
-      wizard.getBackButton()
+      t(lang, "errors.invalidTimeFormat"),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -179,8 +196,7 @@ export async function handleReminderTimeSave(
 
   await wizard.sendMessage(
     chatId,
-    `✅ Reminder time updated to ${text}!\n\n` +
-      `You will receive daily notifications at this time.`,
+    t(lang, "reminders.timeUpdatedMessage", { time: text }),
     { parse_mode: "Markdown" }
   )
 
@@ -198,6 +214,8 @@ export async function handleTimezoneSelect(
 ): Promise<boolean> {
   const userRepo = AppDataSource.getRepository(User)
   const user = await userRepo.findOne({ where: { id: userId } })
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
 
   const currentTimezone = user?.reminderSettings?.timezone || "Asia/Tbilisi"
 
@@ -205,20 +223,25 @@ export async function handleTimezoneSelect(
 
   await wizard.sendMessage(
     chatId,
-    `🌍 *Change Timezone*\n\n` +
-      `Current: ${currentTimezone}\n\n` +
-      `Select your timezone:`,
+    `${t(lang, "reminders.changeTimezoneTitle")}\n\n` +
+      `${t(lang, "reminders.currentTimezoneLine", {
+        timezone: currentTimezone,
+      })}\n\n` +
+      `${t(lang, "reminders.selectTimezonePrompt")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: "🇬🇪 Asia/Tbilisi (GMT+4)" }],
-          [{ text: "🇺🇦 Europe/Kyiv (GMT+2)" }],
-          [{ text: "🇵🇱 Europe/Warsaw (GMT+1)" }],
-          [{ text: "🇬🇧 Europe/London (GMT+0)" }],
-          [{ text: "🇺🇸 America/New_York (GMT-5)" }],
-          [{ text: "🇺🇸 America/Los_Angeles (GMT-8)" }],
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+          [{ text: t(lang, "reminders.timezoneOptions.tbilisi") }],
+          [{ text: t(lang, "reminders.timezoneOptions.kyiv") }],
+          [{ text: t(lang, "reminders.timezoneOptions.warsaw") }],
+          [{ text: t(lang, "reminders.timezoneOptions.london") }],
+          [{ text: t(lang, "reminders.timezoneOptions.newYork") }],
+          [{ text: t(lang, "reminders.timezoneOptions.losAngeles") }],
+          [
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
         ],
         resize_keyboard: true,
       },
@@ -237,13 +260,14 @@ export async function handleTimezoneSave(
   userId: string,
   text: string
 ): Promise<boolean> {
-  // Extract timezone from "🇬🇪 Asia/Tbilisi (GMT+4)" format
+  const state = wizard.getState(userId)
+  const lang = resolveLanguage(state?.lang)
   const match = text.match(/([A-Za-z_]+\/[A-Za-z_]+)/)
   if (!match) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid timezone. Please select from the options.",
-      wizard.getBackButton()
+      t(lang, "errors.invalidTimezone"),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -265,15 +289,17 @@ export async function handleTimezoneSave(
 
   const updatedSettings: ReminderSettings = {
     ...currentSettings,
-    timezone,
+    timezone: timezone || "UTC",
   }
 
   await userRepo.update({ id: userId }, { reminderSettings: updatedSettings })
 
   await wizard.sendMessage(
     chatId,
-    `✅ Timezone updated to ${timezone}!\n\n` +
-      `Your reminder time (${currentSettings.time}) will be based on this timezone.`,
+    t(lang, "reminders.timezoneUpdatedMessage", {
+      timezone: timezone || "",
+      time: currentSettings.time,
+    }),
     { parse_mode: "Markdown" }
   )
 

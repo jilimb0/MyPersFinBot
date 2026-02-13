@@ -3,14 +3,14 @@
  * Handles automatic debt payments
  */
 
+import { randomUUID } from "node:crypto"
+import type TelegramBot from "node-telegram-bot-api"
 import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
 import { Transaction as TransactionEntity } from "../database/entities/Transaction"
 import { dbStorage as db } from "../database/storage-db"
-import { TransactionType, InternalCategory } from "../types"
-import { randomUUID } from "crypto"
-import TelegramBot from "node-telegram-bot-api"
-import { formatMoney } from "../utils"
+import { InternalCategory, TransactionType } from "../types"
+import { escapeMarkdown, formatMoney } from "../utils"
 
 class AutoDebtPaymentManager {
   /**
@@ -27,14 +27,21 @@ class AutoDebtPaymentManager {
 
     const today = new Date()
     const dayOfMonth = today.getDate()
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+    const lastDayOfMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0
+    ).getDate()
 
     return debts.filter((debt) => {
       if (!debt.autoPayment?.enabled) return false
-      
+
       if (debt.autoPayment.frequency === "MONTHLY") {
         // Handle end of month (e.g., day 31 in Feb should execute on last day)
-        const targetDay = Math.min(debt.autoPayment.dayOfMonth || 1, lastDayOfMonth)
+        const targetDay = Math.min(
+          debt.autoPayment.dayOfMonth || 1,
+          lastDayOfMonth
+        )
         return dayOfMonth === targetDay
       }
 
@@ -45,7 +52,10 @@ class AutoDebtPaymentManager {
   /**
    * Execute auto-payment for a debt
    */
-  async executeAutoPayment(debt: DebtEntity, bot?: TelegramBot): Promise<boolean> {
+  async executeAutoPayment(
+    debt: DebtEntity,
+    bot?: TelegramBot
+  ): Promise<boolean> {
     try {
       if (!debt.autoPayment) return false
 
@@ -58,9 +68,9 @@ class AutoDebtPaymentManager {
         if (bot) {
           await bot.sendMessage(
             debt.userId,
-            `⚠️ *Auto-Payment Failed*\n\n` +
-            `Debt: *${name}* (${counterparty})\n` +
-            `Reason: Account "${accountId}" not found.`,
+            "⚠️ *Auto-Payment Failed*\n\n" +
+              `Debt: *${escapeMarkdown(name)}* (${escapeMarkdown(counterparty || "")})\n` +
+              `Reason: Account "${escapeMarkdown(accountId)}" not found.`,
             { parse_mode: "Markdown" }
           )
         }
@@ -71,11 +81,11 @@ class AutoDebtPaymentManager {
         if (bot) {
           await bot.sendMessage(
             debt.userId,
-            `⚠️ *Auto-Payment Failed*\n\n` +
-            `Debt: *${name}* (${counterparty})\n` +
-            `Reason: Insufficient funds in "${accountId}"\n\n` +
-            `Available: ${formatMoney(balance.amount, currency)}\n` +
-            `Required: ${formatMoney(amount, currency)}`,
+            "⚠️ *Auto-Payment Failed*\n\n" +
+              `Debt: *${escapeMarkdown(name)}* (${escapeMarkdown(counterparty || "")})\n` +
+              `Reason: Insufficient funds in "${escapeMarkdown(accountId)}"\n\n` +
+              `Available: ${formatMoney(balance.amount, currency)}\n` +
+              `Required: ${formatMoney(amount, currency)}`,
             { parse_mode: "Markdown" }
           )
         }
@@ -125,23 +135,23 @@ class AutoDebtPaymentManager {
         if (debt.isPaid) {
           await bot.sendMessage(
             debt.userId,
-            `🎉 *Debt Fully Paid!*\n\n` +
-            `💸 *${name}* (${counterparty})\n\n` +
-            `Final payment: ${formatMoney(amount, currency)}\n` +
-            `From: ${accountId}\n\n` +
-            `🎆 Debt cleared! Auto-payments disabled.`,
+            "🎉 *Debt Fully Paid!*\n\n" +
+              `💸 *${escapeMarkdown(name)}* (${escapeMarkdown(counterparty || "")})\n\n` +
+              `Final payment: ${formatMoney(amount, currency)}\n` +
+              `From: ${escapeMarkdown(accountId)}\n\n` +
+              "🎆 Debt cleared! Auto-payments disabled.",
             { parse_mode: "Markdown" }
           )
         } else {
           await bot.sendMessage(
             debt.userId,
-            `✅ *Auto-Payment Completed*\n\n` +
-            `💸 *${name}* (${counterparty})\n\n` +
-            `Paid: ${formatMoney(amount, currency)}\n` +
-            `From: ${accountId}\n` +
-            `Frequency: ${debt.autoPayment.frequency}\n\n` +
-            `Progress: ${progress}%\n` +
-            `Remaining: ${formatMoney(remaining, currency)}`,
+            "✅ *Auto-Payment Completed*\n\n" +
+              `💸 *${escapeMarkdown(name)}* (${escapeMarkdown(counterparty || "")})\n\n` +
+              `Paid: ${formatMoney(amount, currency)}\n` +
+              `From: ${escapeMarkdown(accountId)}\n` +
+              `Frequency: ${debt.autoPayment.frequency}\n\n` +
+              `Progress: ${progress}%\n` +
+              `Remaining: ${formatMoney(remaining, currency)}`,
             { parse_mode: "Markdown" }
           )
         }
@@ -149,7 +159,10 @@ class AutoDebtPaymentManager {
 
       return true
     } catch (error) {
-      console.error(`Failed to execute auto-payment for debt ${debt.id}:`, error)
+      console.error(
+        `Failed to execute auto-payment for debt ${debt.id}:`,
+        error
+      )
       return false
     }
   }
@@ -160,14 +173,19 @@ class AutoDebtPaymentManager {
   async executeAllDue(bot?: TelegramBot): Promise<void> {
     try {
       const dueDebts = await this.getDueAutoPayments()
-      
-      console.log(`[AutoDebtPayment] Found ${dueDebts.length} due auto-payments`)
+
+      console.log(
+        `[AutoDebtPayment] Found ${dueDebts.length} due auto-payments`
+      )
 
       for (const debt of dueDebts) {
         await this.executeAutoPayment(debt, bot)
       }
     } catch (error) {
-      console.error('[AutoDebtPayment] Failed to execute due auto-payments:', error)
+      console.error(
+        "[AutoDebtPayment] Failed to execute due auto-payments:",
+        error
+      )
     }
   }
 }

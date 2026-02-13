@@ -1,0 +1,88 @@
+module.exports = {
+  preset: "ts-jest",
+  testEnvironment: "node",
+  roots: ["<rootDir>/src"],
+  testMatch: ["**/__tests__/**/*.test.ts"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  collectCoverageFrom: [
+    "src/handlers/**/*.{ts,tsx}",
+    "src/wizards/**/*.{ts,tsx}",
+    "src/utils/**/*.{ts,tsx}",
+    "src/i18n/**/*.{ts,tsx}",
+    "src/menus-i18n.ts",
+    "src/validators.ts",
+    "src/security.ts",
+    "!src/**/*.d.ts",
+    "!src/__tests__/**",
+    "!src/index.ts",
+  ],
+  coverageDirectory: "coverage",
+  coverageReporters: ["text", "text-summary", "lcov", "html", "json"],
+  coverageThreshold: {
+    global: {
+      branches: 75,
+      functions: 95,
+      lines: 85,
+      statements: 85,
+    },
+    // Per-file thresholds for critical modules
+    "./src/utils/formatters.ts": {
+      branches: 85,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
+    "./src/utils/sanitizer.ts": {
+      branches: 85,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
+    "./src/utils/telegram-helpers.ts": {
+      branches: 80,
+      functions: 85,
+      lines: 85,
+      statements: 85,
+    },
+    "./src/utils/transaction-helpers.ts": {
+      branches: 80,
+      functions: 85,
+      lines: 85,
+      statements: 85,
+    },
+    "./src/validators.ts": {
+      branches: 85,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
+    "./src/security.ts": {
+      branches: 80,
+      functions: 85,
+      lines: 85,
+      statements: 85,
+    },
+    "./src/i18n/**/*.ts": {
+      branches: 75,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+    "./src/menus-i18n.ts": {
+      branches: 75,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+    "./src/wizards/wizards.ts": {
+      branches: 59,
+      functions: 64,
+      lines: 63,
+      statements: 63,
+    },
+  },
+  setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.ts"],
+  verbose: true,
+  testTimeout: 10000,
+  // reporters: ["default"], // Using default reporter
+}

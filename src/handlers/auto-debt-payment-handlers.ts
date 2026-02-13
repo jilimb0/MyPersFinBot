@@ -2,12 +2,14 @@
  * Debt Auto-Payment Handlers
  */
 
-import type { WizardManager } from "../wizards/wizards"
-import { dbStorage as db } from "../database/storage-db"
-import { showDebtsMenu } from "../menus"
 import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
-import { Debt } from "../types"
+import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
+import { showDebtsMenu } from "../menus-i18n"
+import type { Debt } from "../types"
+import { escapeMarkdown } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 /**
  * Handle auto-payment enable/disable toggle
@@ -21,15 +23,16 @@ export async function handleAutoPaymentToggle(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
-  const debt = state.data.debt as Debt
+  const lang = resolveLanguage(state?.lang)
+  const debt = state?.data?.debt as Debt
 
-  if (text === "✅ Enable Auto-Payment") {
+  if (text === t(lang, "wizard.debt.enableAutoPayment")) {
     // Only for I_OWE debts
     if (debt.type !== "I_OWE") {
       await wizard.sendMessage(
         chatId,
-        "⚠️ Auto-payment only available for debts you owe.",
-        wizard.getBackButton()
+        t(lang, "autoPayment.onlyOweWarning"),
+        wizard.getBackButton(lang)
       )
       return true
     }
@@ -37,6 +40,7 @@ export async function handleAutoPaymentToggle(
     // Start auto-payment setup wizard
     wizard.setState(userId, {
       ...state,
+      lang: state.lang,
       step: "AUTO_PAYMENT_SELECT_ACCOUNT",
     })
 
@@ -45,22 +49,30 @@ export async function handleAutoPaymentToggle(
     if (balances.length === 0) {
       await wizard.sendMessage(
         chatId,
-        "⚠️ No accounts found. Please add a balance account first.",
-        wizard.getBackButton()
+        t(lang, "errors.noAccountsFound"),
+        wizard.getBackButton(lang)
       )
       return true
     }
 
-    const accountButtons = balances.map((b) => [{
-      text: `${b.accountId} (${b.currency})`
-    }])
-    accountButtons.push([{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }])
+    const accountButtons = balances.map((b) => [
+      {
+        text: `${b.accountId} (${b.currency})`,
+      },
+    ])
+    accountButtons.push([
+      { text: t(lang, "common.back") },
+      { text: t(lang, "mainMenu.mainMenuButton") },
+    ])
 
     await wizard.sendMessage(
       chatId,
-      `🤖 *Auto-Payment Setup*\n\n` +
-      `Debt: *${debt.name}* (${debt.counterparty})\n\n` +
-      `Select the account to pay from:`,
+      `${t(lang, "autoPayment.setupTitle")}\n\n` +
+        `${t(lang, "autoPayment.debtLine", {
+          name: escapeMarkdown(debt.name),
+          counterparty: escapeMarkdown(debt.counterparty || ""),
+        })}\n\n` +
+        `${t(lang, "autoPayment.selectAccountPrompt")}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -72,21 +84,23 @@ export async function handleAutoPaymentToggle(
     return true
   }
 
-  if (text === "❌ Disable Auto-Payment") {
+  if (text === t(lang, "wizard.debt.disableAutoPayment")) {
     // Disable auto-payment
     const debtRepo = AppDataSource.getRepository(DebtEntity)
     await debtRepo.update(
       { id: debt.id, userId },
-      { autoPayment: null }
+      { autoPayment: undefined as any }
     )
 
     await wizard.sendMessage(
       chatId,
-      `✅ Auto-payment disabled for *${debt.name}*.`,
+      t(lang, "autoPayment.disabledMessage", {
+        name: escapeMarkdown(debt.name),
+      }),
       { parse_mode: "Markdown" }
     )
 
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     wizard.clearState(userId)
     return true
   }
@@ -105,16 +119,16 @@ export async function handleAutoPaymentAccountSelect(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
-
-  const debt = state.data.debt as Debt
+  const lang = resolveLanguage(state?.lang)
+  const debt = state?.data?.debt as Debt
 
   // Extract account name from "AccountName (CURRENCY)"
   const match = text.match(/^(.+?)\s*\(([A-Z]{3})\)$/)
   if (!match) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid account format. Please select from the list.",
-      wizard.getBackButton()
+      t(lang, "errors.invalidAccountFormat"),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -124,10 +138,11 @@ export async function handleAutoPaymentAccountSelect(
   // Store selected account and ask for amount
   wizard.setState(userId, {
     ...state,
+    lang: state.lang,
     step: "AUTO_PAYMENT_ENTER_AMOUNT",
     data: {
-      ...state.data,
-      autoPaymentAccountId: accountId.trim(),
+      ...state?.data,
+      autoPaymentAccountId: accountId?.trim() || "",
     },
   })
 
@@ -135,17 +150,28 @@ export async function handleAutoPaymentAccountSelect(
 
   await wizard.sendMessage(
     chatId,
-    `💸 *Auto-Payment Amount*\n\n` +
-    `Debt: *${debt.name}* (${debt.counterparty})\n` +
-    `From: *${accountId.trim()}*\n` +
-    `Remaining: *${remaining} ${debt.currency}*\n\n` +
-    `Enter the monthly payment amount:\n` +
-    `Example: 1000`,
+    `${t(lang, "autoPayment.amountTitle")}\n\n` +
+      `${t(lang, "autoPayment.debtLine", {
+        name: escapeMarkdown(debt.name),
+        counterparty: escapeMarkdown(debt.counterparty || ""),
+      })}\n` +
+      `${t(lang, "autoPayment.fromLine", {
+        account: escapeMarkdown(
+          accountId?.trim() || t(lang, "common.notAvailable")
+        ),
+      })}\n` +
+      `${t(lang, "autoPayment.remainingLine", {
+        remaining: `${remaining} ${debt.currency}`,
+      })}\n\n` +
+      `${t(lang, "autoPayment.amountPrompt")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
         keyboard: [
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+          [
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
         ],
         resize_keyboard: true,
       },
@@ -165,17 +191,18 @@ export async function handleAutoPaymentAmountInput(
   text: string
 ): Promise<boolean> {
   const state = wizard.getState(userId)
-  if (!state?.data?.debt || !state.data.autoPaymentAccountId) return false
+  if (!state?.data?.debt || !state?.data?.autoPaymentAccountId) return false
 
-  const debt = state.data.debt as Debt
-  const accountId = state.data.autoPaymentAccountId as string
+  const debt = state?.data?.debt as Debt
+  // const accountId = state?.data?.autoPaymentAccountId as string
+  const lang = resolveLanguage(state?.lang)
 
   const amount = parseFloat(text)
-  if (isNaN(amount) || amount <= 0) {
+  if (Number.isNaN(amount) || amount <= 0) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid amount. Please enter a positive number.",
-      wizard.getBackButton()
+      t(lang, "errors.invalidAmount"),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -184,8 +211,10 @@ export async function handleAutoPaymentAmountInput(
   if (amount > remaining) {
     await wizard.sendMessage(
       chatId,
-      `⚠️ Amount exceeds remaining debt (${remaining} ${debt.currency}). Please enter a smaller amount.`,
-      wizard.getBackButton()
+      t(lang, "errors.debtAmountExceedsRemaining", {
+        remaining: `${remaining} ${debt.currency}`,
+      }),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -193,20 +222,26 @@ export async function handleAutoPaymentAmountInput(
   // Store amount and ask for day of month
   wizard.setState(userId, {
     ...state,
+    lang: state.lang,
     step: "AUTO_PAYMENT_SELECT_DAY",
     data: {
-      ...state.data,
+      ...state?.data,
       autoPaymentAmount: amount,
     },
   })
 
   await wizard.sendMessage(
     chatId,
-    `📅 *Select Payment Day*\n\n` +
-    `Debt: *${debt.name}*\n` +
-    `Amount: *${amount} ${debt.currency}*\n\n` +
-    `Enter the day (1-31) for monthly payment:\n` +
-    `Example: 15 (for 15th of each month)`,
+    `${t(lang, "autoPayment.selectDayTitle")}\n\n` +
+      `${t(lang, "autoPayment.debtLine", {
+        name: escapeMarkdown(debt.name),
+        counterparty: escapeMarkdown(debt.counterparty || ""),
+      })}\n` +
+      `${t(lang, "autoPayment.amountLine", {
+        amount,
+        currency: debt.currency,
+      })}\n\n` +
+      `${t(lang, "autoPayment.selectDayPrompt")}`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -214,7 +249,10 @@ export async function handleAutoPaymentAmountInput(
           [{ text: "1" }, { text: "5" }, { text: "10" }],
           [{ text: "15" }, { text: "20" }, { text: "25" }],
           [{ text: "28" }],
-          [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+          [
+            { text: t(lang, "common.back") },
+            { text: t(lang, "mainMenu.mainMenuButton") },
+          ],
         ],
         resize_keyboard: true,
       },
@@ -236,41 +274,46 @@ export async function handleAutoPaymentDaySelect(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
-  const debt = state.data.debt as Debt
-  const accountId = state.data.autoPaymentAccountId as string
-  const amount = state.data.autoPaymentAmount as number
+  const lang = resolveLanguage(state?.lang)
+  const debt = state?.data?.debt as Debt
+  const accountId = state?.data?.autoPaymentAccountId as string
+  const amount = state?.data?.autoPaymentAmount as number
 
-  const dayOfMonth = parseInt(text)
-  if (isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+  const dayOfMonth = parseInt(text, 10)
+  if (Number.isNaN(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid day. Please enter a number between 1-31.",
-      wizard.getBackButton()
+      t(lang, "errors.invalidDay"),
+      wizard.getBackButton(lang)
     )
     return true
   }
 
   // Save auto-payment configuration
-  await saveAutoPaymentConfig(
-    userId,
-    debt.id,
-    accountId,
-    amount,
-    dayOfMonth
-  )
+  await saveAutoPaymentConfig(userId, debt.id, accountId, amount, dayOfMonth)
 
   await wizard.sendMessage(
     chatId,
-    `✅ *Auto-Payment Enabled!*\n\n` +
-    `Debt: *${debt.name}* (${debt.counterparty})\n` +
-    `Amount: *${amount} ${debt.currency}*\n` +
-    `From: *${accountId}*\n` +
-    `Day: *${dayOfMonth}th of each month*\n\n` +
-    `🤖 The bot will automatically pay this debt on day ${dayOfMonth} of each month.`,
+    `${t(lang, "autoPayment.enabledTitle")}\n\n` +
+      `${t(lang, "autoPayment.debtLine", {
+        name: escapeMarkdown(debt.name),
+        counterparty: escapeMarkdown(debt.counterparty || ""),
+      })}\n` +
+      `${t(lang, "autoPayment.amountLine", {
+        amount,
+        currency: debt.currency,
+      })}\n` +
+      `${t(lang, "autoPayment.fromLine", {
+        account: escapeMarkdown(accountId),
+      })}\n` +
+      `${t(lang, "autoPayment.dayLine", {
+        day: t(lang, "autoPayment.dayOfMonth", { day: dayOfMonth }),
+      })}\n\n` +
+      `${t(lang, "autoPayment.noteMonthly", { day: dayOfMonth })}`,
     { parse_mode: "Markdown" }
   )
 
-  await showDebtsMenu(wizard.getBot(), chatId, userId)
+  await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
   wizard.clearState(userId)
   return true
 }

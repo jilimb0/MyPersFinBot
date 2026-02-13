@@ -4,32 +4,33 @@
 
 export const CATEGORY_EMOJIS: Record<string, string> = {
   // Income categories
-  Salary: "💼",
-  Freelance: "💻",
-  Business: "💼",
-  Investment: "📈",
-  Trading: "💸",
-  Bonus: "🎁",
-  Gift: "🎁",
-  Refund: "🔄",
+  SALARY: "💼",
+  FREELANCE: "💻",
+  BUSINESS: "💼",
+  INVESTMENT: "📈",
+  TRADING: "💸",
+  BONUS: "🎁",
+  GIFT: "🎁",
+  REFUND: "🔄",
+  OTHER_INCOME: "💰",
 
   // Expense categories
-  Food: "🍔",
-  Coffee: "☕",
-  Groceries: "🛍️",
-  Transport: "🚗",
-  Housing: "🏠",
-  Utilities: "💡",
-  Entertainment: "🎬",
-  Health: "🏥",
-  Shopping: "🛒",
-  Education: "📚",
+  FOOD_DINING: "🍔",
+  COFFEE: "☕",
+  GROCERIES: "🛍️",
+  TRANSPORTATION: "🚗",
+  HOUSING: "🏠",
+  UTILITIES: "💡",
+  ENTERTAINMENT: "🎬",
+  HEALTH: "🏥",
+  SHOPPING: "🛒",
+  EDUCATION: "📚",
+  OTHER_EXPENSE: "📦",
 
   // Internal categories
-  Goal: "🎯",
-  Debt: "📉",
-  Transfer: "↔️",
-  Other: "📦",
+  GOAL_DEPOSIT: "🎯",
+  DEBT_REPAYMENT: "📉",
+  TRANSFER: "↔️",
 } as const
 
 /**

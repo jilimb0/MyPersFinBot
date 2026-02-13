@@ -1,15 +1,16 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm"
+import type { Currency } from "../../types"
 import { User } from "./User"
-import { Currency } from "../../types"
 
 @Entity("debts")
+@Index(["userId", "isPaid"])
 export class Debt {
   @PrimaryGeneratedColumn("uuid")
   id!: string
@@ -25,13 +26,13 @@ export class Debt {
   amount!: number
 
   @Column({ type: "text" })
-  currency: Currency
+  currency!: Currency
 
   @Column()
   counterparty!: string
 
   @Column({ type: "text" })
-  type: "OWES_ME" | "I_OWE"
+  type!: "OWES_ME" | "I_OWE"
 
   @Column("real", { default: 0 })
   paidAmount!: number
@@ -64,7 +65,10 @@ export class Debt {
   }
 
   // Relations
-  @ManyToOne(() => User, (user) => user.debts)
+  @ManyToOne(
+    () => User,
+    (user) => user.debts
+  )
   @JoinColumn({ name: "userId" })
   user!: User
 }

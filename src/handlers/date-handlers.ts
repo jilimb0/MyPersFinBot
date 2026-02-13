@@ -1,14 +1,19 @@
-import type { WizardManager } from "../wizards/wizards"
-import { dbStorage as db } from "../database/storage-db"
-import { showDebtsMenu, showGoalsMenu, showIncomeSourcesMenu } from "../menus"
-import { reminderManager } from "../services/reminder-manager"
+import { randomUUID } from "node:crypto"
+import dayjs from "dayjs"
 import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
 import { Goal as GoalEntity } from "../database/entities/Goal"
 import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
-import { formatMoney } from "../utils"
-import { randomUUID } from "crypto"
-import dayjs from "dayjs"
+import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
+import {
+  showDebtsMenu,
+  showGoalsMenu,
+  showIncomeSourcesMenu,
+} from "../menus-i18n"
+import { reminderManager } from "../services/reminder-manager"
+import { escapeMarkdown, formatDateDisplay, formatMoney } from "../utils"
+import type { WizardManager } from "../wizards/wizards"
 
 // Helper function to parse DD.MM.YYYY format
 function parseDateDDMMYYYY(text: string): Date | null {
@@ -16,9 +21,12 @@ function parseDateDDMMYYYY(text: string): Date | null {
   if (!match) return null
 
   const [, day, month, year] = match
-  const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`)
+  if (!day || !month || !year) return null
+  const date = new Date(
+    `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+  )
 
-  if (isNaN(date.getTime())) return null
+  if (Number.isNaN(date.getTime())) return null
   return date
 }
 
@@ -31,68 +39,82 @@ export async function handleDebtDueDate(
   const state = wizard.getState(userId)
   if (!state) return false
 
+  if (!state.data) return true
+  const lang = resolveLanguage(state?.lang)
   const { name, amount, currency, type: debtType } = state.data
 
   if (!name || !amount || !currency || !debtType) {
-    await wizard.sendMessage(chatId, "❌ Error: Missing debt data")
+    await wizard.sendMessage(chatId, t(lang, "errors.missingDebtData"))
     wizard.clearState(userId)
-    await showDebtsMenu(wizard.getBot(), chatId, userId)
+    await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
   let dueDate: Date | undefined
 
   // Check if user wants to skip
-  if (text === "⏩ Skip") {
+  if (text === t(lang, "common.skip")) {
     dueDate = undefined
   } else {
     // Parse date DD.MM.YYYY
     const match = text.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
     if (!match) {
-      await wizard.sendMessage(
-        chatId,
-        "❌ Invalid date format. Use DD.MM.YYYY (e.g. 25.01.2026) or tap Skip.",
-        {
-          reply_markup: {
-            keyboard: [
-              [{ text: "⏩ Skip" }],
-              [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+      await wizard.sendMessage(chatId, t(lang, "errors.invalidDateFormat"), {
+        reply_markup: {
+          keyboard: [
+            [{ text: t(lang, "common.skip") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
             ],
-            resize_keyboard: true,
-          },
-        }
-      )
+          ],
+          resize_keyboard: true,
+        },
+      })
       return true
     }
 
     const [, day, month, year] = match
-    dueDate = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`)
-
-    if (isNaN(dueDate.getTime())) {
+    if (!day || !month || !year) {
       await wizard.sendMessage(
         chatId,
-        "❌ Invalid date. Please check and try again.",
-        wizard.getBackButton()
+        t(lang, "errors.invalidDateFormat"),
+        wizard.getBackButton(lang)
+      )
+      return true
+    }
+    dueDate = new Date(
+      `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+    )
+
+    if (Number.isNaN(dueDate.getTime())) {
+      await wizard.sendMessage(
+        chatId,
+        t(lang, "errors.invalidDateFormat"),
+        wizard.getBackButton(lang)
       )
       return true
     }
 
     // Check if date is in the past
     if (dueDate < new Date()) {
-      await wizard.sendMessage(
-        chatId,
-        "⚠️ Due date is in the past. Continue anyway?",
-        {
-          reply_markup: {
-            keyboard: [
-              [{ text: "✅ Yes" }, { text: "❌ No" }],
-              [{ text: "⬅️ Back" }],
-            ],
-            resize_keyboard: true,
-          },
-        }
-      )
-      await wizard.goToStep(userId, "DEBT_CONFIRM_PAST_DATE", { ...state.data, dueDate })
+      await wizard.sendMessage(chatId, t(lang, "dates.pastDateConfirm"), {
+        reply_markup: {
+          keyboard: [
+            [{ text: t(lang, "common.yes") }, { text: t(lang, "common.no") }],
+            [{ text: t(lang, "common.back") }],
+          ],
+          resize_keyboard: true,
+        },
+      })
+      await wizard.goToStep(userId, "DEBT_CONFIRM_PAST_DATE", {
+        ...state?.data,
+        dueDate,
+      })
+      const updated = wizard.getState(userId)
+      if (updated) {
+        wizard.setState(userId, { ...updated, lang })
+      }
       return true
     }
   }
@@ -117,7 +139,9 @@ export async function handleDebtDueDate(
 
     // Create reminder
     try {
-      const debtEntity = await debtRepo.findOne({ where: { id: debtId, userId } })
+      const debtEntity = await debtRepo.findOne({
+        where: { id: debtId, userId },
+      })
       if (debtEntity) {
         await reminderManager.createDebtReminder(userId, debtEntity)
       }
@@ -127,20 +151,30 @@ export async function handleDebtDueDate(
   }
 
   const emoji = debtType === "I_OWE" ? "🔴" : "🟢"
-  const action = debtType === "I_OWE" ? "owe to" : "are owed by"
+  const action =
+    debtType === "I_OWE"
+      ? t(lang, "debts.actionOweTo")
+      : t(lang, "debts.actionOwedBy")
   const dueDateText = dueDate
-    ? `\nDue: ${dueDate.toLocaleDateString("en-GB")} 📅`
+    ? `\n${t(lang, "debts.dueDateLine", {
+        date: formatDateDisplay(dueDate),
+      })}`
     : ""
 
   await wizard.sendMessage(
     chatId,
-    `✅ ${emoji} Debt added!\n\n` +
-    `You ${action} *${name}*: ${formatMoney(amount, currency)}${dueDateText}`,
+    t(lang, "debts.createdMessage", {
+      emoji,
+      action,
+      name,
+      amount: formatMoney(amount, currency),
+      dueDateLine: dueDateText,
+    }),
     { parse_mode: "Markdown" }
   )
 
   wizard.clearState(userId)
-  await showDebtsMenu(wizard.getBot(), chatId, userId)
+  await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
 
@@ -153,34 +187,32 @@ export async function handleDebtDueDateEdit(
   const state = wizard.getState(userId)
   if (!state?.data?.debt) return false
 
-  const debt = state.data.debt
+  const lang = resolveLanguage(state?.lang)
+  const debt = state?.data?.debt
   const parsed = parseDateDDMMYYYY(text)
 
   if (!parsed) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
-      wizard.getBackButton()
+      t(lang, "dates.invalidFormatExample"),
+      wizard.getBackButton(lang)
     )
     return true
   }
 
-  if (dayjs(parsed).isBefore(dayjs(), 'day')) {
-    await wizard.sendMessage(
-      chatId,
-      "⚠️ Warning: Due date is in the past. Continue anyway?",
-      {
-        reply_markup: {
-          keyboard: [
-            [{ text: "✅ Yes" }, { text: "❌ No" }],
-          ],
-          resize_keyboard: true,
-        },
-      }
-    )
+  if (dayjs(parsed).isBefore(dayjs(), "day")) {
+    await wizard.sendMessage(chatId, t(lang, "dates.pastDateConfirm"), {
+      reply_markup: {
+        keyboard: [
+          [{ text: t(lang, "common.yes") }, { text: t(lang, "common.no") }],
+        ],
+        resize_keyboard: true,
+      },
+    })
     wizard.setState(userId, {
       ...state,
-      data: { ...state.data, newDueDate: parsed },
+      lang: state.lang,
+      data: { ...state?.data, newDueDate: parsed },
     })
     return true
   }
@@ -188,15 +220,20 @@ export async function handleDebtDueDateEdit(
   await db.updateDebtDueDate(userId, debt.id, parsed)
 
   const debtEntity = await AppDataSource.getRepository(DebtEntity).findOne({
-    where: { id: debt.id, userId }
+    where: { id: debt.id, userId },
   })
   if (debtEntity) {
     await reminderManager.createDebtReminder(userId, debtEntity)
   }
 
-  await wizard.sendMessage(chatId, `✅ Due date updated to ${dayjs(parsed).format('DD.MM.YYYY')}!\n🔔 New reminders created.`)
+  await wizard.sendMessage(
+    chatId,
+    t(lang, "debts.dueDateUpdated", {
+      date: formatDateDisplay(parsed),
+    })
+  )
   wizard.clearState(userId)
-  await showDebtsMenu(wizard.getBot(), chatId, userId)
+  await showDebtsMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
 
@@ -208,24 +245,24 @@ export async function handleGoalDeadlineEdit(
 ): Promise<boolean> {
   const state = wizard.getState(userId)
   if (!state?.data?.goal) return false
-
-  const goal = state.data.goal
+  const lang = resolveLanguage(state?.lang)
+  const goal = state?.data?.goal
   const parsed = parseDateDDMMYYYY(text)
 
   if (!parsed) {
     await wizard.sendMessage(
       chatId,
-      "❌ Invalid date format. Use DD.MM.YYYY (e.g., 31.12.2026)",
-      wizard.getBackButton()
+      t(lang, "dates.invalidFormatExample"),
+      wizard.getBackButton(lang)
     )
     return true
   }
 
-  if (dayjs(parsed).isBefore(dayjs(), 'day')) {
+  if (dayjs(parsed).isBefore(dayjs(), "day")) {
     await wizard.sendMessage(
       chatId,
-      "❌ Deadline cannot be in the past.",
-      wizard.getBackButton()
+      t(lang, "dates.deadlineCannotBePast"),
+      wizard.getBackButton(lang)
     )
     return true
   }
@@ -233,15 +270,20 @@ export async function handleGoalDeadlineEdit(
   await db.updateGoalDeadline(userId, goal.id, parsed)
 
   const goalEntity = await AppDataSource.getRepository(GoalEntity).findOne({
-    where: { id: goal.id, userId }
+    where: { id: goal.id, userId },
   })
   if (goalEntity) {
     await reminderManager.createGoalReminder(userId, goalEntity)
   }
 
-  await wizard.sendMessage(chatId, `✅ Deadline updated to ${dayjs(parsed).format('DD.MM.YYYY')}!\n🔔 New reminders created.`)
+  await wizard.sendMessage(
+    chatId,
+    t(lang, "goals.deadlineUpdated", {
+      date: formatDateDisplay(parsed),
+    })
+  )
   wizard.clearState(userId)
-  await showGoalsMenu(wizard.getBot(), chatId, userId)
+  await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
 
@@ -254,30 +296,35 @@ export async function handleGoalDeadline(
   const state = wizard.getState(userId)
   if (!state) return false
 
+  if (!state.data) return true
+  const lang = resolveLanguage(state?.lang)
   const { goalId, name, targetAmount, currency } = state.data
 
   if (!goalId || !name || !targetAmount || !currency) {
-    await wizard.sendMessage(chatId, "❌ Error: Missing goal data")
+    await wizard.sendMessage(chatId, t(lang, "errors.missingGoalData"))
     wizard.clearState(userId)
-    await showGoalsMenu(wizard.getBot(), chatId, userId)
+    await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
   let deadline: Date | undefined
 
-  if (text === "⏩ Skip") {
+  if (text === t(lang, "common.skip")) {
     deadline = undefined
   } else {
     const match = text.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
     if (!match) {
       await wizard.sendMessage(
         chatId,
-        "❌ Invalid date format. Use DD.MM.YYYY (e.g. 31.12.2026) or tap Skip.",
+        t(lang, "dates.invalidFormatExampleShort"),
         {
           reply_markup: {
             keyboard: [
-              [{ text: "⏩ Skip" }],
-              [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+              [{ text: t(lang, "common.skip") }],
+              [
+                { text: t(lang, "common.back") },
+                { text: t(lang, "mainMenu.mainMenuButton") },
+              ],
             ],
             resize_keyboard: true,
           },
@@ -287,13 +334,23 @@ export async function handleGoalDeadline(
     }
 
     const [, day, month, year] = match
-    deadline = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`)
-
-    if (isNaN(deadline.getTime())) {
+    if (!day || !month || !year) {
       await wizard.sendMessage(
         chatId,
-        "❌ Invalid date. Please check and try again.",
-        wizard.getBackButton()
+        t(lang, "errors.invalidDateFormat"),
+        wizard.getBackButton(lang)
+      )
+      return true
+    }
+    deadline = new Date(
+      `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+    )
+
+    if (Number.isNaN(deadline.getTime())) {
+      await wizard.sendMessage(
+        chatId,
+        t(lang, "errors.invalidDateFormat"),
+        wizard.getBackButton(lang)
       )
       return true
     }
@@ -301,11 +358,16 @@ export async function handleGoalDeadline(
     if (deadline < new Date()) {
       await wizard.sendMessage(
         chatId,
-        "⚠️ Deadline is in the past. Please enter a future date.",
-        wizard.getBackButton()
+        t(lang, "dates.deadlineCannotBePast"),
+        wizard.getBackButton(lang)
       )
       return true
     }
+  }
+
+  const updatedGoalState = wizard.getState(userId)
+  if (updatedGoalState) {
+    wizard.setState(userId, { ...updatedGoalState, lang })
   }
 
   // Update goal with deadline
@@ -315,7 +377,9 @@ export async function handleGoalDeadline(
 
     // Create reminder
     try {
-      const goalEntity = await goalRepo.findOne({ where: { id: goalId, userId } })
+      const goalEntity = await goalRepo.findOne({
+        where: { id: goalId, userId },
+      })
       if (goalEntity) {
         await reminderManager.createGoalReminder(userId, goalEntity)
       }
@@ -325,19 +389,24 @@ export async function handleGoalDeadline(
 
     await wizard.sendMessage(
       chatId,
-      `✅ Deadline set for *${name}*: ${deadline.toLocaleDateString("en-GB")} 🎯`,
+      t(lang, "goals.deadlineSetMessage", {
+        name: escapeMarkdown(name),
+        date: formatDateDisplay(deadline),
+      }),
       { parse_mode: "Markdown" }
     )
   } else {
     await wizard.sendMessage(
       chatId,
-      `✅ Goal *${name}* created without deadline.`,
+      t(lang, "goals.createdWithoutDeadline", {
+        name: escapeMarkdown(name),
+      }),
       { parse_mode: "Markdown" }
     )
   }
 
   wizard.clearState(userId)
-  await showGoalsMenu(wizard.getBot(), chatId, userId)
+  await showGoalsMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
 
@@ -350,35 +419,36 @@ export async function handleIncomeExpectedDate(
   const state = wizard.getState(userId)
   if (!state) return false
 
+  if (!state.data) return true
+  const lang = resolveLanguage(state?.lang)
   const { incomeId, name, expectedAmount, currency } = state.data
 
   if (!incomeId || !name || !expectedAmount || !currency) {
-    await wizard.sendMessage(chatId, "❌ Error: Missing income source data")
+    await wizard.sendMessage(chatId, t(lang, "errors.missingIncomeData"))
     wizard.clearState(userId)
-    await showIncomeSourcesMenu(wizard.getBot(), chatId, userId)
+    await showIncomeSourcesMenu(wizard.getBot(), chatId, userId, lang)
     return true
   }
 
   let expectedDate: number | undefined
 
-  if (text === "⏩ Skip") {
+  if (text === t(lang, "common.skip")) {
     expectedDate = undefined
   } else {
-    const day = parseInt(text)
-    if (isNaN(day) || day < 1 || day > 31) {
-      await wizard.sendMessage(
-        chatId,
-        "❌ Invalid day. Enter a number between 1-31 or tap Skip.",
-        {
-          reply_markup: {
-            keyboard: [
-              [{ text: "⏩ Skip" }],
-              [{ text: "⬅️ Back" }, { text: "🏠 Main Menu" }],
+    const day = parseInt(text, 10)
+    if (Number.isNaN(day) || day < 1 || day > 31) {
+      await wizard.sendMessage(chatId, t(lang, "dates.invalidDayWithSkip"), {
+        reply_markup: {
+          keyboard: [
+            [{ text: t(lang, "common.skip") }],
+            [
+              { text: t(lang, "common.back") },
+              { text: t(lang, "mainMenu.mainMenuButton") },
             ],
-            resize_keyboard: true,
-          },
-        }
-      )
+          ],
+          resize_keyboard: true,
+        },
+      })
       return true
     }
     expectedDate = day
@@ -394,7 +464,9 @@ export async function handleIncomeExpectedDate(
 
     // Create reminder
     try {
-      const incomeEntity = await incomeRepo.findOne({ where: { id: incomeId, userId } })
+      const incomeEntity = await incomeRepo.findOne({
+        where: { id: incomeId, userId },
+      })
       if (incomeEntity) {
         await reminderManager.createIncomeReminder(userId, incomeEntity)
       }
@@ -404,18 +476,23 @@ export async function handleIncomeExpectedDate(
 
     await wizard.sendMessage(
       chatId,
-      `✅ Reminder set for *${name}*: day ${expectedDate} of each month 📅`,
+      t(lang, "incomeSources.reminderSet", {
+        name: escapeMarkdown(name),
+        day: expectedDate,
+      }),
       { parse_mode: "Markdown" }
     )
   } else {
     await wizard.sendMessage(
       chatId,
-      `✅ Income source *${name}* created without reminder.`,
+      t(lang, "incomeSources.createdWithoutReminder", {
+        name: escapeMarkdown(name),
+      }),
       { parse_mode: "Markdown" }
     )
   }
 
   wizard.clearState(userId)
-  await showIncomeSourcesMenu(wizard.getBot(), chatId, userId)
+  await showIncomeSourcesMenu(wizard.getBot(), chatId, userId, lang)
   return true
 }
