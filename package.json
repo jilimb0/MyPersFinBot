@@ -2,6 +2,9 @@
   "name": "my-pers-fin-bot",
   "version": "0.1.0",
   "description": "Personal Finance Telegram Bot",
+  "engines": {
+    "node": ">=20"
+  },
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
