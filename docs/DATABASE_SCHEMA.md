@@ -1,6 +1,6 @@
 # 🗄️ Database Schema
 
-**Personal Finance Telegram Bot - Database Structure**
+## Personal Finance Telegram Bot - Database Structure
 
 ---
 
@@ -17,7 +17,7 @@
 
 ## 🗓️ Entity Relationship Diagram
 
-```
+```text
                            ┌───────────────────────┐
                            │        users         │
                            │───────────────────────│
@@ -97,7 +97,7 @@
 **Purpose:** Store per-user configuration and preferences
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key (Telegram user ID mapped to UUID) |
 | `defaultCurrency` | TEXT | No | "USD" | Default currency for transactions |
 | `createdAt` | DATETIME | No | NOW() | Account creation timestamp |
@@ -105,6 +105,7 @@
 | `reminderSettings` | JSON | Yes | null | Reminder preferences |
 
 **Relationships:**
+
 - One-to-Many with `balances`
 - One-to-Many with `transactions`
 - One-to-Many with `debts`
@@ -112,9 +113,11 @@
 - One-to-Many with `income_sources`
 
 **Indexes:**
+
 - Primary: `id`
 
 **Example:**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -138,7 +141,7 @@
 **Purpose:** Track user's account balances (Cash, Card, Savings, etc.)
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key |
 | `userId` | UUID | No | - | Foreign key to `users.id` |
 | `accountId` | TEXT | No | - | Account identifier (e.g., "main_card", "cash") |
@@ -147,14 +150,17 @@
 | `lastUpdated` | DATETIME | No | NOW() | Last update timestamp |
 
 **Relationships:**
+
 - Many-to-One with `users`
 
 **Indexes:**
+
 - Primary: `id`
 - Index: `userId`
 - Unique: `(userId, accountId, currency)`
 
 **Example:**
+
 ```json
 {
   "id": "a1b2c3d4-...",
@@ -173,7 +179,7 @@
 **Purpose:** Record all income, expense, and transfer transactions
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key |
 | `userId` | UUID | No | - | Foreign key to `users.id` |
 | `date` | DATETIME | No | - | Transaction date |
@@ -186,19 +192,23 @@
 | `toAccountId` | TEXT | Yes | null | Destination account (for INCOME/TRANSFER) |
 
 **Relationships:**
+
 - Many-to-One with `users`
 
 **Indexes:**
+
 - Primary: `id`
 - Index: `userId`
 - Index: `date`
 
 **Transaction Types:**
+
 - `EXPENSE`: Money out (fromAccountId required)
 - `INCOME`: Money in (toAccountId required)
 - `TRANSFER`: Between accounts (both required)
 
 **Example:**
+
 ```json
 {
   "id": "b2c3d4e5-...",
@@ -221,7 +231,7 @@
 **Purpose:** Track money owed to/from others
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key |
 | `userId` | UUID | No | - | Foreign key to `users.id` |
 | `name` | TEXT | No | - | Debt name/title |
@@ -239,13 +249,16 @@
 | `autoPayment` | JSON | Yes | null | Auto-payment configuration |
 
 **Relationships:**
+
 - Many-to-One with `users`
 
 **Indexes:**
+
 - Primary: `id`
 - Index: `userId`
 
 **Auto-Payment Structure:**
+
 ```json
 {
   "enabled": true,
@@ -257,6 +270,7 @@
 ```
 
 **Example:**
+
 ```json
 {
   "id": "c3d4e5f6-...",
@@ -280,7 +294,7 @@
 **Purpose:** Track savings targets and progress
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key |
 | `userId` | UUID | No | - | Foreign key to `users.id` |
 | `name` | TEXT | No | - | Goal name |
@@ -292,13 +306,16 @@
 | `autoDeposit` | JSON | Yes | null | Auto-deposit configuration |
 
 **Relationships:**
+
 - Many-to-One with `users`
 
 **Indexes:**
+
 - Primary: `id`
 - Index: `userId`
 
 **Auto-Deposit Structure:**
+
 ```json
 {
   "enabled": true,
@@ -310,6 +327,7 @@
 ```
 
 **Example:**
+
 ```json
 {
   "id": "d4e5f6g7-...",
@@ -330,7 +348,7 @@
 **Purpose:** Automatically create recurring expenses/income
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key |
 | `userId` | UUID | No | - | Foreign key to `users.id` |
 | `type` | TEXT | No | - | "EXPENSE" or "INCOME" |
@@ -349,14 +367,17 @@
 | `dayOfWeek` | INTEGER | Yes | null | Day of week (for WEEKLY, 0=Sunday) |
 
 **Relationships:**
+
 - Many-to-One with `users`
 
 **Indexes:**
+
 - Primary: `id`
 - Index: `userId`
 - Index: `nextExecutionDate`
 
 **Example:**
+
 ```json
 {
   "id": "e5f6g7h8-...",
@@ -383,7 +404,7 @@
 **Purpose:** Queue reminders for debts, goals, income
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key |
 | `userId` | UUID | No | - | Foreign key to `users.id` |
 | `type` | TEXT | No | - | "DEBT", "GOAL", "INCOME", "RECURRING_TX" |
@@ -394,15 +415,18 @@
 | `createdAt` | DATETIME | No | NOW() | Creation timestamp |
 
 **Relationships:**
+
 - Many-to-One with `users`
 
 **Indexes:**
+
 - Primary: `id`
 - Index: `userId`
 - Index: `reminderDate`
 - Index: `isProcessed`
 
 **Example:**
+
 ```json
 {
   "id": "f6g7h8i9-...",
@@ -423,7 +447,7 @@
 **Purpose:** Track expected income sources (salary, freelance, etc.)
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key |
 | `userId` | UUID | No | - | Foreign key to `users.id` |
 | `name` | TEXT | No | - | Income source name |
@@ -436,13 +460,16 @@
 | `reminderEnabled` | BOOLEAN | No | false | Send reminder? |
 
 **Relationships:**
+
 - Many-to-One with `users`
 
 **Indexes:**
+
 - Primary: `id`
 - Index: `userId`
 
 **Auto-Create Structure:**
+
 ```json
 {
   "enabled": true,
@@ -454,6 +481,7 @@
 ```
 
 **Example:**
+
 ```json
 {
   "id": "g7h8i9j0-...",
@@ -475,7 +503,7 @@
 **Purpose:** Remember user's preferred account for each category
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `userId` | UUID | No | - | Foreign key to `users.id` (part of PK) |
 | `category` | TEXT | No | - | Transaction category (part of PK) |
 | `preferredAccountId` | TEXT | No | - | Preferred account for this category |
@@ -483,13 +511,16 @@
 | `lastUsed` | DATETIME | No | NOW() | Last usage timestamp |
 
 **Relationships:**
+
 - Many-to-One with `users`
 
 **Indexes:**
+
 - Primary: `(userId, category)` (composite)
 - Unique: `(userId, category)`
 
 **Example:**
+
 ```json
 {
   "userId": "550e8400-...",
@@ -507,7 +538,7 @@
 **Purpose:** Set spending limits per category
 
 | Field | Type | Nullable | Default | Description |
-|-------|------|----------|---------|-------------|
+| ----------------------------------------------- |
 | `id` | UUID | No | Auto | Primary key |
 | `userId` | UUID | No | - | User ID |
 | `category` | TEXT | No | - | Category name |
@@ -518,10 +549,12 @@
 | `updatedAt` | DATETIME | No | NOW() | Last update timestamp |
 
 **Indexes:**
+
 - Primary: `id`
 - Index: `(userId, category)`
 
 **Example:**
+
 ```json
 {
   "id": "h8i9j0k1-...",
@@ -541,7 +574,7 @@
 
 ### One-to-Many
 
-```
+```sql
 users (1) → (*) balances
 users (1) → (*) transactions
 users (1) → (*) debts
@@ -558,6 +591,7 @@ users (1) → (*) budgets
 All tables (except `users`) have `userId` as foreign key.
 
 **TypeORM handles cascading:**
+
 - Delete user → delete all related records (cascade)
 
 ---
@@ -567,6 +601,7 @@ All tables (except `users`) have `userId` as foreign key.
 ### Performance Indexes
 
 **Current:**
+
 - `transactions.userId` - Fast user queries
 - `transactions.date` - Date range queries
 - `recurring_transactions.nextExecutionDate` - Scheduler queries
@@ -574,6 +609,7 @@ All tables (except `users`) have `userId` as foreign key.
 - `reminders.reminderDate` - Scheduled reminders
 
 **Recommended (TODO):**
+
 ```sql
 CREATE INDEX idx_transactions_category ON transactions(category);
 CREATE INDEX idx_transactions_type ON transactions(type);
@@ -587,7 +623,7 @@ CREATE INDEX idx_transactions_user_date ON transactions(userId, date);
 ### SQLite Type Mapping
 
 | TypeORM | SQLite | Description |
-|---------|--------|-------------|
+| ------------------------------ |
 | `@PrimaryGeneratedColumn('uuid')` | TEXT | UUID as string |
 | `@Column()` | TEXT | String |
 | `@Column('real')` | REAL | Floating point (amount) |
@@ -618,6 +654,7 @@ CREATE INDEX idx_transactions_user_date ON transactions(userId, date);
 **Not implemented** (SQLite limited support)
 
 **Validated in code:**
+
 - Amount > 0
 - Valid currency codes
 - Valid date formats
@@ -630,6 +667,7 @@ CREATE INDEX idx_transactions_user_date ON transactions(userId, date);
 ### Current Approach
 
 **TypeORM automatic synchronization:**
+
 ```typescript
 // data-source.ts
 synchronize: true  // Auto-create/update tables
@@ -659,6 +697,7 @@ pnpm run migration:revert
 See [DEPLOYMENT.md](DEPLOYMENT.md) for backup procedures.
 
 **What to backup:**
+
 - `data/database.db` - Main database
 - `data/database.db-shm` - Shared memory (WAL)
 - `data/database.db-wal` - Write-ahead log (WAL)
@@ -672,6 +711,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for backup procedures.
 ### Current Limits
 
 **Single SQLite file:**
+
 - ✅ Perfect for 1 user
 - ✅ Works for multiple users (thousands)
 - ⚠️ Concurrent writes limited by WAL mode

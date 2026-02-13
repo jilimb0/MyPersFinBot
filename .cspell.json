@@ -1,0 +1,35 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "mypersfin",
+    "persfin",
+    "assemblyai",
+    "botuser",
+    "journalctl",
+    "autorestart",
+    "healthcheck",
+    "tulpn",
+    "pnpm",
+    "biome",
+    "typeorm",
+    "undici",
+    "dayjs",
+    "exceljs",
+    "ffmpeg",
+    "ioredis",
+    "sqlite",
+    "sentry",
+    "telegraf",
+    "typedoc",
+    "devdependencies",
+    "supabase"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "*.json",
+    "pnpm-lock.yaml"
+  ]
+}

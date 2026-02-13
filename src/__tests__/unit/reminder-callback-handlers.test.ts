@@ -1,8 +1,9 @@
-import type TelegramBot from "node-telegram-bot-api"
+import { dbStorage } from "../../database/storage-db"
 import {
   handleReminderDone,
   handleReminderSnooze,
 } from "../../handlers/reminder-callback-handlers"
+import { reminderManager } from "../../services/reminder-manager"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -12,74 +13,237 @@ jest.mock("../../database/storage-db", () => ({
 
 jest.mock("../../services/reminder-manager", () => ({
   reminderManager: {
-    snoozeReminder: jest.fn(),
-    completeReminder: jest.fn(),
+    snoozeReminder: jest.fn().mockResolvedValue(true),
+    completeReminder: jest.fn().mockResolvedValue(true),
   },
 }))
 
-jest.mock("../../utils", () => ({
-  safeAnswerCallback: jest.fn().mockResolvedValue(undefined),
-}))
+describe("Reminder Callback Handlers - Branch Coverage", () => {
+  let bot: any
+  const userId = "user123"
+  const chatId = 12345
 
-import { reminderManager } from "../../services/reminder-manager"
-import { safeAnswerCallback } from "../../utils"
-
-const mockSnooze = reminderManager.snoozeReminder as jest.MockedFunction<
-  typeof reminderManager.snoozeReminder
->
-const mockComplete = reminderManager.completeReminder as jest.MockedFunction<
-  typeof reminderManager.completeReminder
->
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-  editMessageReplyMarkup = jest.fn().mockResolvedValue({})
-}
-
-describe("Reminder callback handlers", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    bot = {
+      answerCallbackQuery: jest.fn().mockResolvedValue(true),
+      editMessageReplyMarkup: jest.fn().mockResolvedValue(true),
+    }
   })
 
-  test("handleReminderSnooze marks reminder and clears buttons", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
-    mockSnooze.mockResolvedValue(true)
+  describe("handleReminderSnooze", () => {
+    const query: any = {
+      id: "query123",
+      message: {
+        message_id: 456,
+      },
+    }
 
-    await handleReminderSnooze(
-      bot,
-      {
-        id: "cb-1",
-        data: "reminder_snooze|rem-1|1h",
-        message: { message_id: 10, chat: { id: 100 } },
-      } as TelegramBot.CallbackQuery,
-      "100",
-      100,
-      "reminder_snooze|rem-1|1h"
-    )
+    it("should handle missing reminderId", async () => {
+      await handleReminderSnooze(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_snooze|" // Missing reminderId
+      )
 
-    expect(mockSnooze).toHaveBeenCalledWith("rem-1", "1h")
-    expect(safeAnswerCallback).toHaveBeenCalled()
-    expect(bot.editMessageReplyMarkup).toHaveBeenCalled()
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith(
+        "query123",
+        expect.objectContaining({
+          show_alert: true,
+        })
+      )
+    })
+
+    it("should handle missing duration", async () => {
+      await handleReminderSnooze(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_snooze|rem123|" // Missing duration
+      )
+
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith(
+        "query123",
+        expect.objectContaining({
+          show_alert: true,
+        })
+      )
+    })
+
+    it("should handle snooze failure", async () => {
+      ;(reminderManager.snoozeReminder as jest.Mock).mockResolvedValueOnce(
+        false
+      )
+
+      await handleReminderSnooze(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_snooze|rem123|1h"
+      )
+
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith(
+        "query123",
+        expect.objectContaining({
+          show_alert: true,
+        })
+      )
+    })
+
+    it("should handle successful snooze", async () => {
+      await handleReminderSnooze(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_snooze|rem123|1h"
+      )
+
+      expect(reminderManager.snoozeReminder).toHaveBeenCalledWith(
+        "rem123",
+        "1h"
+      )
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith(
+        "query123",
+        expect.objectContaining({
+          show_alert: false,
+        })
+      )
+      expect(bot.editMessageReplyMarkup).toHaveBeenCalled()
+    })
+
+    it("should handle snooze without message", async () => {
+      const queryNoMsg = { ...query, message: undefined }
+
+      await handleReminderSnooze(
+        bot,
+        queryNoMsg,
+        userId,
+        chatId,
+        "reminder_snooze|rem123|1d"
+      )
+
+      expect(bot.answerCallbackQuery).toHaveBeenCalled()
+      expect(bot.editMessageReplyMarkup).not.toHaveBeenCalled()
+    })
+
+    it("should handle getUserLanguage error", async () => {
+      ;(dbStorage.getUserLanguage as jest.Mock).mockRejectedValueOnce(
+        new Error("DB error")
+      )
+
+      await handleReminderSnooze(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_snooze|rem123|1h"
+      )
+
+      // Should fallback to "en" and continue
+      expect(bot.answerCallbackQuery).toHaveBeenCalled()
+    })
   })
 
-  test("handleReminderDone completes reminder and clears buttons", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
-    mockComplete.mockResolvedValue(true)
+  describe("handleReminderDone", () => {
+    const query: any = {
+      id: "query123",
+      message: {
+        message_id: 456,
+      },
+    }
 
-    await handleReminderDone(
-      bot,
-      {
-        id: "cb-2",
-        data: "reminder_done|rem-2",
-        message: { message_id: 11, chat: { id: 101 } },
-      } as TelegramBot.CallbackQuery,
-      "101",
-      101,
-      "reminder_done|rem-2"
-    )
+    it("should handle missing reminderId", async () => {
+      await handleReminderDone(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_done|" // Missing reminderId
+      )
 
-    expect(mockComplete).toHaveBeenCalledWith("rem-2")
-    expect(safeAnswerCallback).toHaveBeenCalled()
-    expect(bot.editMessageReplyMarkup).toHaveBeenCalled()
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith(
+        "query123",
+        expect.objectContaining({
+          show_alert: true,
+        })
+      )
+    })
+
+    it("should handle complete failure", async () => {
+      ;(reminderManager.completeReminder as jest.Mock).mockResolvedValueOnce(
+        false
+      )
+
+      await handleReminderDone(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_done|rem123"
+      )
+
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith(
+        "query123",
+        expect.objectContaining({
+          show_alert: true,
+        })
+      )
+    })
+
+    it("should handle successful complete", async () => {
+      await handleReminderDone(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_done|rem123"
+      )
+
+      expect(reminderManager.completeReminder).toHaveBeenCalledWith("rem123")
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith(
+        "query123",
+        expect.objectContaining({
+          show_alert: false,
+        })
+      )
+      expect(bot.editMessageReplyMarkup).toHaveBeenCalled()
+    })
+
+    it("should handle done without message", async () => {
+      const queryNoMsg = { ...query, message: undefined }
+
+      await handleReminderDone(
+        bot,
+        queryNoMsg,
+        userId,
+        chatId,
+        "reminder_done|rem123"
+      )
+
+      expect(bot.answerCallbackQuery).toHaveBeenCalled()
+      expect(bot.editMessageReplyMarkup).not.toHaveBeenCalled()
+    })
+
+    it("should handle getUserLanguage error in done", async () => {
+      ;(dbStorage.getUserLanguage as jest.Mock).mockRejectedValueOnce(
+        new Error("DB error")
+      )
+
+      await handleReminderDone(
+        bot,
+        query,
+        userId,
+        chatId,
+        "reminder_done|rem123"
+      )
+
+      // Should fallback to "en" and continue
+      expect(bot.answerCallbackQuery).toHaveBeenCalled()
+    })
   })
 })

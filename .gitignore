@@ -36,6 +36,9 @@ pnpm-debug.log*
 coverage/
 test-reports/
 
+# Documentation (generated)
+docs/api/
+
 # Database
 db.json.backup
 *.sqlite
@@ -78,6 +81,5 @@ test-reports/
 BIOME_MIGRATION_COMPLETE.md
 *.old
 
-#
-
-index-old.ts
+# Audit reports (temporary)
+outdated-packages.txt

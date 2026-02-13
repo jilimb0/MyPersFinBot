@@ -14,16 +14,19 @@
 ## 🛡️ Protection Layers
 
 ### 1. **SQL Injection Protection**
+
 - ✅ TypeORM использует параметризованные запросы
 - ✅ Валидация всех входных параметров
 - ✅ Типизация через TypeScript
 
 ### 2. **XSS Protection**
+
 - ✅ HTML escaping через `validator.escape()`
 - ✅ Tag stripping через `sanitize-html`
 - ✅ Двойная защита
 
 ### 3. **Input Validation**
+
 - ✅ Проверка форматов (email, currency, etc.)
 - ✅ Ограничение длины строк
 - ✅ Валидация числовых значений
@@ -31,7 +34,9 @@
 ## 📚 Functions
 
 ### `sanitizeText(input: string): string`
+
 Общая санитизация текста:
+
 ```typescript
 import { sanitizeText } from './utils/sanitizer'
 
@@ -43,14 +48,18 @@ const safe2 = sanitizeText("Test & <test>")
 ```
 
 ### `sanitizeDescription(input: string): string`
+
 Санитизация описаний (более мягкая):
+
 ```typescript
 const desc = sanitizeDescription("Monthly rent payment")
 // Max 500 characters, preserves basic formatting
 ```
 
 ### `sanitizeName(input: string): string`
+
 Санитизация имён аккаунтов/контрагентов:
+
 ```typescript
 const name = sanitizeName("Cash Account")
 // Throws if no alphanumeric characters
@@ -58,7 +67,9 @@ const name = sanitizeName("Cash Account")
 ```
 
 ### `sanitizeUserId(userId: number | string): string`
+
 Валидация Telegram User ID:
+
 ```typescript
 const userId = sanitizeUserId(123456)
 // Result: "123456"
@@ -67,7 +78,9 @@ sanitizeUserId(-1) // Throws: User ID must be positive
 ```
 
 ### `sanitizeAmount(amount: number | string): number`
+
 Валидация денежных сумм:
+
 ```typescript
 const amount = sanitizeAmount("100.556")
 // Result: 100.56 (rounded to 2 decimals)
@@ -76,7 +89,9 @@ sanitizeAmount(1000000000) // Throws: Amount too large
 ```
 
 ### `sanitizeCurrency(currency: string): string`
+
 Валидация валютных кодов:
+
 ```typescript
 const curr = sanitizeCurrency("usd")
 // Result: "USD"
@@ -85,7 +100,9 @@ sanitizeCurrency("$") // Throws: Invalid currency code
 ```
 
 ### `sanitizeDate(date: string | Date): Date`
+
 Валидация дат:
+
 ```typescript
 const date = sanitizeDate("2024-01-15T10:00:00Z")
 // Must be ISO 8601 format
@@ -93,7 +110,9 @@ const date = sanitizeDate("2024-01-15T10:00:00Z")
 ```
 
 ### `sanitizeTransactionInput(input): SanitizedTransactionInput`
+
 Комплексная санитизация транзакции:
+
 ```typescript
 const input = {
   userId: 123456,
@@ -114,7 +133,9 @@ const safe = sanitizeTransactionInput(input)
 ```
 
 ### `detectMaliciousInput(input: string): boolean`
+
 Обнаружение вредоносного ввода:
+
 ```typescript
 if (detectMaliciousInput(userInput)) {
   logger.warn("Malicious input detected!")
@@ -131,6 +152,7 @@ if (detectMaliciousInput(userInput)) {
 ## 🎯 Usage Examples
 
 ### Example 1: Sanitize User Input in Bot Handler
+
 ```typescript
 import { sanitizeText, detectMaliciousInput } from './utils/sanitizer'
 
@@ -151,6 +173,7 @@ bot.on('message', async (msg) => {
 ```
 
 ### Example 2: Sanitize Before Database Save
+
 ```typescript
 import { sanitizeTransactionInput } from './utils/sanitizer'
 
@@ -169,6 +192,7 @@ async function createTransaction(rawData: any) {
 ```
 
 ### Example 3: Validate API Input
+
 ```typescript
 import { sanitizeAmount, sanitizeCurrency } from './utils/sanitizer'
 
@@ -196,6 +220,7 @@ pnpm test src/__tests__/unit/sanitizer.test.ts
 ```
 
 Тесты проверяют:
+
 - ✅ XSS защиту
 - ✅ SQL injection защиту
 - ✅ Валидацию форматов
@@ -204,19 +229,22 @@ pnpm test src/__tests__/unit/sanitizer.test.ts
 
 ## 🔐 Security Checklist
 
-### Before Database Operations:
+### Before Database Operations
+
 - [ ] Sanitize user IDs
 - [ ] Validate amounts
 - [ ] Sanitize descriptions/notes
 - [ ] Validate currency codes
 - [ ] Check date ranges
 
-### Before Displaying to Users:
+### Before Displaying to Users
+
 - [ ] Escape HTML entities
 - [ ] Remove script tags
 - [ ] Limit string length
 
-### Logging:
+### Logging
+
 - [ ] Detect malicious patterns
 - [ ] Log suspicious activity
 - [ ] Don't log sensitive data
@@ -224,6 +252,7 @@ pnpm test src/__tests__/unit/sanitizer.test.ts
 ## 🚀 Best Practices
 
 1. **Always sanitize at input boundaries**
+
    ```typescript
    // ✅ Good
    const safe = sanitizeText(userInput)
@@ -234,6 +263,7 @@ pnpm test src/__tests__/unit/sanitizer.test.ts
    ```
 
 2. **Use TypeORM query builders (already safe)**
+
    ```typescript
    // ✅ Good - TypeORM escapes automatically
    await repo.findOne({ where: { userId } })
@@ -243,6 +273,7 @@ pnpm test src/__tests__/unit/sanitizer.test.ts
    ```
 
 3. **Validate early, sanitize always**
+
    ```typescript
    // Validate format
    if (!isValidFormat(input)) throw new Error('Invalid format')
@@ -252,6 +283,7 @@ pnpm test src/__tests__/unit/sanitizer.test.ts
    ```
 
 4. **Log suspicious activity**
+
    ```typescript
    if (detectMaliciousInput(input)) {
      logger.warn('Malicious input', { userId, input: input.substring(0, 100) })
@@ -261,7 +293,7 @@ pnpm test src/__tests__/unit/sanitizer.test.ts
 ## 📊 Coverage
 
 | Function | XSS | SQL Injection | Length Limit | Type Validation |
-|----------|-----|---------------|--------------|----------------|
+| --------------------------------------------------------------- |
 | sanitizeText | ✅ | ✅ | ✅ (1000) | ✅ |
 | sanitizeDescription | ✅ | ✅ | ✅ (500) | ✅ |
 | sanitizeName | ✅ | ✅ | ✅ (100) | ✅ |

@@ -4,8 +4,8 @@ import fs, { existsSync, unlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { promisify } from "node:util"
-import axios from "axios"
 import type TelegramBot from "node-telegram-bot-api"
+import { request } from "undici"
 import { dbStorage as db } from "../database/storage-db"
 import { resolveLanguage, t } from "../i18n"
 import { assemblyAIService } from "../services/assemblyai-service"
@@ -32,10 +32,22 @@ export async function handleVoiceMessage(
     await bot.sendMessage(chatId, t(lang, "voiceHandler.processing"))
 
     const fileLink = await bot.getFileLink(voice.file_id)
-    const response = await axios.get(fileLink, { responseType: "arraybuffer" })
+
+    // Download voice file using undici
+    const { statusCode, body } = await request(fileLink)
+    if (statusCode !== 200) {
+      throw new Error(`Failed to download voice file: HTTP ${statusCode}`)
+    }
+
+    // Read response body as buffer
+    const chunks = []
+    for await (const chunk of body) {
+      chunks.push(chunk)
+    }
+    const audioData = Buffer.concat(chunks)
 
     const ogaPath = join(tmpdir(), `voice_${Date.now()}.oga`)
-    writeFileSync(ogaPath, response.data)
+    writeFileSync(ogaPath, audioData)
 
     const wavPath = join(tmpdir(), `voice_${Date.now()}.wav`)
 

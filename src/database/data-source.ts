@@ -18,7 +18,7 @@ import { CustomQueryLogger } from "../monitoring"
 const DB_PATH = path.resolve(__dirname, "../../data/database.sqlite")
 
 export const AppDataSource = new DataSource({
-  type: "sqlite",
+  type: "better-sqlite3",
   database: DB_PATH,
   logging: ["error", "warn"],
   logger: new CustomQueryLogger(),

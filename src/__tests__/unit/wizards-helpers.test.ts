@@ -80,6 +80,13 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
       lang: "en",
     } as any)
     expect(handlers.handleTxAccount).toHaveBeenCalled()
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "TX_AMOUNT",
+      txType: "TRANSFER",
+      lang: "en",
+    } as any)
+    expect(bot.sendMessage).toHaveBeenCalled()
   })
 
   test("TX_TO_ACCOUNT, TX_CONFIRM_REFUND", async () => {
@@ -467,5 +474,263 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
     } as any)
 
     expect(menus.showMainMenu).toHaveBeenCalled()
+  })
+
+  test("GOAL_ADVANCED_MENU covers weekly/monthly and progress branches", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = new WizardManager(bot)
+    const goToStepSpy = jest.spyOn(wizard, "goToStep")
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "GOAL_ADVANCED_MENU",
+      lang: "en",
+      data: {
+        goal: {
+          name: "Weekly Goal",
+          targetAmount: 1000,
+          currentAmount: 0,
+          deadline: "2026-03-01",
+          currency: "USD",
+          autoDeposit: {
+            enabled: true,
+            amount: 100,
+            accountId: "Cash",
+            frequency: "WEEKLY",
+            dayOfWeek: 1,
+          },
+        },
+      },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "GOAL_ADVANCED_MENU",
+      lang: "en",
+      data: {
+        goal: {
+          name: "Monthly Goal",
+          targetAmount: 1000,
+          currentAmount: 1000,
+          currency: "USD",
+          autoDeposit: {
+            enabled: true,
+            amount: 50,
+            accountId: "Card",
+            frequency: "MONTHLY",
+            dayOfMonth: 15,
+          },
+        },
+      },
+    } as any)
+
+    expect(goToStepSpy).toHaveBeenCalled()
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("DEBT_ADVANCED_MENU covers debt type and payment status branches", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = new WizardManager(bot)
+    const goToStepSpy = jest.spyOn(wizard, "goToStep")
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "DEBT_ADVANCED_MENU",
+      lang: "en",
+      data: {
+        debt: {
+          name: "Debt A",
+          amount: 1000,
+          paidAmount: 0,
+          type: "I_OWE",
+          currency: "USD",
+          dueDate: "2026-03-15",
+        },
+      },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "DEBT_ADVANCED_MENU",
+      lang: "en",
+      data: {
+        debt: {
+          name: "Debt B",
+          amount: 1000,
+          paidAmount: 1000,
+          type: "OWES_ME",
+          currency: "USD",
+        },
+      },
+    } as any)
+
+    expect(goToStepSpy).toHaveBeenCalled()
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("TX_EDIT_CATEGORY and TX_EDIT_ACCOUNT cover alternate branches", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = new WizardManager(bot)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "TX_EDIT_CATEGORY",
+      lang: "en",
+      data: {
+        transaction: {
+          type: "INCOME",
+          amount: 100,
+          currency: "USD",
+          category: "SALARY",
+          date: new Date().toISOString(),
+        },
+      },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "TX_EDIT_ACCOUNT",
+      lang: "en",
+      data: {
+        transaction: {
+          type: "TRANSFER",
+          amount: 10,
+          currency: "USD",
+          category: "OTHER",
+          date: new Date().toISOString(),
+          toAccountId: "Card",
+        },
+      },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "TX_EDIT_ACCOUNT",
+      lang: "en",
+      data: {
+        transaction: {
+          type: "TRANSFER",
+          amount: 10,
+          currency: "USD",
+          category: "OTHER",
+          date: new Date().toISOString(),
+        },
+      },
+    } as any)
+
+    expect(handlers.handleTxAccount).toHaveBeenCalled()
+  })
+
+  test("DEBT_MENU and GOAL_MENU cover remaining status branches", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = new WizardManager(bot)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "DEBT_MENU",
+      lang: "en",
+      data: {
+        debt: {
+          amount: 1000,
+          paidAmount: 200,
+          type: "OWES_ME",
+          name: "Debt Partial",
+          currency: "USD",
+          dueDate: "2026-03-30",
+          autoPayment: { enabled: true },
+        },
+      },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "DEBT_MENU",
+      lang: "en",
+      data: {
+        debt: {
+          amount: 1000,
+          paidAmount: 1000,
+          type: "I_OWE",
+          name: "Debt Paid",
+          currency: "USD",
+        },
+      },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "GOAL_MENU",
+      lang: "en",
+      data: {
+        goal: {
+          name: "Goal Zero",
+          targetAmount: 500,
+          currentAmount: 0,
+          deadline: "2026-04-01",
+          currency: "USD",
+          autoDeposit: { enabled: true },
+        },
+      },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "GOAL_MENU",
+      lang: "en",
+      data: {
+        goal: {
+          name: "Goal Achieved",
+          targetAmount: 500,
+          currentAmount: 500,
+          currency: "USD",
+          autoDeposit: { enabled: false },
+        },
+      },
+    } as any)
+
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("GOAL_ADVANCED_MENU and DEBT_ADVANCED_MENU cover partial progress branches", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = new WizardManager(bot)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "GOAL_ADVANCED_MENU",
+      lang: "en",
+      data: {
+        goal: {
+          name: "Goal Partial",
+          targetAmount: 1000,
+          currentAmount: 300,
+          currency: "USD",
+          autoDeposit: { enabled: false },
+        },
+      },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "DEBT_ADVANCED_MENU",
+      lang: "en",
+      data: {
+        debt: {
+          name: "Debt Partial 2",
+          amount: 1000,
+          paidAmount: 300,
+          type: "I_OWE",
+          currency: "USD",
+        },
+      },
+    } as any)
+
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("GOAL_COMPLETE_CONFIRM handles missing data guards", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = new WizardManager(bot)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "GOAL_COMPLETE_CONFIRM",
+      lang: "en",
+      data: { goal: { currency: "USD" } },
+    } as any)
+
+    await resendCurrentStepPrompt(wizard, 1, "u1", {
+      step: "GOAL_COMPLETE_CONFIRM",
+      lang: "en",
+      data: { newTargetAmount: 1000 },
+    } as any)
+
+    expect(bot.sendMessage).not.toHaveBeenCalled()
   })
 })

@@ -1,9 +1,11 @@
 # Environment Variables
 
 ## Required
+
 - `TELEGRAM_BOT_TOKEN`
 
 ## Optional
+
 - `ASSEMBLYAI_API_KEY`
 - `FX_API_KEY`
 - `ALLOWED_USERS` (comma‑separated user IDs)
@@ -37,6 +39,7 @@
 - `LOG_DIR` (default: `logs`)
 
 ## Cache/Redis
+
 - `USE_REDIS` (`true|false`)
 - `REDIS_HOST`
 - `REDIS_PORT`

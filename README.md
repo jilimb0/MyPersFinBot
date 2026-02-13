@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Track your finances effortlessly via Telegram**
+Track your finances effortlessly via Telegram
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green)](https://nodejs.org/)
@@ -29,7 +29,7 @@
 
 ## 🎬 Demo
 
-```
+```text
 User: 50 coffee ☕
 Bot: 💸 Confirm Expense
      Amount: -50.00 USD
@@ -79,27 +79,32 @@ See `docs/DEV.md`.
 ## 🛠️ Tech Stack
 
 ### Core
+
 - **Node.js** 20+ - Runtime
 - **TypeScript** 5.8 - Language
 - **node-telegram-bot-api** - Telegram integration
 
 ### Database
+
 - **TypeORM** - ORM
 - **SQLite3** - Database (WAL mode for performance)
 
 ### APIs & Services
+
 - **AssemblyAI** - Voice transcription
 - **freecurrencyapi.com** - Exchange rates
 - **FFmpeg** - Audio conversion
 
 ### Libraries
-- **axios** / **undici** (HTTP/2) - HTTP requests
+
+- **undici** (HTTP/2) - HTTP requests
 - **dayjs** - Date manipulation
 - **node-cron** - Scheduling
 - **dotenv** - Environment variables
 
 ### Dev Tools
-- **ESLint** + **Prettier** - Code quality
+
+- **Biome** - Code quality & formatting
 - **ts-node** - Development runtime
 
 ---
@@ -108,7 +113,7 @@ See `docs/DEV.md`.
 
 ### Text Input
 
-```
+```text
 # Simple
 50 coffee
 100 taxi
@@ -126,7 +131,7 @@ salary 4000
 
 ### Voice Input
 
-```
+```text
 🎤 "fifty on coffee"
 🎤 "потратил сто на такси" 
 🎤 "витратив двісті на їжу"
@@ -134,7 +139,7 @@ salary 4000
 
 ### Keyboard
 
-```
+```text
 💸 Expense → 50 → Food → Today → ✅
 💰 Income → 1000 → Salary → ✅
 💳 Balances → View / Add / Edit
@@ -146,7 +151,7 @@ salary 4000
 ## 📊 Commands
 
 | Command | Description |
-|---------|-------------|
+| ---------------------- |
 | `/start` | Start bot / Show main menu |
 | `/help` | Show help & features |
 | `/stats` | Quick statistics |
@@ -159,12 +164,14 @@ salary 4000
 ### Best Practices
 
 ✅ **DO:**
+
 - Keep `.env` and `secure.json` in `.gitignore`
 - Use environment variables for secrets
 - Regularly update dependencies
 - Set up user whitelist (if needed)
 
 ❌ **DON'T:**
+
 - Commit tokens to git
 - Share bot link publicly (anyone can use it)
 - Store unencrypted sensitive data
@@ -191,6 +198,7 @@ bot.on('message', (msg) => {
 ## 🚀 Deployment
 
 See [**docs/DEPLOYMENT.md**](docs/DEPLOYMENT.md) for:
+
 - Production setup
 - PM2 process manager
 - Docker containerization
@@ -220,6 +228,7 @@ sudo systemctl start bot
 **Status:** ✅ Unit + E2E coverage in place (Jest)
 
 **Commands:**
+
 - `pnpm test`
 - `pnpm test:coverage`
 - `pnpm test:coverage:ci`
@@ -229,6 +238,7 @@ sudo systemctl start bot
 ## 🗺️ Roadmap
 
 ### ✅ Completed
+
 - [x] Core transaction tracking
 - [x] Multi-currency support
 - [x] Voice messages
@@ -239,10 +249,12 @@ sudo systemctl start bot
 - [x] Reminders
 
 ### 🚧 In Progress
+
 - [ ] Coverage thresholds tuning
 - [ ] Documentation cleanup
 
 ### 📋 Planned
+
 - [ ] Multi-language UI (EN, RU, UK, ES, PL)
 - [ ] Search in transaction history
 - [ ] Advanced filters
@@ -284,7 +296,7 @@ pnpm run check
 ### Code Style
 
 - TypeScript strict mode
-- ESLint + Prettier
+- Biome
 - Conventional commits
 - Modular architecture
 
@@ -298,7 +310,8 @@ ISC License
 
 ## 👨‍💻 Author
 
-**Your Name**
+Your Name
+
 - Telegram: [@yourusername](https://t.me/yourusername)
 - GitHub: [@yourusername](https://github.com/yourusername)
 
@@ -316,6 +329,7 @@ ISC License
 ## 📞 Support
 
 **Issues?** Check documentation:
+
 - [docs/README.md](docs/README.md) - Docs index
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment help
 - [docs/DEBUGGING.md](docs/DEBUGGING.md) - Debugging

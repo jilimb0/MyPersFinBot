@@ -1,0 +1,41 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "name": "MyPersFinBot API Documentation",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "excludeInternal": true,
+  "readme": "README.md",
+  "plugin": [],
+  "theme": "default",
+  "categorizeByGroup": true,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "Services",
+    "Handlers",
+    "Database",
+    "Utils",
+    "Types",
+    "*"
+  ],
+  "sort": ["source-order"],
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "exclude": [
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/node_modules/**"
+  ],
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "searchInComments": true,
+  "cleanOutputDir": true
+}

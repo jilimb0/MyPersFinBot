@@ -1,6 +1,7 @@
 # Release Checklist
 
 ## Pre-Release
+
 1. Sync main branch and ensure clean working tree
 2. Update version (if needed)
 3. Verify environment variables in `docs/ENV.md`
@@ -15,11 +16,13 @@
 7. Verify docs are up to date (README + docs index)
 
 ## Database Safety
+
 1. Create backup (see `docs/DEPLOYMENT.md`)
 2. Ensure WAL files are not stale and storage is healthy
 3. Confirm foreign keys are enabled (PRAGMA)
 
 ## Deployment
+
 1. Deploy build artifacts
 2. Restart process (PM2/systemd)
 3. Verify service is active and healthy
@@ -30,12 +33,14 @@
    - analytics menu
 
 ## Post-Release
+
 1. Check logs for errors/warnings
 2. Monitor health endpoints (`/healthz`, `/readyz`)
 3. Verify scheduled jobs execute as expected
 4. If issues detected, rollback using last known good build
 
 ## Rollback
+
 1. Stop service
 2. Restore previous build
 3. Restore database from backup if needed

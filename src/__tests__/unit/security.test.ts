@@ -98,6 +98,19 @@ describe("Security Coverage", () => {
 
       consoleSpy.mockRestore()
     })
+
+    test("does not log when LOG_UNAUTHORIZED_ACCESS is false", async () => {
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation()
+      // Type cast to bypass readonly constraint in tests
+      ;(SECURITY_CONFIG as any).LOG_UNAUTHORIZED_ACCESS = false
+
+      await sendUnauthorizedMessage(mockBot, 123, "456")
+
+      expect(mockBot.sendMessage).toHaveBeenCalled()
+      expect(consoleSpy).not.toHaveBeenCalled()
+
+      consoleSpy.mockRestore()
+    })
   })
 
   describe("isRateLimited", () => {
@@ -235,6 +248,23 @@ describe("Security Coverage", () => {
       // Should allow again after cleanup
       expect(isRateLimited(userId)).toBe(false)
     })
+
+    test("keeps non-expired entries", () => {
+      SECURITY_CONFIG.RATE_LIMIT.enabled = true
+      SECURITY_CONFIG.RATE_LIMIT.maxMessages = 3
+      SECURITY_CONFIG.RATE_LIMIT.windowMs = 60000
+
+      const userId = `test-keep-${Date.now()}`
+
+      isRateLimited(userId) // 1
+
+      cleanupRateLimits()
+
+      // Entry should still exist (not expired)
+      expect(isRateLimited(userId)).toBe(false) // 2
+      expect(isRateLimited(userId)).toBe(false) // 3
+      expect(isRateLimited(userId)).toBe(true) // 4 - exceeded
+    })
   })
 
   describe("securityCheck", () => {
@@ -282,6 +312,12 @@ describe("Security Coverage", () => {
 
       // Should handle gracefully
       expect(typeof result).toBe("boolean")
+    })
+
+    test("handles user without rate limit entry in sendRateLimitMessage", async () => {
+      await sendRateLimitMessage(mockBot, 123, "999999")
+
+      expect(mockBot.sendMessage).toHaveBeenCalled()
     })
   })
 

@@ -23,8 +23,6 @@ jest.mock("../../database/storage-db", () => ({
   },
 }))
 
-jest.mock("axios")
-
 jest.mock("fs", () => ({
   writeFileSync: jest.fn(),
   unlinkSync: jest.fn(),

@@ -100,6 +100,68 @@ describe("menus-i18n", () => {
     expect(bot.sendMessage).toHaveBeenCalled()
   })
 
+  test("showDebtsMenu covers netDebt > 0 (they owe more)", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+
+    ;(dbStorage.getUserData as jest.Mock).mockResolvedValueOnce({
+      defaultCurrency: "USD",
+      debts: [
+        {
+          id: "d1",
+          name: "Bob",
+          type: "OWES_ME",
+          amount: 500,
+          paidAmount: 0,
+          currency: "USD",
+          isPaid: false,
+        },
+        {
+          id: "d2",
+          name: "Alice",
+          type: "I_OWE",
+          amount: 100,
+          paidAmount: 0,
+          currency: "USD",
+          isPaid: false,
+        },
+      ],
+    })
+
+    await menus.showDebtsMenu(bot, 1, "u1", lang)
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("showDebtsMenu covers netDebt <= 0 (you owe more)", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+
+    ;(dbStorage.getUserData as jest.Mock).mockResolvedValueOnce({
+      defaultCurrency: "USD",
+      debts: [
+        {
+          id: "d1",
+          name: "Alice",
+          type: "I_OWE",
+          amount: 500,
+          paidAmount: 0,
+          currency: "USD",
+          isPaid: false,
+        },
+        {
+          id: "d2",
+          name: "Bob",
+          type: "OWES_ME",
+          amount: 100,
+          paidAmount: 0,
+          currency: "USD",
+          isPaid: false,
+        },
+      ],
+    })
+
+    await menus.showDebtsMenu(bot, 1, "u1", lang)
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
   test("showGoalsMenu and showIncomeSourcesMenu", async () => {
     const bot = new MockBot() as unknown as TelegramBot
 
@@ -298,6 +360,170 @@ describe("menus-i18n", () => {
 
     ;(dbStorage.getDefaultCurrency as jest.Mock).mockResolvedValue("USD")
     await menus.showSettingsMenu(bot, 1, "u1", lang)
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("showHistoryMenu with filters (startDate, endDate, type)", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = makeWizard(bot)
+
+    wizard.setState("u1", {
+      step: "HISTORY_FILTERED",
+      data: {
+        startDate: new Date().toISOString(),
+        endDate: new Date().toISOString(),
+        type: "EXPENSE",
+        filterType: "expenses",
+      },
+      lang: "en",
+    })
+
+    ;(dbStorage.getTransactionsPaginated as jest.Mock).mockResolvedValueOnce({
+      transactions: [
+        {
+          type: "EXPENSE",
+          date: new Date().toISOString(),
+          amount: 50,
+          currency: "USD",
+          category: "FOOD_DINING",
+          fromAccountId: "Card",
+        },
+      ],
+      total: 1,
+      hasMore: false,
+    })
+
+    await menus.showHistoryMenu(wizard, 1, "u1", lang, 1)
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("showHistoryMenu with empty filtered results", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = makeWizard(bot)
+
+    wizard.setState("u1", {
+      step: "HISTORY_FILTERED",
+      data: {
+        startDate: new Date().toISOString(),
+        endDate: new Date().toISOString(),
+        filterType: "last7days",
+      },
+      lang: "en",
+    })
+
+    ;(dbStorage.getTransactionsPaginated as jest.Mock).mockResolvedValueOnce({
+      transactions: [],
+      total: 0,
+      hasMore: false,
+    })
+
+    await menus.showHistoryMenu(wizard, 1, "u1", lang, 1)
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("showHistoryMenu with different filterTypes", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = makeWizard(bot)
+
+    const filterTypes = [
+      "last7days",
+      "last30days",
+      "expenses",
+      "income",
+      "unknown",
+    ]
+
+    for (const filterType of filterTypes) {
+      wizard.setState("u1", {
+        step: "HISTORY_FILTERED",
+        data: {
+          filterType,
+        },
+        lang: "en",
+      })
+
+      ;(dbStorage.getTransactionsPaginated as jest.Mock).mockResolvedValueOnce({
+        transactions: [
+          {
+            type: "EXPENSE",
+            date: new Date().toISOString(),
+            amount: 50,
+            currency: "USD",
+            category: "FOOD_DINING",
+            fromAccountId: "Card",
+          },
+        ],
+        total: 1,
+        hasMore: false,
+      })
+
+      await menus.showHistoryMenu(wizard, 1, "u1", lang, 1)
+    }
+
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("showHistoryMenu with transactions without fromAccountId/toAccountId", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = makeWizard(bot)
+
+    ;(dbStorage.getTransactionsPaginated as jest.Mock).mockResolvedValueOnce({
+      transactions: [
+        {
+          type: "EXPENSE",
+          date: new Date().toISOString(),
+          amount: 50,
+          currency: "USD",
+          category: "FOOD_DINING",
+          fromAccountId: null,
+          toAccountId: null,
+        },
+      ],
+      total: 1,
+      hasMore: false,
+    })
+
+    await menus.showHistoryMenu(wizard, 1, "u1", lang, 1)
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("showBudgetMenu with totalLimit > 0", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+    const wizard = makeWizard(bot)
+
+    ;(dbStorage.getCategoryBudgets as jest.Mock).mockResolvedValueOnce({
+      FOOD_DINING: { limit: 200, spent: 50, currency: "USD" },
+      TRANSPORT: { limit: 150, spent: 75, currency: "USD" },
+    })
+    ;(dbStorage.getDefaultCurrency as jest.Mock).mockResolvedValueOnce("USD")
+
+    await menus.showBudgetMenu(wizard, 1, "u1", lang)
+    expect(bot.sendMessage).toHaveBeenCalled()
+  })
+
+  test("showNetWorthMenu with debts having dueDate", async () => {
+    const bot = new MockBot() as unknown as TelegramBot
+
+    const userData = {
+      defaultCurrency: "USD",
+      balances: [{ accountId: "Cash", amount: 100, currency: "USD" }],
+      debts: [
+        {
+          id: "d1",
+          name: "Alice",
+          type: "I_OWE",
+          amount: 100,
+          paidAmount: 20,
+          currency: "USD",
+          isPaid: false,
+          dueDate: new Date().toISOString(),
+        },
+      ],
+    }
+
+    ;(dbStorage.getUserData as jest.Mock).mockResolvedValue(userData)
+
+    await menus.showNetWorthMenu(bot, 1, "u1", lang, "debts")
     expect(bot.sendMessage).toHaveBeenCalled()
   })
 })

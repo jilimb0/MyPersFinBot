@@ -1,7 +1,6 @@
 import { promises as fs } from "node:fs"
 import path from "node:path"
-import axios from "axios"
-import undici from "undici"
+import { request } from "undici"
 import { config } from "./config"
 import logger from "./logger"
 import type { Currency } from "./types"
@@ -50,7 +49,7 @@ let metrics: FXMetrics = {
   apiErrors: 0,
   lastUpdate: 0,
   retries: 0,
-  http2Used: !!undici,
+  http2Used: true,
 }
 let autoRefreshTimer: NodeJS.Timeout | null = null
 
@@ -167,10 +166,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function fetchWithUndici(url: string): Promise<FXAPIResponse> {
-  if (!undici) throw new Error("undici not available")
-
-  const { request } = undici
+async function fetchRatesFromAPI(url: string): Promise<FXAPIResponse> {
   const { statusCode, body } = await request(url, {
     method: "GET",
     headers: {
@@ -195,32 +191,15 @@ async function fetchWithUndici(url: string): Promise<FXAPIResponse> {
   return { data }
 }
 
-async function fetchWithAxios(url: string): Promise<FXAPIResponse> {
-  return axios.get(url, {
-    timeout: 5000,
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "MyPersFinBot/1.0",
-    },
-  })
-}
-
 async function fetchRates(): Promise<FXRates> {
-  const useHTTP2 = !!undici
-
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     metrics.apiCalls++
 
     try {
       const url = API_URL // ExchangeRate-API returns all currencies
 
-      // Try HTTP/2 first if available, otherwise use axios
-      let response: FXAPIResponse
-      if (useHTTP2) {
-        response = await fetchWithUndici(url)
-      } else {
-        response = await fetchWithAxios(url)
-      }
+      // Fetch using undici (HTTP/2)
+      const response = await fetchRatesFromAPI(url)
 
       if (response.data?.rates) {
         metrics.lastUpdate = Date.now()
@@ -465,7 +444,7 @@ export function resetMetrics() {
     apiErrors: 0,
     lastUpdate: 0,
     retries: 0,
-    http2Used: !!undici,
+    http2Used: true,
   }
 }
 

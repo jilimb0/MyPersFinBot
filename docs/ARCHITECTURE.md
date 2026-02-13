@@ -1,12 +1,12 @@
 # 🏗 Architecture Overview
 
-**Personal Finance Telegram Bot - System Architecture**
+## Personal Finance Telegram Bot - System Architecture
 
 ---
 
 ## 📊 High-Level Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                     TELEGRAM BOT API                        │
 │                    (node-telegram-bot-api)                  │
@@ -58,18 +58,21 @@
 ### 1. **Main Entry Point** (`src/index.ts`)
 
 **Responsibilities:**
+
 - Initialize app context (DB + bot)
 - Initialize observability and services
 - Register routers (message + callback)
 - Register graceful shutdown handlers
 
 **Flow:**
-```typescript
+
+```text
 Telegram Message → Message Router → Wizard Check → Handler → Database → Response
 Telegram Callback → Callback Router → Handler → Database → Response
 ```
 
 **Key Patterns:**
+
 - Event-driven architecture
 - State machine for wizards
 - Router-based message/callback dispatch
@@ -81,7 +84,8 @@ Telegram Callback → Callback Router → Handler → Database → Response
 **Purpose:** Multi-step conversation flows
 
 **Architecture:**
-```
+
+```text
 WizardManager
 ├── State Storage (in-memory Map)
 ├── Step Handlers
@@ -89,7 +93,8 @@ WizardManager
 ```
 
 **Wizard Flow Example:**
-```
+
+```text
 User: "💸 Expense"
   ↓
 Wizard State: TX_AMOUNT
@@ -112,6 +117,7 @@ Save to Database → Clear Wizard State
 ```
 
 **Key Features:**
+
 - Step-by-step data collection
 - Validation at each step
 - Back/Cancel support
@@ -119,6 +125,7 @@ Save to Database → Clear Wizard State
 - Multiple concurrent wizards per user
 
 **Supported Wizards:**
+
 - Transaction creation (Expense/Income/Transfer)
 - Balance creation
 - Debt management
@@ -132,7 +139,8 @@ Save to Database → Clear Wizard State
 **Purpose:** Business logic for specific features
 
 **Structure:**
-```
+
+```text
 handlers/
 ├── balance-handlers.ts          # Balance CRUD
 ├── debt-handlers.ts             # Debt management
@@ -152,6 +160,7 @@ handlers/
 ```
 
 **Pattern:**
+
 ```typescript
 export async function handleFeature(
   bot: TelegramBot,
@@ -174,6 +183,7 @@ export async function handleFeature(
 **Purpose:** Reusable business logic & external integrations
 
 #### **Scheduler** (`scheduler.ts`)
+
 - Based on `node-cron`
 - Runs every minute
 - Executes:
@@ -185,7 +195,8 @@ export async function handleFeature(
   - Notification checks
 
 **Cron Jobs:**
-```typescript
+
+```text
 '* * * * *'  // Every minute
   ↓
 Check: Recurring Transactions due?
@@ -200,29 +211,34 @@ Check: Auto-income expected?
 ```
 
 #### **AssemblyAI Service** (`assemblyai-service.ts`)
+
 - Voice transcription
 - Audio upload (binary)
 - Polling for results
 - Multi-language support
 
 **Flow:**
-```
+
+```text
 Telegram Voice → Download OGA → FFmpeg Convert to WAV → Upload to AssemblyAI → Poll Status → Transcription Text
 ```
 
 #### **NLP Parser** (`nlp-parser.ts`)
+
 - Natural language processing
 - Multi-language support (EN, RU, UK, ES, PL)
 - Pattern matching for transactions
 
 **Examples:**
-```
+
+```text
 "50 coffee"        → Amount: 50, Category: Food
 "потратил 100"    → Type: Expense, Amount: 100
 "зарплата 5000"   → Type: Income, Amount: 5000, Category: Salary
 ```
 
 #### **Auto-Managers**
+
 - `auto-deposit-manager.ts` - Auto-save to goals
 - `auto-debt-payment.ts` - Auto-pay debts
 - `auto-income-manager.ts` - Auto-create income
@@ -239,7 +255,8 @@ Telegram Voice → Download OGA → FFmpeg Convert to WAV → Upload to Assembly
 **Database:** SQLite (WAL mode for concurrency, FK enforced)
 
 **Structure:**
-```
+
+```text
 database/
 ├── data-source.ts    # TypeORM connection config
 ├── storage-db.ts     # Database operations (repository pattern)
@@ -287,12 +304,14 @@ export const dbStorage = {
 **Purpose:** Parse user input into structured data
 
 **Types:**
+
 - **NLP Parser:** Natural language → Transaction data
 - **Amount Parser:** Text → Number + Currency
 - **Date Parser:** Text → Date object
 - **CSV Parser:** Bank statement → Transactions
 
 **Example:**
+
 ```typescript
 parseNLPInput("потратил 50 на кофе")
   ↓
@@ -311,6 +330,7 @@ parseNLPInput("потратил 50 на кофе")
 **Purpose:** Analytics & data export
 
 **Features:**
+
 - Monthly statistics
 - Category breakdown
 - CSV export
@@ -318,6 +338,7 @@ parseNLPInput("потратил 50 на кофе")
 - Progress bars for goals
 
 **Example:**
+
 ```typescript
 generateMonthlyReport(userId)
   ↓
@@ -338,6 +359,7 @@ generateMonthlyReport(userId)
 ### 8. **Utilities** (`src/utils/`)
 
 **Common helpers:**
+
 - `formatMoney()` - Format currency
 - `safeAnswerCallback()` - Safe callback responses
 - `parseAmount()` - Parse user input amounts
@@ -348,6 +370,7 @@ generateMonthlyReport(userId)
 ### 9. **Validators** (`src/validators.ts`)
 
 **Input validation:**
+
 - Amount validation
 - Currency validation
 - Date validation
@@ -360,6 +383,7 @@ generateMonthlyReport(userId)
 **Purpose:** Exchange rate management
 
 **Features:**
+
 - Real-time rates from freecurrencyapi.com
 - HTTP/2 (undici) for performance
 - Auto-refresh every 24 hours
@@ -367,7 +391,8 @@ generateMonthlyReport(userId)
 - Fallback to default rates
 
 **Flow:**
-```
+
+```text
 Bot Start → Preload Rates → Cache in Memory → Auto-refresh (24h) → Use in Transactions
 ```
 
@@ -377,7 +402,7 @@ Bot Start → Preload Rates → Cache in Memory → Auto-refresh (24h) → Use i
 
 ### Example: Creating an Expense
 
-```
+```text
 1. USER
    "💸 Expense" button
    ↓
@@ -440,7 +465,7 @@ Bot Start → Preload Rates → Cache in Memory → Auto-refresh (24h) → Use i
 
 ### Example: Voice Message Processing
 
-```
+```text
 1. USER
    Sends voice message 🎤
    ↓
@@ -488,7 +513,7 @@ Bot Start → Preload Rates → Cache in Memory → Auto-refresh (24h) → Use i
 
 ### Example: Recurring Transaction Execution
 
-```
+```text
 1. SCHEDULER (every minute)
    Check: recurring transactions due?
    ↓
@@ -575,7 +600,7 @@ handleBalance(bot, chatId, userId) // bot injected
 
 ## 📦 Module Dependencies
 
-```
+```text
 index.ts
 ├── bootstrap/
 │   ├── app.ts
@@ -605,7 +630,8 @@ index.ts
 
 ## 🔒 Security Considerations
 
-### Current:
+### Current
+
 - ✅ Secrets in `.env` (gitignored)
 - ✅ Input validation
 - ✅ SQL injection protection (TypeORM)
@@ -613,7 +639,8 @@ index.ts
 - ✅ Optional allow/block lists
 - ✅ Optional rate limiting
 
-### Missing:
+### Missing
+
 - ❌ User authentication (anyone with bot link can use)
 - ❌ Data encryption at rest
 - ❌ Audit logs
@@ -622,13 +649,15 @@ index.ts
 
 ## ⚡ Performance
 
-### Optimizations:
+### Optimizations
+
 - ✅ SQLite WAL mode (better concurrency)
 - ✅ In-memory wizard state (fast)
 - ✅ FX rates cached (no API call per transaction)
 - ✅ HTTP/2 for FX API (faster)
 
-### Potential Bottlenecks:
+### Potential Bottlenecks
+
 - ⚠️ Limited indexes (some basic indexes exist)
 - ⚠️ Loading all transactions for analytics
 - ⚠️ Single SQLite file (fine for single user)
@@ -638,16 +667,19 @@ index.ts
 ## 🧪 Testing Strategy
 
 **Unit Tests:**
+
 - Parsers (NLP, amount, date)
 - Validators
 - Utilities
 - FX rate calculations
 
 **Integration Tests:**
+
 - Database operations
 - Services (with mocks)
 
 **E2E Tests:**
+
 - Wizard flows
 - Handler scenarios
 
@@ -657,9 +689,9 @@ index.ts
 
 ## 🚀 Deployment Architecture
 
-### Production Setup:
+### Production Setup
 
-```
+```text
 ┌─────────────────────────────────────┐
 │         LINUX SERVER                │
 │   (Ubuntu 22.04 / Debian 11)        │
@@ -698,12 +730,14 @@ index.ts
 
 ## 📈 Scalability
 
-### Current:
+### Current
+
 - **Single user:** Perfect ✅
 - **Multiple users:** Works ✅
 - **High traffic:** Not optimized ⚠️
 
-### To Scale:
+### To Scale
+
 1. Add database indexes
 2. Switch to PostgreSQL
 3. Add Redis for wizard state
@@ -715,14 +749,16 @@ index.ts
 
 ## 🎯 Future Architecture Improvements
 
-### Planned:
+### Planned
+
 1. **i18n Layer** - Multi-language UI (EN, RU, UK)
 2. **Testing Framework** - Jest + mocks
 3. **Structured Logging** - Winston/Pino
 4. **Error Tracking** - Sentry (optional)
 5. **Monitoring** - Health checks
 
-### Nice to Have:
+### Nice to Have
+
 1. **Microservices** - Split into voice-service, transaction-service, etc.
 2. **Message Queue** - Bull/RabbitMQ for async tasks
 3. **Caching Layer** - Redis for sessions
@@ -752,6 +788,7 @@ When adding new features:
 5. **Wizard** - Extend `WizardManager` for multi-step flows
 
 **Keep:**
+
 - Single Responsibility Principle
 - Clear separation of concerns
 - TypeScript strict mode
@@ -764,10 +801,12 @@ When adding new features:
 ## Testing Architecture
 
 ### Test Layout
+
 - Unit tests: `src/__tests__/unit/*.test.ts`
 - Integration tests: `src/__tests__/integration/*.test.ts`
 
 ### E2E Scenarios
+
 1. Expense flow: amount -> category (inline) -> account
 2. Income flow: amount -> category (inline) -> account
 3. Transfer flow: amount -> from account
@@ -775,6 +814,7 @@ When adding new features:
 5. Export flow: analytics reports -> export CSV
 
 ### Mocks and Dependencies
+
 - Database layer is mocked in unit/integration tests.
 - Telegram bot API is mocked with in-memory handlers.
 - Callback query handling (`tx_cat|`) is covered by unit tests.
@@ -782,30 +822,35 @@ When adding new features:
 ## Monitoring
 
 ### Health Checks
+
 - HTTP server provides `/healthz` and `/readyz`
 - Configurable via `HEALTH_HOST` and `HEALTH_PORT`
 
 ### Error Tracking (Sentry)
+
 - Initialized at startup when `SENTRY_DSN` is set
 - Optional: `SENTRY_ENV`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_RELEASE`
-
 
 ## Deployment
 
 ### systemd
+
 - Unit file: `systemd/my-pers-fin-bot.service`
 - Runs as non-root user `bot`
 - Logs: `/var/log/my-pers-fin-bot/`
 
 ### Health Checks
+
 - Endpoints: `/healthz`, `/readyz`
 
 ### Monitoring
+
 - Sentry initialized when `SENTRY_DSN` is provided
 
 ## Bootstrap Flow
 
 ### Startup Sequence
+
 1. `initObservability()` (Sentry + health server)
 2. `initializeApp()` (DB, cache, bot)
 3. `registerAppServices()` (scheduler, commands, period reports)
@@ -814,10 +859,12 @@ When adding new features:
 6. `setupShutdownHandlers()`
 
 ### Bootstrap Modules
+
 - `src/bootstrap/observability.ts`
 - `src/bootstrap/app-services.ts`
 - `src/bootstrap/routers.ts`
 
 ### Health & Monitoring
+
 - `/healthz` and `/readyz` endpoints
 - Sentry enabled when `SENTRY_DSN` provided
