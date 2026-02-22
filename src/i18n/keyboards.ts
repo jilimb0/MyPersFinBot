@@ -1,12 +1,10 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { getTranslationValue, type Language, t } from "./index"
 
 /**
  * Generate main menu keyboard based on user language
  */
-export function getMainMenuKeyboard(
-  lang: Language
-): TelegramBot.SendMessageOptions {
+export function getMainMenuKeyboard(lang: Language): Tg.SendMessageOptions {
   return {
     reply_markup: {
       keyboard: [
@@ -35,9 +33,7 @@ export function getMainMenuKeyboard(
 /**
  * Generate settings keyboard
  */
-export function getSettingsKeyboard(
-  lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+export function getSettingsKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
       [{ text: t(lang, "settings.language") }],
@@ -59,9 +55,7 @@ export function getSettingsKeyboard(
 /**
  * Generate analytics keyboard
  */
-export function getAnalyticsKeyboard(
-  lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+export function getAnalyticsKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
       [{ text: t(lang, "analytics.exportCSV") }],
@@ -80,9 +74,7 @@ export function getAnalyticsKeyboard(
 /**
  * Generate stats keyboard
  */
-export function getStatsKeyboard(
-  lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+export function getStatsKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
       [{ text: t(lang, "analytics.reports") }],
@@ -97,9 +89,7 @@ export function getStatsKeyboard(
 /**
  * Generate back + main menu keyboard
  */
-export function getBackAndMainKeyboard(
-  lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+export function getBackAndMainKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
       [
@@ -114,9 +104,7 @@ export function getBackAndMainKeyboard(
 /**
  * Generate date selection keyboard
  */
-export function getDateKeyboard(
-  lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+export function getDateKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
       [{ text: t(lang, "common.today") }],
@@ -131,9 +119,7 @@ export function getDateKeyboard(
 /**
  * Generate confirm/cancel keyboard
  */
-export function getConfirmKeyboard(
-  lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+export function getConfirmKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
       [{ text: t(lang, "common.confirm") }, { text: t(lang, "common.cancel") }],
@@ -145,9 +131,7 @@ export function getConfirmKeyboard(
 /**
  * Generate language selection keyboard
  */
-export function getLanguageKeyboard(
-  lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+export function getLanguageKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
       [{ text: t(lang, "languages.en") }],
@@ -166,7 +150,7 @@ export function getLanguageKeyboard(
  */
 export function getStartTrackingKeyboard(
   lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [[{ text: t(lang, "mainMenu.startTracking") }]],
     resize_keyboard: true,
@@ -178,7 +162,7 @@ export function getStartTrackingKeyboard(
  */
 export function getGoToBalancesKeyboard(
   lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
       [{ text: t(lang, "transactions.goToBalances") }],
@@ -193,11 +177,11 @@ export function getGoToBalancesKeyboard(
  */
 export function getReminderTimeKeyboard(
   lang: Language
-): TelegramBot.ReplyKeyboardMarkup {
+): Tg.ReplyKeyboardMarkup {
   const timeOptions =
     (getTranslationValue(lang, "reminders.timeOptions") as string[]) || []
 
-  const rows: TelegramBot.KeyboardButton[][] = []
+  const rows: Tg.KeyboardButton[][] = []
   for (let i = 0; i < timeOptions.length; i += 3) {
     rows.push(timeOptions.slice(i, i + 3).map((time) => ({ text: time })))
   }

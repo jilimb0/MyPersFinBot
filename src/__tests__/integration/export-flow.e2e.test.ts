@@ -1,7 +1,8 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -33,10 +34,6 @@ const mockGetUserData = dbStorage.getUserData as jest.MockedFunction<
   typeof dbStorage.getUserData
 >
 
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
-
 describe("E2E export flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -64,7 +61,7 @@ describe("E2E export flow", () => {
   })
 
   test("analytics reports menu -> export csv", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"
@@ -90,7 +87,7 @@ describe("E2E export flow", () => {
   })
 
   test("export flow handles empty transactions", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"
@@ -113,7 +110,7 @@ describe("E2E export flow", () => {
   })
 
   test("export flow ignores when not in reports menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"

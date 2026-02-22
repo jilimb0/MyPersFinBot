@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "./database/storage-db"
 import {
   clearPersistedCache,
@@ -16,8 +16,16 @@ import {
   t,
 } from "./i18n"
 import { queryMonitor } from "./monitoring"
+import { tgObservability } from "./observability/tgwrapper-observability"
+import { type ChartType, generateChartImage } from "./services/chart-service"
 import { ExpenseCategory, IncomeCategory, TransactionType } from "./types"
-import { escapeMarkdown, formatMoney } from "./utils"
+import {
+  escapeMarkdown,
+  formatDateDisplay,
+  formatMoney,
+  formatSearchUsage,
+  parseSearchCommandInput,
+} from "./utils"
 
 function resolveExpenseCategory(input: string): ExpenseCategory {
   return getExpenseCategoryByLabel(input) || ExpenseCategory.OTHER_EXPENSE
@@ -66,8 +74,46 @@ async function resolveUserLanguage(userId: string): Promise<Language> {
   }
 }
 
-export function registerCommands(bot: TelegramBot) {
-  bot.onText(/^\/balance(?:@\w+)?$/, async (msg) => {
+function txSign(type: TransactionType): string {
+  if (type === TransactionType.INCOME) return "+"
+  if (type === TransactionType.EXPENSE) return "-"
+  return "↔"
+}
+
+function onTextMatch(
+  bot: BotClient,
+  regexp: RegExp,
+  callback: (
+    msg: Tg.Message,
+    match: RegExpExecArray | null
+  ) => unknown | Promise<unknown>
+): void {
+  const wrapped = async (
+    msg: Tg.Message,
+    forcedMatch?: RegExpExecArray | null
+  ) => {
+    if (forcedMatch) {
+      await callback(msg, forcedMatch)
+      return
+    }
+
+    const text = msg.text
+    if (!text) {
+      await callback(msg, null)
+      return
+    }
+    regexp.lastIndex = 0
+    const match = regexp.exec(text)
+    if (match) {
+      await callback(msg, match)
+    }
+  }
+  ;(wrapped as { __pattern?: RegExp }).__pattern = regexp
+  bot.on("message", wrapped)
+}
+
+export function registerCommands(bot: BotClient) {
+  onTextMatch(bot, /^\/balance(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
@@ -82,7 +128,7 @@ export function registerCommands(bot: TelegramBot) {
     )
   })
 
-  bot.onText(/^\/templates(?:@\w+)?$/, async (msg) => {
+  onTextMatch(bot, /^\/templates(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
@@ -100,21 +146,19 @@ export function registerCommands(bot: TelegramBot) {
       return
     }
 
-    const buttons: TelegramBot.InlineKeyboardButton[][] = templates.map(
-      (tpl) => {
-        const amountWithCurrency = formatMoney(tpl.amount, tpl.currency)
-        return [
-          {
-            text: `${tpl.name} — ${amountWithCurrency}`,
-            callback_data: `tmpl_use|${tpl.id}`,
-          },
-          {
-            text: t(lang, "buttons.manage"),
-            callback_data: `tmpl_manage|${tpl.id}`,
-          },
-        ]
-      }
-    )
+    const buttons: Tg.InlineKeyboardButton[][] = templates.map((tpl) => {
+      const amountWithCurrency = formatMoney(tpl.amount, tpl.currency)
+      return [
+        {
+          text: `${tpl.name} — ${amountWithCurrency}`,
+          callback_data: `tmpl_use|${tpl.id}`,
+        },
+        {
+          text: t(lang, "buttons.manage"),
+          callback_data: `tmpl_manage|${tpl.id}`,
+        },
+      ]
+    })
 
     await bot.sendMessage(chatId, t(lang, "commands.templates.listHint"), {
       parse_mode: "Markdown",
@@ -124,7 +168,7 @@ export function registerCommands(bot: TelegramBot) {
     })
   })
 
-  bot.onText(/^\/expense(?:@\w+)?\s+(.+)$/i, async (msg, match) => {
+  onTextMatch(bot, /^\/expense(?:@\w+)?\s+(.+)$/i, async (msg, match) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
@@ -170,7 +214,7 @@ export function registerCommands(bot: TelegramBot) {
       account: escapeMarkdown(smartAccount || ""),
     })
 
-    const buttons: TelegramBot.InlineKeyboardButton[][] = [
+    const buttons: Tg.InlineKeyboardButton[][] = [
       [
         {
           text: t(lang, "buttons.saveAsTemplate"),
@@ -196,7 +240,7 @@ export function registerCommands(bot: TelegramBot) {
     })
   })
 
-  bot.onText(/^\/income(?:@\w+)?\s+(.+)$/i, async (msg, match) => {
+  onTextMatch(bot, /^\/income(?:@\w+)?\s+(.+)$/i, async (msg, match) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
@@ -242,7 +286,7 @@ export function registerCommands(bot: TelegramBot) {
       account: escapeMarkdown(smartAccount || ""),
     })
 
-    const buttons: TelegramBot.InlineKeyboardButton[][] = [
+    const buttons: Tg.InlineKeyboardButton[][] = [
       [
         {
           text: t(lang, "buttons.saveAsTemplate"),
@@ -268,7 +312,119 @@ export function registerCommands(bot: TelegramBot) {
     })
   })
 
-  bot.onText(/\/querystats/, async (msg) => {
+  onTextMatch(bot, /^\/search(?:@\w+)?(?:\s+(.+))?$/i, async (msg, match) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
+    const rawInput = match?.[1]
+
+    const parsed = parseSearchCommandInput(rawInput)
+    if (parsed.errors.length > 0) {
+      await bot.sendMessage(
+        chatId,
+        `❌ Invalid filters:\n${parsed.errors.map((e) => `• ${e}`).join("\n")}\n\n${formatSearchUsage()}`,
+        { parse_mode: "Markdown" }
+      )
+      return
+    }
+
+    const hasAnyFilter = Object.keys(parsed.filters).length > 0
+    if (!hasAnyFilter) {
+      await bot.sendMessage(chatId, formatSearchUsage())
+      return
+    }
+
+    const { transactions, total, hasMore } = await tgObservability.trackAsync(
+      "search.command.ms",
+      async () =>
+        await db.searchTransactions(userId, {
+          ...parsed.filters,
+          page: 1,
+          limit: 10,
+        })
+    )
+    tgObservability.increment("search.command.count")
+
+    if (transactions.length === 0) {
+      await bot.sendMessage(
+        chatId,
+        `🔍 ${t(lang, "history.noFilteredTransactions")}`
+      )
+      return
+    }
+
+    const lines = transactions.map((tx, index) => {
+      const account = tx.fromAccountId || tx.toAccountId || "N/A"
+      const amount = `${txSign(tx.type)}${formatMoney(tx.amount, tx.currency, true)}`
+      const date = formatDateDisplay(tx.date)
+      const desc = tx.description ? escapeMarkdown(tx.description) : "-"
+      return `${index + 1}. ${date} | *${tx.type}* | ${amount}\n   ${escapeMarkdown(tx.category)} | ${escapeMarkdown(account)}\n   ${desc}`
+    })
+
+    await bot.sendMessage(
+      chatId,
+      `🔎 *Search Results*\nTotal: *${total}*\n\n${lines.join("\n\n")}${hasMore ? "\n\n…and more (showing first 10)" : ""}`,
+      { parse_mode: "Markdown" }
+    )
+  })
+
+  onTextMatch(bot, /^\/chart(?:@\w+)?(?:\s+(.+))?$/i, async (msg, match) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
+
+    const args = (match?.[1] || "").trim().split(/\s+/).filter(Boolean)
+    const typeRaw = (args[0] || "trends").toLowerCase()
+    const monthsRaw = args[1]
+    const months = monthsRaw ? Number.parseInt(monthsRaw, 10) : 6
+
+    const validTypes: ChartType[] = ["trends", "categories", "balance"]
+    if (!validTypes.includes(typeRaw as ChartType)) {
+      await bot.sendMessage(
+        chatId,
+        "Usage: /chart <trends|categories|balance> [months]\nExamples:\n/chart trends 6\n/chart categories 3\n/chart balance 12"
+      )
+      return
+    }
+
+    if (!Number.isFinite(months) || months < 1 || months > 24) {
+      await bot.sendMessage(chatId, "Months should be between 1 and 24")
+      return
+    }
+
+    await bot.sendMessage(chatId, "📈 Generating chart...")
+
+    try {
+      const image = await tgObservability.trackAsync(
+        "chart.command.ms",
+        async () =>
+          await generateChartImage(userId, typeRaw as ChartType, lang, months)
+      )
+      tgObservability.increment("chart.command.count")
+
+      if (!image) {
+        await bot.sendMessage(chatId, t(lang, "history.noTransactions"))
+        return
+      }
+
+      await bot.sendDocument(
+        chatId,
+        image,
+        {},
+        {
+          filename: `chart_${typeRaw}_${months}m.png`,
+          contentType: "image/png",
+        }
+      )
+    } catch (error) {
+      await bot.sendMessage(
+        chatId,
+        `Failed to generate chart: ${error instanceof Error ? error.message : "unknown error"}`
+      )
+    }
+  })
+
+  onTextMatch(bot, /\/querystats/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
@@ -293,7 +449,7 @@ export function registerCommands(bot: TelegramBot) {
     })
   })
 
-  bot.onText(/\/resetquerystats/, async (msg) => {
+  onTextMatch(bot, /\/resetquerystats/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
@@ -311,7 +467,7 @@ export function registerCommands(bot: TelegramBot) {
     })
   })
 
-  bot.onText(/\/fxstats/, async (msg) => {
+  onTextMatch(bot, /\/fxstats/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
@@ -372,7 +528,7 @@ export function registerCommands(bot: TelegramBot) {
     })
   })
 
-  bot.onText(/\/fxreset/, async (msg) => {
+  onTextMatch(bot, /\/fxreset/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
@@ -390,7 +546,7 @@ export function registerCommands(bot: TelegramBot) {
     })
   })
 
-  bot.onText(/\/fxclear/, async (msg) => {
+  onTextMatch(bot, /\/fxclear/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)

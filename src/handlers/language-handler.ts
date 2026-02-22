@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "../database/storage-db"
 import { isValidLanguage, type Language, resolveLanguage, t } from "../i18n"
 import { getLanguageKeyboard, getMainMenuKeyboard } from "../i18n/keyboards"
@@ -7,7 +7,7 @@ import { getLanguageKeyboard, getMainMenuKeyboard } from "../i18n/keyboards"
  * Show language selection menu
  */
 export async function showLanguageMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string
 ): Promise<void> {
@@ -28,7 +28,7 @@ export async function showLanguageMenu(
  * Handle language selection from buttons
  */
 export async function handleLanguageSelection(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   text: string

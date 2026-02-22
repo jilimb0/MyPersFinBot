@@ -1,6 +1,7 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -20,10 +21,6 @@ const mockUpdateReminderSettings =
     typeof dbStorage.updateReminderSettings
   >
 
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
-
 describe("E2E custom messages flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -42,7 +39,7 @@ describe("E2E custom messages flow", () => {
   })
 
   test("custom message edit flow (debt)", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-c1"
     const chatId = 1101

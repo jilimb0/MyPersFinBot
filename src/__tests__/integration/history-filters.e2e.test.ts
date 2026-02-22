@@ -1,6 +1,7 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -18,10 +19,6 @@ const mockGetTransactionsPaginated =
 const mockGetUserData = dbStorage.getUserData as jest.MockedFunction<
   typeof dbStorage.getUserData
 >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E history filters", () => {
   beforeEach(() => {
@@ -44,7 +41,7 @@ describe("E2E history filters", () => {
   })
 
   test("history list -> filters menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"

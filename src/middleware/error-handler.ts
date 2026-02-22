@@ -3,7 +3,7 @@
  * Centralized error handling for Telegram bot
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "../database/storage-db"
 import { type Language, t } from "../i18n"
 import logger from "../logger"
@@ -87,7 +87,7 @@ async function resolveUserLanguage(userId?: number): Promise<Language> {
  */
 export async function handleError(
   error: Error,
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   context?: ErrorContext
 ): Promise<void> {
@@ -154,9 +154,9 @@ export async function handleError(
  * Wrap async handler with error catching
  */
 export function asyncHandler(
-  handler: (msg: TelegramBot.Message, bot: TelegramBot) => Promise<void>
+  handler: (msg: Tg.Message, bot: BotClient) => Promise<void>
 ) {
-  return async (msg: TelegramBot.Message, bot: TelegramBot) => {
+  return async (msg: Tg.Message, bot: BotClient) => {
     try {
       await handler(msg, bot)
     } catch (error) {
@@ -180,9 +180,9 @@ export function asyncHandler(
  * Wrap callback query handler with error catching
  */
 export function asyncCallbackHandler(
-  handler: (query: TelegramBot.CallbackQuery, bot: TelegramBot) => Promise<void>
+  handler: (query: Tg.CallbackQuery, bot: BotClient) => Promise<void>
 ) {
-  return async (query: TelegramBot.CallbackQuery, bot: TelegramBot) => {
+  return async (query: Tg.CallbackQuery, bot: BotClient) => {
     try {
       await handler(query, bot)
     } catch (error) {

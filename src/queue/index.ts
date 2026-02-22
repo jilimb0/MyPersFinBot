@@ -2,7 +2,7 @@
  * Queue module entry point
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../database/storage-db"
 import logger from "../logger"
 import { processRecurringTransaction, processReminder } from "./processors"
@@ -16,7 +16,7 @@ export * from "./types"
 /**
  * Initialize queue with processors
  */
-export async function initializeQueue(bot: TelegramBot): Promise<void> {
+export async function initializeQueue(bot: BotClient): Promise<void> {
   const queueService = getQueueService()
 
   // Register recurring transaction processor

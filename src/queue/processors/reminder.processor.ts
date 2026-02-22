@@ -1,5 +1,5 @@
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import type { Job } from "bull"
-import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage } from "../../database/storage-db"
 import { type Language, t } from "../../i18n"
 import logger from "../../logger"
@@ -12,7 +12,7 @@ import type { JobResult, ReminderJobData } from "../types"
  */
 export async function processReminder(
   job: Job<ReminderJobData>,
-  bot: TelegramBot
+  bot: BotClient
 ): Promise<JobResult> {
   const data = job.data
   const { userId, reminderId, type, title, message, entityId } = data
@@ -91,7 +91,7 @@ export async function processReminder(
     }
 
     // Add action buttons
-    const keyboard: TelegramBot.InlineKeyboardMarkup = {
+    const keyboard: Tg.InlineKeyboardMarkup = {
       inline_keyboard: [
         [
           {

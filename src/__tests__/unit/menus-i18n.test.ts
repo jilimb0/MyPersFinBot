@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../../database/storage-db"
 import * as menus from "../../menus-i18n"
 import { formatGoals, formatMonthlyStats } from "../../reports"
@@ -33,7 +33,7 @@ class MockBot {
   sendMessage = jest.fn().mockResolvedValue({})
 }
 
-function makeWizard(bot: TelegramBot) {
+function makeWizard(bot: BotClient) {
   return new WizardManager(bot)
 }
 
@@ -45,7 +45,7 @@ describe("menus-i18n", () => {
   })
 
   test("showBalancesMenu handles 2+ balances and 1 balance", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     ;(dbStorage.getBalances as jest.Mock).mockResolvedValue("balances")
@@ -65,7 +65,7 @@ describe("menus-i18n", () => {
   })
 
   test("showDebtsMenu renders empty and mixed debts", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
 
     ;(dbStorage.getUserData as jest.Mock).mockResolvedValueOnce({
       defaultCurrency: "USD",
@@ -101,7 +101,7 @@ describe("menus-i18n", () => {
   })
 
   test("showDebtsMenu covers netDebt > 0 (they owe more)", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
 
     ;(dbStorage.getUserData as jest.Mock).mockResolvedValueOnce({
       defaultCurrency: "USD",
@@ -132,7 +132,7 @@ describe("menus-i18n", () => {
   })
 
   test("showDebtsMenu covers netDebt <= 0 (you owe more)", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
 
     ;(dbStorage.getUserData as jest.Mock).mockResolvedValueOnce({
       defaultCurrency: "USD",
@@ -163,7 +163,7 @@ describe("menus-i18n", () => {
   })
 
   test("showGoalsMenu and showIncomeSourcesMenu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
 
     ;(formatGoals as jest.Mock).mockResolvedValue("goals")
     ;(dbStorage.getUserData as jest.Mock).mockResolvedValueOnce({
@@ -184,7 +184,7 @@ describe("menus-i18n", () => {
   })
 
   test("showHistoryMenu covers empty, filtered, and paged", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     ;(dbStorage.getTransactionsPaginated as jest.Mock).mockResolvedValueOnce({
@@ -240,7 +240,7 @@ describe("menus-i18n", () => {
   })
 
   test("showBudgetMenu covers empty and populated budgets", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     ;(dbStorage.getCategoryBudgets as jest.Mock).mockResolvedValueOnce({})
@@ -258,7 +258,7 @@ describe("menus-i18n", () => {
   })
 
   test("showAnalyticsReportsMenu and showStatsMenu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     ;(formatMonthlyStats as jest.Mock).mockResolvedValue("stats")
@@ -269,7 +269,7 @@ describe("menus-i18n", () => {
   })
 
   test("showNetWorthMenu variants", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
 
     const userData = {
       defaultCurrency: "USD",
@@ -308,7 +308,7 @@ describe("menus-i18n", () => {
   })
 
   test("showActiveRemindersMenu covers debts, goals, and empty", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     ;(reminderManager.getUserReminders as jest.Mock).mockResolvedValueOnce({
@@ -347,7 +347,7 @@ describe("menus-i18n", () => {
   })
 
   test("showAutomationMenu and showAdvancedMenu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     await menus.showAutomationMenu(wizard, 1, "u1", lang)
@@ -356,7 +356,7 @@ describe("menus-i18n", () => {
   })
 
   test("showSettingsMenu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
 
     ;(dbStorage.getDefaultCurrency as jest.Mock).mockResolvedValue("USD")
     await menus.showSettingsMenu(bot, 1, "u1", lang)
@@ -364,7 +364,7 @@ describe("menus-i18n", () => {
   })
 
   test("showHistoryMenu with filters (startDate, endDate, type)", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     wizard.setState("u1", {
@@ -398,7 +398,7 @@ describe("menus-i18n", () => {
   })
 
   test("showHistoryMenu with empty filtered results", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     wizard.setState("u1", {
@@ -422,7 +422,7 @@ describe("menus-i18n", () => {
   })
 
   test("showHistoryMenu with different filterTypes", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     const filterTypes = [
@@ -464,7 +464,7 @@ describe("menus-i18n", () => {
   })
 
   test("showHistoryMenu with transactions without fromAccountId/toAccountId", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     ;(dbStorage.getTransactionsPaginated as jest.Mock).mockResolvedValueOnce({
@@ -488,7 +488,7 @@ describe("menus-i18n", () => {
   })
 
   test("showBudgetMenu with totalLimit > 0", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = makeWizard(bot)
 
     ;(dbStorage.getCategoryBudgets as jest.Mock).mockResolvedValueOnce({
@@ -502,7 +502,7 @@ describe("menus-i18n", () => {
   })
 
   test("showNetWorthMenu with debts having dueDate", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
 
     const userData = {
       defaultCurrency: "USD",

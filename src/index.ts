@@ -21,7 +21,7 @@ async function main() {
       process.exit(1)
     }
 
-    initObservability()
+    await initObservability()
 
     // Initialize application
     const context = await initializeApp(token)

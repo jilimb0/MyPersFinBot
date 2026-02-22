@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "../database/storage-db"
 import { getCategoryLabel, type Language, t } from "../i18n"
 import { type Transaction, TransactionType } from "../types"
@@ -14,6 +14,35 @@ const LOCALES: Record<Language, string> = {
 
 function formatDate(lang: Language, date: Date): string {
   return date.toLocaleDateString(LOCALES[lang])
+}
+
+function onTextMatch(
+  bot: BotClient,
+  regexp: RegExp,
+  callback: (
+    msg: Tg.Message,
+    match: RegExpExecArray | null
+  ) => unknown | Promise<unknown>
+): void {
+  const wrapped = async (
+    msg: Tg.Message,
+    forcedMatch?: RegExpExecArray | null
+  ) => {
+    if (forcedMatch) {
+      await callback(msg, forcedMatch)
+      return
+    }
+
+    const text = msg.text
+    if (!text) return
+    regexp.lastIndex = 0
+    const match = regexp.exec(text)
+    if (match) {
+      await callback(msg, match)
+    }
+  }
+  ;(wrapped as { __pattern?: RegExp }).__pattern = regexp
+  bot.on("message", wrapped)
 }
 
 // Helper функция для форматирования отчета
@@ -103,9 +132,9 @@ function formatPeriodReport(
   return report
 }
 
-export function registerPeriodReportHandlers(bot: TelegramBot) {
+export function registerPeriodReportHandlers(bot: BotClient) {
   // Команда: Отчет за произвольный период
-  bot.onText(/^\/report_period(?:@\w+)?$/, async (msg) => {
+  onTextMatch(bot, /^\/report_period(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await db.getUserLanguage(userId)
@@ -115,7 +144,8 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
   })
 
   // Обработчик ввода дат для периода
-  bot.onText(
+  onTextMatch(
+    bot,
     /^(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})(\s+(INCOME|EXPENSE|TRANSFER))?$/i,
     async (msg, match) => {
       if (!match) return Promise.resolve()
@@ -167,7 +197,7 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
   )
 
   // Команда: Отчет за квартал
-  bot.onText(/^\/report_quarter(?:@\w+)?$/, async (msg) => {
+  onTextMatch(bot, /^\/report_quarter(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await db.getUserLanguage(userId)
@@ -199,7 +229,7 @@ export function registerPeriodReportHandlers(bot: TelegramBot) {
   })
 
   // Команда: Отчет за год
-  bot.onText(/^\/report_year(?:@\w+)?$/, async (msg) => {
+  onTextMatch(bot, /^\/report_year(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await db.getUserLanguage(userId)

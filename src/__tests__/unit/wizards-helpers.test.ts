@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../../database/storage-db"
 import * as handlers from "../../handlers"
 import { t } from "../../i18n"
@@ -57,7 +57,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("TX_AMOUNT and TX_CATEGORY and TX_ACCOUNT", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {
@@ -90,7 +90,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("TX_TO_ACCOUNT, TX_CONFIRM_REFUND", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {
@@ -108,7 +108,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("TX_VIEW_PERIOD and TX_VIEW_LIST", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {
@@ -136,7 +136,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("TX_EDIT_* branches", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     ;(dbStorage.getDefaultCurrency as jest.Mock).mockResolvedValue("USD")
 
@@ -175,7 +175,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("Debt/Goal flows", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {
@@ -289,7 +289,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("Income/balance/history/analytics/notifications/recurring/default", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {
@@ -477,7 +477,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("GOAL_ADVANCED_MENU covers weekly/monthly and progress branches", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const goToStepSpy = jest.spyOn(wizard, "goToStep")
 
@@ -527,7 +527,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("DEBT_ADVANCED_MENU covers debt type and payment status branches", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const goToStepSpy = jest.spyOn(wizard, "goToStep")
 
@@ -565,7 +565,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("TX_EDIT_CATEGORY and TX_EDIT_ACCOUNT cover alternate branches", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {
@@ -615,7 +615,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("DEBT_MENU and GOAL_MENU cover remaining status branches", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {
@@ -681,7 +681,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("GOAL_ADVANCED_MENU and DEBT_ADVANCED_MENU cover partial progress branches", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {
@@ -716,7 +716,7 @@ describe("wizards/helpers resendCurrentStepPrompt", () => {
   })
 
   test("GOAL_COMPLETE_CONFIRM handles missing data guards", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await resendCurrentStepPrompt(wizard, 1, "u1", {

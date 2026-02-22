@@ -1,6 +1,7 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -24,10 +25,6 @@ const mockGetCurrencyDenominations =
     typeof dbStorage.getCurrencyDenominations
   >
 
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
-
 describe("E2E transfer flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -50,7 +47,7 @@ describe("E2E transfer flow", () => {
   })
 
   test("amount -> from account selection", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"

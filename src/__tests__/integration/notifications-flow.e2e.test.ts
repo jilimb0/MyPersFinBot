@@ -1,6 +1,7 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/data-source", () => ({
   AppDataSource: {
@@ -20,13 +21,9 @@ jest.mock("../../database/data-source", () => ({
   },
 }))
 
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
-
 describe("E2E notifications flow", () => {
   test("toggle notifications and return to menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-n1"
     const chatId = 801
@@ -50,7 +47,7 @@ describe("E2E notifications flow", () => {
   })
 
   test("change reminder time flow", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-n2"
     const chatId = 802
@@ -79,7 +76,7 @@ describe("E2E notifications flow", () => {
   })
 
   test("change timezone flow", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-n3"
     const chatId = 803

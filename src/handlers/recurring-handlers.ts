@@ -1,5 +1,5 @@
+import type { TgTypes as Tg } from "@jilimb0/tgwrapper"
 import dayjs from "dayjs"
-import type TelegramBot from "node-telegram-bot-api"
 import { SETTINGS_KEYBOARD } from "../constants"
 import { dbStorage as db } from "../database/storage-db"
 import { type Language, resolveLanguage, t } from "../i18n"
@@ -50,7 +50,7 @@ export async function handleRecurringMenu(
     msg += `\n${t(lang, "recurring.tapToManage")}`
   }
 
-  const buttons: TelegramBot.KeyboardButton[][] = []
+  const buttons: Tg.KeyboardButton[][] = []
 
   // Add buttons for each recurring transaction
   recurring.forEach((r) => {
@@ -141,7 +141,7 @@ export async function handleRecurringSelect(
     date: formatDateDisplay(selected.nextExecutionDate),
   })}\n`
 
-  const buttons: TelegramBot.KeyboardButton[][] = [
+  const buttons: Tg.KeyboardButton[][] = [
     [
       {
         text: selected.isActive
@@ -418,7 +418,7 @@ export async function handleRecurringAmount(
     return true
   }
 
-  const buttons: TelegramBot.KeyboardButton[][] = balances.map((bal) => [
+  const buttons: Tg.KeyboardButton[][] = balances.map((bal) => [
     { text: `💳 ${bal.accountId}` },
   ])
   buttons.push([
@@ -462,7 +462,7 @@ export async function handleRecurringAccount(
 
   const categories = await db.getTopCategories(userId, state?.data?.type)
 
-  const buttons: TelegramBot.KeyboardButton[][] = []
+  const buttons: Tg.KeyboardButton[][] = []
   for (let i = 0; i < categories.length; i += 2) {
     buttons.push(categories.slice(i, i + 2).map((cat) => ({ text: cat })))
   }

@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { getExpenseCategoryLabel } from "../../i18n"
 import { ExpenseCategory } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
@@ -29,7 +29,7 @@ jest.mock("../../utils", () => ({
 import { safeAnswerCallback } from "../../utils"
 
 // Inline recreation of the callback handler registered in src/index.ts
-function registerTxCatCallback(bot: TelegramBot, wizardManager: WizardManager) {
+function registerTxCatCallback(bot: BotClient, wizardManager: WizardManager) {
   bot.on("callback_query", async (query) => {
     const chatId = query.message?.chat.id
     if (!chatId) return
@@ -46,7 +46,7 @@ function registerTxCatCallback(bot: TelegramBot, wizardManager: WizardManager) {
 
 describe("Callback query tx_cat handler", () => {
   test("routes category selection into wizard", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const handleWizardInput = jest.spyOn(wizard, "handleWizardInput")

@@ -60,6 +60,8 @@ const ConfigSchema = z.object({
   REMINDER_CHECK_INTERVAL: z.coerce.number().min(1).max(60).default(5),
 
   MAX_FILE_SIZE_MB: z.coerce.number().min(1).max(50).default(20),
+  QUICKCHART_BASE_URL: z.string().url().default("https://quickchart.io"),
+  QUICKCHART_TIMEOUT_MS: z.coerce.number().min(1000).max(60000).default(10000),
 
   SENTRY_DSN: z.string().optional(),
   SENTRY_ENV: z.string().optional(),
@@ -68,6 +70,16 @@ const ConfigSchema = z.object({
 
   HEALTH_HOST: z.string().default("0.0.0.0"),
   HEALTH_PORT: z.coerce.number().min(1).max(65535).default(3005),
+  HEALTH_TLS_ENABLED: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((v) => v === "true")
+    .pipe(z.boolean()),
+  HEALTH_TLS_KEY_PATH: z.string().optional(),
+  HEALTH_TLS_CERT_PATH: z.string().optional(),
+  HEALTH_BASIC_AUTH_USER: z.string().optional(),
+  HEALTH_BASIC_AUTH_PASS: z.string().optional(),
 
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),

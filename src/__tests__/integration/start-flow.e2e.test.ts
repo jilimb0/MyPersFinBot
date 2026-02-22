@@ -1,7 +1,8 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { createMessageRouter } from "../../handlers/message"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { MockRouterBot } from "../helpers/mock-bot"
 
 jest.mock("../../security", () => ({
   securityCheck: jest.fn().mockResolvedValue(true),
@@ -24,14 +25,6 @@ const mockGetUserData = dbStorage.getUserData as jest.MockedFunction<
   typeof dbStorage.getUserData
 >
 
-class MockBot {
-  handlers: Record<string, (msg: any) => void> = {}
-  on = jest.fn((event: string, handler: (msg: any) => void) => {
-    this.handlers[event] = handler
-  })
-  sendMessage = jest.fn().mockResolvedValue({})
-}
-
 describe("E2E start flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -49,7 +42,7 @@ describe("E2E start flow", () => {
   })
 
   test("/start shows welcome for empty user", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockRouterBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const router = createMessageRouter(bot, wizard)
     router.listen()
@@ -63,7 +56,7 @@ describe("E2E start flow", () => {
   })
 
   test("start tracking button responds with quick start", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockRouterBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const router = createMessageRouter(bot, wizard)
     router.listen()

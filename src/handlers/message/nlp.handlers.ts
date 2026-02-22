@@ -3,7 +3,7 @@
  * Handles inputs like "100 food", "потратил 500", etc.
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import * as handlers from "../../handlers"
 import type { WizardManager } from "../../wizards/wizards"
 
@@ -21,7 +21,7 @@ export function isNLPInput(text: string): boolean {
  * Handle NLP input
  */
 export async function handleNLPInput(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   text: string,

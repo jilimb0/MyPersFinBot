@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../../database/storage-db"
 import * as templateHandlers from "../../handlers/template-handlers"
 import {
@@ -93,13 +93,13 @@ describe("Template handlers", () => {
 
   describe("handleTemplateSave", () => {
     test("persists template", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const wizard = new WizardManager(bot)
       wizard.setState("1", { step: "NONE", data: {}, lang: "uk" })
 
       await handleTemplateSave(
         bot,
-        { id: "cb-1" } as TelegramBot.CallbackQuery,
+        { id: "cb-1" } as Tg.CallbackQuery,
         "1",
         `tmpl_save|exp|50|${encodeURIComponent(ExpenseCategory.FOOD_DINING)}|USD|Cash`,
         wizard
@@ -110,7 +110,7 @@ describe("Template handlers", () => {
     })
 
     test("saves expense template", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const query = {
         ...baseQuery,
         data: "tmpl_save|expense|50|FOOD_DINING",
@@ -128,7 +128,7 @@ describe("Template handlers", () => {
     })
 
     test("saves income template", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const query = {
         ...baseQuery,
         data: "tmpl_save|income|1000|SALARY",
@@ -148,7 +148,7 @@ describe("Template handlers", () => {
 
   describe("handleTemplateUse", () => {
     test("creates transaction and sends confirmation", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const wizard = new WizardManager(bot)
       wizard.setState("2", { step: "NONE", data: {}, lang: "uk" })
 
@@ -175,7 +175,7 @@ describe("Template handlers", () => {
 
       await handleTemplateUse(
         bot,
-        { id: "cb-2" } as TelegramBot.CallbackQuery,
+        { id: "cb-2" } as Tg.CallbackQuery,
         "2",
         200,
         "tmpl_use|tpl-1",
@@ -187,7 +187,7 @@ describe("Template handlers", () => {
     })
 
     test("answers callback query", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([
         {
           id: "tmpl1",
@@ -213,7 +213,7 @@ describe("Template handlers", () => {
     })
 
     test("handles non-existent template", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([])
 
       await templateHandlers.handleTemplateUse(
@@ -231,7 +231,7 @@ describe("Template handlers", () => {
 
   describe("handleTemplateDelete", () => {
     test("removes template and refreshes list", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const wizard = new WizardManager(bot)
       wizard.setState("3", { step: "NONE", data: {}, lang: "uk" })
 
@@ -249,7 +249,7 @@ describe("Template handlers", () => {
 
       await handleTemplateDelete(
         bot,
-        { id: "cb-3" } as TelegramBot.CallbackQuery,
+        { id: "cb-3" } as Tg.CallbackQuery,
         "3",
         300,
         "tmpl_del|tpl-2",
@@ -261,7 +261,7 @@ describe("Template handlers", () => {
     })
 
     test("answers callback and deletes template", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([
         {
           id: "tmpl1",
@@ -295,7 +295,7 @@ describe("Template handlers", () => {
     })
 
     test("handles deleting last template", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates
         .mockResolvedValueOnce([
           {
@@ -325,7 +325,7 @@ describe("Template handlers", () => {
 
   describe("handleTemplateManage", () => {
     test("shows template list when templates exist", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([
         {
           id: "tmpl1",
@@ -353,7 +353,7 @@ describe("Template handlers", () => {
 
   describe("handleTemplateEditAmount", () => {
     test("sets wizard to edit amount step", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([
         {
           id: "tmpl1",
@@ -381,7 +381,7 @@ describe("Template handlers", () => {
 
   describe("handleTemplateEditAccount", () => {
     test("shows account selection when balances exist", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getBalancesList.mockResolvedValue([
         {
           accountId: "Cash",
@@ -411,7 +411,7 @@ describe("Template handlers", () => {
     })
 
     test("handles no balances case", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getBalancesList.mockResolvedValue([])
 
       await templateHandlers.handleTemplateEditAccount(
@@ -430,7 +430,7 @@ describe("Template handlers", () => {
 
   describe("handleTemplateSetAccount", () => {
     test("updates template with selected account", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([
         {
           id: "tmpl1",
@@ -462,7 +462,7 @@ describe("Template handlers", () => {
 
   describe("handleTemplateCancelEdit", () => {
     test("clears wizard state and shows manage menu", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([])
 
       await templateHandlers.handleTemplateCancelEdit(
@@ -481,7 +481,7 @@ describe("Template handlers", () => {
 
   describe("showTemplatesList", () => {
     test("shows empty state when no templates", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([])
 
       await templateHandlers.showTemplatesList(bot, 123, "123")
@@ -492,7 +492,7 @@ describe("Template handlers", () => {
     })
 
     test("shows list when templates exist", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       mockDbStorage.getTemplates.mockResolvedValue([
         {
           id: "tmpl1",

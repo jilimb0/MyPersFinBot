@@ -546,6 +546,8 @@ pm2 start my-pers-fin-bot
 ```bash
 # Check if bot is healthy
 curl http://localhost:3005/health
+curl http://localhost:3005/healthz
+curl http://localhost:3005/readyz
 
 # Expected response:
 {
@@ -553,7 +555,58 @@ curl http://localhost:3005/health
   "uptime": 3600,
   "timestamp": "2026-02-11T04:45:00.000Z"
 }
+
+# APM/metrics snapshot
+curl http://localhost:3005/metrics
+curl http://localhost:3005/metrics/prometheus
 ```
+
+### HTTPS + Reverse Proxy for Health
+
+Use `deploy/nginx/my-pers-fin-bot.conf` as a starting point for TLS termination in nginx and proxying to `127.0.0.1:3005`.
+
+```bash
+# Copy nginx config template
+sudo cp deploy/nginx/my-pers-fin-bot.conf /etc/nginx/sites-available/my-pers-fin-bot.conf
+sudo ln -s /etc/nginx/sites-available/my-pers-fin-bot.conf /etc/nginx/sites-enabled/my-pers-fin-bot.conf
+
+# Issue certificate (Let's Encrypt)
+sudo certbot certonly --webroot -w /var/www/certbot -d your-domain.example.com
+
+# Validate + reload nginx
+sudo nginx -t && sudo systemctl reload nginx
+
+# Create basic auth user for health/metrics endpoints
+sudo apt install -y apache2-utils
+sudo htpasswd -c /etc/nginx/.htpasswd-my-pers-fin-bot health
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Validation after setup:
+
+```bash
+# HTTPS + auth check
+curl -u health:your_password https://your-domain.example.com/healthz
+curl -u health:your_password https://your-domain.example.com/metrics
+curl -u health:your_password https://your-domain.example.com/metrics/prometheus
+```
+
+Optional app-level TLS:
+
+- `HEALTH_TLS_ENABLED=true`
+- `HEALTH_TLS_KEY_PATH=/path/to/key.pem`
+- `HEALTH_TLS_CERT_PATH=/path/to/cert.pem`
+
+Optional app-level basic auth:
+
+- `HEALTH_BASIC_AUTH_USER=...`
+- `HEALTH_BASIC_AUTH_PASS=...`
+
+Recommended production values:
+
+- `HEALTH_HOST=127.0.0.1`
+- `HEALTH_PORT=3005`
+- Use nginx TLS + basic auth as the external boundary.
 
 ### PM2 Monitoring
 
@@ -595,7 +648,18 @@ pm2 show my-pers-fin-bot
 htop
 free -h
 df -h
+
+# App metrics endpoint
+curl http://localhost:3005/metrics
 ```
+
+### Alert Rules
+
+Sample rules are in `deploy/alerts/metrics-alerts.yml`:
+
+- `BotHealthEndpointDown`
+- `BotSearchLatencyHigh`
+- `BotChartLatencyHigh`
 
 ---
 

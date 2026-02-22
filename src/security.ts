@@ -7,7 +7,7 @@
  * - Security logging
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "./database/storage-db"
 import { type Language, resolveLanguage, t } from "./i18n"
 
@@ -74,7 +74,7 @@ export function isUserAllowed(userId: string): boolean {
  * Send unauthorized access message
  */
 export async function sendUnauthorizedMessage(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string
 ) {
@@ -135,7 +135,7 @@ export function isRateLimited(userId: string): boolean {
  * Send rate limit exceeded message
  */
 export async function sendRateLimitMessage(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string
 ) {
@@ -178,8 +178,8 @@ if (SECURITY_CONFIG.RATE_LIMIT.enabled) {
  * @returns true if message should be processed, false if blocked
  */
 export async function securityCheck(
-  bot: TelegramBot,
-  msg: TelegramBot.Message
+  bot: BotClient,
+  msg: Tg.Message
 ): Promise<boolean> {
   const chatId = msg.chat.id
   const userId = msg.from?.id.toString() || ""

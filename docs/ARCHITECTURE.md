@@ -9,7 +9,7 @@
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │                     TELEGRAM BOT API                        │
-│                    (node-telegram-bot-api)                  │
+│       (@jilimb0/tgwrapper runtime: ApiClient/Polling)       │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
@@ -162,11 +162,13 @@ handlers/
 **Pattern:**
 
 ```typescript
+import type { BotClient } from "@jilimb0/tgwrapper"
+
 export async function handleFeature(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
-  data?: any
+  data?: unknown
 ) {
   // 1. Validate input
   // 2. Fetch from database

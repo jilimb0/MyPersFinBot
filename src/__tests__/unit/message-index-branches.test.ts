@@ -24,6 +24,7 @@ jest.mock("../../security", () => ({
 
 jest.mock("../../wizards/wizards", () => ({
   WizardManager: jest.fn().mockImplementation(() => ({
+    hydrateState: jest.fn().mockResolvedValue(undefined),
     isInWizard: jest.fn().mockReturnValue(false),
     handleWizardInput: jest.fn().mockResolvedValue(false),
     clearState: jest.fn(),

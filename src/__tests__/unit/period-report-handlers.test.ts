@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../../database/storage-db"
 import { registerPeriodReportHandlers } from "../../handlers/period-report-handlers"
 
@@ -9,17 +9,23 @@ jest.mock("../../database/storage-db", () => ({
   },
 }))
 
-type TextHandler = (
-  msg: TelegramBot.Message,
-  match?: RegExpExecArray | null
-) => void
+type MessageHandler = (msg: Tg.Message) => void | Promise<void>
 
 class MockBot {
-  onTextHandlers: Array<{ re: RegExp; handler: TextHandler }> = []
+  messageHandlers: MessageHandler[] = []
   sendMessage = jest.fn().mockResolvedValue({})
-  onText = jest.fn((re: RegExp, handler: TextHandler) => {
-    this.onTextHandlers.push({ re, handler })
+  on = jest.fn((event: string, handler: MessageHandler) => {
+    if (event === "message") {
+      this.messageHandlers.push(handler)
+    }
   })
+
+  async emitText(text: string) {
+    const msg = { chat: { id: 1 }, text } as Tg.Message
+    for (const handler of this.messageHandlers) {
+      await handler(msg)
+    }
+  }
 }
 
 describe("period-report-handlers", () => {
@@ -33,44 +39,24 @@ describe("period-report-handlers", () => {
   })
 
   test("/report_period prompt and invalid inputs", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
-    registerPeriodReportHandlers(bot)
-
-    const promptHandler = (bot as any).onTextHandlers.find((h: any) =>
-      h.re.source.includes("/report_period")
-    )
+    const bot = new MockBot()
+    registerPeriodReportHandlers(bot as unknown as any)
 
     ;(dbStorage.getUserLanguage as jest.Mock).mockResolvedValue("en")
-    await promptHandler.handler({ chat: { id: 1 } })
-
-    const periodHandler = (bot as any).onTextHandlers.find((h: any) =>
-      h.re.source.includes("\\d{4}-\\d{2}-\\d{2}")
-    )
+    await bot.emitText("/report_period")
 
     // invalid dates
-    await periodHandler.handler({ chat: { id: 1 } }, [
-      "",
-      "2026-13-01",
-      "2026-01-01",
-    ])
+    await bot.emitText("2026-13-01 2026-01-01")
 
     // start after end
-    await periodHandler.handler({ chat: { id: 1 } }, [
-      "",
-      "2026-02-10",
-      "2026-02-01",
-    ])
+    await bot.emitText("2026-02-10 2026-02-01")
 
-    expect((bot as any).sendMessage).toHaveBeenCalled()
+    expect(bot.sendMessage).toHaveBeenCalled()
   })
 
   test("/report_period valid with type", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
-    registerPeriodReportHandlers(bot)
-
-    const periodHandler = (bot as any).onTextHandlers.find((h: any) =>
-      h.re.source.includes("\\d{4}-\\d{2}-\\d{2}")
-    )
+    const bot = new MockBot()
+    registerPeriodReportHandlers(bot as unknown as any)
 
     ;(dbStorage.getUserLanguage as jest.Mock).mockResolvedValue("en")
     ;(dbStorage.getTransactionsByDateRange as jest.Mock).mockResolvedValue([
@@ -82,20 +68,14 @@ describe("period-report-handlers", () => {
       },
     ])
 
-    await periodHandler.handler({ chat: { id: 1 } }, [
-      "",
-      "2026-02-01",
-      "2026-02-05",
-      " EXPENSE",
-      "EXPENSE",
-    ])
+    await bot.emitText("2026-02-01 2026-02-05 EXPENSE")
 
-    expect((bot as any).sendMessage).toHaveBeenCalled()
+    expect(bot.sendMessage).toHaveBeenCalled()
   })
 
   test("/report_quarter and /report_year", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
-    registerPeriodReportHandlers(bot)
+    const bot = new MockBot()
+    registerPeriodReportHandlers(bot as unknown as any)
     ;(dbStorage.getUserLanguage as jest.Mock).mockResolvedValue("en")
     ;(dbStorage.getTransactionsByDateRange as jest.Mock).mockResolvedValue([
       {
@@ -107,17 +87,9 @@ describe("period-report-handlers", () => {
       },
     ])
 
-    const quarterHandler = (bot as any).onTextHandlers.find((h: any) =>
-      h.re.source.includes("/report_quarter")
-    )
+    await bot.emitText("/report_quarter")
+    await bot.emitText("/report_year")
 
-    const yearHandler = (bot as any).onTextHandlers.find((h: any) =>
-      h.re.source.includes("/report_year")
-    )
-
-    await quarterHandler.handler({ chat: { id: 1 } })
-    await yearHandler.handler({ chat: { id: 1 } })
-
-    expect((bot as any).sendMessage).toHaveBeenCalled()
+    expect(bot.sendMessage).toHaveBeenCalled()
   })
 })

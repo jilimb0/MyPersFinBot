@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../../database/storage-db"
 import {
   handleAutoPaymentAccountSelect,
@@ -50,7 +50,7 @@ describe("auto-debt-payment-handlers", () => {
   })
 
   test("toggle enable with no balances and with balances", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", { step: "DEBT_MENU", data: { debt }, lang })
@@ -76,7 +76,7 @@ describe("auto-debt-payment-handlers", () => {
   })
 
   test("toggle disable", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", { step: "DEBT_MENU", data: { debt }, lang })
@@ -92,7 +92,7 @@ describe("auto-debt-payment-handlers", () => {
   })
 
   test("account select invalid and valid", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", {
@@ -115,7 +115,7 @@ describe("auto-debt-payment-handlers", () => {
   })
 
   test("amount input invalid/too large and valid", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", {
@@ -136,7 +136,7 @@ describe("auto-debt-payment-handlers", () => {
   })
 
   test("day select invalid and valid", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", {

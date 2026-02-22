@@ -2,8 +2,7 @@
  * Telegram Bot helper functions
  */
 
-import type TelegramBot from "node-telegram-bot-api"
-import type { AnswerCallbackQueryOptions } from "node-telegram-bot-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { type Language, t } from "../i18n"
 
 /**
@@ -27,10 +26,10 @@ export function escapeMarkdown(text: string): string {
  * Safely answer callback query (ignores outdated queries)
  */
 export async function safeAnswerCallback(
-  bot: TelegramBot,
-  options?: AnswerCallbackQueryOptions
+  bot: BotClient,
+  options?: Tg.AnswerCallbackQueryOptions
 ) {
-  if (!options) return
+  if (!options?.callback_query_id) return
 
   try {
     await bot.answerCallbackQuery(options.callback_query_id, options)
@@ -56,11 +55,11 @@ export async function safeAnswerCallback(
 export function createListButtons(options: {
   items: string[]
   withoutBack?: boolean
-  beforeItemsButtons?: TelegramBot.KeyboardButton[][]
+  beforeItemsButtons?: Tg.KeyboardButton[][]
   afterItemsButtons?: string[]
   itemsPerRowCustom?: number
   lang: Language
-}): TelegramBot.KeyboardButton[][] {
+}): Tg.KeyboardButton[][] {
   const {
     items,
     withoutBack,
@@ -70,13 +69,13 @@ export function createListButtons(options: {
     lang,
   } = options
 
-  const buttons: TelegramBot.KeyboardButton[][] = beforeItemsButtons
+  const buttons: Tg.KeyboardButton[][] = beforeItemsButtons
 
   if (afterItemsButtons) items.push(...afterItemsButtons)
   const itemsPerRow = items.length >= 4 ? itemsPerRowCustom : 1
 
   for (let i = 0; i < items.length; i += itemsPerRow) {
-    const row: TelegramBot.KeyboardButton[] = []
+    const row: Tg.KeyboardButton[] = []
     for (let j = 0; j < itemsPerRow && i + j < items.length; j++) {
       const text = items[i + j]
       if (text) {

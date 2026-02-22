@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import dayjs from "dayjs"
 import timezone from "dayjs/plugin/timezone"
 import utc from "dayjs/plugin/utc"
-import type TelegramBot from "node-telegram-bot-api"
 import { AppDataSource } from "../database/data-source"
 import { Debt } from "../database/entities/Debt"
 import { Goal } from "../database/entities/Goal"
@@ -475,7 +475,7 @@ export class ReminderManager {
     return pendingReminders
   }
 
-  async sendReminder(bot: TelegramBot, reminder: Reminder): Promise<void> {
+  async sendReminder(bot: BotClient, reminder: Reminder): Promise<void> {
     try {
       await bot.sendMessage(reminder.userId, reminder.message, {
         parse_mode: "Markdown",

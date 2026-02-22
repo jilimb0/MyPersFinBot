@@ -1,7 +1,8 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { ExpenseCategory, TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -50,10 +51,6 @@ const mockDeleteRecurring =
     typeof recurringManager.deleteRecurring
   >
 
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
-
 describe("E2E recurring flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -88,7 +85,7 @@ describe("E2E recurring flow", () => {
   })
 
   test("recurring create flow: description -> type -> amount -> account -> category -> day", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-r1"
     const chatId = 1001
@@ -127,7 +124,7 @@ describe("E2E recurring flow", () => {
   })
 
   test("recurring item flow: pause and delete", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-r2"
     const chatId = 1002

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "node-telegram-bot-api"
+import type { TgTypes as Tg } from "@jilimb0/tgwrapper"
 import type { Balance } from "../database/entities/Balance"
 import { dbStorage as db } from "../database/storage-db"
 import { type Language, resolveLanguage, t } from "../i18n"
@@ -212,7 +212,7 @@ export async function handleBalanceSelection(
     currentAmount: balance.amount,
   })
 
-  const keyboard: TelegramBot.KeyboardButton[][] = []
+  const keyboard: Tg.KeyboardButton[][] = []
 
   if (balance.amount > 0) {
     keyboard.push([{ text: t(lang, "balances.setToZero") }])
@@ -560,7 +560,7 @@ export async function handleBalanceConfirmAmount(
   })
 
   // Формируем кнопки в зависимости от баланса
-  const keyboard: TelegramBot.KeyboardButton[][] = []
+  const keyboard: Tg.KeyboardButton[][] = []
   if (currentAmount > 0) {
     keyboard.push([{ text: t(lang, "balances.setToZero") }])
   }
@@ -664,7 +664,7 @@ export async function handleBalanceConfirmRename(
   })
 
   // Формируем кнопки в зависимости от баланса
-  const keyboard: TelegramBot.KeyboardButton[][] = []
+  const keyboard: Tg.KeyboardButton[][] = []
   if (currentAmount > 0) {
     keyboard.push([{ text: t(lang, "balances.setToZero") }])
   }

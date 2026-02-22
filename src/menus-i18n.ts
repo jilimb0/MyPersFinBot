@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "./database/storage-db"
 import {
   getCategoryLabel,
@@ -27,7 +27,7 @@ import { createListButtons, escapeMarkdown, formatMoney } from "./utils"
 import type { WizardManager } from "./wizards/wizards"
 
 export async function showMainMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   lang: Language
 ): Promise<void> {
@@ -79,7 +79,7 @@ export async function showBalancesMenu(
 }
 
 export async function showDebtsMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   lang: Language
@@ -152,7 +152,7 @@ export async function showDebtsMenu(
 }
 
 export async function showGoalsMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   lang: Language
@@ -178,7 +178,7 @@ export async function showGoalsMenu(
 }
 
 export async function showIncomeSourcesMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   lang: Language
@@ -206,7 +206,7 @@ export async function showIncomeSourcesMenu(
 }
 
 export async function showSettingsMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   lang: Language
@@ -223,7 +223,7 @@ export async function showSettingsMenu(
 }
 
 export async function showStatsMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   lang: Language
 ): Promise<void> {
@@ -441,7 +441,7 @@ export async function showAnalyticsReportsMenu(
 }
 
 export async function showNetWorthMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   lang: Language,
@@ -540,7 +540,7 @@ export async function showNetWorthMenu(
     msg += `${t(lang, "netWorth.title")} ${formatMoney(netWorth, defaultCurrency)}\n`
   }
 
-  const keyboard: TelegramBot.KeyboardButton[][] = []
+  const keyboard: Tg.KeyboardButton[][] = []
 
   if (view === "summary") {
     keyboard.push([
@@ -549,7 +549,7 @@ export async function showNetWorthMenu(
       { text: t(lang, "netWorth.fullReport") },
     ])
   } else {
-    const row: TelegramBot.KeyboardButton[] = []
+    const row: Tg.KeyboardButton[] = []
     if (view !== "assets") row.push({ text: t(lang, "netWorth.viewAssets") })
     if (view !== "debts") row.push({ text: t(lang, "netWorth.viewDebts") })
     if (view !== "full") row.push({ text: t(lang, "netWorth.fullReport") })

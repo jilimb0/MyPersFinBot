@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import {
   handleStatementPreviewAction,
   handleStatementUpload,
@@ -56,7 +56,7 @@ describe("upload-statement-handlers", () => {
 
   describe("handleStatementUpload", () => {
     test("rejects when no document", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const wizard = new MockWizard({ lang: "en" })
       await handleStatementUpload(
         bot,
@@ -71,7 +71,7 @@ describe("upload-statement-handlers", () => {
     })
 
     test("rejects unsupported format", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const wizard = new MockWizard({ lang: "en" })
       const msg = {
         chat: { id: 1 },
@@ -91,7 +91,7 @@ describe("upload-statement-handlers", () => {
         transactions: [],
         bankType: "TestBank",
       })
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const wizard = new MockWizard({ lang: "en" })
       const msg = {
         chat: { id: 1 },
@@ -124,7 +124,7 @@ describe("upload-statement-handlers", () => {
         ],
         bankType: "TestBank",
       })
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const wizard = new MockWizard({ lang: "en" })
       const msg = {
         chat: { id: 1 },

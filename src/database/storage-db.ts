@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import { convertSync } from "../fx"
 import { isValidLanguage, type Language, resolveLanguage, t } from "../i18n"
 import { normalizeCategoryValue } from "../i18n/categories"
+import { tgObservability } from "../observability/tgwrapper-observability"
 import { getCacheManager } from "../services/cache-manager"
 import {
   type Balance as BalanceType,
@@ -2073,6 +2074,100 @@ export class DatabaseStorage {
     }
   }
 
+  async searchTransactions(
+    userId: string,
+    options?: {
+      query?: string
+      page?: number
+      limit?: number
+      type?: TransactionType
+      category?: string
+      startDate?: Date
+      endDate?: Date
+      minAmount?: number
+      maxAmount?: number
+      accountId?: string
+      fromAccountId?: string
+      toAccountId?: string
+    }
+  ): Promise<{ transactions: Transaction[]; total: number; hasMore: boolean }> {
+    const page = options?.page && options.page > 0 ? options.page : 1
+    const limit = options?.limit && options.limit > 0 ? options.limit : 10
+
+    const queryBuilder = AppDataSource.getRepository(TransactionEntity)
+      .createQueryBuilder("tx")
+      .where("tx.userId = :userId", { userId })
+
+    const searchQuery = options?.query?.trim()
+    if (searchQuery) {
+      const like = `%${searchQuery.toLowerCase()}%`
+      queryBuilder.andWhere(
+        "(LOWER(COALESCE(tx.description, '')) LIKE :like OR LOWER(COALESCE(tx.category, '')) LIKE :like OR LOWER(COALESCE(tx.fromAccountId, '')) LIKE :like OR LOWER(COALESCE(tx.toAccountId, '')) LIKE :like)",
+        { like }
+      )
+    }
+
+    if (options?.type) {
+      queryBuilder.andWhere("tx.type = :type", { type: options.type })
+    }
+    if (options?.category) {
+      queryBuilder.andWhere("tx.category = :category", {
+        category: options.category,
+      })
+    }
+    if (options?.startDate) {
+      queryBuilder.andWhere("tx.date >= :startDate", {
+        startDate: options.startDate,
+      })
+    }
+    if (options?.endDate) {
+      queryBuilder.andWhere("tx.date <= :endDate", {
+        endDate: options.endDate,
+      })
+    }
+    if (typeof options?.minAmount === "number") {
+      queryBuilder.andWhere("tx.amount >= :minAmount", {
+        minAmount: options.minAmount,
+      })
+    }
+    if (typeof options?.maxAmount === "number") {
+      queryBuilder.andWhere("tx.amount <= :maxAmount", {
+        maxAmount: options.maxAmount,
+      })
+    }
+    if (options?.accountId) {
+      queryBuilder.andWhere(
+        "(tx.fromAccountId = :accountId OR tx.toAccountId = :accountId)",
+        {
+          accountId: options.accountId,
+        }
+      )
+    }
+    if (options?.fromAccountId) {
+      queryBuilder.andWhere("tx.fromAccountId = :fromAccountId", {
+        fromAccountId: options.fromAccountId,
+      })
+    }
+    if (options?.toAccountId) {
+      queryBuilder.andWhere("tx.toAccountId = :toAccountId", {
+        toAccountId: options.toAccountId,
+      })
+    }
+
+    const skip = (page - 1) * limit
+    const [transactions, total] = await queryBuilder
+      .orderBy("tx.date", "DESC")
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount()
+
+    return {
+      transactions: transactions.map(this.mapTransaction.bind(this)),
+      total,
+      hasMore: skip + transactions.length < total,
+    }
+  }
+
   // --- Batch Operations (Priority 8) ---
   async addTransactionsBatch(
     userId: string,
@@ -2636,4 +2731,34 @@ export class DatabaseStorage {
   }
 }
 
-export const dbStorage = new DatabaseStorage()
+function createInstrumentedDatabaseStorage(
+  storage: DatabaseStorage
+): DatabaseStorage {
+  return new Proxy(storage as DatabaseStorage & Record<string, unknown>, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver)
+
+      if (typeof value !== "function" || prop === "constructor") {
+        return value
+      }
+
+      return (...args: unknown[]) => {
+        const bound = (value as (...params: unknown[]) => unknown).bind(target)
+        const isAsync = bound.constructor?.name === "AsyncFunction"
+        if (!isAsync) {
+          return bound(...args)
+        }
+
+        return tgObservability.instrumentDbOperation(
+          String(prop),
+          async () => (await bound(...args)) as never,
+          "storage-db"
+        )
+      }
+    },
+  }) as DatabaseStorage
+}
+
+export const dbStorage = createInstrumentedDatabaseStorage(
+  new DatabaseStorage()
+)

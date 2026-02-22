@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { MessageRouter } from "../../handlers/message"
 import type { WizardManager } from "../../wizards/wizards"
 
@@ -22,8 +22,9 @@ class MockBot {
 
 describe("MessageRouter", () => {
   test("routes matching pattern are handled", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizardManager = {
+      hydrateState: jest.fn().mockResolvedValue(undefined),
       isInWizard: jest.fn().mockReturnValue(false),
       handleWizardInput: jest.fn().mockResolvedValue(true),
     } as unknown as WizardManager
@@ -44,8 +45,9 @@ describe("MessageRouter", () => {
   })
 
   test("falls back to wizard when no route matches", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizardManager = {
+      hydrateState: jest.fn().mockResolvedValue(undefined),
       isInWizard: jest.fn().mockReturnValue(true),
       handleWizardInput: jest.fn().mockResolvedValue(true),
     } as unknown as WizardManager

@@ -1,19 +1,158 @@
 /**
  * Rate limiter service
- * Implements sliding window rate limiting with Redis
+ * Implements sliding window rate limiting with Redis session adapter
  */
 
-import { getRedisClient } from "../cache"
 import logger from "../logger"
 import type { RateLimitConfig, RateLimitInfo, RateLimitResult } from "./types"
+
+type RateLimitSession = {
+  version: number
+  timestamps: number[]
+  blockedUntil?: number
+}
+
+type VersionedValue<T> = {
+  value: T
+  version: number
+}
+
+type CasResult<T> = {
+  ok: boolean
+  current?: VersionedValue<T>
+}
+
+type SessionStorage<TSession> = {
+  get(key: string): Promise<TSession | null>
+  set(key: string, value: TSession): Promise<void>
+  delete(key: string): Promise<void>
+  getWithVersion(key: string): Promise<VersionedValue<TSession> | null>
+  compareAndSet(
+    key: string,
+    expectedVersion: number,
+    nextValue: TSession
+  ): Promise<CasResult<TSession>>
+}
 
 export class RateLimiterService {
   private config: RateLimitConfig
   private readonly keyPrefix = "ratelimit"
-  private readonly blockPrefix = "ratelimit:block"
+  private adapter?: SessionStorage<RateLimitSession>
+  private adapterInitPromise?: Promise<void>
 
   constructor(config: RateLimitConfig) {
     this.config = config
+    this.adapterInitPromise = this.initAdapter()
+  }
+
+  private initAdapter(): Promise<void> {
+    const redisUrl = process.env.REDIS_URL
+    if (!redisUrl) {
+      return Promise.resolve()
+    }
+
+    return (async () => {
+      try {
+        const dynamicImport: (specifier: string) => Promise<unknown> =
+          new Function("s", "return import(s)") as (
+            specifier: string
+          ) => Promise<unknown>
+        const mod = (await (async () => {
+          try {
+            return (await dynamicImport(
+              "@jilimb0/tgwrapper-adapter-redis"
+            )) as {
+              RedisSessionAdapter: new (options: {
+                redisUrl: string
+                tenantId: string
+                botId: string
+                ttlSeconds: number
+              }) => SessionStorage<RateLimitSession>
+            }
+          } catch {
+            return (await dynamicImport(
+              "@jilimb0/tgwrapper-adapter-redis/dist/index.js"
+            )) as {
+              RedisSessionAdapter: new (options: {
+                redisUrl: string
+                tenantId: string
+                botId: string
+                ttlSeconds: number
+              }) => SessionStorage<RateLimitSession>
+            }
+          }
+        })()) as {
+          RedisSessionAdapter: new (options: {
+            redisUrl: string
+            tenantId: string
+            botId: string
+            ttlSeconds: number
+          }) => SessionStorage<RateLimitSession>
+        }
+
+        this.adapter = new mod.RedisSessionAdapter({
+          redisUrl,
+          tenantId: process.env.TGWRAPPER_TENANT_ID || "my-pers-fin",
+          botId: process.env.TGWRAPPER_BOT_ID || "telegram-rate-limiter",
+          ttlSeconds: Math.max(
+            Math.ceil(this.config.windowMs / 1000),
+            Math.ceil((this.config.blockDurationMs || 0) / 1000),
+            60
+          ),
+        })
+      } catch (error) {
+        logger.error("Rate limiter adapter init failed", error)
+      }
+    })()
+  }
+
+  private async getAdapter(): Promise<SessionStorage<RateLimitSession> | null> {
+    if (this.adapterInitPromise) {
+      await this.adapterInitPromise
+    }
+    return this.adapter || null
+  }
+
+  private storageKey(userId: string): string {
+    return `${this.keyPrefix}:${userId}`
+  }
+
+  private isBlockedAt(session: RateLimitSession | null, now: number): boolean {
+    return Boolean(session?.blockedUntil && session.blockedUntil > now)
+  }
+
+  private pruneTimestamps(timestamps: number[], now: number): number[] {
+    const windowStart = now - this.config.windowMs
+    return timestamps.filter((ts) => ts > windowStart)
+  }
+
+  private async updateSession(
+    userId: string,
+    updater: (current: RateLimitSession | null) => RateLimitSession
+  ): Promise<RateLimitSession> {
+    const adapter = await this.getAdapter()
+    if (!adapter) {
+      throw new Error("Rate limiter storage is not available")
+    }
+
+    const key = this.storageKey(userId)
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const current = await adapter.getWithVersion(key)
+      const currentSession = current?.value || null
+      const next = updater(currentSession)
+
+      const result = await adapter.compareAndSet(
+        key,
+        current?.version || 0,
+        next
+      )
+
+      if (result.ok) {
+        return next
+      }
+    }
+
+    throw new Error("Rate limiter CAS failed after retries")
   }
 
   /**
@@ -42,12 +181,27 @@ export class RateLimiterService {
       }
     }
 
-    // Check if user is blocked
-    // const blockKey = `${this.blockPrefix}:${userId}`
-    const blocked = await this.isBlocked(userId)
+    const adapter = await this.getAdapter()
+    if (!adapter) {
+      logger.warn("Rate limiter storage unavailable, allowing request", {
+        userId,
+      })
+      return {
+        allowed: true,
+        remaining: this.config.maxRequests,
+        resetAt: new Date(Date.now() + this.config.windowMs),
+      }
+    }
+
+    const now = Date.now()
+    const initial = await adapter.get(this.storageKey(userId))
+    const blocked = this.isBlockedAt(initial, now)
 
     if (blocked) {
-      const ttl = await this.getBlockTTL(userId)
+      const ttl = Math.max(
+        0,
+        Math.ceil(((initial?.blockedUntil || now) - now) / 1000)
+      )
       logger.warn("User is rate limited (blocked)", { userId, ttl })
 
       return {
@@ -58,25 +212,54 @@ export class RateLimiterService {
       }
     }
 
-    // Increment counter
-    const redis = getRedisClient()
-    const key = `${this.keyPrefix}:${userId}`
-    const now = Date.now()
-    const windowStart = now - this.config.windowMs
-
     try {
-      // Use sorted set for sliding window
-      // Remove old entries
-      await redis.zremrangebyscore(key, 0, windowStart)
+      let blockedAfterCheck = false
+      let retryAfter = 0
+      const nextSession = await this.updateSession(userId, (current) => {
+        const active = this.pruneTimestamps(current?.timestamps || [], now)
+        const currentlyBlocked = this.isBlockedAt(current, now)
+        if (currentlyBlocked) {
+          blockedAfterCheck = true
+          retryAfter = Math.max(
+            0,
+            Math.ceil(((current?.blockedUntil || now) - now) / 1000)
+          )
+          return {
+            version: (current?.version || 0) + 1,
+            timestamps: active,
+            blockedUntil: current?.blockedUntil,
+          }
+        }
 
-      // Count current requests
-      const count = await redis.zcard(key)
+        if (active.length >= this.config.maxRequests) {
+          if (this.config.blockDurationMs) {
+            blockedAfterCheck = true
+            retryAfter = Math.ceil(this.config.blockDurationMs / 1000)
+            return {
+              version: (current?.version || 0) + 1,
+              timestamps: active,
+              blockedUntil: now + this.config.blockDurationMs,
+            }
+          }
+          blockedAfterCheck = true
+          retryAfter = Math.ceil(this.config.windowMs / 1000)
+          return {
+            version: (current?.version || 0) + 1,
+            timestamps: active,
+            blockedUntil: undefined,
+          }
+        }
 
-      // Check if limit exceeded
-      if (count >= this.config.maxRequests) {
-        // Block user if configured
+        return {
+          version: (current?.version || 0) + 1,
+          timestamps: [...active, now],
+          blockedUntil: current?.blockedUntil,
+        }
+      })
+
+      const count = nextSession.timestamps.length
+      if (blockedAfterCheck) {
         if (this.config.blockDurationMs) {
-          await this.blockUser(userId, this.config.blockDurationMs)
           logger.warn("User rate limit exceeded - blocked", {
             userId,
             count,
@@ -95,17 +278,11 @@ export class RateLimiterService {
           allowed: false,
           remaining: 0,
           resetAt: await this.getResetTime(userId),
-          retryAfter: Math.ceil(this.config.windowMs / 1000),
+          retryAfter,
         }
       }
 
-      // Add current request
-      await redis.zadd(key, now, `${now}:${Math.random()}`)
-
-      // Set expiry on key
-      await redis.expire(key, Math.ceil(this.config.windowMs / 1000))
-
-      const remaining = this.config.maxRequests - count - 1
+      const remaining = Math.max(0, this.config.maxRequests - count)
 
       logger.debug("Rate limit check passed", {
         userId,
@@ -134,22 +311,26 @@ export class RateLimiterService {
    * Get rate limit info for user
    */
   async getInfo(userId: string): Promise<RateLimitInfo> {
-    const redis = getRedisClient()
-    const key = `${this.keyPrefix}:${userId}`
+    const adapter = await this.getAdapter()
+    if (!adapter) {
+      throw new Error("Rate limiter storage is not available")
+    }
+
     const now = Date.now()
-    const windowStart = now - this.config.windowMs
 
     try {
-      // Remove old entries
-      await redis.zremrangebyscore(key, 0, windowStart)
-
-      // Get current count
-      const count = await redis.zcard(key)
-
-      // Check if blocked
-      const blocked = await this.isBlocked(userId)
+      const state = await this.updateSession(userId, (current) => {
+        const active = this.pruneTimestamps(current?.timestamps || [], now)
+        return {
+          version: (current?.version || 0) + 1,
+          timestamps: active,
+          blockedUntil: current?.blockedUntil,
+        }
+      })
+      const count = state.timestamps.length
+      const blocked = this.isBlockedAt(state, now)
       const blockedUntil = blocked
-        ? new Date(Date.now() + (await this.getBlockTTL(userId)) * 1000)
+        ? new Date(state.blockedUntil || now)
         : undefined
 
       return {
@@ -169,13 +350,13 @@ export class RateLimiterService {
    * Reset rate limit for user
    */
   async reset(userId: string): Promise<void> {
-    const redis = getRedisClient()
-    const key = `${this.keyPrefix}:${userId}`
-    const blockKey = `${this.blockPrefix}:${userId}`
+    const adapter = await this.getAdapter()
+    if (!adapter) {
+      throw new Error("Rate limiter storage is not available")
+    }
 
     try {
-      await redis.del(key)
-      await redis.del(blockKey)
+      await adapter.delete(this.storageKey(userId))
       logger.info("Rate limit reset", { userId })
     } catch (error) {
       logger.error("Error resetting rate limit", error, { userId })
@@ -184,65 +365,23 @@ export class RateLimiterService {
   }
 
   /**
-   * Block user
-   */
-  private async blockUser(userId: string, durationMs: number): Promise<void> {
-    const redis = getRedisClient()
-    const blockKey = `${this.blockPrefix}:${userId}`
-
-    try {
-      await redis.set(blockKey, Date.now().toString(), "PX", durationMs)
-      logger.warn("User blocked", { userId, durationMs })
-    } catch (error) {
-      logger.error("Error blocking user", error, { userId })
-    }
-  }
-
-  /**
-   * Check if user is blocked
-   */
-  private async isBlocked(userId: string): Promise<boolean> {
-    const redis = getRedisClient()
-    const blockKey = `${this.blockPrefix}:${userId}`
-
-    try {
-      const blocked = await redis.get(blockKey)
-      return blocked !== null
-    } catch (error) {
-      logger.error("Error checking if user is blocked", error, { userId })
-      return false
-    }
-  }
-
-  /**
-   * Get block TTL in seconds
-   */
-  private async getBlockTTL(userId: string): Promise<number> {
-    const redis = getRedisClient()
-    const blockKey = `${this.blockPrefix}:${userId}`
-
-    try {
-      const ttl = await redis.pttl(blockKey)
-      return Math.ceil(ttl / 1000)
-    } catch (error) {
-      logger.error("Error getting block TTL", error, { userId })
-      return 0
-    }
-  }
-
-  /**
    * Get reset time for user's rate limit
    */
   private async getResetTime(userId: string): Promise<Date> {
-    const redis = getRedisClient()
-    const key = `${this.keyPrefix}:${userId}`
+    const adapter = await this.getAdapter()
+    if (!adapter) {
+      return new Date(Date.now() + this.config.windowMs)
+    }
 
     try {
-      // Get oldest entry
-      const oldest = await redis.zrange(key, 0, 0, "WITHSCORES")
-
-      if (oldest.length >= 2) {
-        const oldestTime = parseInt(oldest[1], 10)
+      const now = Date.now()
+      const state = await adapter.get(this.storageKey(userId))
+      if (!state || state.timestamps.length === 0) {
+        return new Date(now + this.config.windowMs)
+      }
+      const active = this.pruneTimestamps(state.timestamps, now)
+      const oldestTime = active.length > 0 ? Math.min(...active) : now
+      if (Number.isFinite(oldestTime)) {
         return new Date(oldestTime + this.config.windowMs)
       }
 

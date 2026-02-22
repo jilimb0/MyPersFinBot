@@ -77,22 +77,6 @@ export function getCache(): CacheInterface {
 }
 
 /**
- * Get Redis client for direct access
- * Returns the underlying Redis client if using RedisCacheService
- */
-export function getRedisClient(): any {
-  if (!cacheInstance) {
-    throw new Error("Cache not initialized. Call initializeCache() first.")
-  }
-
-  if (cacheInstance instanceof RedisCacheService) {
-    return (cacheInstance as any).redis
-  }
-
-  throw new Error("Redis cache not available. Using in-memory cache.")
-}
-
-/**
  * Close cache connection
  */
 export async function closeCache(): Promise<void> {

@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../../database/storage-db"
 import * as handlers from "../../handlers"
 import { t } from "../../i18n"
@@ -180,7 +180,7 @@ describe("WizardManager - handleWizardInput", () => {
     bot = {
       sendMessage: jest.fn().mockResolvedValue({}),
     }
-    wizard = new WizardManager(bot as TelegramBot)
+    wizard = new WizardManager(bot as BotClient)
     ;(dbStorage.getUserLanguage as jest.Mock).mockResolvedValue("en")
   })
 

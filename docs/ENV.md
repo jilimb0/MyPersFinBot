@@ -25,12 +25,19 @@
 - `ANALYTICS_DAYS_DEFAULT`
 - `REMINDER_CHECK_INTERVAL`
 - `MAX_FILE_SIZE_MB`
+- `QUICKCHART_BASE_URL` (default: `https://quickchart.io`)
+- `QUICKCHART_TIMEOUT_MS` (ms, default: `10000`)
 - `SENTRY_DSN`
 - `SENTRY_ENV`
 - `SENTRY_TRACES_SAMPLE_RATE`
 - `SENTRY_RELEASE`
 - `HEALTH_HOST`
 - `HEALTH_PORT`
+- `HEALTH_TLS_ENABLED` (`true|false`)
+- `HEALTH_TLS_KEY_PATH` (path to TLS private key PEM)
+- `HEALTH_TLS_CERT_PATH` (path to TLS certificate PEM)
+- `HEALTH_BASIC_AUTH_USER`
+- `HEALTH_BASIC_AUTH_PASS`
 - `NODE_ENV` (`development|production|test`)
 - `LOG_LEVEL` (`error|warn|info|debug`)
 - `LOG_BOOT_DETAIL` (`true|false`)

@@ -2,7 +2,7 @@
  * Main notification service
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../database/storage-db"
 import { type Language, t } from "../i18n"
 import logger from "../logger"
@@ -94,7 +94,7 @@ export class NotificationService {
    * Send notification to user
    */
   async sendNotification(
-    bot: TelegramBot,
+    bot: BotClient,
     notification: Notification
   ): Promise<void> {
     try {
@@ -124,7 +124,7 @@ export class NotificationService {
    * Send multiple notifications
    */
   async sendNotifications(
-    bot: TelegramBot,
+    bot: BotClient,
     notifications: Notification[]
   ): Promise<void> {
     for (const notification of notifications) {

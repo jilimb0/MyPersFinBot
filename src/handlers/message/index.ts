@@ -2,7 +2,7 @@
  * Message handlers registry
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { type Language, t } from "../../i18n"
 import type { WizardManager } from "../../wizards/wizards"
 import { handleLanguageSelection } from "../language-handler"
@@ -53,7 +53,7 @@ import type { MessageHandler } from "./types"
  * Create and configure MessageRouter
  */
 export function createMessageRouter(
-  bot: TelegramBot,
+  bot: BotClient,
   wizardManager: WizardManager
 ): MessageRouter {
   const router = new MessageRouter(bot, wizardManager)

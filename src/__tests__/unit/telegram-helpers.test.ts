@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import {
   createListButtons,
@@ -76,7 +76,7 @@ describe("Telegram helpers", () => {
   describe("safeAnswerCallback", () => {
     // Basic functionality
     test("should no-op when options missing", async () => {
-      const bot = { answerCallbackQuery: jest.fn() } as any as TelegramBot
+      const bot = { answerCallbackQuery: jest.fn() } as any as BotClient
       await safeAnswerCallback(bot, undefined)
       expect(bot.answerCallbackQuery).not.toHaveBeenCalled()
     })
@@ -86,7 +86,7 @@ describe("Telegram helpers", () => {
         answerCallbackQuery: jest.fn().mockRejectedValue({
           response: { body: { description: "query is too old" } },
         }),
-      } as any as TelegramBot
+      } as any as BotClient
 
       await safeAnswerCallback(bot, { callback_query_id: "1" } as any)
       expect(bot.answerCallbackQuery).toHaveBeenCalled()
@@ -95,7 +95,7 @@ describe("Telegram helpers", () => {
     test("should log unexpected errors", async () => {
       const bot = {
         answerCallbackQuery: jest.fn().mockRejectedValue(new Error("boom")),
-      } as any as TelegramBot
+      } as any as BotClient
 
       const spy = jest.spyOn(console, "error").mockImplementation(() => {})
       await safeAnswerCallback(bot, { callback_query_id: "1" } as any)

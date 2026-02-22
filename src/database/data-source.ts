@@ -14,6 +14,7 @@ import { Transaction } from "../database/entities/Transaction"
 import { User } from "../database/entities/User"
 import logger from "../logger"
 import { CustomQueryLogger } from "../monitoring"
+import { tgObservability } from "../observability/tgwrapper-observability"
 
 const DB_PATH = path.resolve(__dirname, "../../data/database.sqlite")
 
@@ -49,13 +50,37 @@ export const AppDataSource = new DataSource({
 export async function initializeDatabase() {
   try {
     if (!AppDataSource.isInitialized) {
-      await AppDataSource.initialize()
+      await tgObservability.instrumentDbOperation(
+        "initialize",
+        async () => await AppDataSource.initialize(),
+        "database"
+      )
 
-      await AppDataSource.query("PRAGMA journal_mode = WAL;")
-      await AppDataSource.query("PRAGMA synchronous = NORMAL;")
-      await AppDataSource.query("PRAGMA cache_size = 10000;")
-      await AppDataSource.query("PRAGMA temp_store = MEMORY;")
-      await AppDataSource.query("PRAGMA foreign_keys = ON;")
+      await tgObservability.instrumentDbOperation(
+        "query",
+        async () => await AppDataSource.query("PRAGMA journal_mode = WAL;"),
+        "database"
+      )
+      await tgObservability.instrumentDbOperation(
+        "query",
+        async () => await AppDataSource.query("PRAGMA synchronous = NORMAL;"),
+        "database"
+      )
+      await tgObservability.instrumentDbOperation(
+        "query",
+        async () => await AppDataSource.query("PRAGMA cache_size = 10000;"),
+        "database"
+      )
+      await tgObservability.instrumentDbOperation(
+        "query",
+        async () => await AppDataSource.query("PRAGMA temp_store = MEMORY;"),
+        "database"
+      )
+      await tgObservability.instrumentDbOperation(
+        "query",
+        async () => await AppDataSource.query("PRAGMA foreign_keys = ON;"),
+        "database"
+      )
 
       if (config.LOG_BOOT_DETAIL) {
         logger.info("✅ Database initialized successfully (WAL mode enabled)")
@@ -70,7 +95,11 @@ export async function initializeDatabase() {
 
 export async function closeDatabase() {
   if (AppDataSource.isInitialized) {
-    await AppDataSource.destroy()
+    await tgObservability.instrumentDbOperation(
+      "destroy",
+      async () => await AppDataSource.destroy(),
+      "database"
+    )
     if (config.LOG_BOOT_DETAIL) {
       logger.info("✅ Database connection closed")
     }

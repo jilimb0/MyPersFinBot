@@ -1,7 +1,8 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { registerCallbackRouter } from "../../handlers/callback-router"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { MockRouterBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -18,15 +19,6 @@ const mockGetTemplates = dbStorage.getTemplates as jest.MockedFunction<
 const mockDeleteTemplate = dbStorage.deleteTemplate as jest.MockedFunction<
   typeof dbStorage.deleteTemplate
 >
-
-class MockBot {
-  handlers: Record<string, (query: any) => void> = {}
-  on = jest.fn((event: string, handler: (query: any) => void) => {
-    this.handlers[event] = handler
-  })
-  sendMessage = jest.fn().mockResolvedValue({})
-  answerCallbackQuery = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E templates flow", () => {
   beforeEach(() => {
@@ -45,7 +37,7 @@ describe("E2E templates flow", () => {
   })
 
   test("tmpl_del removes template and refreshes list", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockRouterBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     registerCallbackRouter(bot, wizard)
 
@@ -60,7 +52,7 @@ describe("E2E templates flow", () => {
   })
 
   test("tmpl_cancel clears wizard state and shows manage menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockRouterBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     registerCallbackRouter(bot, wizard)
 
