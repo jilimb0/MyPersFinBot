@@ -1,6 +1,7 @@
 import type TelegramBot from "node-telegram-bot-api"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -32,10 +33,6 @@ const mockDeleteIncomeSource =
   dbStorage.deleteIncomeSource as jest.MockedFunction<
     typeof dbStorage.deleteIncomeSource
   >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E income sources flow", () => {
   beforeEach(() => {

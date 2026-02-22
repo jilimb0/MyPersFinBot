@@ -1,6 +1,8 @@
 import type TelegramBot from "node-telegram-bot-api"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { setupAnalyticsFixtures } from "../helpers/e2e-fixtures"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -9,38 +11,10 @@ jest.mock("../../database/storage-db", () => ({
   },
 }))
 
-import { dbStorage } from "../../database/storage-db"
-
-const mockGetUserData = dbStorage.getUserData as jest.MockedFunction<
-  typeof dbStorage.getUserData
->
-const mockGetTransactionsPaginated =
-  dbStorage.getTransactionsPaginated as jest.MockedFunction<
-    typeof dbStorage.getTransactionsPaginated
-  >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
-
 describe("E2E analytics flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockGetUserData.mockResolvedValue({
-      balances: [],
-      transactions: [],
-      debts: [],
-      goals: [],
-      budgets: [],
-      incomeSources: [],
-      templates: [],
-      defaultCurrency: "USD",
-    })
-    mockGetTransactionsPaginated.mockResolvedValue({
-      transactions: [],
-      total: 0,
-      hasMore: false,
-    })
+    setupAnalyticsFixtures()
   })
 
   test("analytics menu -> net worth", async () => {

@@ -31,10 +31,11 @@ pnpm dev
 - `pnpm type-check`
 - `pnpm test`
 - `pnpm test:coverage`
-- `pnpm test:coverage:ci`
+- `pnpm test:ci`
 - `pnpm lint`
 - `pnpm i18n:check`
 - `pnpm i18n:prune`
+- `pnpm benchmark`
 
 ## Local Services
 

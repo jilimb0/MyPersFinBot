@@ -1,6 +1,8 @@
 import type TelegramBot from "node-telegram-bot-api"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { setupExpenseIncomeFixtures } from "../helpers/e2e-fixtures"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -11,41 +13,10 @@ jest.mock("../../database/storage-db", () => ({
   },
 }))
 
-import { dbStorage } from "../../database/storage-db"
-
-const mockGetDefaultCurrency =
-  dbStorage.getDefaultCurrency as jest.MockedFunction<
-    typeof dbStorage.getDefaultCurrency
-  >
-const mockGetTopCategories = dbStorage.getTopCategories as jest.MockedFunction<
-  typeof dbStorage.getTopCategories
->
-const mockGetBalancesList = dbStorage.getBalancesList as jest.MockedFunction<
-  typeof dbStorage.getBalancesList
->
-const mockGetCurrencyDenominations =
-  dbStorage.getCurrencyDenominations as jest.MockedFunction<
-    typeof dbStorage.getCurrencyDenominations
-  >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
-
 describe("E2E income flow", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockGetDefaultCurrency.mockResolvedValue("USD")
-    mockGetTopCategories.mockResolvedValue([])
-    mockGetBalancesList.mockResolvedValue([
-      {
-        accountId: "Cash",
-        amount: 0,
-        currency: "USD",
-        lastUpdated: "2026-01-01",
-      },
-    ])
-    mockGetCurrencyDenominations.mockReturnValue([5, 10, 20])
+    setupExpenseIncomeFixtures(0)
   })
 
   test("amount -> category -> account selection", async () => {

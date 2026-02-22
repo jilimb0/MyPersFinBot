@@ -1,6 +1,7 @@
 import type TelegramBot from "node-telegram-bot-api"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -23,10 +24,6 @@ const mockGetCurrencyDenominations =
   dbStorage.getCurrencyDenominations as jest.MockedFunction<
     typeof dbStorage.getCurrencyDenominations
   >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E transfer flow", () => {
   beforeEach(() => {

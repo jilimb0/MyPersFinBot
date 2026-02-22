@@ -1,6 +1,7 @@
 import type TelegramBot from "node-telegram-bot-api"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/data-source", () => ({
   AppDataSource: {
@@ -19,10 +20,6 @@ jest.mock("../../database/data-source", () => ({
     })),
   },
 }))
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E notifications flow", () => {
   test("toggle notifications and return to menu", async () => {

@@ -35,6 +35,10 @@ async function main() {
     if (config.LOG_BOOT_DETAIL) {
       logger.info("🚀 Bot started successfully")
     }
+
+    // Keep process alive in case runtime internals do not retain active handles.
+    setInterval(() => {}, 60_000)
+    await new Promise<void>(() => {})
   } catch (error) {
     console.error("❌ Failed to start bot:")
     console.error(error)

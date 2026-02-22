@@ -82,7 +82,7 @@ See `docs/DEV.md`.
 
 - **Node.js** 20+ - Runtime
 - **TypeScript** 5.8 - Language
-- **node-telegram-bot-api** - Telegram integration
+- **@jilimb0/tgwrapper** - Telegram integration runtime
 
 ### Database
 
@@ -156,6 +156,13 @@ salary 4000
 | `/help` | Show help & features |
 | `/stats` | Quick statistics |
 | `/export` | Export data to CSV |
+| `/search <text> [--type=...] [--category=...] [--from=YYYY-MM-DD] [--to=YYYY-MM-DD] [--min=...] [--max=...] [--account=...]` | Search and advanced history filters |
+| `/chart <trends|categories|balance> [months]` | Generate chart image and send to Telegram |
+
+Examples:
+- `/search coffee`
+- `/search rent --type=EXPENSE --from=2026-01-01 --to=2026-01-31`
+- `/search --category=FOOD_DINING --min=10 --max=200 --account=Card`
 
 ---
 
@@ -319,7 +326,7 @@ Your Name
 
 ## 🙏 Acknowledgments
 
-- [node-telegram-bot-api](https://github.com/yagop/node-telegram-bot-api)
+- [@jilimb0/tgwrapper](https://www.npmjs.com/package/@jilimb0/tgwrapper)
 - [AssemblyAI](https://www.assemblyai.com/) - Voice transcription
 - [freecurrencyapi.com](https://freecurrencyapi.com/) - Exchange rates
 - [FFmpeg](https://ffmpeg.org/) - Audio processing

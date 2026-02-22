@@ -2,9 +2,10 @@
  * Bot initialization module
  */
 
-import TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "node-telegram-bot-api"
 import { config } from "../config"
 import logger from "../logger"
+import { TelegramBotTGWrapperAdapter } from "../telegram/tgwrapper-adapter"
 
 export interface BotContext {
   bot: TelegramBot
@@ -15,15 +16,13 @@ export interface BotContext {
  * Everything else (scheduler, commands, handlers, wizards) loaded later
  */
 export async function createBot(token: string): Promise<BotContext> {
-  // TODO: try to fix warning in future
-  process.env.NTBA_FIX_350 = "1"
-
-  const bot = new TelegramBot(token, { polling: true })
+  const bot = new TelegramBotTGWrapperAdapter(token, { polling: true })
+  await bot.launch()
   if (config.LOG_BOOT_DETAIL) {
     logger.info("✅ Bot instance created")
   }
 
-  return { bot }
+  return { bot: bot as unknown as TelegramBot }
 }
 
 /**

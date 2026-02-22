@@ -1,0 +1,29 @@
+groups:
+  - name: my-pers-fin-bot
+    rules:
+      - alert: BotHealthEndpointDown
+        expr: probe_success{job="my-pers-fin-bot-health"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Health endpoint is down"
+          description: "Health endpoint probe failed for > 2 minutes."
+
+      - alert: BotSearchLatencyHigh
+        expr: apm_timer_avg_ms{metric="search.command.ms"} > 2000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Search latency is high"
+          description: "Average /search latency is above 2000ms for 5m."
+
+      - alert: BotChartLatencyHigh
+        expr: apm_timer_avg_ms{metric="chart.command.ms"} > 5000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Chart generation latency is high"
+          description: "Average /chart latency is above 5000ms for 10m."

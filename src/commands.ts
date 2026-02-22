@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type TelegramBot from "node-telegram-bot-api"
+import { apmCollector } from "./apm"
 import { dbStorage as db } from "./database/storage-db"
 import {
   clearPersistedCache,
@@ -16,8 +17,15 @@ import {
   t,
 } from "./i18n"
 import { queryMonitor } from "./monitoring"
+import { type ChartType, generateChartImage } from "./services/chart-service"
 import { ExpenseCategory, IncomeCategory, TransactionType } from "./types"
-import { escapeMarkdown, formatMoney } from "./utils"
+import {
+  escapeMarkdown,
+  formatDateDisplay,
+  formatMoney,
+  formatSearchUsage,
+  parseSearchCommandInput,
+} from "./utils"
 
 function resolveExpenseCategory(input: string): ExpenseCategory {
   return getExpenseCategoryByLabel(input) || ExpenseCategory.OTHER_EXPENSE
@@ -64,6 +72,12 @@ async function resolveUserLanguage(userId: string): Promise<Language> {
   } catch {
     return "en"
   }
+}
+
+function txSign(type: TransactionType): string {
+  if (type === TransactionType.INCOME) return "+"
+  if (type === TransactionType.EXPENSE) return "-"
+  return "↔"
 }
 
 export function registerCommands(bot: TelegramBot) {
@@ -266,6 +280,118 @@ export function registerCommands(bot: TelegramBot) {
         inline_keyboard: buttons,
       },
     })
+  })
+
+  bot.onText(/^\/search(?:@\w+)?(?:\s+(.+))?$/i, async (msg, match) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
+    const rawInput = match?.[1]
+
+    const parsed = parseSearchCommandInput(rawInput)
+    if (parsed.errors.length > 0) {
+      await bot.sendMessage(
+        chatId,
+        `❌ Invalid filters:\n${parsed.errors.map((e) => `• ${e}`).join("\n")}\n\n${formatSearchUsage()}`,
+        { parse_mode: "Markdown" }
+      )
+      return
+    }
+
+    const hasAnyFilter = Object.keys(parsed.filters).length > 0
+    if (!hasAnyFilter) {
+      await bot.sendMessage(chatId, formatSearchUsage())
+      return
+    }
+
+    const { transactions, total, hasMore } = await apmCollector.trackAsync(
+      "search.command.ms",
+      async () =>
+        await db.searchTransactions(userId, {
+          ...parsed.filters,
+          page: 1,
+          limit: 10,
+        })
+    )
+    apmCollector.increment("search.command.count")
+
+    if (transactions.length === 0) {
+      await bot.sendMessage(
+        chatId,
+        `🔍 ${t(lang, "history.noFilteredTransactions")}`
+      )
+      return
+    }
+
+    const lines = transactions.map((tx, index) => {
+      const account = tx.fromAccountId || tx.toAccountId || "N/A"
+      const amount = `${txSign(tx.type)}${formatMoney(tx.amount, tx.currency, true)}`
+      const date = formatDateDisplay(tx.date)
+      const desc = tx.description ? escapeMarkdown(tx.description) : "-"
+      return `${index + 1}. ${date} | *${tx.type}* | ${amount}\n   ${escapeMarkdown(tx.category)} | ${escapeMarkdown(account)}\n   ${desc}`
+    })
+
+    await bot.sendMessage(
+      chatId,
+      `🔎 *Search Results*\nTotal: *${total}*\n\n${lines.join("\n\n")}${hasMore ? "\n\n…and more (showing first 10)" : ""}`,
+      { parse_mode: "Markdown" }
+    )
+  })
+
+  bot.onText(/^\/chart(?:@\w+)?(?:\s+(.+))?$/i, async (msg, match) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
+
+    const args = (match?.[1] || "").trim().split(/\s+/).filter(Boolean)
+    const typeRaw = (args[0] || "trends").toLowerCase()
+    const monthsRaw = args[1]
+    const months = monthsRaw ? Number.parseInt(monthsRaw, 10) : 6
+
+    const validTypes: ChartType[] = ["trends", "categories", "balance"]
+    if (!validTypes.includes(typeRaw as ChartType)) {
+      await bot.sendMessage(
+        chatId,
+        "Usage: /chart <trends|categories|balance> [months]\nExamples:\n/chart trends 6\n/chart categories 3\n/chart balance 12"
+      )
+      return
+    }
+
+    if (!Number.isFinite(months) || months < 1 || months > 24) {
+      await bot.sendMessage(chatId, "Months should be between 1 and 24")
+      return
+    }
+
+    await bot.sendMessage(chatId, "📈 Generating chart...")
+
+    try {
+      const image = await apmCollector.trackAsync(
+        "chart.command.ms",
+        async () =>
+          await generateChartImage(userId, typeRaw as ChartType, lang, months)
+      )
+      apmCollector.increment("chart.command.count")
+
+      if (!image) {
+        await bot.sendMessage(chatId, t(lang, "history.noTransactions"))
+        return
+      }
+
+      await bot.sendDocument(
+        chatId,
+        image,
+        {},
+        {
+          filename: `chart_${typeRaw}_${months}m.png`,
+          contentType: "image/png",
+        }
+      )
+    } catch (error) {
+      await bot.sendMessage(
+        chatId,
+        `Failed to generate chart: ${error instanceof Error ? error.message : "unknown error"}`
+      )
+    }
   })
 
   bot.onText(/\/querystats/, async (msg) => {

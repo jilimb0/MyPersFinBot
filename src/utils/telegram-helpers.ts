@@ -30,7 +30,7 @@ export async function safeAnswerCallback(
   bot: TelegramBot,
   options?: AnswerCallbackQueryOptions
 ) {
-  if (!options) return
+  if (!options?.callback_query_id) return
 
   try {
     await bot.answerCallbackQuery(options.callback_query_id, options)

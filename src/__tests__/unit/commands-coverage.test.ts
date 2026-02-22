@@ -1,6 +1,6 @@
 import { registerCommands } from "../../commands"
 import { dbStorage } from "../../database/storage-db"
-import { TransactionType } from "../../types"
+import { ExpenseCategory, TransactionType } from "../../types"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -13,7 +13,15 @@ jest.mock("../../database/storage-db", () => ({
     getUserData: jest.fn().mockResolvedValue({ defaultCurrency: "USD" }),
     addTransaction: jest.fn().mockResolvedValue("tx-123"),
     getSmartBalanceSelection: jest.fn().mockResolvedValue("acc1"),
+    searchTransactions: jest.fn().mockResolvedValue({
+      transactions: [],
+      total: 0,
+      hasMore: false,
+    }),
   },
+}))
+jest.mock("../../services/chart-service", () => ({
+  generateChartImage: jest.fn(),
 }))
 
 const mockDbStorage = dbStorage as jest.Mocked<typeof dbStorage>
@@ -85,6 +93,7 @@ jest.mock("../../fx", () => ({
 const mockBot = {
   onText: jest.fn(),
   sendMessage: jest.fn().mockResolvedValue({}),
+  sendDocument: jest.fn().mockResolvedValue({}),
 } as any
 
 describe("Commands Coverage", () => {
@@ -413,6 +422,131 @@ describe("Commands Coverage", () => {
 
       expect(clearPersistedCache).toHaveBeenCalled()
       expect(mockBot.sendMessage).toHaveBeenCalled()
+    })
+  })
+
+  describe("/search command", () => {
+    test("shows usage when no args", async () => {
+      const handler = mockBot.onText.mock.calls.find((call: any) =>
+        call[0].toString().includes("search")
+      )?.[1]
+
+      await handler({ chat: { id: 123 } }, ["/search"])
+
+      expect(mockBot.sendMessage).toHaveBeenCalledWith(
+        123,
+        expect.stringContaining("Usage:")
+      )
+    })
+
+    test("shows validation errors for invalid filters", async () => {
+      const handler = mockBot.onText.mock.calls.find((call: any) =>
+        call[0].toString().includes("search")
+      )?.[1]
+
+      await handler({ chat: { id: 123 } }, ["/search --type=bad", "--type=bad"])
+
+      expect(mockBot.sendMessage).toHaveBeenCalledWith(
+        123,
+        expect.stringContaining("Invalid filters"),
+        expect.any(Object)
+      )
+    })
+
+    test("calls db search and returns results", async () => {
+      mockDbStorage.searchTransactions.mockResolvedValueOnce({
+        transactions: [
+          {
+            id: "tx1",
+            date: new Date("2026-01-01"),
+            amount: 42,
+            currency: "USD",
+            type: TransactionType.EXPENSE,
+            category: ExpenseCategory.FOOD_DINING,
+            description: "coffee",
+            fromAccountId: "Card",
+            toAccountId: undefined,
+          },
+        ],
+        total: 1,
+        hasMore: false,
+      })
+
+      const handler = mockBot.onText.mock.calls.find((call: any) =>
+        call[0].toString().includes("search")
+      )?.[1]
+
+      await handler({ chat: { id: 123 } }, [
+        "/search coffee --type=EXPENSE",
+        "coffee --type=EXPENSE",
+      ])
+
+      expect(mockDbStorage.searchTransactions).toHaveBeenCalledWith(
+        "123",
+        expect.objectContaining({
+          query: "coffee",
+          type: TransactionType.EXPENSE,
+          page: 1,
+          limit: 10,
+        })
+      )
+      expect(mockBot.sendMessage).toHaveBeenCalledWith(
+        123,
+        expect.stringContaining("Search Results"),
+        expect.any(Object)
+      )
+    })
+  })
+
+  describe("/chart command", () => {
+    test("shows usage for invalid chart type", async () => {
+      const handler = mockBot.onText.mock.calls.find((call: any) =>
+        call[0].toString().includes("chart")
+      )?.[1]
+
+      await handler({ chat: { id: 123 } }, ["/chart wrong", "wrong"])
+
+      expect(mockBot.sendMessage).toHaveBeenCalledWith(
+        123,
+        expect.stringContaining("Usage: /chart")
+      )
+    })
+
+    test("shows validation for invalid months", async () => {
+      const handler = mockBot.onText.mock.calls.find((call: any) =>
+        call[0].toString().includes("chart")
+      )?.[1]
+
+      await handler({ chat: { id: 123 } }, ["/chart trends 99", "trends 99"])
+
+      expect(mockBot.sendMessage).toHaveBeenCalledWith(
+        123,
+        expect.stringContaining("Months should be between")
+      )
+    })
+
+    test("sends chart image document", async () => {
+      const { generateChartImage } = jest.requireMock(
+        "../../services/chart-service"
+      ) as { generateChartImage: jest.Mock }
+      generateChartImage.mockResolvedValueOnce(Buffer.from("png"))
+
+      const handler = mockBot.onText.mock.calls.find((call: any) =>
+        call[0].toString().includes("chart")
+      )?.[1]
+
+      await handler({ chat: { id: 123 } }, ["/chart trends 6", "trends 6"])
+
+      expect(generateChartImage).toHaveBeenCalledWith("123", "trends", "en", 6)
+      expect(mockBot.sendDocument).toHaveBeenCalledWith(
+        123,
+        expect.any(Buffer),
+        {},
+        expect.objectContaining({
+          filename: expect.stringContaining("chart_trends_6m"),
+          contentType: "image/png",
+        })
+      )
     })
   })
 })

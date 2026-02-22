@@ -2,6 +2,7 @@ import type TelegramBot from "node-telegram-bot-api"
 import { handleStatementPreviewAction } from "../../handlers/upload-statement-handlers"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -24,10 +25,6 @@ const mockAddTransactionsBatch =
   dbStorage.addTransactionsBatch as jest.MockedFunction<
     typeof dbStorage.addTransactionsBatch
   >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E upload statement flow", () => {
   beforeEach(() => {

@@ -100,22 +100,11 @@ find backups/ -name "*.sqlite" -mtime +30 -delete
 
 ### Automated Health Check
 
-**Endpoint:** `http://localhost:3005/health`
+**Endpoint:** `http://localhost:3005/health` (also `/healthz`, `/readyz`)
+**Script:** `scripts/ops/health-check.sh`
 
 ```bash
-#!/bin/bash
-# health-check.sh
-
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3005/health)
-
-if [ "$RESPONSE" -eq 200 ]; then
-  echo "[OK] Bot is healthy"
-  exit 0
-else
-  echo "[ERROR] Bot is not responding (HTTP $RESPONSE)"
-  # Send alert (Telegram, email, PagerDuty, etc.)
-  exit 1
-fi
+HEALTHCHECK_URL=http://127.0.0.1:3005/healthz ./scripts/ops/health-check.sh
 ```
 
 **Cron job:**
@@ -712,27 +701,11 @@ app.get('/metrics', async (req, res) => {
 ### Alert Rules
 
 ```yaml
-# alerts.yml
-groups:
-  - name: bot-alerts
-    rules:
-      - alert: BotDown
-        expr: up{job="bot"} == 0
-        for: 5m
-        annotations:
-          summary: "Bot is down"
-          
-      - alert: HighMemoryUsage
-        expr: process_resident_memory_bytes > 700000000
-        for: 10m
-        annotations:
-          summary: "High memory usage (>700MB)"
-          
-      - alert: HighErrorRate
-        expr: rate(bot_errors_total[5m]) > 0.1
-        for: 5m
-        annotations:
-          summary: "High error rate (>10%)"
+# deploy/alerts/metrics-alerts.yml
+# includes:
+# - BotHealthEndpointDown
+# - BotSearchLatencyHigh
+# - BotChartLatencyHigh
 ```
 
 ---

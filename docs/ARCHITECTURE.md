@@ -9,7 +9,7 @@
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │                     TELEGRAM BOT API                        │
-│                    (node-telegram-bot-api)                  │
+│      (@jilimb0/tgwrapper adapter compatibility layer)       │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼

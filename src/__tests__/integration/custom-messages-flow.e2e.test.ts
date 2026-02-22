@@ -1,6 +1,7 @@
 import type TelegramBot from "node-telegram-bot-api"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -19,10 +20,6 @@ const mockUpdateReminderSettings =
   dbStorage.updateReminderSettings as jest.MockedFunction<
     typeof dbStorage.updateReminderSettings
   >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E custom messages flow", () => {
   beforeEach(() => {

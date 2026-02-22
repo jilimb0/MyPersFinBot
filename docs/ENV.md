@@ -31,6 +31,11 @@
 - `SENTRY_RELEASE`
 - `HEALTH_HOST`
 - `HEALTH_PORT`
+- `HEALTH_TLS_ENABLED` (`true|false`)
+- `HEALTH_TLS_KEY_PATH` (path to TLS private key PEM)
+- `HEALTH_TLS_CERT_PATH` (path to TLS certificate PEM)
+- `HEALTH_BASIC_AUTH_USER`
+- `HEALTH_BASIC_AUTH_PASS`
 - `NODE_ENV` (`development|production|test`)
 - `LOG_LEVEL` (`error|warn|info|debug`)
 - `LOG_BOOT_DETAIL` (`true|false`)

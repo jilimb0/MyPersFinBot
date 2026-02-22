@@ -2,6 +2,7 @@ import type TelegramBot from "node-telegram-bot-api"
 import { getExpenseCategoryLabel, t } from "../../i18n"
 import { ExpenseCategory } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -78,10 +79,6 @@ const mockUpdateGoalTargetAmount =
   dbStorage.updateGoalTargetAmount as jest.MockedFunction<
     typeof dbStorage.updateGoalTargetAmount
   >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E debt/goal/budget flows", () => {
   beforeEach(() => {

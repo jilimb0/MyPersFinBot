@@ -33,7 +33,8 @@
 
 - `pnpm test`
 - `pnpm test:coverage`
-- `pnpm test:coverage:ci`
+- `pnpm test:ci`
+- `pnpm benchmark`
 
 ## E2E Scenarios
 

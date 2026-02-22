@@ -1,6 +1,7 @@
 import type TelegramBot from "node-telegram-bot-api"
 import { ExpenseCategory, TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -20,10 +21,6 @@ const mockCreateRecurring =
   recurringManager.createRecurring as jest.MockedFunction<
     typeof recurringManager.createRecurring
   >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E edge cases", () => {
   test("debt due date invalid format keeps step", async () => {

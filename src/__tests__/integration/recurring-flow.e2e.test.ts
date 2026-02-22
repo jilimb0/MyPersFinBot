@@ -2,6 +2,7 @@ import type TelegramBot from "node-telegram-bot-api"
 import { t } from "../../i18n"
 import { ExpenseCategory, TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
+import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
@@ -49,10 +50,6 @@ const mockDeleteRecurring =
   recurringManager.deleteRecurring as jest.MockedFunction<
     typeof recurringManager.deleteRecurring
   >
-
-class MockBot {
-  sendMessage = jest.fn().mockResolvedValue({})
-}
 
 describe("E2E recurring flow", () => {
   beforeEach(() => {
