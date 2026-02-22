@@ -1,21 +1,20 @@
 declare module "@telegram-api" {
-  namespace TelegramBot {
-    interface User {
-      id: number
-      is_bot?: boolean
-      first_name?: string
-      username?: string
-      language_code?: string
-    }
+  type TgUser = import("@jilimb0/tgwrapper").User
+  type TgChat = import("@jilimb0/tgwrapper").Chat
+  type TgMessage = import("@jilimb0/tgwrapper").Message
+  type TgCallbackQuery = import("@jilimb0/tgwrapper").CallbackQuery
+  type TgPayloads = import("@jilimb0/tgwrapper").TelegramApiMethodPayloads
 
-    interface Chat {
-      id: number
-      type?: string
-      title?: string
-      username?: string
-      first_name?: string
-      last_name?: string
-    }
+  namespace TelegramBot {
+    type User = Pick<
+      TgUser,
+      "id" | "is_bot" | "first_name" | "username" | "language_code"
+    >
+
+    type Chat = Pick<
+      TgChat,
+      "id" | "type" | "title" | "username" | "first_name" | "last_name"
+    >
 
     interface Document {
       file_id: string
@@ -31,23 +30,16 @@ declare module "@telegram-api" {
       file_size?: number
     }
 
-    interface Message {
-      message_id: number
-      chat: Chat
-      from?: User
-      date?: number
-      text?: string
+    type Message = Pick<TgMessage, "message_id" | "chat" | "from" | "date"> & {
       document?: Document
+      text?: string
       voice?: Voice
     }
 
-    interface CallbackQuery {
-      id: string
-      from: User
-      data?: string
-      message?: Message
-      inline_message_id?: string
-    }
+    type CallbackQuery = Pick<
+      TgCallbackQuery,
+      "id" | "from" | "data" | "message" | "inline_message_id"
+    >
 
     interface KeyboardButton {
       text: string
@@ -70,19 +62,17 @@ declare module "@telegram-api" {
       inline_keyboard: InlineKeyboardButton[][]
     }
 
-    interface SendMessageOptions {
-      parse_mode?: string
-      disable_web_page_preview?: boolean
-      disable_notification?: boolean
-      reply_to_message_id?: number
+    type SendMessageOptions = Omit<
+      TgPayloads["sendMessage"],
+      "chat_id" | "text"
+    > & {
       reply_markup?: ReplyKeyboardMarkup | InlineKeyboardMarkup
     }
 
-    interface SendDocumentOptions {
-      caption?: string
-      parse_mode?: string
-      disable_notification?: boolean
-      reply_to_message_id?: number
+    type SendDocumentOptions = Omit<
+      TgPayloads["sendDocument"],
+      "chat_id" | "document"
+    > & {
       reply_markup?: ReplyKeyboardMarkup | InlineKeyboardMarkup
     }
 
@@ -94,12 +84,10 @@ declare module "@telegram-api" {
       cache_time?: number
     }
 
-    interface EditMessageTextOptions {
-      chat_id?: number
-      message_id?: number
-      inline_message_id?: string
-      parse_mode?: string
-      disable_web_page_preview?: boolean
+    type EditMessageTextOptions = Omit<
+      TgPayloads["editMessageText"],
+      "text"
+    > & {
       reply_markup?: InlineKeyboardMarkup
     }
 
