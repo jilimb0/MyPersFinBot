@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { handleTxAmount } from "../../handlers/transaction-handlers"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"

@@ -18,7 +18,7 @@ describe("keyboards", () => {
       const result = getMainMenuKeyboard("en")
       expect(result.reply_markup).toBeDefined()
       const keyboard =
-        result.reply_markup as import("node-telegram-bot-api").ReplyKeyboardMarkup
+        result.reply_markup as import("@telegram-api").ReplyKeyboardMarkup
       expect(keyboard.keyboard).toHaveLength(4)
       expect(keyboard.resize_keyboard).toBe(true)
     })
@@ -27,7 +27,7 @@ describe("keyboards", () => {
       const result = getMainMenuKeyboard("ru")
       expect(result.reply_markup).toBeDefined()
       const keyboard =
-        result.reply_markup as import("node-telegram-bot-api").ReplyKeyboardMarkup
+        result.reply_markup as import("@telegram-api").ReplyKeyboardMarkup
       expect(keyboard.keyboard).toHaveLength(4)
     })
   })

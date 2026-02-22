@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { config } from "../config"
 import { registerCallbackRouter } from "../handlers/callback-router"
 import { createMessageRouter } from "../handlers/message"

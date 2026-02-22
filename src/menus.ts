@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { dbStorage as db } from "./database/storage-db"
 import type { Language } from "./i18n"
 import * as menusI18n from "./menus-i18n"

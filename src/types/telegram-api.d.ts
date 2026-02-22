@@ -1,4 +1,4 @@
-declare module "node-telegram-bot-api" {
+declare module "@telegram-api" {
   namespace TelegramBot {
     interface User {
       id: number

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { dbStorage as db } from "../database/storage-db"
 import * as handlers from "../handlers"
 import {

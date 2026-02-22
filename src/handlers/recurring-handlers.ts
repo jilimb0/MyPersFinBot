@@ -1,5 +1,5 @@
+import type TelegramBot from "@telegram-api"
 import dayjs from "dayjs"
-import type TelegramBot from "node-telegram-bot-api"
 import { SETTINGS_KEYBOARD } from "../constants"
 import { dbStorage as db } from "../database/storage-db"
 import { type Language, resolveLanguage, t } from "../i18n"

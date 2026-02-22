@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { registerCallbackRouter } from "../../handlers/callback-router"
 import { getExpenseCategoryLabel } from "../../i18n"
 import { ExpenseCategory } from "../../types"

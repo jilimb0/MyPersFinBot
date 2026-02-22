@@ -2,7 +2,7 @@
  * Logger middleware for Telegram bot
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { createLogger, type Logger } from "./logger.service"
 import type { LogContext } from "./types"
 

@@ -2,7 +2,7 @@
  * Bot initialization module
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { config } from "../config"
 import logger from "../logger"
 import { TelegramBotTGWrapperAdapter } from "../telegram/tgwrapper-adapter"

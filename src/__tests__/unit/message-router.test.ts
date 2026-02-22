@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { MessageRouter } from "../../handlers/message"
 import type { WizardManager } from "../../wizards/wizards"
 

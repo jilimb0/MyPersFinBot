@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { QuickActionsHandlers } from "../../handlers/quick-actions-handlers"
 import { t } from "../../i18n"
 import { TransactionType } from "../../types"

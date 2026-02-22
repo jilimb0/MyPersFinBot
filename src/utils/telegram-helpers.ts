@@ -2,8 +2,8 @@
  * Telegram Bot helper functions
  */
 
-import type TelegramBot from "node-telegram-bot-api"
-import type { AnswerCallbackQueryOptions } from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
+import type { AnswerCallbackQueryOptions } from "@telegram-api"
 import { type Language, t } from "../i18n"
 
 /**

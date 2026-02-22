@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
 import { setupAnalyticsFixtures } from "../helpers/e2e-fixtures"

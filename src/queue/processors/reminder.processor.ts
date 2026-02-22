@@ -1,5 +1,5 @@
+import type TelegramBot from "@telegram-api"
 import type { Job } from "bull"
-import type TelegramBot from "node-telegram-bot-api"
 import { dbStorage } from "../../database/storage-db"
 import { type Language, t } from "../../i18n"
 import logger from "../../logger"

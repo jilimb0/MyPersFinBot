@@ -2,7 +2,7 @@
  * Queue module entry point
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { dbStorage } from "../database/storage-db"
 import logger from "../logger"
 import { processRecurringTransaction, processReminder } from "./processors"

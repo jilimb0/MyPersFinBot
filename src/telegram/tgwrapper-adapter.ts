@@ -1,4 +1,4 @@
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 
 type JsonObject = Record<string, unknown>
 type MessageHandler = (msg: TelegramBot.Message) => void | Promise<void>

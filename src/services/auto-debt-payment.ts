@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
 import { Transaction as TransactionEntity } from "../database/entities/Transaction"

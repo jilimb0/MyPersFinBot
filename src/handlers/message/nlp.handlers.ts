@@ -3,7 +3,7 @@
  * Handles inputs like "100 food", "потратил 500", etc.
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import * as handlers from "../../handlers"
 import type { WizardManager } from "../../wizards/wizards"
 

@@ -2,7 +2,7 @@
  * Message handler types
  */
 
-import type TelegramBot from "node-telegram-bot-api"
+import type TelegramBot from "@telegram-api"
 import type { dbStorage } from "../../database/storage-db"
 import type { Language } from "../../i18n"
 import type { WizardManager } from "../../wizards/wizards"

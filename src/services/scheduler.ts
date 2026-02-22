@@ -1,5 +1,5 @@
+import type TelegramBot from "@telegram-api"
 import * as cron from "node-cron"
-import type TelegramBot from "node-telegram-bot-api"
 import { config } from "../config"
 import { dbStorage as db } from "../database/storage-db"
 import { getCategoryLabel } from "../i18n"
