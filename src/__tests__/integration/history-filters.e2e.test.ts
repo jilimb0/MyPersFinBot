@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
 import { MockBot } from "../helpers/mock-bot"
@@ -41,7 +41,7 @@ describe("E2E history filters", () => {
   })
 
   test("history list -> filters menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"

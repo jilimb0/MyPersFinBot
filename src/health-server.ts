@@ -1,9 +1,9 @@
 import fs from "node:fs"
 import http from "node:http"
 import https from "node:https"
-import { apmCollector } from "./apm"
 import { config as appConfig, config } from "./config"
 import logger from "./logger"
+import { tgObservability } from "./observability/tgwrapper-observability"
 
 let server: http.Server | https.Server | null = null
 
@@ -35,10 +35,10 @@ function checkBasicAuth(req: http.IncomingMessage): boolean {
   )
 }
 
-function requestHandler(
+async function requestHandler(
   req: http.IncomingMessage,
   res: http.ServerResponse
-): void {
+): Promise<void> {
   if (!checkBasicAuth(req)) {
     unauthorized(res)
     return
@@ -62,9 +62,27 @@ function requestHandler(
   }
 
   if (url === "/metrics") {
-    const payload = JSON.stringify(apmCollector.getSnapshot())
+    const snapshot = tgObservability.getSnapshot()
+    const diagnostics = await tgObservability.getDiagnostics()
+    const health = await tgObservability.getHealth()
+    const payload = JSON.stringify({
+      apm: snapshot,
+      tgwrapper: snapshot,
+      diagnostics,
+      health,
+    })
     res.writeHead(200, {
       "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    })
+    res.end(payload)
+    return
+  }
+
+  if (url === "/metrics/prometheus") {
+    const payload = tgObservability.getPrometheusMetrics()
+    res.writeHead(200, {
+      "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
       "Cache-Control": "no-store",
     })
     res.end(payload)
@@ -88,9 +106,13 @@ export function startHealthServer() {
     const key = fs.readFileSync(config.HEALTH_TLS_KEY_PATH)
     const cert = fs.readFileSync(config.HEALTH_TLS_CERT_PATH)
 
-    server = https.createServer({ key, cert }, requestHandler)
+    server = https.createServer({ key, cert }, (req, res) => {
+      void requestHandler(req, res)
+    })
   } else {
-    server = http.createServer(requestHandler)
+    server = http.createServer((req, res) => {
+      void requestHandler(req, res)
+    })
   }
 
   server.listen(config.HEALTH_PORT, config.HEALTH_HOST, () => {

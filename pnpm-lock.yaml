@@ -17,14 +17,14 @@ importers:
         specifier: ^1.1.0
         version: 1.1.0
       '@jilimb0/tgwrapper':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.10.0
+        version: 0.10.0
       '@jilimb0/tgwrapper-adapter-redis':
-        specifier: ^0.2.1
-        version: 0.2.1
+        specifier: ^0.4.0
+        version: 0.4.0
       '@jilimb0/tgwrapper-observability':
-        specifier: ^0.2.2
-        version: 0.2.2
+        specifier: ^0.5.1
+        version: 0.5.1
       '@sentry/node':
         specifier: ^10.39.0
         version: 10.39.0
@@ -46,9 +46,6 @@ importers:
       fluent-ffmpeg:
         specifier: ^2.1.3
         version: 2.1.3
-      ioredis:
-        specifier: ^5.9.2
-        version: 5.9.2
       node-cache:
         specifier: ^5.1.2
         version: 5.1.2
@@ -688,14 +685,14 @@ packages:
     resolution: {integrity: sha512-H9xg1/sfVvyfU7o3zMfBEjQ1gcsdeTMgqHoYdN79tuLqfTtuu7WckRA1R5whDwOzxaZAeMKTYWqP+WCAi0CHsg==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  '@jilimb0/tgwrapper-adapter-redis@0.2.1':
-    resolution: {integrity: sha512-1K6ACIYcKJwKXRaByV5f1SBWNl6Ga3W+0f2aM5oL+JAcP24gyS8AufaxaSrvR2ZW6m/WlCxyPHTt+pN90EqmkA==}
+  '@jilimb0/tgwrapper-adapter-redis@0.4.0':
+    resolution: {integrity: sha512-2eyF5vWRvNrRKjIUCMFqbk7WxaQo0DnSUU4teEAb6tV0gNCPeS1sY2yvVOVODBoSjk7lx5vEICv8RzZJT5jtFg==}
 
-  '@jilimb0/tgwrapper-observability@0.2.2':
-    resolution: {integrity: sha512-pC70OMcy3NIBDaQRh/MGFRs4rAnD9Q18PLDu4A3O8pHQyFEWPY+ck8MXNplziXkkeEPFRH7c+uiYXiR/zmZL0A==}
+  '@jilimb0/tgwrapper-observability@0.5.1':
+    resolution: {integrity: sha512-IT12kkwIz35a8hUAmJAGg7UAOHfM0aZ4zmwIwSZGVanAcmICxXGNY0cc4wmP3RH8MC4teJQ6l7dLEdVP+i7mKw==}
 
-  '@jilimb0/tgwrapper@0.8.0':
-    resolution: {integrity: sha512-7clYZmfcWsxw0aak4Yp6FnzanW5BsXtn282tAOA9HOAUqP7fgiT9lmdoSaBCK2junb9epvw0nZIKhq34Tbmc1Q==}
+  '@jilimb0/tgwrapper@0.10.0':
+    resolution: {integrity: sha512-Xzd7YlMggZXJemzCqjfSBaT0yNixhjpD6qzd+3Df4AhwziBjHSA68IdppTqtBRx1u0MQh1HG7QfLTJMPnqMk7g==}
     engines: {node: '>=18'}
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -4065,15 +4062,15 @@ snapshots:
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
-  '@jilimb0/tgwrapper-adapter-redis@0.2.1':
+  '@jilimb0/tgwrapper-adapter-redis@0.4.0':
     dependencies:
       ioredis: 5.9.2
     transitivePeerDependencies:
       - supports-color
 
-  '@jilimb0/tgwrapper-observability@0.2.2': {}
+  '@jilimb0/tgwrapper-observability@0.5.1': {}
 
-  '@jilimb0/tgwrapper@0.8.0': {}
+  '@jilimb0/tgwrapper@0.10.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

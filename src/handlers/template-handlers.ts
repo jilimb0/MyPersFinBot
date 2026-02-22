@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "../database/storage-db"
 import { getCategoryLabel, type Language, resolveLanguage, t } from "../i18n"
 import {
@@ -13,8 +13,8 @@ import type { WizardManager } from "../wizards/wizards"
  * Обработчик редактирования суммы шаблона
  */
 export async function handleTemplateEditAmount(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string,
@@ -74,8 +74,8 @@ export async function handleTemplateEditAmount(
  * Обработчик отмены редактирования шаблона
  */
 export async function handleTemplateCancelEdit(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string,
@@ -90,8 +90,8 @@ export async function handleTemplateCancelEdit(
 }
 
 export async function handleTemplateSave(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   data: string,
   wizard: WizardManager
@@ -136,8 +136,8 @@ export async function handleTemplateSave(
 }
 
 export async function handleTemplateUse(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string,
@@ -208,8 +208,8 @@ export async function handleTemplateUse(
 }
 
 export async function handleTemplateManage(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string,
@@ -282,8 +282,8 @@ export async function handleTemplateManage(
 }
 
 export async function handleTemplateDelete(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string,
@@ -312,21 +312,19 @@ export async function handleTemplateDelete(
         { parse_mode: "Markdown" }
       )
     } else {
-      const buttons: TelegramBot.InlineKeyboardButton[][] = templates.map(
-        (tpl) => {
-          const amountWithCurrency = formatMoney(tpl.amount, tpl.currency)
-          return [
-            {
-              text: `${tpl.name} — ${amountWithCurrency}`,
-              callback_data: `tmpl_use|${tpl.id}`,
-            },
-            {
-              text: t(lang, "buttons.manage"),
-              callback_data: `tmpl_manage|${tpl.id}`,
-            },
-          ]
-        }
-      )
+      const buttons: Tg.InlineKeyboardButton[][] = templates.map((tpl) => {
+        const amountWithCurrency = formatMoney(tpl.amount, tpl.currency)
+        return [
+          {
+            text: `${tpl.name} — ${amountWithCurrency}`,
+            callback_data: `tmpl_use|${tpl.id}`,
+          },
+          {
+            text: t(lang, "buttons.manage"),
+            callback_data: `tmpl_manage|${tpl.id}`,
+          },
+        ]
+      })
 
       await bot.sendMessage(chatId, t(lang, "commands.templates.listHint"), {
         parse_mode: "Markdown",
@@ -345,8 +343,8 @@ export async function handleTemplateDelete(
 }
 
 export async function handleTemplateEditAccount(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string,
@@ -367,7 +365,7 @@ export async function handleTemplateEditAccount(
     return
   }
 
-  const buttons: TelegramBot.InlineKeyboardButton[][] = balances.map((bal) => [
+  const buttons: Tg.InlineKeyboardButton[][] = balances.map((bal) => [
     {
       text: t(lang, "templates.balanceOption", {
         account: bal.accountId,
@@ -394,8 +392,8 @@ export async function handleTemplateEditAccount(
 }
 
 export async function handleTemplateSetAccount(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string,
@@ -427,7 +425,7 @@ export async function handleTemplateSetAccount(
 }
 
 export async function showTemplatesList(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string
 ) {
@@ -450,7 +448,7 @@ export async function showTemplatesList(
     return
   }
 
-  const buttons: TelegramBot.InlineKeyboardButton[][] = templates.map((tpl) => {
+  const buttons: Tg.InlineKeyboardButton[][] = templates.map((tpl) => {
     const amountWithCurrency = formatMoney(tpl.amount, tpl.currency)
     return [
       {
@@ -473,7 +471,7 @@ export async function showTemplatesList(
 }
 
 export async function showTemplateManageMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   templateId: string,

@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { safeAnswerCallback } from "../utils"
 import type { WizardManager } from "../wizards/wizards"
 import {
@@ -19,13 +19,14 @@ import {
 import { handleNLPCallback } from "./voice-handler"
 
 export function registerCallbackRouter(
-  bot: TelegramBot,
+  bot: BotClient,
   wizardManager: WizardManager
 ) {
   bot.on("callback_query", async (query) => {
     const chatId = query.message?.chat.id
     if (!chatId) return
     const userId = chatId.toString()
+    await wizardManager.hydrateState(userId)
     const data = query.data || ""
 
     const routes: Array<{

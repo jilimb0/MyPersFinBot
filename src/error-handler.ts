@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "./database/storage-db"
 import { type Language, t } from "./i18n"
 import { logger as log } from "./logger"
@@ -220,7 +220,7 @@ export function handleError(error: any): AppError {
 }
 
 export async function sendErrorToUser(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   error: AppError,
   context?: {

@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { registerCallbackRouter } from "../../handlers/callback-router"
 import { getExpenseCategoryLabel } from "../../i18n"
 import { ExpenseCategory } from "../../types"
@@ -33,6 +33,18 @@ import {
   handleReminderDone,
   handleReminderSnooze,
 } from "../../handlers/reminder-callback-handlers"
+import {
+  handleTemplateCancelEdit,
+  handleTemplateDelete,
+  handleTemplateEditAccount,
+  handleTemplateEditAmount,
+  handleTemplateManage,
+  handleTemplateSave,
+  handleTemplateSetAccount,
+  handleTemplateUse,
+  showTemplatesList,
+} from "../../handlers/template-handlers"
+import { handleNLPCallback } from "../../handlers/voice-handler"
 import { safeAnswerCallback } from "../../utils"
 
 class MockBot {
@@ -67,7 +79,7 @@ describe("Callback router", () => {
   })
 
   test("registers callback_query handler", () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
@@ -76,7 +88,7 @@ describe("Callback router", () => {
   })
 
   test("routes tx_cat to wizard", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const spy = jest.spyOn(wizard, "handleWizardInput")
 
@@ -99,7 +111,7 @@ describe("Callback router", () => {
   })
 
   test("handles tx_cat callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
@@ -113,7 +125,7 @@ describe("Callback router", () => {
   })
 
   test("routes reminder callbacks", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
@@ -135,7 +147,7 @@ describe("Callback router", () => {
   })
 
   test("handles reminder_snooze callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
@@ -149,7 +161,7 @@ describe("Callback router", () => {
   })
 
   test("handles reminder_done callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
@@ -163,15 +175,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_edit_amt callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_edit_amt|tpl123")
-    const {
-      handleTemplateEditAmount,
-    } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -180,15 +189,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_cancel callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_cancel|tpl123")
-    const {
-      handleTemplateCancelEdit,
-    } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -197,13 +203,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_save callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_save|exp|100|Food|USD|acc1")
-    const { handleTemplateSave } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -212,13 +217,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_use callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_use|tpl123")
-    const { handleTemplateUse } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -227,13 +231,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_manage callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_manage|tpl123")
-    const { handleTemplateManage } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -242,13 +245,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_del callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_del|tpl123")
-    const { handleTemplateDelete } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -257,15 +259,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_edit_acc callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_edit_acc|tpl123")
-    const {
-      handleTemplateEditAccount,
-    } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -274,15 +273,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_set_acc callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_set_acc|tpl123|acc456")
-    const {
-      handleTemplateSetAccount,
-    } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -291,13 +287,12 @@ describe("Callback router", () => {
   })
 
   test("handles nlp callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("nlp_confirm")
-    const { handleNLPCallback } = require("../../handlers/voice-handler")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -306,13 +301,12 @@ describe("Callback router", () => {
   })
 
   test("handles tmpl_list callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("tmpl_list")
-    const { showTemplatesList } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)
@@ -321,7 +315,7 @@ describe("Callback router", () => {
   })
 
   test("ignores callback without chatId", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const spy = jest.spyOn(wizard, "handleWizardInput")
 
@@ -341,14 +335,13 @@ describe("Callback router", () => {
   })
 
   test("ignores unmatched callback", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const spy = jest.spyOn(wizard, "handleWizardInput")
 
     registerCallbackRouter(bot, wizard)
 
     const query = createQuery("unknown_callback")
-    const { handleTemplateUse } = require("../../handlers/template-handlers")
     const callbackHandler = (bot as any).handlers.callback_query
 
     await callbackHandler(query)

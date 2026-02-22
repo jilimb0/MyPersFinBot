@@ -2,7 +2,7 @@
  * Expense message handlers
  */
 
-import type TelegramBot from "@telegram-api"
+import type { TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { getGoToBalancesKeyboard } from "../../i18n/keyboards"
 import { TransactionType } from "../../types"
@@ -52,7 +52,7 @@ export const handleExpenseStart: MessageHandler = async (context) => {
     ...standardValues,
   ].slice(0, 5)
 
-  const buttons: TelegramBot.KeyboardButton[][] = []
+  const buttons: Tg.KeyboardButton[][] = []
 
   for (let i = 0; i < allAmounts.length; i += 3) {
     const row = allAmounts.slice(i, i + 3).map((amount) => ({

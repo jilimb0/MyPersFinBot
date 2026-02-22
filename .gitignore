@@ -64,6 +64,12 @@ backups/
 # Temp files
 tmp/
 temp/
+*.tmp
+*.temp
+*.pid
+*.pid.lock
+*.seed
+*.tsbuildinfo
 
 # Cache files (runtime data, not source code)
 fx-cache.json
@@ -71,6 +77,12 @@ fx-cache.json
 data/cache/
 .cache/
 node_modules/.cache/
+.turbo/
+.eslintcache
+.stylelintcache
+.vite/
+.parcel-cache/
+.nyc_output/
 
 translation-coverage.js
 translation-report.txt
@@ -83,3 +95,6 @@ BIOME_MIGRATION_COMPLETE.md
 
 # Audit reports (temporary)
 outdated-packages.txt
+
+# Local tool files
+.envrc

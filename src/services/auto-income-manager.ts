@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { AppDataSource } from "../database/data-source"
 import { IncomeSource as IncomeSourceEntity } from "../database/entities/IncomeSource"
 import { Transaction as TransactionEntity } from "../database/entities/Transaction"
@@ -53,7 +53,7 @@ class AutoIncomeManager {
    */
   async executeAutoIncome(
     income: IncomeSourceEntity,
-    bot?: TelegramBot
+    bot?: BotClient
   ): Promise<boolean> {
     try {
       if (!income.autoCreate) return false
@@ -136,7 +136,7 @@ class AutoIncomeManager {
   /**
    * Execute all due auto-incomes
    */
-  async executeAllDue(bot?: TelegramBot): Promise<void> {
+  async executeAllDue(bot?: BotClient): Promise<void> {
     try {
       const dueIncomes = await this.getDueAutoIncomes()
 

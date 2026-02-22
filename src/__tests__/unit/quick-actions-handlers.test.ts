@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { QuickActionsHandlers } from "../../handlers/quick-actions-handlers"
 import { t } from "../../i18n"
 import { TransactionType } from "../../types"
@@ -49,7 +49,7 @@ describe("Quick Actions Handlers", () => {
   describe("handleQuickCategory", () => {
     test("initial top categories flow", async () => {
       dbStorage.getTopCategories.mockResolvedValue(["FOOD_DINING"])
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.EXPENSE,
@@ -67,7 +67,7 @@ describe("Quick Actions Handlers", () => {
     })
 
     test("shows top categories on first call", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         step: "TRANSACTION_CATEGORY" as const,
         txType: TransactionType.EXPENSE,
@@ -89,7 +89,7 @@ describe("Quick Actions Handlers", () => {
     })
 
     test("more categories button", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.EXPENSE,
@@ -106,7 +106,7 @@ describe("Quick Actions Handlers", () => {
     })
 
     test("handles 'more categories' selection", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         step: "TRANSACTION_CATEGORY" as const,
         txType: TransactionType.INCOME,
@@ -133,7 +133,7 @@ describe("Quick Actions Handlers", () => {
         { accountId: "A", amount: 1, currency: "USD" },
         { accountId: "B", amount: 1, currency: "USD" },
       ])
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.INCOME,
@@ -153,7 +153,7 @@ describe("Quick Actions Handlers", () => {
       dbStorage.getBalancesList.mockResolvedValue([
         { accountId: "Cash", amount: 10, currency: "EUR" },
       ])
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.EXPENSE,
@@ -173,7 +173,7 @@ describe("Quick Actions Handlers", () => {
       dbStorage.getBalancesList.mockResolvedValue([
         { accountId: "Cash", amount: 1, currency: "USD" },
       ])
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.EXPENSE,
@@ -193,7 +193,7 @@ describe("Quick Actions Handlers", () => {
       dbStorage.getBalancesList.mockResolvedValue([
         { accountId: "Cash", amount: 10, currency: "USD" },
       ])
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const clear = jest.fn()
       const state: any = {
         lang: "en",
@@ -218,7 +218,7 @@ describe("Quick Actions Handlers", () => {
       ])
       dbStorage.getSmartBalanceSelection.mockResolvedValue("acc1")
 
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const mockClearState = jest.fn()
       const state: any = {
         step: "TRANSACTION_ACCOUNT" as const,
@@ -243,7 +243,7 @@ describe("Quick Actions Handlers", () => {
       dbStorage.getBalancesList.mockResolvedValue([
         { accountId: "Cash", amount: 0, currency: "USD" },
       ])
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.EXPENSE,
@@ -264,7 +264,7 @@ describe("Quick Actions Handlers", () => {
         { accountId: "acc1", amount: 10, currency: "USD" },
       ])
 
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const mockClearState = jest.fn()
       const state: any = {
         step: "TRANSACTION_ACCOUNT" as const,
@@ -290,7 +290,7 @@ describe("Quick Actions Handlers", () => {
         { accountId: "Cash", amount: 10, currency: "USD" },
       ])
       dbStorage.getSmartBalanceSelection.mockResolvedValue("Card")
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.INCOME,
@@ -311,7 +311,7 @@ describe("Quick Actions Handlers", () => {
         { accountId: "Cash", amount: 10, currency: "EUR" },
       ])
       dbStorage.getSmartBalanceSelection.mockResolvedValue("Cash")
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.EXPENSE,
@@ -333,7 +333,7 @@ describe("Quick Actions Handlers", () => {
         { accountId: "Card", amount: 1, currency: "USD" },
       ])
       dbStorage.getSmartBalanceSelection.mockResolvedValue("Cash")
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const state: any = {
         lang: "en",
         txType: TransactionType.EXPENSE,
@@ -354,7 +354,7 @@ describe("Quick Actions Handlers", () => {
         { accountId: "Cash", amount: 10, currency: "USD" },
       ])
       dbStorage.getSmartBalanceSelection.mockResolvedValue("Cash")
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       const clear = jest.fn()
       const state: any = {
         lang: "en",
@@ -376,7 +376,7 @@ describe("Quick Actions Handlers", () => {
 
   describe("showAllCategories", () => {
     test("shows all expense categories", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       await QuickActionsHandlers.showAllCategories(
         bot,
         123,
@@ -388,7 +388,7 @@ describe("Quick Actions Handlers", () => {
     })
 
     test("shows all income categories", async () => {
-      const bot = new MockBot() as unknown as TelegramBot
+      const bot = new MockBot() as unknown as BotClient
       await QuickActionsHandlers.showAllCategories(
         bot,
         123,

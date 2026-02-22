@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
 import { MockBot } from "../helpers/mock-bot"
@@ -39,7 +39,7 @@ describe("E2E custom messages flow", () => {
   })
 
   test("custom message edit flow (debt)", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-c1"
     const chatId = 1101

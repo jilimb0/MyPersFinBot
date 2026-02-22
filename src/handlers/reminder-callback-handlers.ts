@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "../database/storage-db"
 import { type Language, resolveLanguage, t } from "../i18n"
 import { reminderManager } from "../services/reminder-manager"
@@ -14,8 +14,8 @@ async function resolveLang(userId: string): Promise<Language> {
 }
 
 export async function handleReminderSnooze(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string
@@ -62,8 +62,8 @@ export async function handleReminderSnooze(
 }
 
 export async function handleReminderDone(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   userId: string,
   chatId: number,
   data: string

@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { registerRouters } from "../../bootstrap/routers"
 
 jest.mock("../../handlers/message", () => ({
@@ -18,7 +18,7 @@ class MockBot {
 
 describe("registerRouters", () => {
   test("registers message and callback routers", () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
 
     const wizard = registerRouters(bot)
 

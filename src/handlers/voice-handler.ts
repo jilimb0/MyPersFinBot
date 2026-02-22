@@ -4,7 +4,7 @@ import fs, { existsSync, unlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { promisify } from "node:util"
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { request } from "undici"
 import { dbStorage as db } from "../database/storage-db"
 import { resolveLanguage, t } from "../i18n"
@@ -17,8 +17,8 @@ import type { WizardManager } from "../wizards/wizards"
 const execAsync = promisify(exec)
 
 export async function handleVoiceMessage(
-  bot: TelegramBot,
-  msg: TelegramBot.Message,
+  bot: BotClient,
+  msg: Tg.Message,
   wizard: WizardManager
 ): Promise<void> {
   const chatId = msg.chat.id
@@ -114,7 +114,7 @@ export async function handleVoiceMessage(
 }
 
 export async function handleNLPInput(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   text: string,
@@ -194,8 +194,8 @@ export async function handleNLPInput(
 }
 
 export async function handleNLPCallback(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   wizard: WizardManager
 ): Promise<void> {
   const chatId = query.message?.chat.id

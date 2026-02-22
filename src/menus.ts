@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "./database/storage-db"
 import type { Language } from "./i18n"
 import * as menusI18n from "./menus-i18n"
@@ -17,7 +17,7 @@ async function resolveLangByChat(chatId: number): Promise<Language> {
 }
 
 export async function showMainMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number
 ): Promise<void> {
   const lang = await resolveLangByChat(chatId)
@@ -34,7 +34,7 @@ export async function showBalancesMenu(
 }
 
 export async function showDebtsMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string
 ): Promise<void> {
@@ -43,7 +43,7 @@ export async function showDebtsMenu(
 }
 
 export async function showGoalsMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string
 ): Promise<void> {
@@ -52,7 +52,7 @@ export async function showGoalsMenu(
 }
 
 export async function showIncomeSourcesMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string
 ): Promise<void> {
@@ -61,7 +61,7 @@ export async function showIncomeSourcesMenu(
 }
 
 export async function showSettingsMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string
 ): Promise<void> {
@@ -70,7 +70,7 @@ export async function showSettingsMenu(
 }
 
 export async function showStatsMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number
 ): Promise<void> {
   const lang = await resolveLangByChat(chatId)
@@ -106,7 +106,7 @@ export async function showAnalyticsReportsMenu(
 }
 
 export async function showNetWorthMenu(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   view: "summary" | "assets" | "debts" | "full" = "summary"

@@ -15,7 +15,7 @@ describe("search-filters", () => {
 
   test("parses query and full filter set", () => {
     const parsed = parseSearchCommandInput(
-      "coffee beans --type=EXPENSE --category=FOOD_DINING --from=2026-01-01 --to=2026-01-31 --min=10 --max=200 --account=Card"
+      "coffee beans --type=EXPENSE --category=FOOD_DINING --from=2026-01-01 --to=2026-01-31 --min=10 --max=200 --account=Card --from-account=Card --to-account=Savings"
     )
 
     expect(parsed.errors).toHaveLength(0)
@@ -27,6 +27,8 @@ describe("search-filters", () => {
     expect(parsed.filters.minAmount).toBe(10)
     expect(parsed.filters.maxAmount).toBe(200)
     expect(parsed.filters.accountId).toBe("Card")
+    expect(parsed.filters.fromAccountId).toBe("Card")
+    expect(parsed.filters.toAccountId).toBe("Savings")
   })
 
   test("collects validation errors for invalid values", () => {
@@ -61,5 +63,16 @@ describe("search-filters", () => {
   test("returns usage string", () => {
     expect(formatSearchUsage()).toContain("/search")
     expect(formatSearchUsage()).toContain("--type=EXPENSE")
+    expect(formatSearchUsage()).toContain("--from-account=Card")
+  })
+
+  test("supports combined account filters", () => {
+    const parsed = parseSearchCommandInput(
+      "--account=Card --from-account=Card --to-account=Savings"
+    )
+    expect(parsed.errors).toHaveLength(0)
+    expect(parsed.filters.accountId).toBe("Card")
+    expect(parsed.filters.fromAccountId).toBe("Card")
+    expect(parsed.filters.toAccountId).toBe("Savings")
   })
 })

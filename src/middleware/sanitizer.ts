@@ -1,17 +1,17 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import logger from "../logger"
 import { sanitizeAmount, sanitizeText } from "../utils"
 
 /**
- * Middleware to sanitize user input for @telegram-api
+ * Middleware to sanitize user input for @jilimb0/tgwrapper
  * Protects against XSS and injection attacks
  */
 
 /**
  * Sanitize text message middleware
  */
-export function sanitizeTextMiddleware(bot: TelegramBot) {
-  bot.on("text", (msg, _metadata) => {
+export function sanitizeTextMiddleware(bot: BotClient) {
+  bot.on("message", (msg) => {
     if (!msg.text) return
 
     const originalText = msg.text
@@ -36,7 +36,7 @@ export function sanitizeTextMiddleware(bot: TelegramBot) {
 /**
  * Sanitize callback query data middleware
  */
-export function sanitizeCallbackMiddleware(bot: TelegramBot) {
+export function sanitizeCallbackMiddleware(bot: BotClient) {
   bot.on("callback_query", (query) => {
     if (!query.data) return
 
@@ -60,7 +60,7 @@ export function sanitizeCallbackMiddleware(bot: TelegramBot) {
 /**
  * Apply all sanitization middleware
  */
-export function applySanitization(bot: TelegramBot) {
+export function applySanitization(bot: BotClient) {
   sanitizeTextMiddleware(bot)
   sanitizeCallbackMiddleware(bot)
 }

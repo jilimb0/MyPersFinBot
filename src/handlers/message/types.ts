@@ -2,7 +2,7 @@
  * Message handler types
  */
 
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import type { dbStorage } from "../../database/storage-db"
 import type { Language } from "../../i18n"
 import type { WizardManager } from "../../wizards/wizards"
@@ -11,8 +11,8 @@ import type { WizardManager } from "../../wizards/wizards"
  * Message handler context
  */
 export interface MessageContext {
-  bot: TelegramBot
-  msg: TelegramBot.Message
+  bot: BotClient
+  msg: Tg.Message
   chatId: number
   userId: string
   text: string

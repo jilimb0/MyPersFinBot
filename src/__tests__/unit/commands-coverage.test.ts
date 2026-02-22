@@ -1,5 +1,7 @@
 import { registerCommands } from "../../commands"
 import { dbStorage } from "../../database/storage-db"
+import { clearPersistedCache, resetMetrics } from "../../fx"
+import { queryMonitor } from "../../monitoring"
 import { ExpenseCategory, TransactionType } from "../../types"
 
 jest.mock("../../database/storage-db", () => ({
@@ -91,7 +93,7 @@ jest.mock("../../fx", () => ({
 }))
 
 const mockBot = {
-  onText: jest.fn(),
+  on: jest.fn(),
   sendMessage: jest.fn().mockResolvedValue({}),
   sendDocument: jest.fn().mockResolvedValue({}),
 } as any
@@ -104,15 +106,12 @@ describe("Commands Coverage", () => {
 
   describe("/balance command", () => {
     test("registers /balance command", () => {
-      expect(mockBot.onText).toHaveBeenCalledWith(
-        expect.any(RegExp),
-        expect.any(Function)
-      )
+      expect(mockBot.on).toHaveBeenCalledWith("message", expect.any(Function))
     })
 
     test("handles /balance command", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("balance")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("balance")
       )?.[1]
 
       expect(handler).toBeDefined()
@@ -128,8 +127,8 @@ describe("Commands Coverage", () => {
     test("shows empty message when no templates", async () => {
       mockDbStorage.getTemplates.mockResolvedValueOnce([])
 
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("templates")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("templates")
       )?.[1]
 
       await handler({ chat: { id: 123 } })
@@ -153,8 +152,8 @@ describe("Commands Coverage", () => {
         },
       ])
 
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("templates")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("templates")
       )?.[1]
 
       await handler({ chat: { id: 123 } })
@@ -173,8 +172,8 @@ describe("Commands Coverage", () => {
 
   describe("/expense command", () => {
     test("handles valid expense with amount first", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("expense")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("expense")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/expense 50 Food", "50 Food"])
@@ -190,8 +189,8 @@ describe("Commands Coverage", () => {
     })
 
     test("handles valid expense with amount last", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("expense")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("expense")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/expense Food 50", "Food 50"])
@@ -200,8 +199,8 @@ describe("Commands Coverage", () => {
     })
 
     test("handles invalid expense format", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("expense")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("expense")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/expense invalid", "invalid"])
@@ -217,8 +216,8 @@ describe("Commands Coverage", () => {
     test("warns when no balances exist", async () => {
       mockDbStorage.getBalancesList.mockResolvedValueOnce([])
 
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("expense")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("expense")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/expense 50 Food", "50 Food"])
@@ -245,8 +244,8 @@ describe("Commands Coverage", () => {
         },
       ])
 
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("expense")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("expense")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/expense 50 Food", "50 Food"])
@@ -261,8 +260,8 @@ describe("Commands Coverage", () => {
 
   describe("/income command", () => {
     test("handles valid income", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("income")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("income")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, [
@@ -280,8 +279,8 @@ describe("Commands Coverage", () => {
     })
 
     test("handles invalid income format", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("income")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("income")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/income invalid", "invalid"])
@@ -296,8 +295,8 @@ describe("Commands Coverage", () => {
     test("warns when no balances exist", async () => {
       mockDbStorage.getBalancesList.mockResolvedValueOnce([])
 
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("income")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("income")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, [
@@ -318,8 +317,8 @@ describe("Commands Coverage", () => {
     })
 
     test("shows stats for admin user", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("querystats")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("querystats")
       )?.[1]
 
       await handler({ chat: { id: 123 } })
@@ -332,8 +331,8 @@ describe("Commands Coverage", () => {
     })
 
     test("denies access for non-admin user", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("querystats")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("querystats")
       )?.[1]
 
       await handler({ chat: { id: 999 } })
@@ -347,10 +346,8 @@ describe("Commands Coverage", () => {
 
   describe("/resetquerystats command", () => {
     test("resets query stats", async () => {
-      const { queryMonitor } = require("../../monitoring")
-
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("resetquerystats")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("resetquerystats")
       )?.[1]
 
       await handler({ chat: { id: 123 } })
@@ -366,8 +363,8 @@ describe("Commands Coverage", () => {
     })
 
     test("shows FX stats for admin user", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("fxstats")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("fxstats")
       )?.[1]
 
       await handler({ chat: { id: 123 } })
@@ -378,8 +375,8 @@ describe("Commands Coverage", () => {
     })
 
     test("denies access for non-admin user", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("fxstats")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("fxstats")
       )?.[1]
 
       await handler({ chat: { id: 999 } })
@@ -393,10 +390,8 @@ describe("Commands Coverage", () => {
 
   describe("/fxreset command", () => {
     test("resets FX metrics", async () => {
-      const { resetMetrics } = require("../../fx")
-
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("fxreset")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("fxreset")
       )?.[1]
 
       await handler({ chat: { id: 123 } })
@@ -412,10 +407,8 @@ describe("Commands Coverage", () => {
 
   describe("/fxclear command", () => {
     test("clears persisted cache", async () => {
-      const { clearPersistedCache } = require("../../fx")
-
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("fxclear")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("fxclear")
       )?.[1]
 
       await handler({ chat: { id: 123 } })
@@ -427,8 +420,8 @@ describe("Commands Coverage", () => {
 
   describe("/search command", () => {
     test("shows usage when no args", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("search")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("search")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/search"])
@@ -440,8 +433,8 @@ describe("Commands Coverage", () => {
     })
 
     test("shows validation errors for invalid filters", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("search")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("search")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/search --type=bad", "--type=bad"])
@@ -472,13 +465,13 @@ describe("Commands Coverage", () => {
         hasMore: false,
       })
 
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("search")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("search")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, [
-        "/search coffee --type=EXPENSE",
-        "coffee --type=EXPENSE",
+        "/search coffee --type=EXPENSE --from-account=Card --to-account=Savings",
+        "coffee --type=EXPENSE --from-account=Card --to-account=Savings",
       ])
 
       expect(mockDbStorage.searchTransactions).toHaveBeenCalledWith(
@@ -486,6 +479,8 @@ describe("Commands Coverage", () => {
         expect.objectContaining({
           query: "coffee",
           type: TransactionType.EXPENSE,
+          fromAccountId: "Card",
+          toAccountId: "Savings",
           page: 1,
           limit: 10,
         })
@@ -500,8 +495,8 @@ describe("Commands Coverage", () => {
 
   describe("/chart command", () => {
     test("shows usage for invalid chart type", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("chart")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("chart")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/chart wrong", "wrong"])
@@ -513,8 +508,8 @@ describe("Commands Coverage", () => {
     })
 
     test("shows validation for invalid months", async () => {
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("chart")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("chart")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/chart trends 99", "trends 99"])
@@ -531,8 +526,8 @@ describe("Commands Coverage", () => {
       ) as { generateChartImage: jest.Mock }
       generateChartImage.mockResolvedValueOnce(Buffer.from("png"))
 
-      const handler = mockBot.onText.mock.calls.find((call: any) =>
-        call[0].toString().includes("chart")
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").includes("chart")
       )?.[1]
 
       await handler({ chat: { id: 123 } }, ["/chart trends 6", "trends 6"])

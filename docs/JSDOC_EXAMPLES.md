@@ -397,8 +397,8 @@ export async function getRates(): Promise<FXRates> {
  * @category Handlers
  */
 export async function handleVoiceMessage(
-  bot: TelegramBot,
-  msg: TelegramBot.Message,
+  bot: BotClient,
+  msg: Tg.Message,
   wizard: WizardManager
 ): Promise<void> {
   // Implementation

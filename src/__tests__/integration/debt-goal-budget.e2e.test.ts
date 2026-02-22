@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { getExpenseCategoryLabel, t } from "../../i18n"
 import { ExpenseCategory } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
@@ -120,7 +120,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("debt add flow: type -> details -> ask due date", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"
@@ -146,7 +146,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("goal add flow: input -> ask deadline", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-2"
@@ -168,7 +168,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("budget flow: menu -> select category -> set limit", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-3"
@@ -211,7 +211,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("debt partial payment flow: amount -> account -> update", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-4"
@@ -253,7 +253,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("debt full payment flow: closes debt when remaining is zero", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-4b"
@@ -303,7 +303,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("goal deposit flow: amount -> account -> deposit", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-5"
@@ -341,7 +341,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("goal complete flow: confirm complete closes goal when remaining is zero", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-5b"
@@ -400,7 +400,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("goal deadline change flow: set new date", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-5c"
@@ -433,7 +433,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("budget flow: clear limit", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-6"
@@ -459,7 +459,7 @@ describe("E2E debt/goal/budget flows", () => {
   })
 
   test("budget flow: edit limit with currency", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-7"

@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { handleNLPCallback, handleNLPInput } from "../../handlers/voice-handler"
 import { t } from "../../i18n"
 import { TransactionType } from "../../types"
@@ -54,7 +54,7 @@ describe("E2E critical flows", () => {
   })
 
   test("add expense flow: amount -> category -> account", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "critical-user-expense"
     const chatId = 7001
@@ -83,7 +83,7 @@ describe("E2E critical flows", () => {
   })
 
   test("add income flow: amount -> category -> account", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "critical-user-income"
     const chatId = 7002
@@ -112,7 +112,7 @@ describe("E2E critical flows", () => {
   })
 
   test("voice message flow: NLP parse -> confirm -> save transaction", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "critical-user-voice"
     const chatId = 7003
@@ -124,7 +124,7 @@ describe("E2E critical flows", () => {
       from: { id: 7003 },
       data: "nlp_confirm|25|EXPENSE|FOOD_DINING|coffee",
       message: { chat: { id: chatId }, message_id: 321 },
-    } as unknown as TelegramBot.CallbackQuery
+    } as unknown as Tg.CallbackQuery
 
     await handleNLPCallback(bot, callbackQuery, wizard)
 
@@ -140,7 +140,7 @@ describe("E2E critical flows", () => {
   })
 
   test("analytics flow: menu -> history and net worth", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "critical-user-analytics"
     const chatId = 7004

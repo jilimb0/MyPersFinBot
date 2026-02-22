@@ -1,15 +1,32 @@
-import Redis from "ioredis"
+import { randomUUID } from "node:crypto"
 import { config as appConfig } from "../config"
 import logger from "../logger"
 import type { CacheConfig, CacheInterface, CacheStats } from "./cache.interface"
 
+type RedisKvNamespaceLike = {
+  get(key: string): Promise<string | null>
+  set(key: string, value: string, ttlSeconds?: number): Promise<void>
+  del(key: string): Promise<void>
+  exists(key: string): Promise<boolean>
+  ttl(key: string): Promise<number>
+  incr(key: string): Promise<number>
+  scanKeys(options?: { count?: number }): Promise<string[]>
+}
+
+type RedisKvStoreLike = {
+  disconnect(): Promise<void>
+  withNamespace(namespace: string): RedisKvNamespaceLike
+}
+
 /**
- * Redis Cache Service with connection pooling and error handling
+ * Redis Cache Service implemented via RedisKvStore from tgwrapper adapter.
  */
 export class RedisCacheService implements CacheInterface {
-  private redis: Redis
   private namespace: string
   private defaultTtl: number
+  private kv?: RedisKvStoreLike
+  private ns?: RedisKvNamespaceLike
+  private initPromise?: Promise<void>
   private stats = {
     hits: 0,
     misses: 0,
@@ -17,200 +34,181 @@ export class RedisCacheService implements CacheInterface {
 
   constructor(config: CacheConfig = {}) {
     this.namespace = config.namespace || "bot"
-    this.defaultTtl = config.ttl || 3600 // 1 hour default
+    this.defaultTtl = config.ttl || 3600
+    this.initPromise = this.initialize(config)
+  }
 
-    // Initialize Redis with retry strategy
-    this.redis = new Redis({
-      host: config.host || process.env.REDIS_HOST || "127.0.0.1",
-      port: config.port || Number(process.env.REDIS_PORT) || 6379,
-      password: config.password || process.env.REDIS_PASSWORD,
-      db: config.db || 0,
-      maxRetriesPerRequest: config.maxRetries || 3,
-      retryStrategy: (times: number) => {
-        const delay = Math.min(times * 50, 2000)
-        logger.warn(`Redis retry attempt ${times}, delay: ${delay}ms`)
-        return delay
-      },
-      reconnectOnError: (err) => {
-        const targetErrors = ["READONLY", "ECONNREFUSED"]
-        if (
-          targetErrors.some((targetError) => err.message.includes(targetError))
-        ) {
-          logger.error("Redis reconnecting on error", { error: err.message })
-          return true
+  private buildRedisUrl(config: CacheConfig): string {
+    if (process.env.REDIS_URL) return process.env.REDIS_URL
+
+    const host = config.host || process.env.REDIS_HOST || "127.0.0.1"
+    const port = config.port || Number(process.env.REDIS_PORT) || 6379
+    const password = config.password || process.env.REDIS_PASSWORD
+    const db = config.db || 0
+
+    if (password) {
+      return `redis://:${encodeURIComponent(password)}@${host}:${port}/${db}`
+    }
+    return `redis://${host}:${port}/${db}`
+  }
+
+  private initialize(config: CacheConfig): Promise<void> {
+    return (async () => {
+      const dynamicImport: (specifier: string) => Promise<unknown> =
+        new Function("s", "return import(s)") as (
+          specifier: string
+        ) => Promise<unknown>
+
+      const mod = (await (async () => {
+        try {
+          return (await dynamicImport("@jilimb0/tgwrapper-adapter-redis")) as {
+            RedisKvStore: new (options: {
+              redisUrl: string
+              prefix: string
+              defaultTtlSeconds: number
+            }) => RedisKvStoreLike
+          }
+        } catch {
+          return (await dynamicImport(
+            "@jilimb0/tgwrapper-adapter-redis/dist/index.js"
+          )) as {
+            RedisKvStore: new (options: {
+              redisUrl: string
+              prefix: string
+              defaultTtlSeconds: number
+            }) => RedisKvStoreLike
+          }
         }
-        return false
-      },
-    })
-
-    // Setup event handlers
-    this.redis.on("connect", () => {
-      if (appConfig.LOG_BOOT_DETAIL) {
-        logger.info("Redis connected successfully")
+      })()) as {
+        RedisKvStore: new (options: {
+          redisUrl: string
+          prefix: string
+          defaultTtlSeconds: number
+        }) => RedisKvStoreLike
       }
-    })
 
-    this.redis.on("error", (err) => {
-      logger.error("Redis connection error", { error: err.message })
-    })
+      const kv = new mod.RedisKvStore({
+        redisUrl: this.buildRedisUrl(config),
+        prefix: process.env.TGWRAPPER_KV_PREFIX || "framework:kv",
+        defaultTtlSeconds: this.defaultTtl,
+      })
 
-    this.redis.on("close", () => {
-      if (appConfig.LOG_BOOT_DETAIL) {
-        logger.warn("Redis connection closed")
-      }
-    })
+      this.kv = kv
+      this.ns = kv.withNamespace(this.namespace)
+    })()
   }
 
-  /**
-   * Build namespaced key
-   */
-  private buildKey(key: string): string {
-    return `${this.namespace}:${key}`
+  private async getNamespace(): Promise<RedisKvNamespaceLike> {
+    if (this.initPromise) {
+      await this.initPromise
+    }
+    if (!this.ns) {
+      throw new Error("Redis KV namespace is not initialized")
+    }
+    return this.ns
   }
 
-  /**
-   * Get value from cache
-   */
   async get<T>(key: string): Promise<T | null> {
     try {
-      const fullKey = this.buildKey(key)
-      const value = await this.redis.get(fullKey)
-
-      if (value === null) {
+      const ns = await this.getNamespace()
+      const raw = await ns.get(key)
+      if (raw === null) {
         this.stats.misses++
         return null
       }
-
       this.stats.hits++
-      return JSON.parse(value) as T
+      return JSON.parse(raw) as T
     } catch (error: any) {
-      logger.error("Redis get error", { key, error: error.message })
+      logger.error("Redis get error", { key, error: error?.message })
       return null
     }
   }
 
-  /**
-   * Set value in cache with TTL
-   */
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     try {
-      const fullKey = this.buildKey(key)
-      const serialized = JSON.stringify(value)
-      const expiry = ttl || this.defaultTtl
-
-      if (expiry > 0) {
-        await this.redis.setex(fullKey, expiry, serialized)
-      } else {
-        await this.redis.set(fullKey, serialized)
-      }
-
+      const ns = await this.getNamespace()
+      const expiry = ttl ?? this.defaultTtl
+      await ns.set(key, JSON.stringify(value), expiry)
       if (appConfig.LOG_CACHE_VERBOSE) {
         logger.debug("Redis set", { key, ttl: expiry })
       }
     } catch (error: any) {
-      logger.error("Redis set error", { key, error: error.message })
+      logger.error("Redis set error", { key, error: error?.message })
       throw error
     }
   }
 
-  /**
-   * Delete single key
-   */
   async del(key: string): Promise<void> {
     try {
-      const fullKey = this.buildKey(key)
-      await this.redis.del(fullKey)
+      const ns = await this.getNamespace()
+      await ns.del(key)
       if (appConfig.LOG_CACHE_VERBOSE) {
         logger.debug("Redis del", { key })
       }
     } catch (error: any) {
-      logger.error("Redis del error", { key, error: error.message })
+      logger.error("Redis del error", { key, error: error?.message })
       throw error
     }
   }
 
-  /**
-   * Delete multiple keys
-   */
   async delMany(keys: string[]): Promise<void> {
     if (keys.length === 0) return
 
     try {
-      const fullKeys = keys.map((k) => this.buildKey(k))
-      await this.redis.del(...fullKeys)
+      const ns = await this.getNamespace()
+      await Promise.all(keys.map((key) => ns.del(key)))
       logger.debug("Redis delMany", { count: keys.length })
     } catch (error: any) {
-      logger.error("Redis delMany error", { error: error.message })
+      logger.error("Redis delMany error", { error: error?.message })
       throw error
     }
   }
 
-  /**
-   * Check if key exists
-   */
   async has(key: string): Promise<boolean> {
     try {
-      const fullKey = this.buildKey(key)
-      const exists = await this.redis.exists(fullKey)
-      return exists === 1
+      const ns = await this.getNamespace()
+      return await ns.exists(key)
     } catch (error: any) {
-      logger.error("Redis has error", { key, error: error.message })
+      logger.error("Redis has error", { key, error: error?.message })
       return false
     }
   }
 
-  /**
-   * Clear cache by pattern or all
-   */
   async clear(pattern?: string): Promise<void> {
     try {
-      const searchPattern = pattern
-        ? this.buildKey(pattern)
-        : `${this.namespace}:*`
-
-      const keys = await this.redis.keys(searchPattern)
-
-      if (keys.length > 0) {
-        await this.redis.del(...keys)
-        logger.info("Redis cleared", {
-          pattern: searchPattern,
-          count: keys.length,
-        })
-      }
+      const keys = await this.keys(pattern || "*")
+      if (keys.length === 0) return
+      await this.delMany(keys)
+      logger.info("Redis cleared", {
+        pattern: pattern || "*",
+        count: keys.length,
+      })
     } catch (error: any) {
-      logger.error("Redis clear error", { pattern, error: error.message })
+      logger.error("Redis clear error", { pattern, error: error?.message })
       throw error
     }
   }
 
-  /**
-   * Get keys by pattern
-   */
   async keys(pattern: string): Promise<string[]> {
     try {
-      const searchPattern = this.buildKey(pattern)
-      const keys = await this.redis.keys(searchPattern)
+      const ns = await this.getNamespace()
+      if (!pattern || pattern === "*") {
+        return await ns.scanKeys()
+      }
 
-      // Remove namespace prefix
-      return keys.map((key) => key.replace(`${this.namespace}:`, ""))
+      const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+      const regex = new RegExp(`^${escaped.replace(/\*/g, ".*")}$`)
+      const keys = await ns.scanKeys()
+      return keys.filter((key) => regex.test(key))
     } catch (error: any) {
-      logger.error("Redis keys error", { pattern, error: error.message })
+      logger.error("Redis keys error", { pattern, error: error?.message })
       return []
     }
   }
 
-  /**
-   * Get cache statistics
-   */
   async getStats(): Promise<CacheStats> {
     try {
-      const keys = await this.redis.keys(`${this.namespace}:*`)
-      const info = await this.redis.info("memory")
-
-      // Parse memory usage
-      const memoryMatch = info.match(/used_memory:(\d+)/)
-      const memory = memoryMatch ? parseInt(memoryMatch[1] || "0", 10) : 0
-
+      const keys = await this.keys("*")
       const total = this.stats.hits + this.stats.misses
       const hitRate = total > 0 ? (this.stats.hits / total) * 100 : 0
 
@@ -219,10 +217,9 @@ export class RedisCacheService implements CacheInterface {
         misses: this.stats.misses,
         hitRate: Math.round(hitRate * 100) / 100,
         keys: keys.length,
-        memory,
       }
     } catch (error: any) {
-      logger.error("Redis getStats error", { error: error.message })
+      logger.error("Redis getStats error", { error: error?.message })
       return {
         hits: this.stats.hits,
         misses: this.stats.misses,
@@ -232,74 +229,63 @@ export class RedisCacheService implements CacheInterface {
     }
   }
 
-  /**
-   * Increment value atomically
-   */
   async increment(key: string, amount: number = 1): Promise<number> {
-    try {
-      const fullKey = this.buildKey(key)
-      return await this.redis.incrby(fullKey, amount)
-    } catch (error: any) {
-      logger.error("Redis increment error", { key, error: error.message })
-      throw error
+    const ns = await this.getNamespace()
+    if (amount === 1) {
+      return await ns.incr(key)
     }
+    const current = (await this.get<number>(key)) || 0
+    const next = current + amount
+    await this.set(key, next)
+    return next
   }
 
-  /**
-   * Set key with expiry (atomic)
-   */
-  async setWithExpiry(key: string, value: any, seconds: number): Promise<void> {
-    const fullKey = this.buildKey(key)
-    const serialized = JSON.stringify(value)
-    await this.redis.setex(fullKey, seconds, serialized)
+  async setWithExpiry(
+    key: string,
+    value: unknown,
+    seconds: number
+  ): Promise<void> {
+    await this.set(key, value, seconds)
   }
 
-  /**
-   * Get remaining TTL for key
-   */
   async getTTL(key: string): Promise<number> {
     try {
-      const fullKey = this.buildKey(key)
-      return await this.redis.ttl(fullKey)
+      const ns = await this.getNamespace()
+      return await ns.ttl(key)
     } catch (error: any) {
-      logger.error("Redis getTTL error", { key, error: error.message })
+      logger.error("Redis getTTL error", { key, error: error?.message })
       return -1
     }
   }
 
-  /**
-   * Close Redis connection
-   */
   async close(): Promise<void> {
     try {
-      await this.redis.quit()
-      logger.info("Redis connection closed gracefully")
+      if (this.kv) {
+        await this.kv.disconnect()
+      }
+      logger.info("Redis KV connection closed gracefully")
     } catch (error: any) {
-      logger.error("Redis close error", { error: error.message })
+      logger.error("Redis close error", { error: error?.message })
       throw error
     }
   }
 
-  /**
-   * Ping Redis to check connection
-   */
   async ping(): Promise<boolean> {
     try {
-      const result = await this.redis.ping()
-      return result === "PONG"
+      const probeKey = `__ping__:${randomUUID()}`
+      await this.set(probeKey, "pong", 5)
+      const value = await this.get<string>(probeKey)
+      await this.del(probeKey)
+      return value === "pong"
     } catch (error: any) {
-      logger.error("Redis ping error", { error: error.message })
+      logger.error("Redis ping error", { error: error?.message })
       return false
     }
   }
 }
 
-// Singleton instance
 let cacheInstance: RedisCacheService | null = null
 
-/**
- * Get cache instance (singleton)
- */
 export function getCacheService(config?: CacheConfig): RedisCacheService {
   if (!cacheInstance) {
     cacheInstance = new RedisCacheService(config)
@@ -307,9 +293,6 @@ export function getCacheService(config?: CacheConfig): RedisCacheService {
   return cacheInstance
 }
 
-/**
- * Close cache instance
- */
 export async function closeCacheService(): Promise<void> {
   if (cacheInstance) {
     await cacheInstance.close()

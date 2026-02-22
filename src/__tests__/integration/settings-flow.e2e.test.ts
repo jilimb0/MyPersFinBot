@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { createMessageRouter } from "../../handlers/message"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
@@ -61,7 +61,7 @@ describe("E2E settings flow", () => {
   })
 
   test("settings -> change currency -> confirm -> execute", async () => {
-    const bot = new MockRouterBot() as unknown as TelegramBot
+    const bot = new MockRouterBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const router = createMessageRouter(bot, wizard)
     router.listen()
@@ -106,7 +106,7 @@ describe("E2E settings flow", () => {
   })
 
   test("settings -> notifications opens menu state", async () => {
-    const bot = new MockRouterBot() as unknown as TelegramBot
+    const bot = new MockRouterBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const router = createMessageRouter(bot, wizard)
     router.listen()

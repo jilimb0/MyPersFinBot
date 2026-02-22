@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
@@ -61,7 +61,7 @@ describe("E2E export flow", () => {
   })
 
   test("analytics reports menu -> export csv", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"
@@ -87,7 +87,7 @@ describe("E2E export flow", () => {
   })
 
   test("export flow handles empty transactions", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"
@@ -110,7 +110,7 @@ describe("E2E export flow", () => {
   })
 
   test("export flow ignores when not in reports menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"

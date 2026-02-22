@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "../database/storage-db"
 import * as handlers from "../handlers"
 import {
@@ -56,6 +56,7 @@ import {
 } from "../utils"
 import * as validators from "../validators"
 import * as helpers from "./helpers"
+import { wizardStateStore } from "./wizard-state-store"
 
 export type WizardData = Record<string, any>
 
@@ -70,6 +71,7 @@ export interface WizardState {
 
 export class WizardManager {
   private userStates: Record<string, WizardState> = {}
+  private stateVersions: Record<string, number> = {}
 
   private toTitleCase(s: string) {
     const t = s.trim()
@@ -77,7 +79,7 @@ export class WizardManager {
     return t.charAt(0).toUpperCase() + t.slice(1)
   }
 
-  constructor(private bot: TelegramBot) {}
+  constructor(private bot: BotClient) {}
 
   private async resolveUserLang(userId: string): Promise<Language> {
     try {
@@ -91,12 +93,12 @@ export class WizardManager {
   async sendMessage(
     chatId: number,
     text: string,
-    options?: TelegramBot.SendMessageOptions
-  ): Promise<TelegramBot.Message> {
+    options?: Tg.SendMessageOptions
+  ): Promise<Tg.Message> {
     return await this.bot.sendMessage(chatId, text, options)
   }
 
-  getBot(): TelegramBot {
+  getBot(): BotClient {
     return this.bot
   }
 
@@ -118,6 +120,17 @@ export class WizardManager {
     return !!this.userStates[userId]
   }
 
+  async hydrateState(userId: string): Promise<void> {
+    if (this.userStates[userId]) return
+
+    const persisted = await wizardStateStore.get(userId)
+    if (!persisted) return
+
+    const { version, ...state } = persisted
+    this.stateVersions[userId] = version
+    this.userStates[userId] = state
+  }
+
   getState(userId: string): WizardState | undefined {
     return this.userStates[userId]
   }
@@ -127,6 +140,12 @@ export class WizardManager {
       state.history = []
     }
     this.userStates[userId] = state as Required<WizardState>
+    const nextVersion = (this.stateVersions[userId] || 0) + 1
+    this.stateVersions[userId] = nextVersion
+    void wizardStateStore.set(userId, {
+      ...state,
+      version: nextVersion,
+    })
   }
 
   async goToStep(userId: string, nextStep: string, data?: WizardData) {
@@ -183,6 +202,8 @@ export class WizardManager {
 
   clearState(userId: string) {
     delete this.userStates[userId]
+    delete this.stateVersions[userId]
+    void wizardStateStore.delete(userId)
   }
 
   async returnToContext(chatId: number, userId: string, returnTo?: string) {

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { SETTINGS_KEYBOARD } from "../constants"
 import { dbStorage as db } from "../database/storage-db"
 import { getCategoryLabel, resolveLanguage, t } from "../i18n"
@@ -15,8 +15,8 @@ import type { WizardManager } from "../wizards/wizards"
 
 // Handle file upload
 export async function handleStatementUpload(
-  bot: TelegramBot,
-  msg: TelegramBot.Message,
+  bot: BotClient,
+  msg: Tg.Message,
   userId: string,
   wizardManager: WizardManager
 ): Promise<void> {
@@ -92,7 +92,7 @@ export async function handleStatementUpload(
 
 // Show transaction preview
 async function showTransactionPreview(
-  bot: TelegramBot,
+  bot: BotClient,
   chatId: number,
   userId: string,
   transactions: ParsedTransaction[],

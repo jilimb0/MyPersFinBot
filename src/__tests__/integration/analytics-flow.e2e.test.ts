@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
 import { setupAnalyticsFixtures } from "../helpers/e2e-fixtures"
@@ -18,7 +18,7 @@ describe("E2E analytics flow", () => {
   })
 
   test("analytics menu -> net worth", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"
@@ -42,7 +42,7 @@ describe("E2E analytics flow", () => {
   })
 
   test("analytics menu -> history", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userId = "user-1"

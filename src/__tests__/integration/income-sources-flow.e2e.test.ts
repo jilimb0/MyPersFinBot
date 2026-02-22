@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
 import { MockBot } from "../helpers/mock-bot"
@@ -59,7 +59,7 @@ describe("E2E income sources flow", () => {
   })
 
   test("income source add flow", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-i1"
     const chatId = 901
@@ -87,7 +87,7 @@ describe("E2E income sources flow", () => {
   })
 
   test("income source rename flow", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-i2"
     const chatId = 902
@@ -121,7 +121,7 @@ describe("E2E income sources flow", () => {
   })
 
   test("income source delete flow", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-i3"
     const chatId = 903

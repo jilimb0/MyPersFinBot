@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { ExpenseCategory, TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
@@ -85,7 +85,7 @@ describe("E2E recurring flow", () => {
   })
 
   test("recurring create flow: description -> type -> amount -> account -> category -> day", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-r1"
     const chatId = 1001
@@ -124,7 +124,7 @@ describe("E2E recurring flow", () => {
   })
 
   test("recurring item flow: pause and delete", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-r2"
     const chatId = 1002

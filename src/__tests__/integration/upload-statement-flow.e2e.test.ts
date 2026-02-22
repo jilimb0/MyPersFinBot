@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { handleStatementPreviewAction } from "../../handlers/upload-statement-handlers"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
@@ -48,7 +48,7 @@ describe("E2E upload statement flow", () => {
   })
 
   test("statement preview -> import all", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-u1"
     const chatId = 1201
@@ -87,7 +87,7 @@ describe("E2E upload statement flow", () => {
   })
 
   test("statement preview -> cancel", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-u2"
     const chatId = 1202

@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../../database/storage-db"
 import {
   handleAutoIncomeAccountSelect,
@@ -46,7 +46,7 @@ describe("auto-income-handlers", () => {
   })
 
   test("toggle enable with no balances and with balances", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", { step: "INCOME_MENU", data: { source }, lang })
@@ -72,7 +72,7 @@ describe("auto-income-handlers", () => {
   })
 
   test("toggle disable", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", { step: "INCOME_MENU", data: { source }, lang })
@@ -88,7 +88,7 @@ describe("auto-income-handlers", () => {
   })
 
   test("account select invalid and valid", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", {
@@ -111,7 +111,7 @@ describe("auto-income-handlers", () => {
   })
 
   test("amount input invalid and valid", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", {
@@ -129,7 +129,7 @@ describe("auto-income-handlers", () => {
   })
 
   test("day select invalid and valid", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("u1", {

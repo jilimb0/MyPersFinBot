@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { registerCallbackRouter } from "../../handlers/callback-router"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
@@ -37,7 +37,7 @@ describe("E2E templates flow", () => {
   })
 
   test("tmpl_del removes template and refreshes list", async () => {
-    const bot = new MockRouterBot() as unknown as TelegramBot
+    const bot = new MockRouterBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     registerCallbackRouter(bot, wizard)
 
@@ -52,7 +52,7 @@ describe("E2E templates flow", () => {
   })
 
   test("tmpl_cancel clears wizard state and shows manage menu", async () => {
-    const bot = new MockRouterBot() as unknown as TelegramBot
+    const bot = new MockRouterBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     registerCallbackRouter(bot, wizard)
 

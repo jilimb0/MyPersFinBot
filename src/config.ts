@@ -60,6 +60,8 @@ const ConfigSchema = z.object({
   REMINDER_CHECK_INTERVAL: z.coerce.number().min(1).max(60).default(5),
 
   MAX_FILE_SIZE_MB: z.coerce.number().min(1).max(50).default(20),
+  QUICKCHART_BASE_URL: z.string().url().default("https://quickchart.io"),
+  QUICKCHART_TIMEOUT_MS: z.coerce.number().min(1000).max(60000).default(10000),
 
   SENTRY_DSN: z.string().optional(),
   SENTRY_ENV: z.string().optional(),

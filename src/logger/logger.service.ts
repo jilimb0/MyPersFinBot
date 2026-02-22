@@ -16,13 +16,20 @@ export class Logger {
   private correlationId?: string
 
   constructor(options?: LoggerOptions) {
+    const enableProcessHandlers =
+      process.env.WINSTON_PROCESS_HANDLERS === "true"
+
     // Create Winston logger
     this.winston = winston.createLogger({
       ...loggerConfig,
       level: options?.level || loggerConfig.level,
       silent: options?.silent || false,
-      exceptionHandlers,
-      rejectionHandlers,
+      ...(enableProcessHandlers
+        ? {
+            exceptionHandlers,
+            rejectionHandlers,
+          }
+        : {}),
     })
 
     this.correlationId = options?.correlationId

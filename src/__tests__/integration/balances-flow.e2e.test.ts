@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { t } from "../../i18n"
 import { WizardManager } from "../../wizards/wizards"
 import { MockBot } from "../helpers/mock-bot"
@@ -77,7 +77,7 @@ describe("E2E balances flow", () => {
   })
 
   test("add balance flow: list -> create", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-b1"
     const chatId = 501
@@ -110,7 +110,7 @@ describe("E2E balances flow", () => {
   })
 
   test("rename balance flow: edit -> confirm rename", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-b2"
     const chatId = 502
@@ -138,7 +138,7 @@ describe("E2E balances flow", () => {
   })
 
   test("delete balance transfer flow", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-b3"
     const chatId = 503
@@ -182,7 +182,7 @@ describe("E2E balances flow", () => {
   })
 
   test("set balance to zero transfer flow", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-b4"
     const chatId = 504

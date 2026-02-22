@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "../database/storage-db"
 import {
   getExpenseCategoryLabel,
@@ -16,11 +16,11 @@ export class QuickActionsHandlers {
   private static buildInlineCategoryKeyboard(
     items: string[],
     itemsPerRow: number = 2
-  ): TelegramBot.InlineKeyboardButton[][] {
-    const keyboard: TelegramBot.InlineKeyboardButton[][] = []
+  ): Tg.InlineKeyboardButton[][] {
+    const keyboard: Tg.InlineKeyboardButton[][] = []
 
     for (let i = 0; i < items.length; i += itemsPerRow) {
-      const row: TelegramBot.InlineKeyboardButton[] = []
+      const row: Tg.InlineKeyboardButton[] = []
       for (let j = 0; j < itemsPerRow && i + j < items.length; j++) {
         const text = items[i + j]
         if (text) {
@@ -34,7 +34,7 @@ export class QuickActionsHandlers {
   }
 
   static async handleQuickCategory(
-    bot: TelegramBot,
+    bot: BotClient,
     chatId: number,
     userId: string,
     text: string,
@@ -100,7 +100,7 @@ export class QuickActionsHandlers {
   }
 
   static async handleQuickAccount(
-    bot: TelegramBot,
+    bot: BotClient,
     chatId: number,
     userId: string,
     state: WizardState,
@@ -485,7 +485,7 @@ export class QuickActionsHandlers {
   }
 
   static async showAllCategories(
-    bot: TelegramBot,
+    bot: BotClient,
     chatId: number,
     txType: TransactionType,
     lang: Language

@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import {
   handleBack,
   handleCancel,
@@ -52,7 +52,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack clears wizard and returns to main", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("1", {
@@ -76,7 +76,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleMainMenu clears wizard state", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("2", {
@@ -100,7 +100,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack returns to balances menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("3", {
@@ -125,7 +125,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack returns to debts menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("4", {
@@ -149,7 +149,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack returns to goals menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("5", {
@@ -173,7 +173,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack returns to settings menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("6", {
@@ -201,7 +201,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack returns to automation menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("7", {
@@ -225,7 +225,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack returns to advanced menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("8", {
@@ -249,7 +249,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack with no returnTo goes to main menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     wizard.setState("9", {
@@ -272,7 +272,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleCancel sends cancelled message", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const context = {
@@ -291,7 +291,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleNoCancel shows advanced menu", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const context = {
@@ -310,7 +310,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleBack works with different languages", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const languages = ["en", "ru", "uk", "es", "pl"]
@@ -344,7 +344,7 @@ describe("Navigation handlers", () => {
   })
 
   test("handleMainMenu works with different users", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     const userIds = ["user1", "user2", "user3"]

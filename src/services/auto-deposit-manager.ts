@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { AppDataSource } from "../database/data-source"
 import { Goal as GoalEntity } from "../database/entities/Goal"
 import { Transaction as TransactionEntity } from "../database/entities/Transaction"
@@ -62,7 +62,7 @@ class AutoDepositManager {
    */
   async executeAutoDeposit(
     goal: GoalEntity,
-    bot?: TelegramBot
+    bot?: BotClient
   ): Promise<boolean> {
     try {
       if (!goal.autoDeposit) return false

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import { convertSync } from "../fx"
 import { isValidLanguage, type Language, resolveLanguage, t } from "../i18n"
 import { normalizeCategoryValue } from "../i18n/categories"
+import { tgObservability } from "../observability/tgwrapper-observability"
 import { getCacheManager } from "../services/cache-manager"
 import {
   type Balance as BalanceType,
@@ -2086,6 +2087,8 @@ export class DatabaseStorage {
       minAmount?: number
       maxAmount?: number
       accountId?: string
+      fromAccountId?: string
+      toAccountId?: string
     }
   ): Promise<{ transactions: Transaction[]; total: number; hasMore: boolean }> {
     const page = options?.page && options.page > 0 ? options.page : 1
@@ -2139,6 +2142,16 @@ export class DatabaseStorage {
           accountId: options.accountId,
         }
       )
+    }
+    if (options?.fromAccountId) {
+      queryBuilder.andWhere("tx.fromAccountId = :fromAccountId", {
+        fromAccountId: options.fromAccountId,
+      })
+    }
+    if (options?.toAccountId) {
+      queryBuilder.andWhere("tx.toAccountId = :toAccountId", {
+        toAccountId: options.toAccountId,
+      })
     }
 
     const skip = (page - 1) * limit
@@ -2718,4 +2731,34 @@ export class DatabaseStorage {
   }
 }
 
-export const dbStorage = new DatabaseStorage()
+function createInstrumentedDatabaseStorage(
+  storage: DatabaseStorage
+): DatabaseStorage {
+  return new Proxy(storage as DatabaseStorage & Record<string, unknown>, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver)
+
+      if (typeof value !== "function" || prop === "constructor") {
+        return value
+      }
+
+      return (...args: unknown[]) => {
+        const bound = (value as (...params: unknown[]) => unknown).bind(target)
+        const isAsync = bound.constructor?.name === "AsyncFunction"
+        if (!isAsync) {
+          return bound(...args)
+        }
+
+        return tgObservability.instrumentDbOperation(
+          String(prop),
+          async () => (await bound(...args)) as never,
+          "storage-db"
+        )
+      }
+    },
+  }) as DatabaseStorage
+}
+
+export const dbStorage = createInstrumentedDatabaseStorage(
+  new DatabaseStorage()
+)

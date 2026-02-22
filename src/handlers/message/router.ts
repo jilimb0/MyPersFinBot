@@ -2,7 +2,7 @@
  * Message Router - handles all incoming text messages
  */
 
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { config } from "../../config"
 import { dbStorage as db } from "../../database/storage-db"
 import { type Language, resolveLanguage } from "../../i18n"
@@ -18,7 +18,7 @@ export class MessageRouter {
   private routes: MessageRoute[] = []
 
   constructor(
-    private bot: TelegramBot,
+    private bot: BotClient,
     private wizardManager: WizardManager
   ) {}
 
@@ -56,6 +56,7 @@ export class MessageRouter {
         const text = msg.text?.trim()
 
         if (!text) return
+        await this.wizardManager.hydrateState(userId)
 
         // Get user language
         const storedLang = await db.getUserLanguage(userId)

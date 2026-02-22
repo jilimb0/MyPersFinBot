@@ -2,7 +2,7 @@
  * Logger middleware for Telegram bot
  */
 
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { createLogger, type Logger } from "./logger.service"
 import type { LogContext } from "./types"
 
@@ -21,7 +21,7 @@ export function getRequestLogger(messageId: string): Logger | undefined {
 /**
  * Logging middleware for bot messages
  */
-export function loggingMiddleware(bot: TelegramBot, logger: Logger): void {
+export function loggingMiddleware(bot: BotClient, logger: Logger): void {
   // Log all incoming messages
   bot.on("message", (msg) => {
     const messageId = msg.message_id.toString()
@@ -124,7 +124,7 @@ export function logPerformance(
  * Log context helper
  */
 export function createLogContext(
-  msg: TelegramBot.Message | TelegramBot.CallbackQuery
+  msg: Tg.Message | Tg.CallbackQuery
 ): LogContext {
   if ("message" in msg && msg.message) {
     // Callback query

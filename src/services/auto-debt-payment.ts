@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from "node:crypto"
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { AppDataSource } from "../database/data-source"
 import { Debt as DebtEntity } from "../database/entities/Debt"
 import { Transaction as TransactionEntity } from "../database/entities/Transaction"
@@ -54,7 +54,7 @@ class AutoDebtPaymentManager {
    */
   async executeAutoPayment(
     debt: DebtEntity,
-    bot?: TelegramBot
+    bot?: BotClient
   ): Promise<boolean> {
     try {
       if (!debt.autoPayment) return false
@@ -170,7 +170,7 @@ class AutoDebtPaymentManager {
   /**
    * Execute all due auto-payments
    */
-  async executeAllDue(bot?: TelegramBot): Promise<void> {
+  async executeAllDue(bot?: BotClient): Promise<void> {
     try {
       const dueDebts = await this.getDueAutoPayments()
 

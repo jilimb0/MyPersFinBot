@@ -9,6 +9,8 @@ export interface SearchFilters {
   minAmount?: number
   maxAmount?: number
   accountId?: string
+  fromAccountId?: string
+  toAccountId?: string
 }
 
 export interface ParsedSearchCommand {
@@ -107,6 +109,14 @@ export function parseSearchCommandInput(
       case "account":
         filters.accountId = value
         break
+      case "from-account":
+      case "fromaccount":
+        filters.fromAccountId = value
+        break
+      case "to-account":
+      case "toaccount":
+        filters.toAccountId = value
+        break
       default:
         errors.push(`Unknown filter '${key}'`)
     }
@@ -141,5 +151,6 @@ export function formatSearchUsage(): string {
     "/search coffee",
     "/search rent --type=EXPENSE --from=2026-01-01 --to=2026-02-01",
     "/search --category=FOOD_DINING --min=10 --max=200 --account=Card",
+    "/search --from-account=Card --to-account=Savings --min=1 --max=1000",
   ].join("\n")
 }

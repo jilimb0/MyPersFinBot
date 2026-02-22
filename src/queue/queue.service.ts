@@ -1,5 +1,6 @@
 import Bull, { type Job, type JobOptions, type Queue } from "bull"
 import logger from "../logger"
+import { tgObservability } from "../observability/tgwrapper-observability"
 import type { JobData, JobName, JobResult, QueueJobOptions } from "./types"
 
 /**
@@ -82,22 +83,27 @@ export class QueueService {
     data: JobData,
     options?: QueueJobOptions
   ): Promise<Job> {
-    const queue = this.getQueue(jobName)
+    return await tgObservability.instrumentQueueJob(
+      String(jobName),
+      async () => {
+        const queue = this.getQueue(jobName)
 
-    const jobOptions = {
-      ...options,
-      jobId: options?.repeat ? undefined : `${jobName}-${Date.now()}`, // No jobId for repeating jobs
-    } as JobOptions
+        const jobOptions = {
+          ...options,
+          jobId: options?.repeat ? undefined : `${jobName}-${Date.now()}`, // No jobId for repeating jobs
+        } as JobOptions
 
-    const job = await queue.add(data, jobOptions)
+        const job = await queue.add(data, jobOptions)
 
-    logger.info(`Job ${jobName} added`, {
-      jobId: job?.id || "unknown",
-      data,
-      options,
-    })
+        logger.info(`Job ${jobName} added`, {
+          jobId: job?.id || "unknown",
+          data,
+          options,
+        })
 
-    return job
+        return job
+      }
+    )
   }
 
   /**
@@ -136,13 +142,15 @@ export class QueueService {
    * Remove job by ID
    */
   async removeJob(jobName: JobName, jobId: string): Promise<void> {
-    const queue = this.getQueue(jobName)
-    const job = await queue.getJob(jobId)
+    await tgObservability.instrumentQueueJob(String(jobName), async () => {
+      const queue = this.getQueue(jobName)
+      const job = await queue.getJob(jobId)
 
-    if (job) {
-      await job.remove()
-      logger.info(`Job ${jobName} removed`, { jobId })
-    }
+      if (job) {
+        await job.remove()
+        logger.info(`Job ${jobName} removed`, { jobId })
+      }
+    })
   }
 
   /**
@@ -152,9 +160,11 @@ export class QueueService {
     jobName: JobName,
     repeat: { cron?: string; every?: number }
   ): Promise<void> {
-    const queue = this.getQueue(jobName)
-    await queue.removeRepeatable(repeat as any)
-    logger.info(`Repeating job ${jobName} removed`, { repeat })
+    await tgObservability.instrumentQueueJob(String(jobName), async () => {
+      const queue = this.getQueue(jobName)
+      await queue.removeRepeatable(repeat as any)
+      logger.info(`Repeating job ${jobName} removed`, { repeat })
+    })
   }
 
   /**
@@ -209,44 +219,52 @@ export class QueueService {
     jobName: JobName,
     grace: number = 1000 * 60 * 60 * 24 // 1 day
   ): Promise<void> {
-    const queue = this.getQueue(jobName)
+    await tgObservability.instrumentQueueJob(String(jobName), async () => {
+      const queue = this.getQueue(jobName)
 
-    await Promise.all([
-      queue.clean(grace, "completed"),
-      queue.clean(grace, "failed"),
-    ])
+      await Promise.all([
+        queue.clean(grace, "completed"),
+        queue.clean(grace, "failed"),
+      ])
 
-    logger.info(`Queue ${jobName} cleaned`, { grace })
+      logger.info(`Queue ${jobName} cleaned`, { grace })
+    })
   }
 
   /**
    * Pause queue
    */
   async pauseQueue(jobName: JobName): Promise<void> {
-    const queue = this.getQueue(jobName)
-    await queue.pause()
-    logger.info(`Queue ${jobName} paused`)
+    await tgObservability.instrumentQueueJob(String(jobName), async () => {
+      const queue = this.getQueue(jobName)
+      await queue.pause()
+      logger.info(`Queue ${jobName} paused`)
+    })
   }
 
   /**
    * Resume queue
    */
   async resumeQueue(jobName: JobName): Promise<void> {
-    const queue = this.getQueue(jobName)
-    await queue.resume()
-    logger.info(`Queue ${jobName} resumed`)
+    await tgObservability.instrumentQueueJob(String(jobName), async () => {
+      const queue = this.getQueue(jobName)
+      await queue.resume()
+      logger.info(`Queue ${jobName} resumed`)
+    })
   }
 
   /**
    * Close all queues
    */
   async close(): Promise<void> {
-    for (const [jobName, queue] of this.queues) {
-      await queue.close()
-      logger.info(`Queue ${jobName} closed`)
-    }
+    await tgObservability.instrumentQueueJob("all", async () => {
+      for (const [jobName, queue] of this.queues) {
+        await queue.close()
+        logger.info(`Queue ${jobName} closed`)
+      }
 
-    this.queues.clear()
+      this.queues.clear()
+    })
   }
 
   /**
@@ -260,23 +278,28 @@ export class QueueService {
     const queue = this.getQueue(jobName)
 
     queue.process(concurrency, async (job: Job<any>) => {
-      logger.info(`Processing job ${jobName}`, {
-        jobId: job?.id || "unknown",
-        attempt: job.attemptsMade + 1,
-        data: job.data,
-      })
+      return await tgObservability.instrumentQueueJob(
+        String(jobName),
+        async () => {
+          logger.info(`Processing job ${jobName}`, {
+            jobId: job?.id || "unknown",
+            attempt: job.attemptsMade + 1,
+            data: job.data,
+          })
 
-      try {
-        const result = await processor(job)
-        return result
-      } catch (error: any) {
-        logger.error(`Job ${jobName} processor error`, {
-          jobId: job?.id || "unknown",
-          error: error.message,
-          stack: error.stack,
-        })
-        throw error // Re-throw for Bull to handle retries
-      }
+          try {
+            const result = await processor(job)
+            return result
+          } catch (error: any) {
+            logger.error(`Job ${jobName} processor error`, {
+              jobId: job?.id || "unknown",
+              error: error.message,
+              stack: error.stack,
+            })
+            throw error // Re-throw for Bull to handle retries
+          }
+        }
+      )
     })
 
     logger.info(`Processor registered for ${jobName}`, { concurrency })

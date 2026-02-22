@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { ExpenseCategory, TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
 import { MockBot } from "../helpers/mock-bot"
@@ -24,7 +24,7 @@ const mockCreateRecurring =
 
 describe("E2E edge cases", () => {
   test("debt due date invalid format keeps step", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-e1"
     const chatId = 1501
@@ -48,7 +48,7 @@ describe("E2E edge cases", () => {
   })
 
   test("goal deadline invalid format keeps step", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-e2"
     const chatId = 1502
@@ -72,7 +72,7 @@ describe("E2E edge cases", () => {
   })
 
   test("income expected day invalid keeps step", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-e3"
     const chatId = 1503
@@ -96,7 +96,7 @@ describe("E2E edge cases", () => {
   })
 
   test("balance amount invalid keeps step", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-e4"
     const chatId = 1504
@@ -115,7 +115,7 @@ describe("E2E edge cases", () => {
   })
 
   test("income inline invalid format keeps step", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-e5"
     const chatId = 1505
@@ -134,7 +134,7 @@ describe("E2E edge cases", () => {
   })
 
   test("recurring invalid day keeps step", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "user-e6"
     const chatId = 1506

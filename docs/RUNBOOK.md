@@ -98,13 +98,28 @@ find backups/ -name "*.sqlite" -mtime +30 -delete
 
 ## 💚 Health Checks
 
+## 🧪 Test Stability Notes
+
+- For stable coverage runs in CI/local, use:
+  - `pnpm test:coverage:stable`
+- If Jest reports worker force-exit warnings:
+  - rerun target suite with `--runInBand --detectOpenHandles`
+  - check queue/timer cleanup in affected tests
+
 ### Automated Health Check
 
-**Endpoint:** `http://localhost:3005/health` (also `/healthz`, `/readyz`)
+**Endpoint (local):** `http://localhost:3005/health` (also `/healthz`, `/readyz`)
+**Endpoint (prod via nginx TLS):** `https://your-domain.example.com/healthz`
 **Script:** `scripts/ops/health-check.sh`
 
 ```bash
 HEALTHCHECK_URL=http://127.0.0.1:3005/healthz ./scripts/ops/health-check.sh
+
+# Production probe through nginx + basic auth
+HEALTHCHECK_URL=https://your-domain.example.com/healthz \
+HEALTH_BASIC_AUTH_USER=health \
+HEALTH_BASIC_AUTH_PASS=your_password \
+./scripts/ops/health-check.sh
 ```
 
 **Cron job:**
@@ -124,6 +139,10 @@ pm2 list | grep my-pers-fin-bot
 # 2. Check port
 netstat -tulpn | grep 3005
 # Should show Node.js process
+
+# 2.1 Check external TLS health endpoint
+curl -u health:your_password https://your-domain.example.com/healthz
+curl -u health:your_password https://your-domain.example.com/metrics
 
 # 3. Check logs for errors
 pm2 logs my-pers-fin-bot --lines 20 --err

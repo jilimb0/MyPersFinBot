@@ -1,3 +1,4 @@
+import { config } from "../config"
 import { dbStorage } from "../database/storage-db"
 import { getCategoryLabel, type Language } from "../i18n"
 import type { Currency, Transaction } from "../types"
@@ -222,10 +223,12 @@ export async function generateChartImage(
     return null
   }
 
-  const config = buildQuickChartConfig(chartType, dataset)
-  const url = `https://quickchart.io/chart?width=1200&height=700&format=png&c=${encodeURIComponent(JSON.stringify(config))}`
+  const chartConfig = buildQuickChartConfig(chartType, dataset)
+  const url = `${config.QUICKCHART_BASE_URL}/chart?width=1200&height=700&format=png&c=${encodeURIComponent(JSON.stringify(chartConfig))}`
 
-  const response = await fetch(url)
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(config.QUICKCHART_TIMEOUT_MS),
+  })
   if (!response.ok) {
     throw new Error(`Failed to generate chart: HTTP ${response.status}`)
   }

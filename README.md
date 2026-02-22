@@ -156,10 +156,11 @@ salary 4000
 | `/help` | Show help & features |
 | `/stats` | Quick statistics |
 | `/export` | Export data to CSV |
-| `/search <text> [--type=...] [--category=...] [--from=YYYY-MM-DD] [--to=YYYY-MM-DD] [--min=...] [--max=...] [--account=...]` | Search and advanced history filters |
+| `/search <text> [options]` | Search and advanced history filters |
 | `/chart <trends|categories|balance> [months]` | Generate chart image and send to Telegram |
 
 Examples:
+
 - `/search coffee`
 - `/search rent --type=EXPENSE --from=2026-01-01 --to=2026-01-31`
 - `/search --category=FOOD_DINING --min=10 --max=200 --account=Card`

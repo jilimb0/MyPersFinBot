@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { handleNLPCallback, handleNLPInput } from "../../handlers/voice-handler"
 import { TransactionType } from "../../types"
 import { WizardManager } from "../../wizards/wizards"
@@ -36,7 +36,7 @@ describe("E2E voice flow", () => {
   })
 
   test("voice NLP confirm saves expense transaction", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
     const userId = "501"
     const chatId = 501
@@ -60,7 +60,7 @@ describe("E2E voice flow", () => {
       from: { id: 501 },
       data: "nlp_confirm|15|EXPENSE|FOOD_DINING|coffee",
       message: { chat: { id: chatId }, message_id: 777 },
-    } as unknown as TelegramBot.CallbackQuery
+    } as unknown as Tg.CallbackQuery
 
     await handleNLPCallback(bot, callbackQuery, wizard)
 

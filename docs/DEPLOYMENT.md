@@ -558,6 +558,7 @@ curl http://localhost:3005/readyz
 
 # APM/metrics snapshot
 curl http://localhost:3005/metrics
+curl http://localhost:3005/metrics/prometheus
 ```
 
 ### HTTPS + Reverse Proxy for Health
@@ -574,16 +575,38 @@ sudo certbot certonly --webroot -w /var/www/certbot -d your-domain.example.com
 
 # Validate + reload nginx
 sudo nginx -t && sudo systemctl reload nginx
+
+# Create basic auth user for health/metrics endpoints
+sudo apt install -y apache2-utils
+sudo htpasswd -c /etc/nginx/.htpasswd-my-pers-fin-bot health
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Validation after setup:
+
+```bash
+# HTTPS + auth check
+curl -u health:your_password https://your-domain.example.com/healthz
+curl -u health:your_password https://your-domain.example.com/metrics
+curl -u health:your_password https://your-domain.example.com/metrics/prometheus
 ```
 
 Optional app-level TLS:
+
 - `HEALTH_TLS_ENABLED=true`
 - `HEALTH_TLS_KEY_PATH=/path/to/key.pem`
 - `HEALTH_TLS_CERT_PATH=/path/to/cert.pem`
 
 Optional app-level basic auth:
+
 - `HEALTH_BASIC_AUTH_USER=...`
 - `HEALTH_BASIC_AUTH_PASS=...`
+
+Recommended production values:
+
+- `HEALTH_HOST=127.0.0.1`
+- `HEALTH_PORT=3005`
+- Use nginx TLS + basic auth as the external boundary.
 
 ### PM2 Monitoring
 
@@ -633,6 +656,7 @@ curl http://localhost:3005/metrics
 ### Alert Rules
 
 Sample rules are in `deploy/alerts/metrics-alerts.yml`:
+
 - `BotHealthEndpointDown`
 - `BotSearchLatencyHigh`
 - `BotChartLatencyHigh`

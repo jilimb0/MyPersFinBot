@@ -2,7 +2,7 @@
  * Rate limiter middleware for Telegram bot
  */
 
-import type TelegramBot from "@telegram-api"
+import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { dbStorage as db } from "../database/storage-db"
 import { type Language, t } from "../i18n"
 import logger from "../logger"
@@ -13,7 +13,7 @@ import type { RateLimitResult } from "./types"
  * Rate limiter middleware
  */
 export function rateLimiterMiddleware(
-  bot: TelegramBot,
+  bot: BotClient,
   adminUserIds: string[] = []
 ): void {
   // Track processed message IDs to avoid duplicate checks
@@ -96,8 +96,8 @@ export function rateLimiterMiddleware(
  * Handle rate limit exceeded for message
  */
 async function handleRateLimitExceeded(
-  bot: TelegramBot,
-  msg: TelegramBot.Message,
+  bot: BotClient,
+  msg: Tg.Message,
   result: RateLimitResult,
   lang: Language
 ): Promise<void> {
@@ -122,8 +122,8 @@ async function handleRateLimitExceeded(
  * Handle rate limit exceeded for callback query
  */
 async function handleCallbackQueryRateLimit(
-  bot: TelegramBot,
-  query: TelegramBot.CallbackQuery,
+  bot: BotClient,
+  query: Tg.CallbackQuery,
   result: RateLimitResult,
   lang: Language
 ): Promise<void> {

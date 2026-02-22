@@ -1,4 +1,4 @@
-import type TelegramBot from "@telegram-api"
+import type { BotClient } from "@jilimb0/tgwrapper"
 import { dbStorage } from "../../database/storage-db"
 import { nlpParser } from "../../services/nlp-parser"
 
@@ -76,7 +76,7 @@ describe("voice handler", () => {
   })
 
   test("handleNLPInput invalid/valid", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     ;(dbStorage.getDefaultCurrency as jest.Mock).mockResolvedValue("USD")
@@ -95,7 +95,7 @@ describe("voice handler", () => {
   })
 
   test("handleNLPCallback cancel / confirm / edit / set cat", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     // cancel
@@ -176,7 +176,7 @@ describe("voice handler", () => {
   })
 
   test("handleVoiceMessage early return if no voice", async () => {
-    const bot = new MockBot() as unknown as TelegramBot
+    const bot = new MockBot() as unknown as BotClient
     const wizard = new WizardManager(bot)
 
     await voiceHandlers.handleVoiceMessage(
