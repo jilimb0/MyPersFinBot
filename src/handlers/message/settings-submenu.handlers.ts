@@ -27,7 +27,14 @@ export const handleLanguageSettings: MessageHandler = async (context) => {
  * Handle Automation menu
  */
 export const handleAutomationMenu: MessageHandler = async (context) => {
-  const { chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const uiMode = await db.getUserUiMode(userId)
+  if (uiMode === "basic") {
+    await bot.sendMessage(chatId, t(lang, "settings.switchToProHint"), {
+      reply_markup: getSettingsKeyboard(lang, "basic"),
+    })
+    return true
+  }
   await menus.showAutomationMenu(wizardManager, chatId, userId, lang)
   return true
 }
@@ -36,7 +43,14 @@ export const handleAutomationMenu: MessageHandler = async (context) => {
  * Handle Advanced menu
  */
 export const handleAdvancedMenu: MessageHandler = async (context) => {
-  const { chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const uiMode = await db.getUserUiMode(userId)
+  if (uiMode === "basic") {
+    await bot.sendMessage(chatId, t(lang, "settings.switchToProHint"), {
+      reply_markup: getSettingsKeyboard(lang, "basic"),
+    })
+    return true
+  }
   await menus.showAdvancedMenu(wizardManager, chatId, userId, lang)
   return true
 }
@@ -73,7 +87,14 @@ export const handleHelp: MessageHandler = async (context) => {
  * Handle Income Sources menu
  */
 export const handleIncomeSourcesMenu: MessageHandler = async (context) => {
-  const { bot, chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const uiMode = await db.getUserUiMode(userId)
+  if (uiMode === "basic") {
+    await bot.sendMessage(chatId, t(lang, "settings.switchToProHint"), {
+      reply_markup: getSettingsKeyboard(lang, "basic"),
+    })
+    return true
+  }
 
   wizardManager.setState(userId, {
     step: "INCOME_VIEW",
@@ -171,10 +192,31 @@ export const handleClearDataExecute: MessageHandler = async (context) => {
     )
   } catch (error) {
     console.error("Error clearing user ", error)
+    const uiMode = await context.db.getUserUiMode(userId)
     await bot.sendMessage(chatId, t(context.lang, "errors.clearingData"), {
-      reply_markup: getSettingsKeyboard(context.lang),
+      reply_markup: getSettingsKeyboard(context.lang, uiMode),
     })
   }
+  return true
+}
+
+export const handleUiModeBasic: MessageHandler = async (context) => {
+  const { bot, chatId, userId, lang, db } = context
+  await db.setUserUiMode(userId, "basic")
+  await bot.sendMessage(chatId, t(lang, "settings.uiModeChangedBasic"), {
+    parse_mode: "Markdown",
+    reply_markup: getSettingsKeyboard(lang, "basic"),
+  })
+  return true
+}
+
+export const handleUiModePro: MessageHandler = async (context) => {
+  const { bot, chatId, userId, lang, db } = context
+  await db.setUserUiMode(userId, "pro")
+  await bot.sendMessage(chatId, t(lang, "settings.uiModeChangedPro"), {
+    parse_mode: "Markdown",
+    reply_markup: getSettingsKeyboard(lang, "pro"),
+  })
   return true
 }
 
@@ -376,7 +418,7 @@ export const handleCurrencyChangeConfirm: MessageHandler = async (context) => {
       chatId,
       t(lang, "settings.currencyAlreadyCurrent", { currency }),
       {
-        reply_markup: getSettingsKeyboard(lang),
+        reply_markup: getSettingsKeyboard(lang, await db.getUserUiMode(userId)),
       }
     )
   }
@@ -409,7 +451,7 @@ export const handleCurrencyChangeExecute: MessageHandler = async (context) => {
         { count: balancesCount, currency: newCurrency }
       )}`,
       {
-        reply_markup: getSettingsKeyboard(lang),
+        reply_markup: getSettingsKeyboard(lang, await db.getUserUiMode(userId)),
       }
     )
   } else {
@@ -417,7 +459,7 @@ export const handleCurrencyChangeExecute: MessageHandler = async (context) => {
       chatId,
       t(lang, "settings.currencySet", { currency: newCurrency }),
       {
-        reply_markup: getSettingsKeyboard(lang),
+        reply_markup: getSettingsKeyboard(lang, await db.getUserUiMode(userId)),
       }
     )
   }

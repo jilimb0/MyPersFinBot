@@ -152,6 +152,28 @@ export async function handleSubscriptionBuy(
   }
 }
 
+export async function handleSubscriptionOpen(
+  bot: BotClient,
+  query: Tg.CallbackQuery,
+  userId: string,
+  chatId: number
+) {
+  const lang = await resolveLang(userId)
+  const status = await db.getSubscriptionStatus(userId)
+  const view = buildSubscriptionView(lang, status)
+
+  await safeAnswerCallback(bot, {
+    callback_query_id: query.id,
+  })
+
+  await bot.sendMessage(chatId, view.text, {
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: view.keyboard,
+    },
+  })
+}
+
 export async function handleSubscriptionCancelPrompt(
   bot: BotClient,
   query: Tg.CallbackQuery,

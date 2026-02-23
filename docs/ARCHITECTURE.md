@@ -827,6 +827,12 @@ When adding new features:
 
 - HTTP server provides `/healthz` and `/readyz`
 - Configurable via `HEALTH_HOST` and `HEALTH_PORT`
+- Admin UI endpoint: `/admin/ui`
+- Admin UI authentication: Telegram one-time code + session cookie (no admin token)
+- Admin action audit log: `logs/admin-actions.jsonl`
+- Audit retention/prune are configurable via:
+  - `ADMIN_AUDIT_RETENTION_DAYS`
+  - `ADMIN_AUDIT_PRUNE_INTERVAL_HOURS`
 
 ### Error Tracking (Sentry)
 

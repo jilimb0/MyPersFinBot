@@ -9,6 +9,7 @@ import {
   handleSubscriptionCancelAbort,
   handleSubscriptionCancelConfirm,
   handleSubscriptionCancelPrompt,
+  handleSubscriptionOpen,
   handleSubscriptionRefresh,
   handleSubscriptionResume,
   handleTrialCancel,
@@ -39,6 +40,7 @@ export function registerCallbackRouter(
     const chatId = query.message?.chat.id
     if (!chatId) return
     const userId = chatId.toString()
+    await db.updateTelegramProfile(userId, query.from?.username ?? null)
     await wizardManager.hydrateState(userId)
     const data = query.data || ""
 
@@ -165,6 +167,11 @@ export function registerCallbackRouter(
       {
         match: (value) => value === "trial_cancel",
         handle: async () => handleTrialCancel(bot, query, userId, chatId),
+      },
+      {
+        match: (value) => value === "sub_open",
+        handle: async () =>
+          handleSubscriptionOpen(bot, query, userId, chatId),
       },
       {
         match: (value) => value === "sub_buy_month",

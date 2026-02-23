@@ -31,10 +31,11 @@ export const handleStart: MessageHandler = async (context) => {
     userData.goals.length > 0
 
   if (hasData) {
+    const uiMode = await db.getUserUiMode(userId)
     await bot.sendMessage(
       chatId,
       t(lang, "mainMenu.welcomeBack"),
-      getMainMenuKeyboard(lang)
+      getMainMenuKeyboard(lang, uiMode)
     )
   } else {
     const freeVoice = t(lang, "commands.monetization.limitVoice", {
@@ -74,14 +75,15 @@ export const handleStart: MessageHandler = async (context) => {
  * Handle "Start Tracking" button
  */
 export const handleStartTracking: MessageHandler = async (context) => {
-  const { bot, chatId, lang } = context
+  const { bot, chatId, lang, userId, db } = context
+  const uiMode = await db.getUserUiMode(userId)
 
   await bot.sendMessage(
     chatId,
     `${t(lang, "mainMenu.quickStartTitle")}\n\n${t(lang, "mainMenu.quickStartGuide")}`,
     {
       parse_mode: "Markdown",
-      ...getMainMenuKeyboard(lang),
+      ...getMainMenuKeyboard(lang, uiMode),
     }
   )
   return true

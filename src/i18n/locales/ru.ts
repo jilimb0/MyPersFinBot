@@ -287,6 +287,16 @@ export const ru = {
     incomeSources: "💵 Источники дохода",
     automation: "🤖 Автоматизация",
     advanced: "🛠️ Дополнительно",
+    uiModeBasic: "✨ Базовый режим",
+    uiModePro: "🚀 Pro режим",
+    uiModeChangedBasic:
+      "Включен *базовый режим*. Настройки теперь упрощены.",
+    uiModeChangedPro:
+      "Включен *Pro режим*. Расширенные настройки теперь доступны.",
+    switchToProHint:
+      "Этот раздел доступен в *Pro режиме*. Нажмите *🔵 Pro режим* в настройках.",
+    uiModeOnboardingHint:
+      "*Базовый режим* оставляет на экране только главное.\nНужен полный контроль? Нажмите *🔵 Pro режим* в настройках.",
     help: "❓ Помощь и инфо",
     helpInfo: "❓ Помощь и инфо",
     clearData: "🗑️ Очистить все данные",
@@ -583,6 +593,7 @@ export const ru = {
       chartMonthsRange: "Количество месяцев должно быть от 1 до 24",
       chartGenerating: "📈 Генерирую график...",
       chartFailed: "Не удалось сгенерировать график",
+      openSubscriptionButton: "Управлять подпиской",
       buyMonthButton: "Купить месяц",
       buyYearButton: "Купить год",
       buyLifetimeButton: "Купить lifetime",

@@ -48,7 +48,8 @@
 - `HEALTH_TLS_CERT_PATH` (path to TLS certificate PEM)
 - `HEALTH_BASIC_AUTH_USER`
 - `HEALTH_BASIC_AUTH_PASS`
-- `ADMIN_API_TOKEN` (token for `/admin/*` API endpoints)
+- `ADMIN_AUDIT_RETENTION_DAYS` (default: `30`)
+- `ADMIN_AUDIT_PRUNE_INTERVAL_HOURS` (default: `24`)
 - `NODE_ENV` (`development|production|test`)
 - `LOG_LEVEL` (`error|warn|info|debug`)
 - `LOG_BOOT_DETAIL` (`true|false`)

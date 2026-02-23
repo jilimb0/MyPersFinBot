@@ -234,6 +234,18 @@ sudo systemctl start bot
 
 ---
 
+## 🛡️ Admin UI
+
+- URL: `http://localhost:3005/admin/ui`
+- Auth: one-time code in Telegram + server session cookie
+- Admin access list: `ALLOWED_USERS` (Telegram user IDs)
+- Admin actions audit log: `logs/admin-actions.jsonl`
+- Audit retention controls:
+  - `ADMIN_AUDIT_RETENTION_DAYS`
+  - `ADMIN_AUDIT_PRUNE_INTERVAL_HOURS`
+
+---
+
 ## 🧪 Testing
 
 **Status:** ✅ Unit + E2E coverage in place (Jest)

@@ -22,11 +22,20 @@ export class User {
   @PrimaryGeneratedColumn("uuid")
   id!: string
 
+  @Column({ type: "text", nullable: true })
+  telegramUsername?: string | null
+
   @Column({ type: "text", default: "USD" })
   defaultCurrency!: Currency
 
   @Column({ type: "text", default: "en" })
   language!: Language
+
+  @Column({ type: "text", default: "basic" })
+  uiMode!: "basic" | "pro"
+
+  @Column({ type: "boolean", default: false })
+  uiModeHintShown!: boolean
 
   @Column({ type: "text", default: "free" })
   subscriptionTier!: "free" | "trial" | "premium"

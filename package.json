@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "pnpm run build && node dist/index.js",
+    "dev:watch": "pnpm run build && sh -c 'tsc -w --preserveWatchOutput & node --watch dist/index.js'",
     "build": "tsc",
     "clean": "rm -rf dist coverage",
     "rebuild": "pnpm run clean && pnpm run build",

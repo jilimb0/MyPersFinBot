@@ -252,7 +252,7 @@ export class WizardManager {
         await handlers.handleRecurringMenu(this, chatId, userId, stateLang)
         break
       default:
-        await showMainMenu(this.bot, chatId, stateLang)
+        await showMainMenu(this.bot, chatId, stateLang, userId)
     }
   }
 
@@ -279,7 +279,7 @@ export class WizardManager {
 
     if (text === t(lang, "mainMenu.mainMenuButton")) {
       this.clearState(userId)
-      await showMainMenu(this.bot, chatId, lang)
+      await showMainMenu(this.bot, chatId, lang, userId)
 
       return true
     }
@@ -296,7 +296,7 @@ export class WizardManager {
 
     if (text === t(lang, "buttons.changeAmount")) {
       if (!state) {
-        await showMainMenu(this.bot, chatId, lang)
+        await showMainMenu(this.bot, chatId, lang, userId)
         return true
       }
 
@@ -312,7 +312,7 @@ export class WizardManager {
 
     if (text === t(lang, "common.back")) {
       if (!state) {
-        await showMainMenu(this.bot, chatId, lang)
+        await showMainMenu(this.bot, chatId, lang, userId)
 
         return true
       }
@@ -3717,7 +3717,7 @@ export class WizardManager {
       console.error("Wizard Error:", error)
       await this.bot.sendMessage(chatId, t(lang, "wizard.common.error"))
       this.clearState(userId)
-      await showMainMenu(this.bot, chatId, lang)
+      await showMainMenu(this.bot, chatId, lang, userId)
     }
 
     return false

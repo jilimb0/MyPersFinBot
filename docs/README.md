@@ -18,6 +18,10 @@ This directory contains project documentation for development, operations, and d
 - `LOGGING.md` - logging strategy and practices
 - `RELEASE_CHECKLIST.md` - release readiness checklist
 
+Admin access note:
+- Admin UI uses Telegram code authentication with session cookie (`/admin/ui`).
+- Admin action history is available in UI and persisted to `logs/admin-actions.jsonl`.
+
 ## Engineering References
 
 - `DATABASE_SCHEMA.md` - database entities and relationships

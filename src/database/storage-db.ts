@@ -101,6 +101,8 @@ export class DatabaseStorage {
       user = userRepo.create({
         id: userId,
         defaultCurrency: "USD",
+        uiMode: "basic",
+        uiModeHintShown: false,
         reminderSettings: {
           enabled: true,
           time: "09:00",
@@ -113,6 +115,18 @@ export class DatabaseStorage {
     }
 
     return user
+  }
+
+  async updateTelegramProfile(
+    userId: string,
+    telegramUsername?: string | null
+  ): Promise<void> {
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await this.ensureUser(userId)
+    const nextUsername = telegramUsername ? telegramUsername.trim() : null
+    if ((user.telegramUsername || null) === nextUsername) return
+    user.telegramUsername = nextUsername
+    await userRepo.save(user)
   }
 
   private async resolveUserLanguage(userId: string): Promise<Language> {
@@ -301,7 +315,10 @@ export class DatabaseStorage {
     }
 
     const now = new Date()
-    const targetTier = user.pausedTier || "premium"
+    // Backward-compatible fallback: old paused records may have null pausedTier.
+    // If user had trial and no payment history, prefer restoring trial.
+    const inferredTier = user.trialUsed && !user.lastPaymentAt ? "trial" : "premium"
+    const targetTier = user.pausedTier || inferredTier
     user.subscriptionTier = targetTier
 
     if (targetTier === "trial") {
@@ -484,6 +501,7 @@ export class DatabaseStorage {
 
   async getSubscriptionAdminList(limit = 100): Promise<
     Array<{
+      username: string | null
       userId: string
       tier: SubscriptionTier
       subscriptionPaused: boolean
@@ -502,6 +520,7 @@ export class DatabaseStorage {
       take: Math.max(1, Math.min(limit, 500)),
     })
     return users.map((user) => ({
+      username: user.telegramUsername || null,
       userId: user.id,
       tier: user.subscriptionTier,
       subscriptionPaused: !!user.subscriptionPaused,
@@ -587,12 +606,16 @@ export class DatabaseStorage {
         updatedAt: b.updatedAt.toISOString(),
       })),
       templates: user?.templates ?? [],
+      uiMode: user?.uiMode || "basic",
+      uiModeHintShown: !!user?.uiModeHintShown,
     }
 
     await Promise.all([
       this.cacheManager.setUserSettings(userId, {
         defaultCurrency: user?.defaultCurrency || "USD",
         language: user?.language ?? undefined,
+        uiMode: user?.uiMode || "basic",
+        uiModeHintShown: !!user?.uiModeHintShown,
         timezone: user?.reminderSettings?.timezone,
       }),
       this.cacheManager.setUserLanguage(userId, user?.language || "en"),
@@ -1939,6 +1962,8 @@ export class DatabaseStorage {
       this.cacheManager.setUserSettings(userId, {
         defaultCurrency: user.defaultCurrency,
         language: user.language ?? undefined,
+        uiMode: user.uiMode ?? "basic",
+        uiModeHintShown: !!user.uiModeHintShown,
         timezone: user.reminderSettings?.timezone,
       }),
       this.cacheManager.setUserLanguage(userId, user.language ?? "en"),
@@ -1952,6 +1977,50 @@ export class DatabaseStorage {
     await AppDataSource.getRepository(User).save(user)
     await this.cacheManager.updateUserSettings(userId, {
       defaultCurrency: currency,
+    })
+  }
+
+  async getUserUiMode(userId: string): Promise<"basic" | "pro"> {
+    const cachedSettings = await this.cacheManager.getUserSettings(userId)
+    if (cachedSettings?.uiMode === "basic" || cachedSettings?.uiMode === "pro") {
+      return cachedSettings.uiMode
+    }
+
+    const user = await this.ensureUser(userId)
+    const mode = user.uiMode === "pro" ? "pro" : "basic"
+    await this.cacheManager.updateUserSettings(userId, { uiMode: mode })
+    return mode
+  }
+
+  async setUserUiMode(userId: string, mode: "basic" | "pro"): Promise<void> {
+    const userRepo = AppDataSource.getRepository(User)
+    await this.ensureUser(userId)
+    const safeMode: "basic" | "pro" = mode === "pro" ? "pro" : "basic"
+    await userRepo.update({ id: userId }, { uiMode: safeMode })
+    await this.cacheManager.updateUserSettings(userId, { uiMode: safeMode })
+    await this.clearCache(userId, "user")
+  }
+
+  async hasSeenUiModeHint(userId: string): Promise<boolean> {
+    const cachedSettings = await this.cacheManager.getUserSettings(userId)
+    if (typeof cachedSettings?.uiModeHintShown === "boolean") {
+      return cachedSettings.uiModeHintShown
+    }
+
+    const user = await this.ensureUser(userId)
+    const seen = !!user.uiModeHintShown
+    await this.cacheManager.updateUserSettings(userId, {
+      uiModeHintShown: seen,
+    })
+    return seen
+  }
+
+  async markUiModeHintSeen(userId: string): Promise<void> {
+    const userRepo = AppDataSource.getRepository(User)
+    await this.ensureUser(userId)
+    await userRepo.update({ id: userId }, { uiModeHintShown: true })
+    await this.cacheManager.updateUserSettings(userId, {
+      uiModeHintShown: true,
     })
   }
 
@@ -2457,6 +2526,8 @@ export class DatabaseStorage {
       this.cacheManager.setUserSettings(userId, {
         defaultCurrency: user?.defaultCurrency || "USD",
         language: lang,
+        uiMode: user?.uiMode || "basic",
+        uiModeHintShown: !!user?.uiModeHintShown,
         timezone: user?.reminderSettings?.timezone,
       }),
     ])

@@ -1,12 +1,14 @@
 import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { registerCommands } from "../../commands"
 import { dbStorage } from "../../database/storage-db"
+import { registerCallbackRouter } from "../../handlers/callback-router"
 import {
   handleCustomMessagesMenu,
   handleUploadStatement,
 } from "../../handlers/message/settings-submenu.handlers"
 import { handleVoiceMessage } from "../../handlers/voice-handler"
 import { t } from "../../i18n"
+import { sendPremiumRequiredMessage } from "../../monetization/premium-gate"
 import { WizardManager } from "../../wizards/wizards"
 import { MockRouterBot } from "../helpers/mock-bot"
 
@@ -28,6 +30,16 @@ jest.mock("../../database/storage-db", () => ({
       transactions: [],
       total: 0,
       hasMore: false,
+    }),
+    getSubscriptionStatus: jest.fn().mockResolvedValue({
+      tier: "free",
+      premiumExpiresAt: null,
+      trialStartedAt: null,
+      trialExpiresAt: null,
+      trialUsed: false,
+      subscriptionPaused: false,
+      pausedRemainingMs: 0,
+      pausedTier: null,
     }),
   },
 }))
@@ -126,5 +138,44 @@ describe("E2E premium gating", () => {
       expect.stringContaining(expectedFeature),
       expect.any(Object)
     )
+  })
+
+  test("opens subscription view from premium-gate inline button", async () => {
+    const bot = new MockRouterBot() as unknown as BotClient
+    const wizard = new WizardManager(bot)
+    registerCallbackRouter(bot, wizard)
+
+    await sendPremiumRequiredMessage(
+      bot,
+      5005,
+      "en",
+      t("en", "commands.monetization.featureVoice")
+    )
+
+    const firstCall = (bot.sendMessage as jest.Mock).mock.calls[0]
+    const firstKeyboard = firstCall?.[2]?.reply_markup?.inline_keyboard as
+      | Array<Array<{ callback_data?: string }>>
+      | undefined
+    const firstCallbackData = firstKeyboard?.flat().map((b) => b.callback_data)
+    expect(firstCallbackData).toContain("sub_open")
+
+    await (bot as any).handlers.callback_query({
+      id: "cb-open-sub",
+      data: "sub_open",
+      message: {
+        message_id: 10,
+        chat: { id: 5005 },
+      },
+    })
+
+    const lastCall = (bot.sendMessage as jest.Mock).mock.calls.at(-1)
+    const lastText = lastCall?.[1] as string
+    const lastKeyboard = lastCall?.[2]?.reply_markup?.inline_keyboard as
+      | Array<Array<{ callback_data?: string }>>
+      | undefined
+    const lastCallbackData = lastKeyboard?.flat().map((b) => b.callback_data)
+
+    expect(lastText).toContain(t("en", "settings.subscriptionTitle"))
+    expect(lastCallbackData).toContain("sub_refresh")
   })
 })

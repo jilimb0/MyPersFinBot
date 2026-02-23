@@ -381,7 +381,7 @@ export async function handleTxAccount(
       })
     )
     wizard.clearState(userId)
-    await showMainMenu(wizard.getBot(), chatId, lang)
+    await showMainMenu(wizard.getBot(), chatId, lang, userId)
 
     return true
   }

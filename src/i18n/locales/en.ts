@@ -285,6 +285,16 @@ export const en = {
     incomeSources: "💵 Income Sources",
     automation: "🤖 Automation",
     advanced: "🛠️ Advanced",
+    uiModeBasic: "✨ Basic mode",
+    uiModePro: "🚀 Pro mode",
+    uiModeChangedBasic:
+      "Switched to *Basic mode*. Settings are now simplified.",
+    uiModeChangedPro:
+      "Switched to *Pro mode*. Extended settings are now visible.",
+    switchToProHint:
+      "This section is available in *Pro mode*. Tap *🔵 Pro mode* in Settings.",
+    uiModeOnboardingHint:
+      "*Basic mode* keeps only the essentials on screen.\nNeed full control? Tap *🔵 Pro mode* in Settings.",
     help: "❓ Help & Info",
     helpInfo: "❓ Help & Info",
     clearData: "🗑️ Clear All Data",
@@ -579,6 +589,7 @@ export const en = {
       chartMonthsRange: "Months should be between 1 and 24",
       chartGenerating: "📈 Generating chart...",
       chartFailed: "Failed to generate chart",
+      openSubscriptionButton: "Manage subscription",
       buyMonthButton: "Buy month",
       buyYearButton: "Buy year",
       buyLifetimeButton: "Buy lifetime",

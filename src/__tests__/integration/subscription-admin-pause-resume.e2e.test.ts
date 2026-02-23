@@ -1,7 +1,7 @@
 describe("E2E admin API subscription pause/resume", () => {
   const port = 3117
   const host = "127.0.0.1"
-  const token = "e2e-admin-token"
+  const adminUserId = "387147568"
   const baseUrl = `http://${host}:${port}`
 
   let startHealthServer: () => unknown
@@ -17,7 +17,7 @@ describe("E2E admin API subscription pause/resume", () => {
     process.env.USE_REDIS = "false"
     process.env.HEALTH_HOST = host
     process.env.HEALTH_PORT = String(port)
-    process.env.ADMIN_API_TOKEN = token
+    process.env.ALLOWED_USERS = adminUserId
 
     const cacheModule = await import("../../cache")
     initializeCache = cacheModule.initializeCache
@@ -43,12 +43,25 @@ describe("E2E admin API subscription pause/resume", () => {
     await closeCache()
   })
 
+  let adminCookie = ""
+
+  async function authorizeAdmin(): Promise<void> {
+    const login = await fetch(`${baseUrl}/admin/auth/test-login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userId: adminUserId }),
+    })
+    expect(login.ok).toBe(true)
+    const setCookie = login.headers.get("set-cookie")
+    if (setCookie) adminCookie = setCookie.split(";")[0] || ""
+  }
+
   async function post(path: string, body: Record<string, unknown>) {
     const response = await fetch(`${baseUrl}${path}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-admin-token": token,
+        ...(adminCookie ? { Cookie: adminCookie } : {}),
       },
       body: JSON.stringify(body),
     })
@@ -57,6 +70,7 @@ describe("E2E admin API subscription pause/resume", () => {
   }
 
   test("payment -> pause -> payment carries remaining time", async () => {
+    await authorizeAdmin()
     const userId = `e2e-user-${Date.now()}`
 
     const first = await post("/admin/payment", {
@@ -105,7 +119,11 @@ describe("E2E admin API subscription pause/resume", () => {
     const fiftyDaysMs = 50 * 24 * 60 * 60 * 1000
     expect(expiresAtMs - now).toBeGreaterThan(fiftyDaysMs)
 
-    const monetization = await fetch(`${baseUrl}/admin/monetization?token=${token}`)
+    const monetization = await fetch(`${baseUrl}/admin/monetization`, {
+      headers: {
+        ...(adminCookie ? { Cookie: adminCookie } : {}),
+      },
+    })
     expect(monetization.ok).toBe(true)
     const report = (await monetization.json()) as {
       users: Array<{

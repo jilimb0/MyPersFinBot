@@ -15,16 +15,23 @@ import {
 
 describe("keyboards", () => {
   describe("getMainMenuKeyboard", () => {
-    it("should generate main menu keyboard for English", () => {
+    it("should generate compact main menu keyboard for English in basic mode", () => {
       const result = getMainMenuKeyboard("en")
       expect(result.reply_markup).toBeDefined()
       const keyboard = result.reply_markup as Tg.ReplyKeyboardMarkup
-      expect(keyboard.keyboard).toHaveLength(4)
+      expect(keyboard.keyboard).toHaveLength(3)
       expect(keyboard.resize_keyboard).toBe(true)
     })
 
-    it("should generate main menu keyboard for Russian", () => {
+    it("should generate compact main menu keyboard for Russian in basic mode", () => {
       const result = getMainMenuKeyboard("ru")
+      expect(result.reply_markup).toBeDefined()
+      const keyboard = result.reply_markup as Tg.ReplyKeyboardMarkup
+      expect(keyboard.keyboard).toHaveLength(3)
+    })
+
+    it("should generate full main menu keyboard in pro mode", () => {
+      const result = getMainMenuKeyboard("en", "pro")
       expect(result.reply_markup).toBeDefined()
       const keyboard = result.reply_markup as Tg.ReplyKeyboardMarkup
       expect(keyboard.keyboard).toHaveLength(4)

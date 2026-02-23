@@ -45,24 +45,16 @@ Admin IDs are controlled by `ADMIN_USERS` env var.
 
 ## Admin HTTP API
 
-Protected by `x-admin-token: <ADMIN_API_TOKEN>` header (or `?token=` query for quick checks).
+Protected by Telegram admin authentication (one-time code sent to Telegram, then session cookie).
 
 - `GET /admin/monetization` - aggregated stats + recent user subscription records
-- `GET /admin/ui` - lightweight admin page (append `?token=...`)
+- `GET /admin/ui` - lightweight admin page
 - `POST /admin/subscription` - set user tier
 - `POST /admin/payment` - record payment + grant premium
 
 Examples:
 
-```bash
-curl -H "x-admin-token: $ADMIN_API_TOKEN" \
-  http://127.0.0.1:3005/admin/monetization
-
-curl -X POST -H "Content-Type: application/json" \
-  -H "x-admin-token: $ADMIN_API_TOKEN" \
-  -d '{"userId":"123","tier":"premium","days":30}' \
-  http://127.0.0.1:3005/admin/subscription
-```
+Use the admin web UI (`/admin/ui`) to authenticate and manage subscriptions/payments.
 
 ## Data Model
 

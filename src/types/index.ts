@@ -169,6 +169,8 @@ export interface UserData {
   defaultCurrency: Currency
   budgets: Budget[]
   templates: TransactionTemplate[]
+  uiMode?: "basic" | "pro"
+  uiModeHintShown?: boolean
 }
 
 export interface DatabaseSchema {

@@ -287,6 +287,16 @@ export const pl = {
     incomeSources: "💵 Źródła przychodu",
     automation: "🤖 Automatyzacja",
     advanced: "🛠️ Zaawansowane",
+    uiModeBasic: "✨ Tryb podstawowy",
+    uiModePro: "🚀 Tryb Pro",
+    uiModeChangedBasic:
+      "Włączono *tryb podstawowy*. Ustawienia są teraz uproszczone.",
+    uiModeChangedPro:
+      "Włączono *tryb Pro*. Rozszerzone ustawienia są teraz dostępne.",
+    switchToProHint:
+      "Ta sekcja jest dostępna w *trybie Pro*. Kliknij *🔵 Tryb Pro* w Ustawieniach.",
+    uiModeOnboardingHint:
+      "*Tryb podstawowy* pokazuje tylko najważniejsze rzeczy.\nPotrzebujesz pełnej kontroli? Kliknij *🔵 Tryb Pro* w Ustawieniach.",
     help: "❓ Pomoc i info",
     helpInfo: "❓ Pomoc i info",
     clearData: "🗑️ Wyczyść wszystkie dane",
@@ -867,6 +877,7 @@ export const pl = {
       chartMonthsRange: "Liczba miesięcy musi być od 1 do 24",
       chartGenerating: "📈 Generowanie wykresu...",
       chartFailed: "Nie udało się wygenerować wykresu",
+      openSubscriptionButton: "Zarządzaj subskrypcją",
       buyMonthButton: "Kup miesiąc",
       buyYearButton: "Kup rok",
       buyLifetimeButton: "Kup lifetime",

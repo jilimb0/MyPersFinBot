@@ -45,6 +45,8 @@ import {
   handleNotificationsMenu,
   handleRecurringMenu,
   handleSubscriptionMenu,
+  handleUiModeBasic,
+  handleUiModePro,
   handleUploadStatement,
 } from "./settings-submenu.handlers"
 import { handleStart, handleStartTracking } from "./start.handlers"
@@ -282,6 +284,18 @@ function registerAllRoutes(router: MessageRouter): void {
     (text, lang) => text === t(lang, "settings.subscription"),
     handleSubscriptionMenu,
     "Settings: Subscription"
+  )
+
+  router.register(
+    (text, lang) => text === t(lang, "settings.uiModeBasic"),
+    handleUiModeBasic,
+    "Settings: UI mode basic"
+  )
+
+  router.register(
+    (text, lang) => text === t(lang, "settings.uiModePro"),
+    handleUiModePro,
+    "Settings: UI mode pro"
   )
 
   // Clear data (confirmation)

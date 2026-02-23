@@ -67,8 +67,13 @@ export async function handleLanguageSelection(
   const confirmMsg = t(selectedLang, "settings.languageChanged", {
     language: t(selectedLang, `languages.${selectedLang}`),
   })
+  const uiMode = await db.getUserUiMode(userId)
 
-  await bot.sendMessage(chatId, confirmMsg, getMainMenuKeyboard(selectedLang))
+  await bot.sendMessage(
+    chatId,
+    confirmMsg,
+    getMainMenuKeyboard(selectedLang, uiMode)
+  )
 
   return true
 }

@@ -287,6 +287,16 @@ export const uk = {
     incomeSources: "💵 Джерела доходу",
     automation: "🤖 Автоматизація",
     advanced: "🛠️ Додатково",
+    uiModeBasic: "✨ Базовий режим",
+    uiModePro: "🚀 Pro режим",
+    uiModeChangedBasic:
+      "Увімкнено *базовий режим*. Налаштування тепер спрощені.",
+    uiModeChangedPro:
+      "Увімкнено *Pro режим*. Розширені налаштування тепер доступні.",
+    switchToProHint:
+      "Цей розділ доступний у *Pro режимі*. Натисніть *🔵 Pro режим* у налаштуваннях.",
+    uiModeOnboardingHint:
+      "*Базовий режим* залишає на екрані лише головне.\nПотрібен повний контроль? Натисніть *🔵 Pro режим* у налаштуваннях.",
     help: "❓ Допомога та інфо",
     helpInfo: "❓ Допомога та інфо",
     clearData: "🗑️ Очистити всі дані",
@@ -582,6 +592,7 @@ export const uk = {
       chartMonthsRange: "Кількість місяців має бути від 1 до 24",
       chartGenerating: "📈 Генерую графік...",
       chartFailed: "Не вдалося згенерувати графік",
+      openSubscriptionButton: "Керувати підпискою",
       buyMonthButton: "Купити місяць",
       buyYearButton: "Купити рік",
       buyLifetimeButton: "Купити lifetime",

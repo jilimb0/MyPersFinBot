@@ -95,7 +95,12 @@ const ConfigSchema = z.object({
   HEALTH_TLS_CERT_PATH: z.string().optional(),
   HEALTH_BASIC_AUTH_USER: z.string().optional(),
   HEALTH_BASIC_AUTH_PASS: z.string().optional(),
-  ADMIN_API_TOKEN: z.string().optional(),
+  ADMIN_AUDIT_RETENTION_DAYS: z.coerce.number().min(1).max(3650).default(30),
+  ADMIN_AUDIT_PRUNE_INTERVAL_HOURS: z.coerce
+    .number()
+    .min(1)
+    .max(24 * 30)
+    .default(24),
 
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),

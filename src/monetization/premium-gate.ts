@@ -23,6 +23,26 @@ export async function sendPremiumRequiredMessage(
     `${t(lang, "commands.monetization.featureLocked", { feature })}\n\n${premiumPitch(lang)}`,
     {
       parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: t(lang, "commands.monetization.openSubscriptionButton"),
+              callback_data: "sub_open",
+            },
+          ],
+          [
+            {
+              text: t(lang, "commands.monetization.buyMonthButton"),
+              callback_data: "sub_buy_month",
+            },
+            {
+              text: t(lang, "commands.monetization.buyYearButton"),
+              callback_data: "sub_buy_year",
+            },
+          ],
+        ],
+      },
     }
   )
 }

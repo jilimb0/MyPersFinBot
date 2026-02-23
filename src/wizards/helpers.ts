@@ -1291,6 +1291,6 @@ export async function resendCurrentStepPrompt(
 
     default:
       wizard.clearState(userId)
-      await showMainMenu(wizard.getBot(), chatId, lang)
+      await showMainMenu(wizard.getBot(), chatId, lang, userId)
   }
 }

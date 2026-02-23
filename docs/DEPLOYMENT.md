@@ -560,8 +560,8 @@ curl http://localhost:3005/readyz
 curl http://localhost:3005/metrics
 curl http://localhost:3005/metrics/prometheus
 
-# Admin monetization API (requires ADMIN_API_TOKEN)
-curl -H "x-admin-token: $ADMIN_API_TOKEN" http://localhost:3005/admin/monetization
+# Admin monetization UI (Telegram auth)
+open http://localhost:3005/admin/ui
 ```
 
 ### HTTPS + Reverse Proxy for Health
@@ -609,7 +609,8 @@ Recommended production values:
 
 - `HEALTH_HOST=127.0.0.1`
 - `HEALTH_PORT=3005`
-- `ADMIN_API_TOKEN=<strong-random-token>`
+- `ADMIN_AUDIT_RETENTION_DAYS=30`
+- `ADMIN_AUDIT_PRUNE_INTERVAL_HOURS=24`
 - Use nginx TLS + basic auth as the external boundary.
 
 ### PM2 Monitoring

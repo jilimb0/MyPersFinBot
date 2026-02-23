@@ -103,6 +103,10 @@ async function ensureUserMonetizationColumns(): Promise<void> {
 
   const statements: Array<{ name: string; sql: string }> = [
     {
+      name: "telegramUsername",
+      sql: "ALTER TABLE users ADD COLUMN telegramUsername TEXT NULL;",
+    },
+    {
       name: "subscriptionTier",
       sql: "ALTER TABLE users ADD COLUMN subscriptionTier TEXT NOT NULL DEFAULT 'free';",
     },
@@ -161,6 +165,14 @@ async function ensureUserMonetizationColumns(): Promise<void> {
     {
       name: "pausedTier",
       sql: "ALTER TABLE users ADD COLUMN pausedTier TEXT NULL;",
+    },
+    {
+      name: "uiMode",
+      sql: "ALTER TABLE users ADD COLUMN uiMode TEXT NOT NULL DEFAULT 'basic';",
+    },
+    {
+      name: "uiModeHintShown",
+      sql: "ALTER TABLE users ADD COLUMN uiModeHintShown INTEGER NOT NULL DEFAULT 0;",
     },
   ]
 
