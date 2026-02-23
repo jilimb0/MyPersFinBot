@@ -36,9 +36,14 @@ export function getMainMenuKeyboard(lang: Language): Tg.SendMessageOptions {
 export function getSettingsKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
   return {
     keyboard: [
-      [{ text: t(lang, "settings.language") }],
-      [{ text: t(lang, "settings.changeCurrency") }],
-      [{ text: t(lang, "settings.incomeSources") }],
+      [
+        { text: t(lang, "settings.language") },
+        { text: t(lang, "settings.changeCurrency") },
+      ],
+      [
+        { text: t(lang, "settings.subscription") },
+        { text: t(lang, "settings.incomeSources") },
+      ],
       [
         { text: t(lang, "settings.automation") },
         { text: t(lang, "settings.advanced") },

@@ -6,10 +6,12 @@ import * as handlers from "../../handlers"
 import { resolveLanguage, t } from "../../i18n"
 import { getSettingsKeyboard } from "../../i18n/keyboards"
 import * as menus from "../../menus-i18n"
+import { sendPremiumRequiredMessage } from "../../monetization/premium-gate"
 import { cancelRecurringTransaction, cancelReminder } from "../../queue"
 import { userContext } from "../../services/user-context"
 import type { Currency } from "../../types"
 import { showLanguageMenu } from "../language-handler"
+import { buildSubscriptionView } from "../subscription-view"
 import type { MessageHandler } from "./types"
 
 /**
@@ -81,6 +83,21 @@ export const handleIncomeSourcesMenu: MessageHandler = async (context) => {
   })
 
   await menus.showIncomeSourcesMenu(bot, chatId, userId, lang)
+  return true
+}
+
+export const handleSubscriptionMenu: MessageHandler = async (context) => {
+  const { bot, chatId, userId, lang, db } = context
+  const status = await db.getSubscriptionStatus(userId)
+  const view = buildSubscriptionView(lang, status)
+
+  await bot.sendMessage(chatId, view.text, {
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: view.keyboard,
+    },
+  })
+
   return true
 }
 
@@ -182,7 +199,17 @@ export const handleNotificationsMenu: MessageHandler = async (context) => {
  * Handle Recurring Payments menu
  */
 export const handleRecurringMenu: MessageHandler = async (context) => {
-  const { chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const premiumEnabled = await db.canUsePremiumFeature(userId)
+  if (!premiumEnabled) {
+    await sendPremiumRequiredMessage(
+      bot,
+      chatId,
+      lang,
+      t(lang, "commands.monetization.featureRecurring")
+    )
+    return true
+  }
   await handlers.handleRecurringMenu(wizardManager, chatId, userId, lang)
   return true
 }
@@ -191,7 +218,17 @@ export const handleRecurringMenu: MessageHandler = async (context) => {
  * Handle Custom Messages menu
  */
 export const handleCustomMessagesMenu: MessageHandler = async (context) => {
-  const { chatId, userId, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const premiumEnabled = await db.canUsePremiumFeature(userId)
+  if (!premiumEnabled) {
+    await sendPremiumRequiredMessage(
+      bot,
+      chatId,
+      lang,
+      t(lang, "commands.monetization.featureCustomMessages")
+    )
+    return true
+  }
   await handlers.handleCustomMessagesMenu(wizardManager, chatId, userId)
   return true
 }
@@ -200,7 +237,17 @@ export const handleCustomMessagesMenu: MessageHandler = async (context) => {
  * Handle Upload Statement
  */
 export const handleUploadStatement: MessageHandler = async (context) => {
-  const { bot, chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const premiumEnabled = await db.canUsePremiumFeature(userId)
+  if (!premiumEnabled) {
+    await sendPremiumRequiredMessage(
+      bot,
+      chatId,
+      lang,
+      t(lang, "commands.monetization.featureStatementImport")
+    )
+    return true
+  }
 
   wizardManager.setState(userId, {
     step: "UPLOAD_STATEMENT",

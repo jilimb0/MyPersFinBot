@@ -20,6 +20,37 @@ jest.mock("../../database/storage-db", () => ({
       total: 0,
       hasMore: false,
     }),
+    canUsePremiumFeature: jest.fn().mockResolvedValue(true),
+    getSubscriptionStatus: jest.fn().mockResolvedValue({
+      tier: "free",
+      premiumExpiresAt: null,
+      trialStartedAt: null,
+      trialExpiresAt: null,
+      trialUsed: false,
+      subscriptionPaused: false,
+      pausedRemainingMs: 0,
+      pausedTier: null,
+    }),
+    startTrial: jest.fn().mockResolvedValue({
+      tier: "trial",
+      premiumExpiresAt: null,
+      trialStartedAt: new Date(),
+      trialExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      trialUsed: true,
+      subscriptionPaused: false,
+      pausedRemainingMs: 0,
+      pausedTier: null,
+    }),
+    getMonetizationStats: jest.fn().mockResolvedValue({
+      totalUsers: 10,
+      freeUsers: 8,
+      trialUsers: 1,
+      premiumUsers: 1,
+      activePremiumUsers: 1,
+      transactionsThisMonthTotal: 120,
+    }),
+    setSubscriptionTier: jest.fn(),
+    recordPayment: jest.fn(),
   },
 }))
 jest.mock("../../services/chart-service", () => ({
@@ -54,6 +85,7 @@ jest.mock("../../utils", () => ({
 
 jest.mock("../../i18n", () => ({
   t: jest.fn((_lang, key) => key),
+  getLocale: jest.fn(() => "en-US"),
   getExpenseCategoryByLabel: jest.fn((input) =>
     input === "Food" ? "FOOD_DINING" : "OTHER_EXPENSE"
   ),
@@ -493,6 +525,35 @@ describe("Commands Coverage", () => {
     })
   })
 
+  describe("/premium and /trial commands", () => {
+    test("shows premium status", async () => {
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").startsWith("^\\/premium")
+      )?.[1]
+      await handler({ chat: { id: 123 } }, ["/premium", ""])
+      expect(mockBot.sendMessage).toHaveBeenCalledWith(
+        123,
+        expect.stringContaining("commands.monetization.planFree"),
+        expect.any(Object)
+      )
+    })
+
+    test("asks trial confirmation", async () => {
+      const handler = mockBot.on.mock.calls.find((call: any) =>
+        (call[1].__pattern?.source || "").startsWith("^\\/trial")
+      )?.[1]
+      await handler({ chat: { id: 123 } }, ["/trial", ""])
+      expect(mockDbStorage.startTrial).not.toHaveBeenCalled()
+      expect(mockBot.sendMessage).toHaveBeenCalledWith(
+        123,
+        expect.stringContaining("commands.monetization.trialConfirmPrompt"),
+        expect.objectContaining({
+          reply_markup: expect.any(Object),
+        })
+      )
+    })
+  })
+
   describe("/chart command", () => {
     test("shows usage for invalid chart type", async () => {
       const handler = mockBot.on.mock.calls.find((call: any) =>
@@ -503,7 +564,7 @@ describe("Commands Coverage", () => {
 
       expect(mockBot.sendMessage).toHaveBeenCalledWith(
         123,
-        expect.stringContaining("Usage: /chart")
+        expect.stringContaining("commands.monetization.chartUsage")
       )
     })
 
@@ -516,7 +577,7 @@ describe("Commands Coverage", () => {
 
       expect(mockBot.sendMessage).toHaveBeenCalledWith(
         123,
-        expect.stringContaining("Months should be between")
+        expect.stringContaining("commands.monetization.chartMonthsRange")
       )
     })
 

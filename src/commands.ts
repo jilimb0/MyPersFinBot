@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
+import { config } from "./config"
 import { dbStorage as db } from "./database/storage-db"
 import {
   clearPersistedCache,
@@ -12,11 +13,18 @@ import {
   getCategoryLabel,
   getExpenseCategoryByLabel,
   getIncomeCategoryByLabel,
+  getLocale,
   type Language,
   t,
 } from "./i18n"
 import { queryMonitor } from "./monitoring"
 import { tgObservability } from "./observability/tgwrapper-observability"
+import {
+  handleSuccessfulPayment,
+  sendStarsInvoice,
+  type PremiumPlan,
+} from "./services/billing-service"
+import { sendPremiumRequiredMessage } from "./monetization/premium-gate"
 import { type ChartType, generateChartImage } from "./services/chart-service"
 import { ExpenseCategory, IncomeCategory, TransactionType } from "./types"
 import {
@@ -74,10 +82,77 @@ async function resolveUserLanguage(userId: string): Promise<Language> {
   }
 }
 
+function getAdminIds(): string[] {
+  return (process.env.ADMIN_USERS || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean)
+}
+
+function isAdmin(userId: string): boolean {
+  return getAdminIds().includes(userId)
+}
+
+function premiumPitch(lang: Language): string {
+  const monthly = (config.PREMIUM_MONTHLY_PRICE_CENTS / 100).toFixed(2)
+  const yearly = (config.PREMIUM_YEARLY_PRICE_CENTS / 100).toFixed(2)
+  return t(lang, "commands.monetization.pitch", {
+    monthly,
+    yearly,
+    trialDays: config.TRIAL_DAYS,
+  })
+}
+
+function formatDateTime(lang: Language, value: Date | null | undefined): string {
+  if (!value) return "-"
+  return value.toLocaleString(getLocale(lang), {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+function parseBuyPlan(input: string): PremiumPlan | null {
+  if (input === "month" || input === "monthly") return "monthly"
+  if (input === "year" || input === "yearly") return "yearly"
+  if (input === "lifetime") return "lifetime"
+  return null
+}
+
 function txSign(type: TransactionType): string {
   if (type === TransactionType.INCOME) return "+"
   if (type === TransactionType.EXPENSE) return "-"
   return "↔"
+}
+
+function premiumLimitMessage(
+  lang: Language,
+  kind: "transaction" | "voice"
+): string {
+  const limitText =
+    kind === "voice"
+      ? t(lang, "commands.monetization.limitVoice", {
+          limit: config.FREE_VOICE_INPUTS_PER_DAY,
+        })
+      : t(lang, "commands.monetization.limitTransaction", {
+          limit: config.FREE_TRANSACTIONS_PER_MONTH,
+        })
+  return `${limitText}\n\n${premiumPitch(lang)}`
+}
+
+async function ensurePremiumForCommand(
+  bot: BotClient,
+  userId: string,
+  chatId: number,
+  lang: Language,
+  feature: string
+): Promise<boolean> {
+  const premiumEnabled = await db.canUsePremiumFeature(userId)
+  if (premiumEnabled) return true
+  await sendPremiumRequiredMessage(bot, chatId, lang, feature)
+  return false
 }
 
 function onTextMatch(
@@ -113,10 +188,160 @@ function onTextMatch(
 }
 
 export function registerCommands(bot: BotClient) {
+  bot.on("pre_checkout_query", async (query) => {
+    const parsed = query.invoice_payload.startsWith("premium:")
+    if (!parsed) {
+      await bot.answerPreCheckoutQuery({
+        pre_checkout_query_id: query.id,
+        ok: false,
+        error_message: "Unsupported payment payload",
+      })
+      return
+    }
+    await bot.answerPreCheckoutQuery({
+      pre_checkout_query_id: query.id,
+      ok: true,
+    })
+  })
+
+  bot.on("message", async (msg) => {
+    const processed = await handleSuccessfulPayment(msg)
+    if (!processed) return
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
+    await bot.sendMessage(
+      chatId,
+      t(lang, "commands.monetization.paymentSuccess")
+    )
+  })
+
+  onTextMatch(bot, /^\/premium(?:@\w+)?$/, async (msg) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
+    const status = await db.getSubscriptionStatus(userId)
+
+    let statusText = t(lang, "commands.monetization.planFree")
+    if (status.tier === "trial") {
+      statusText =
+        `${t(lang, "commands.monetization.planTrial")}\n` +
+        `${t(lang, "commands.monetization.expires")}: ${formatDateTime(lang, status.trialExpiresAt)}`
+    }
+    if (status.tier === "premium") {
+      statusText =
+        `${t(lang, "commands.monetization.planPremium")}\n` +
+        `${t(lang, "commands.monetization.expires")}: ${formatDateTime(lang, status.premiumExpiresAt)}`
+    }
+
+    await bot.sendMessage(
+      chatId,
+      `${statusText}\n\n${premiumPitch(lang)}\n\n` +
+        `${t(lang, "commands.monetization.buyNow")}:\n` +
+        "/buy month\n" +
+        "/buy year\n" +
+        "/buy lifetime",
+      {
+        parse_mode: "Markdown",
+      }
+    )
+  })
+
+  onTextMatch(bot, /^\/buy(?:@\w+)?(?:\s+(.+))?$/i, async (msg, match) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
+    if (!config.ENABLE_TELEGRAM_STARS) {
+      await bot.sendMessage(chatId, t(lang, "commands.monetization.paymentsDisabled"))
+      return
+    }
+
+    const plan = parseBuyPlan((match?.[1] || "").trim().toLowerCase())
+    if (!plan) {
+      await bot.sendMessage(chatId, t(lang, "commands.monetization.buyUsage"))
+      return
+    }
+
+    try {
+      await sendStarsInvoice(bot, chatId, userId, plan)
+    } catch (error) {
+      await bot.sendMessage(
+        chatId,
+        `${t(lang, "commands.monetization.invoiceFailed")}: ${error instanceof Error ? error.message : "unknown error"}`
+      )
+    }
+  })
+
+  onTextMatch(bot, /^\/trial(?:@\w+)?$/, async (msg) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    const lang = await resolveUserLanguage(userId)
+    const status = await db.getSubscriptionStatus(userId)
+
+    if (status.tier === "trial" && status.trialExpiresAt) {
+      await bot.sendMessage(
+        chatId,
+        t(lang, "commands.monetization.trialAlreadyActive", {
+          date: formatDateTime(lang, status.trialExpiresAt),
+        })
+      )
+      return
+    }
+
+    if (status.tier === "premium" && status.premiumExpiresAt) {
+      await bot.sendMessage(
+        chatId,
+        t(lang, "commands.monetization.premiumAlreadyActive", {
+          date: formatDateTime(lang, status.premiumExpiresAt),
+        })
+      )
+      return
+    }
+
+    if (status.trialUsed) {
+      await bot.sendMessage(chatId, t(lang, "commands.monetization.trialAlreadyUsed"))
+      return
+    }
+
+    await bot.sendMessage(
+      chatId,
+      t(lang, "commands.monetization.trialConfirmPrompt", {
+        trialDays: config.TRIAL_DAYS,
+      }),
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: t(lang, "commands.monetization.trialConfirmButton"),
+                callback_data: "trial_confirm",
+              },
+              {
+                text: t(lang, "commands.monetization.trialCancelButton"),
+                callback_data: "trial_cancel",
+              },
+            ],
+          ],
+        },
+      }
+    )
+  })
+
   onTextMatch(bot, /^\/balance(?:@\w+)?$/, async (msg) => {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
+    if (
+      !(await ensurePremiumForCommand(
+        bot,
+        userId,
+        chatId,
+        lang,
+        t(lang, "commands.monetization.featureCommandMode")
+      ))
+    ) {
+      return
+    }
 
     const balancesText = await db.getBalances(userId)
     await bot.sendMessage(
@@ -132,6 +357,17 @@ export function registerCommands(bot: BotClient) {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
+    if (
+      !(await ensurePremiumForCommand(
+        bot,
+        userId,
+        chatId,
+        lang,
+        t(lang, "commands.monetization.featureTemplates")
+      ))
+    ) {
+      return
+    }
 
     const templates = await db.getTemplates(userId)
 
@@ -172,6 +408,17 @@ export function registerCommands(bot: BotClient) {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
+    if (
+      !(await ensurePremiumForCommand(
+        bot,
+        userId,
+        chatId,
+        lang,
+        t(lang, "commands.monetization.featureCommandMode")
+      ))
+    ) {
+      return
+    }
     if (!match || !match[1]) return
 
     const parsed = parseAmountAndCategory(match[1])
@@ -197,15 +444,26 @@ export function registerCommands(bot: BotClient) {
       (await db.getSmartBalanceSelection(userId, category)) ||
       balances[0]?.accountId
 
-    const txId = await db.addTransaction(userId, {
-      id: randomUUID(),
-      date: new Date(),
-      amount,
-      currency,
-      type: TransactionType.EXPENSE,
-      category,
-      fromAccountId: smartAccount,
-    })
+    let txId: string
+    try {
+      txId = await db.addTransaction(userId, {
+        id: randomUUID(),
+        date: new Date(),
+        amount,
+        currency,
+        type: TransactionType.EXPENSE,
+        category,
+        fromAccountId: smartAccount,
+      })
+    } catch (error) {
+      if ((error as { code?: string }).code === "SUBSCRIPTION_LIMIT_EXCEEDED") {
+        await bot.sendMessage(chatId, premiumLimitMessage(lang, "transaction"), {
+          parse_mode: "Markdown",
+        })
+        return
+      }
+      throw error
+    }
 
     const formatted = formatMoney(amount, currency)
     const text = t(lang, "commands.expense.added", {
@@ -244,6 +502,17 @@ export function registerCommands(bot: BotClient) {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
+    if (
+      !(await ensurePremiumForCommand(
+        bot,
+        userId,
+        chatId,
+        lang,
+        t(lang, "commands.monetization.featureCommandMode")
+      ))
+    ) {
+      return
+    }
     if (!match || !match[1]) return
 
     const parsed = parseAmountAndCategory(match[1])
@@ -269,15 +538,26 @@ export function registerCommands(bot: BotClient) {
       (await db.getSmartBalanceSelection(userId, category)) ||
       balances[0]?.accountId
 
-    const txId = await db.addTransaction(userId, {
-      id: randomUUID(),
-      date: new Date(),
-      amount,
-      currency,
-      type: TransactionType.INCOME,
-      category,
-      toAccountId: smartAccount,
-    })
+    let txId: string
+    try {
+      txId = await db.addTransaction(userId, {
+        id: randomUUID(),
+        date: new Date(),
+        amount,
+        currency,
+        type: TransactionType.INCOME,
+        category,
+        toAccountId: smartAccount,
+      })
+    } catch (error) {
+      if ((error as { code?: string }).code === "SUBSCRIPTION_LIMIT_EXCEEDED") {
+        await bot.sendMessage(chatId, premiumLimitMessage(lang, "transaction"), {
+          parse_mode: "Markdown",
+        })
+        return
+      }
+      throw error
+    }
 
     const formatted = formatMoney(amount, currency)
     const text = t(lang, "commands.income.added", {
@@ -316,6 +596,17 @@ export function registerCommands(bot: BotClient) {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
+    if (
+      !(await ensurePremiumForCommand(
+        bot,
+        userId,
+        chatId,
+        lang,
+        t(lang, "commands.monetization.featureCommandMode")
+      ))
+    ) {
+      return
+    }
     const rawInput = match?.[1]
 
     const parsed = parseSearchCommandInput(rawInput)
@@ -372,6 +663,17 @@ export function registerCommands(bot: BotClient) {
     const chatId = msg.chat.id
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
+    if (
+      !(await ensurePremiumForCommand(
+        bot,
+        userId,
+        chatId,
+        lang,
+        t(lang, "commands.monetization.featureCharts")
+      ))
+    ) {
+      return
+    }
 
     const args = (match?.[1] || "").trim().split(/\s+/).filter(Boolean)
     const typeRaw = (args[0] || "trends").toLowerCase()
@@ -382,17 +684,17 @@ export function registerCommands(bot: BotClient) {
     if (!validTypes.includes(typeRaw as ChartType)) {
       await bot.sendMessage(
         chatId,
-        "Usage: /chart <trends|categories|balance> [months]\nExamples:\n/chart trends 6\n/chart categories 3\n/chart balance 12"
+        t(lang, "commands.monetization.chartUsage")
       )
       return
     }
 
     if (!Number.isFinite(months) || months < 1 || months > 24) {
-      await bot.sendMessage(chatId, "Months should be between 1 and 24")
+      await bot.sendMessage(chatId, t(lang, "commands.monetization.chartMonthsRange"))
       return
     }
 
-    await bot.sendMessage(chatId, "📈 Generating chart...")
+    await bot.sendMessage(chatId, t(lang, "commands.monetization.chartGenerating"))
 
     try {
       const image = await tgObservability.trackAsync(
@@ -419,7 +721,7 @@ export function registerCommands(bot: BotClient) {
     } catch (error) {
       await bot.sendMessage(
         chatId,
-        `Failed to generate chart: ${error instanceof Error ? error.message : "unknown error"}`
+        `${t(lang, "commands.monetization.chartFailed")}: ${error instanceof Error ? error.message : "unknown error"}`
       )
     }
   })
@@ -429,8 +731,7 @@ export function registerCommands(bot: BotClient) {
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
 
-    const ADMIN_IDS = process.env.ADMIN_USERS?.split(",") || []
-    if (!ADMIN_IDS.includes(userId)) {
+    if (!isAdmin(userId)) {
       await bot.sendMessage(chatId, t(lang, "errors.accessDenied"))
       return
     }
@@ -472,8 +773,7 @@ export function registerCommands(bot: BotClient) {
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
 
-    const ADMIN_IDS = process.env.ADMIN_USERS?.split(",") || []
-    if (!ADMIN_IDS.includes(userId)) {
+    if (!isAdmin(userId)) {
       await bot.sendMessage(chatId, t(lang, "errors.accessDenied"))
       return
     }
@@ -567,4 +867,85 @@ export function registerCommands(bot: BotClient) {
       }
     )
   })
+
+  onTextMatch(bot, /^\/admin_stats(?:@\w+)?$/, async (msg) => {
+    const chatId = msg.chat.id
+    const userId = chatId.toString()
+    if (!isAdmin(userId)) {
+      await bot.sendMessage(chatId, "Access denied")
+      return
+    }
+
+    const stats = await db.getMonetizationStats()
+    const obs = tgObservability.getSnapshot()
+    await bot.sendMessage(
+      chatId,
+      `📊 Monetization stats\n\n` +
+        `Users: ${stats.totalUsers}\n` +
+        `Free: ${stats.freeUsers}\n` +
+        `Trial: ${stats.trialUsers}\n` +
+        `Premium: ${stats.premiumUsers}\n` +
+        `Active premium: ${stats.activePremiumUsers}\n` +
+        `Transactions this month: ${stats.transactionsThisMonthTotal}\n\n` +
+        `APM counters: ${Object.keys(obs.counters || {}).length}\n` +
+        `APM timers: ${Object.keys(obs.timers || {}).length}`
+    )
+  })
+
+  onTextMatch(
+    bot,
+    /^\/admin_sub(?:@\w+)?\s+(\S+)\s+(free|trial|premium)(?:\s+(\d+))?$/i,
+    async (msg, match) => {
+      const chatId = msg.chat.id
+      const userId = chatId.toString()
+      if (!isAdmin(userId)) {
+        await bot.sendMessage(chatId, "Access denied")
+        return
+      }
+      if (!match) return
+      const targetUserId = match[1] || ""
+      const tier = (match[2] || "free").toLowerCase() as
+        | "free"
+        | "trial"
+        | "premium"
+      const days = match[3] ? Number.parseInt(match[3], 10) : 30
+
+      const status = await db.setSubscriptionTier(targetUserId, tier, days)
+      await bot.sendMessage(
+        chatId,
+        `✅ Updated ${targetUserId}\nTier: ${status.tier}\nPremium expires: ${status.premiumExpiresAt?.toISOString() || "n/a"}\nTrial expires: ${status.trialExpiresAt?.toISOString() || "n/a"}`
+      )
+    }
+  )
+
+  onTextMatch(
+    bot,
+    /^\/admin_payment(?:@\w+)?\s+(\S+)\s+(\d+)\s+([A-Z]{3})\s+(\S+)\s+(.+)$/i,
+    async (msg, match) => {
+      const chatId = msg.chat.id
+      const userId = chatId.toString()
+      if (!isAdmin(userId)) {
+        await bot.sendMessage(chatId, "Access denied")
+        return
+      }
+      if (!match) return
+      const targetUserId = match[1] || ""
+      const amount = Number.parseInt(match[2] || "0", 10)
+      const currency = (match[3] || "USD").toUpperCase()
+      const provider = match[4] || "manual"
+      const reference = match[5] || "manual_ref"
+
+      const days = Math.max(
+        1,
+        Math.floor((amount / config.PREMIUM_MONTHLY_PRICE_CENTS) * 30)
+      )
+      const status = await db.recordPayment(targetUserId, provider, reference, days)
+      await bot.sendMessage(
+        chatId,
+        `💳 Payment recorded for ${targetUserId}: ${amount} ${currency}\n` +
+          `Premium granted for ${days} days.\n` +
+          `Expires: ${status.premiumExpiresAt?.toISOString() || "n/a"}`
+      )
+    }
+  )
 }

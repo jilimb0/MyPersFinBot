@@ -59,6 +59,7 @@ See `docs/DEV.md`.
 - 🏗️ [**Architecture**](docs/ARCHITECTURE.md)
 - 🚀 [**Deployment**](docs/DEPLOYMENT.md)
 - ✅ [**Testing**](docs/TESTING.md)
+- 💰 [**Monetization**](docs/MONETIZATION.md)
 - 🧪 [**Debugging**](docs/DEBUGGING.md)
 - ⚙️ [**Environment**](docs/ENV.md)
 - 📦 [**Release Checklist**](docs/RELEASE_CHECKLIST.md)
@@ -158,6 +159,8 @@ salary 4000
 | `/export` | Export data to CSV |
 | `/search <text> [options]` | Search and advanced history filters |
 | `/chart <trends|categories|balance> [months]` | Generate chart image and send to Telegram |
+| `/premium` | Show subscription status and premium offer |
+| `/trial` | Start one-time 7-day premium trial |
 
 Examples:
 

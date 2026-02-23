@@ -82,6 +82,8 @@ export async function initializeDatabase() {
         "database"
       )
 
+      await ensureUserMonetizationColumns()
+
       if (config.LOG_BOOT_DETAIL) {
         logger.info("✅ Database initialized successfully (WAL mode enabled)")
       }
@@ -90,6 +92,82 @@ export async function initializeDatabase() {
   } catch (error) {
     logger.error("❌ Error initializing database:", error)
     throw error
+  }
+}
+
+async function ensureUserMonetizationColumns(): Promise<void> {
+  const columns = (await AppDataSource.query(
+    "PRAGMA table_info(users);"
+  )) as Array<{ name: string }>
+  const names = new Set(columns.map((c) => c.name))
+
+  const statements: Array<{ name: string; sql: string }> = [
+    {
+      name: "subscriptionTier",
+      sql: "ALTER TABLE users ADD COLUMN subscriptionTier TEXT NOT NULL DEFAULT 'free';",
+    },
+    {
+      name: "premiumExpiresAt",
+      sql: "ALTER TABLE users ADD COLUMN premiumExpiresAt datetime NULL;",
+    },
+    {
+      name: "trialStartedAt",
+      sql: "ALTER TABLE users ADD COLUMN trialStartedAt datetime NULL;",
+    },
+    {
+      name: "trialExpiresAt",
+      sql: "ALTER TABLE users ADD COLUMN trialExpiresAt datetime NULL;",
+    },
+    {
+      name: "trialUsed",
+      sql: "ALTER TABLE users ADD COLUMN trialUsed INTEGER NOT NULL DEFAULT 0;",
+    },
+    {
+      name: "transactionsThisMonth",
+      sql: "ALTER TABLE users ADD COLUMN transactionsThisMonth INTEGER NOT NULL DEFAULT 0;",
+    },
+    {
+      name: "transactionsMonthKey",
+      sql: "ALTER TABLE users ADD COLUMN transactionsMonthKey TEXT NULL;",
+    },
+    {
+      name: "voiceInputsToday",
+      sql: "ALTER TABLE users ADD COLUMN voiceInputsToday INTEGER NOT NULL DEFAULT 0;",
+    },
+    {
+      name: "voiceDayKey",
+      sql: "ALTER TABLE users ADD COLUMN voiceDayKey TEXT NULL;",
+    },
+    {
+      name: "lastPaymentAt",
+      sql: "ALTER TABLE users ADD COLUMN lastPaymentAt datetime NULL;",
+    },
+    {
+      name: "lastPaymentProvider",
+      sql: "ALTER TABLE users ADD COLUMN lastPaymentProvider TEXT NULL;",
+    },
+    {
+      name: "lastPaymentReference",
+      sql: "ALTER TABLE users ADD COLUMN lastPaymentReference TEXT NULL;",
+    },
+    {
+      name: "subscriptionPaused",
+      sql: "ALTER TABLE users ADD COLUMN subscriptionPaused INTEGER NOT NULL DEFAULT 0;",
+    },
+    {
+      name: "pausedRemainingMs",
+      sql: "ALTER TABLE users ADD COLUMN pausedRemainingMs INTEGER NOT NULL DEFAULT 0;",
+    },
+    {
+      name: "pausedTier",
+      sql: "ALTER TABLE users ADD COLUMN pausedTier TEXT NULL;",
+    },
+  ]
+
+  for (const { name, sql } of statements) {
+    if (!names.has(name)) {
+      await AppDataSource.query(sql)
+    }
   }
 }
 

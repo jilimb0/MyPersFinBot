@@ -6,8 +6,10 @@ import { join } from "node:path"
 import { promisify } from "node:util"
 import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { request } from "undici"
+import { config } from "../config"
 import { dbStorage as db } from "../database/storage-db"
 import { resolveLanguage, t } from "../i18n"
+import { sendPremiumRequiredMessage } from "../monetization/premium-gate"
 import { assemblyAIService } from "../services/assemblyai-service"
 import { nlpParser } from "../services/nlp-parser"
 import { type TransactionCategory, TransactionType } from "../types"
@@ -29,6 +31,19 @@ export async function handleVoiceMessage(
   if (!voice) return
 
   try {
+    const premiumEnabled = await db.canUsePremiumFeature(userId)
+    if (!premiumEnabled) {
+      await sendPremiumRequiredMessage(
+        bot,
+        chatId,
+        lang,
+        t(lang, "commands.monetization.featureVoice")
+      )
+      return
+    }
+    const usage = await db.checkAndConsumeUsage(userId, "voice")
+    if (!usage.allowed) return
+
     await bot.sendMessage(chatId, t(lang, "voiceHandler.processing"))
 
     const fileLink = await bot.getFileLink(voice.file_id)
@@ -234,17 +249,32 @@ export async function handleNLPCallback(
       const defaultAccount = balances[0]?.accountId
       const currency = await db.getDefaultCurrency(userId)
 
-      await db.addTransaction(userId, {
-        id: randomUUID(),
-        date: new Date(),
-        amount,
-        currency,
-        type: type as TransactionType,
-        category: category as TransactionCategory,
-        description,
-        fromAccountId: type === "EXPENSE" ? defaultAccount : undefined,
-        toAccountId: type === "INCOME" ? defaultAccount : undefined,
-      })
+      try {
+        await db.addTransaction(userId, {
+          id: randomUUID(),
+          date: new Date(),
+          amount,
+          currency,
+          type: type as TransactionType,
+          category: category as TransactionCategory,
+          description,
+          fromAccountId: type === "EXPENSE" ? defaultAccount : undefined,
+          toAccountId: type === "INCOME" ? defaultAccount : undefined,
+        })
+      } catch (error) {
+        if ((error as { code?: string }).code === "SUBSCRIPTION_LIMIT_EXCEEDED") {
+          await bot.editMessageText(
+            `🚫 Free limit reached: ${config.FREE_TRANSACTIONS_PER_MONTH} transactions/month.\nUse /trial or /premium to continue.`,
+            {
+              chat_id: chatId,
+              message_id: query.message?.message_id,
+            }
+          )
+          await bot.answerCallbackQuery(query.id)
+          return
+        }
+        throw error
+      }
 
       const emoji = type === "INCOME" ? "💰" : "💸"
       const sign = type === "INCOME" ? "+" : "-"

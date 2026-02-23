@@ -8,6 +8,7 @@ This directory contains project documentation for development, operations, and d
 - `DEV.md` - local development setup
 - `ENV.md` - environment variables
 - `TESTING.md` - test strategy and commands
+- `MONETIZATION.md` - subscriptions, limits, admin billing commands
 - `DEBUGGING.md` - troubleshooting and diagnostics
 
 ## Operations

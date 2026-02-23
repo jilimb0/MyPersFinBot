@@ -15,6 +15,14 @@ export const handleSettingsMenu: MessageHandler = async (context) => {
   const { bot, chatId, userId, lang, wizardManager, db } = context
 
   const currentCurrency = await db.getDefaultCurrency(userId)
+  const subscription = await db.getSubscriptionStatus(userId)
+  const tierLabel = subscription.subscriptionPaused
+    ? t(lang, "commands.monetization.tierPaused")
+    : subscription.tier === "premium"
+      ? t(lang, "commands.monetization.tierPremium")
+      : subscription.tier === "trial"
+        ? t(lang, "commands.monetization.tierTrial")
+        : t(lang, "commands.monetization.tierFree")
   const state = wizardManager.getState(userId)
 
   // Special handling for Goal advanced settings
@@ -120,7 +128,7 @@ export const handleSettingsMenu: MessageHandler = async (context) => {
   // Default settings menu
   await bot.sendMessage(
     chatId,
-    `${t(lang, "settings.title")}\n\n${t(lang, "settings.currentCurrency")} ${currentCurrency}\n\n${t(lang, "settings.manageConfig")}`,
+    `${t(lang, "settings.title")}\n\n${t(lang, "settings.currentCurrency")} ${currentCurrency}\n${t(lang, "settings.subscriptionTierLine", { tier: tierLabel })}\n\n${t(lang, "settings.manageConfig")}`,
     {
       parse_mode: "Markdown",
       reply_markup: getSettingsKeyboard(lang),

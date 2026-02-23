@@ -13,6 +13,7 @@ jest.mock("../../parsers", () => ({
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
+    canUsePremiumFeature: jest.fn(),
     getDefaultCurrency: jest.fn(),
     getBalancesList: jest.fn(),
     validateTransactionsBatch: jest.fn(),
@@ -48,6 +49,7 @@ class MockBot {
 describe("upload-statement-handlers", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    dbStorage.canUsePremiumFeature.mockResolvedValue(true)
     dbStorage.getDefaultCurrency.mockResolvedValue("USD")
     ;(global as any).fetch = jest.fn().mockResolvedValue({
       text: async () => "content",
@@ -82,6 +84,21 @@ describe("upload-statement-handlers", () => {
         1,
         t("en", "import.unsupportedFormat"),
         expect.anything()
+      )
+    })
+
+    test("blocks free tier users", async () => {
+      dbStorage.canUsePremiumFeature.mockResolvedValueOnce(false)
+      const bot = new MockBot() as unknown as BotClient
+      const wizard = new MockWizard({ lang: "en" })
+      const msg = {
+        chat: { id: 1 },
+        document: { file_name: "report.csv", file_id: "1" },
+      } as any
+      await handleStatementUpload(bot, msg, "u1", wizard as any)
+      expect(bot.sendMessage).toHaveBeenCalledWith(
+        1,
+        expect.stringContaining("Premium feature")
       )
     })
 

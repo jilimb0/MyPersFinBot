@@ -25,6 +25,7 @@
     "test:ci": "jest --coverage --coverageReporters=text-summary --coverageReporters=lcov --ci",
     "test:e2e": "jest --config jest.e2e.config.js",
     "test:e2e:critical": "jest --config jest.e2e.config.js src/__tests__/integration/critical-flows.e2e.test.ts src/__tests__/integration/expense-flow.e2e.test.ts src/__tests__/integration/income-flow.e2e.test.ts src/__tests__/integration/voice-flow.e2e.test.ts src/__tests__/integration/analytics-flow.e2e.test.ts",
+    "test:e2e:premium-gating": "jest src/__tests__/integration/premium-gating.e2e.test.ts --runInBand",
     "test:e2e:ci": "mkdir -p artifacts/test-results && CI=true jest --config jest.e2e.config.js --runInBand --json --outputFile artifacts/test-results/e2e-critical.json src/__tests__/integration/critical-flows.e2e.test.ts src/__tests__/integration/expense-flow.e2e.test.ts src/__tests__/integration/income-flow.e2e.test.ts src/__tests__/integration/voice-flow.e2e.test.ts src/__tests__/integration/analytics-flow.e2e.test.ts",
     "test:integration:real-db": "REAL_DB_TEST=1 jest src/__tests__/integration/real-db.sqlite.integration.test.ts --runInBand",
     "test:integration:real-db:ci": "mkdir -p artifacts/test-results && CI_REAL_DB=true jest src/__tests__/integration/real-db.sqlite.integration.test.ts --runInBand --json --outputFile artifacts/test-results/real-db.json",

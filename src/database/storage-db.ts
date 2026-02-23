@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { config } from "../config"
 import { convertSync } from "../fx"
 import { isValidLanguage, type Language, resolveLanguage, t } from "../i18n"
 import { normalizeCategoryValue } from "../i18n/categories"
@@ -33,6 +34,29 @@ import { RecurringTransaction as RecurringTransactionEntity } from "./entities/R
 import { Reminder } from "./entities/Reminder"
 import { Transaction as TransactionEntity } from "./entities/Transaction"
 import { User } from "./entities/User"
+
+export type SubscriptionTier = "free" | "trial" | "premium"
+
+export type SubscriptionStatus = {
+  tier: SubscriptionTier
+  premiumExpiresAt: Date | null
+  trialStartedAt: Date | null
+  trialExpiresAt: Date | null
+  trialUsed: boolean
+  subscriptionPaused: boolean
+  pausedRemainingMs: number
+  pausedTier: "trial" | "premium" | null
+}
+
+type UsageKind = "transaction" | "voice"
+
+type UsageCheckResult = {
+  allowed: boolean
+  reason?: "transaction_limit" | "voice_limit"
+  limit: number
+  used: number
+  remaining: number
+}
 
 export class DatabaseStorage {
   private _cacheManager: ReturnType<typeof getCacheManager> | null = null
@@ -97,6 +121,403 @@ export class DatabaseStorage {
     } catch {
       return "en"
     }
+  }
+
+  private currentMonthKey(date = new Date()): string {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`
+  }
+
+  private currentDayKey(date = new Date()): string {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`
+  }
+
+  private isPremiumActive(user: User, now = new Date()): boolean {
+    if (user.subscriptionTier !== "premium") return false
+    if (!user.premiumExpiresAt) return false
+    return user.premiumExpiresAt.getTime() > now.getTime()
+  }
+
+  private isTrialActive(user: User, now = new Date()): boolean {
+    if (user.subscriptionTier !== "trial") return false
+    if (!user.trialExpiresAt) return false
+    return user.trialExpiresAt.getTime() > now.getTime()
+  }
+
+  private async normalizeSubscriptionState(user: User): Promise<User> {
+    const now = new Date()
+    let dirty = false
+
+    if (
+      user.subscriptionTier === "premium" &&
+      user.premiumExpiresAt &&
+      user.premiumExpiresAt.getTime() <= now.getTime()
+    ) {
+      user.subscriptionTier = "free"
+      user.premiumExpiresAt = null
+      dirty = true
+    }
+
+    if (
+      user.subscriptionTier === "trial" &&
+      user.trialExpiresAt &&
+      user.trialExpiresAt.getTime() <= now.getTime()
+    ) {
+      user.subscriptionTier = "free"
+      dirty = true
+    }
+
+    if (dirty) {
+      user = await AppDataSource.getRepository(User).save(user)
+      await this.clearCache(user.id, "user")
+    }
+
+    return user
+  }
+
+  async getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
+    let user = await this.ensureUser(userId)
+    user = await this.normalizeSubscriptionState(user)
+    return {
+      tier: user.subscriptionTier,
+      premiumExpiresAt: user.premiumExpiresAt ?? null,
+      trialStartedAt: user.trialStartedAt ?? null,
+      trialExpiresAt: user.trialExpiresAt ?? null,
+      trialUsed: !!user.trialUsed,
+      subscriptionPaused: !!user.subscriptionPaused,
+      pausedRemainingMs: Math.max(0, user.pausedRemainingMs || 0),
+      pausedTier: user.pausedTier ?? null,
+    }
+  }
+
+  async startTrial(
+    userId: string,
+    days = config.TRIAL_DAYS
+  ): Promise<SubscriptionStatus> {
+    const userRepo = AppDataSource.getRepository(User)
+    let user = await this.ensureUser(userId)
+    user = await this.normalizeSubscriptionState(user)
+
+    if (this.isPremiumActive(user)) {
+      return await this.getSubscriptionStatus(userId)
+    }
+
+    if (user.trialUsed) {
+      throw new Error("Trial already used")
+    }
+
+    const now = new Date()
+    const expires = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+
+    user.subscriptionTier = "trial"
+    user.trialStartedAt = now
+    user.trialExpiresAt = expires
+    user.trialUsed = true
+
+    await userRepo.save(user)
+    await this.clearCache(userId, "user")
+    return await this.getSubscriptionStatus(userId)
+  }
+
+  async setSubscriptionTier(
+    userId: string,
+    tier: SubscriptionTier,
+    premiumDays?: number
+  ): Promise<SubscriptionStatus> {
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await this.ensureUser(userId)
+    const now = new Date()
+
+    user.subscriptionTier = tier
+
+    if (tier === "premium") {
+      const days = Math.max(1, premiumDays || 30)
+      user.premiumExpiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+      user.subscriptionPaused = false
+      user.pausedRemainingMs = 0
+      user.pausedTier = null
+    } else if (tier === "trial") {
+      if (!user.trialUsed) user.trialUsed = true
+      if (!user.trialStartedAt) user.trialStartedAt = now
+      user.trialExpiresAt = new Date(
+        now.getTime() + config.TRIAL_DAYS * 24 * 60 * 60 * 1000
+      )
+      user.premiumExpiresAt = null
+      user.subscriptionPaused = false
+      user.pausedRemainingMs = 0
+      user.pausedTier = null
+    } else {
+      user.premiumExpiresAt = null
+      if (user.trialExpiresAt && user.trialExpiresAt.getTime() > now.getTime()) {
+        user.trialExpiresAt = now
+      }
+      user.subscriptionPaused = false
+      user.pausedRemainingMs = 0
+      user.pausedTier = null
+    }
+
+    await userRepo.save(user)
+    await this.clearCache(userId, "user")
+    return await this.getSubscriptionStatus(userId)
+  }
+
+  async grantPremium(userId: string, days = 30): Promise<SubscriptionStatus> {
+    return await this.setSubscriptionTier(userId, "premium", days)
+  }
+
+  async pauseSubscription(userId: string): Promise<SubscriptionStatus> {
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await this.ensureUser(userId)
+    const now = new Date()
+
+    let remainingMs = 0
+    if (user.subscriptionTier === "premium" && user.premiumExpiresAt) {
+      remainingMs = Math.max(0, user.premiumExpiresAt.getTime() - now.getTime())
+    } else if (user.subscriptionTier === "trial" && user.trialExpiresAt) {
+      remainingMs = Math.max(0, user.trialExpiresAt.getTime() - now.getTime())
+    }
+
+    if (remainingMs > 0) {
+      user.subscriptionPaused = true
+      user.pausedRemainingMs = remainingMs
+      user.pausedTier = user.subscriptionTier === "trial" ? "trial" : "premium"
+      user.subscriptionTier = "free"
+      user.premiumExpiresAt = null
+      if (user.trialExpiresAt && user.trialExpiresAt.getTime() > now.getTime()) {
+        user.trialExpiresAt = now
+      }
+      await userRepo.save(user)
+      await this.clearCache(userId, "user")
+    }
+
+    return await this.getSubscriptionStatus(userId)
+  }
+
+  async resumePausedSubscription(userId: string): Promise<SubscriptionStatus> {
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await this.ensureUser(userId)
+
+    if (!user.subscriptionPaused || !user.pausedRemainingMs || user.pausedRemainingMs <= 0) {
+      return await this.getSubscriptionStatus(userId)
+    }
+
+    const now = new Date()
+    const targetTier = user.pausedTier || "premium"
+    user.subscriptionTier = targetTier
+
+    if (targetTier === "trial") {
+      user.trialExpiresAt = new Date(now.getTime() + user.pausedRemainingMs)
+      user.premiumExpiresAt = null
+    } else {
+      user.premiumExpiresAt = new Date(now.getTime() + user.pausedRemainingMs)
+    }
+
+    user.subscriptionPaused = false
+    user.pausedRemainingMs = 0
+    user.pausedTier = null
+
+    await userRepo.save(user)
+    await this.clearCache(userId, "user")
+    return await this.getSubscriptionStatus(userId)
+  }
+
+  async resumePremiumWithCarryover(
+    userId: string,
+    provider: string,
+    reference: string,
+    premiumDays = 30
+  ): Promise<SubscriptionStatus> {
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await this.ensureUser(userId)
+    const now = new Date()
+
+    const baseMs = Math.max(1, premiumDays) * 24 * 60 * 60 * 1000
+    const carryMs = user.subscriptionPaused ? Math.max(0, user.pausedRemainingMs || 0) : 0
+    const totalMs = baseMs + carryMs
+
+    user.lastPaymentAt = now
+    user.lastPaymentProvider = provider
+    user.lastPaymentReference = reference
+    user.subscriptionTier = "premium"
+    user.premiumExpiresAt = new Date(now.getTime() + totalMs)
+    user.subscriptionPaused = false
+    user.pausedRemainingMs = 0
+    user.pausedTier = null
+
+    await userRepo.save(user)
+    await this.clearCache(userId, "user")
+    return await this.getSubscriptionStatus(userId)
+  }
+
+  async recordPayment(
+    userId: string,
+    provider: string,
+    reference: string,
+    premiumDays = 30
+  ): Promise<SubscriptionStatus> {
+    return await this.resumePremiumWithCarryover(
+      userId,
+      provider,
+      reference,
+      premiumDays
+    )
+  }
+
+  async checkAndConsumeUsage(
+    userId: string,
+    kind: UsageKind
+  ): Promise<UsageCheckResult> {
+    if (process.env.NODE_ENV === "test") {
+      return { allowed: true, limit: -1, used: 0, remaining: -1 }
+    }
+
+    const userRepo = AppDataSource.getRepository(User)
+    let user = await this.ensureUser(userId)
+    user = await this.normalizeSubscriptionState(user)
+
+    if (this.isPremiumActive(user) || this.isTrialActive(user)) {
+      return { allowed: true, limit: -1, used: 0, remaining: -1 }
+    }
+
+    if (kind === "transaction") {
+      const monthKey = this.currentMonthKey()
+      if (user.transactionsMonthKey !== monthKey) {
+        user.transactionsMonthKey = monthKey
+        user.transactionsThisMonth = 0
+      }
+
+      const used = user.transactionsThisMonth
+      const limit = config.FREE_TRANSACTIONS_PER_MONTH
+      if (used >= limit) {
+        await userRepo.save(user)
+        return {
+          allowed: false,
+          reason: "transaction_limit",
+          limit,
+          used,
+          remaining: 0,
+        }
+      }
+
+      user.transactionsThisMonth += 1
+      await userRepo.save(user)
+      await this.clearCache(userId, "user")
+      return {
+        allowed: true,
+        reason: "transaction_limit",
+        limit,
+        used: user.transactionsThisMonth,
+        remaining: Math.max(0, limit - user.transactionsThisMonth),
+      }
+    }
+
+    const dayKey = this.currentDayKey()
+    if (user.voiceDayKey !== dayKey) {
+      user.voiceDayKey = dayKey
+      user.voiceInputsToday = 0
+    }
+
+    const used = user.voiceInputsToday
+    const limit = config.FREE_VOICE_INPUTS_PER_DAY
+    if (used >= limit) {
+      await userRepo.save(user)
+      return { allowed: false, reason: "voice_limit", limit, used, remaining: 0 }
+    }
+
+    user.voiceInputsToday += 1
+    await userRepo.save(user)
+    await this.clearCache(userId, "user")
+    return {
+      allowed: true,
+      reason: "voice_limit",
+      limit,
+      used: user.voiceInputsToday,
+      remaining: Math.max(0, limit - user.voiceInputsToday),
+    }
+  }
+
+  async canUsePremiumFeature(userId: string): Promise<boolean> {
+    const status = await this.getSubscriptionStatus(userId)
+    if (status.tier === "premium" && status.premiumExpiresAt) return true
+    return status.tier === "trial" && !!status.trialExpiresAt
+  }
+
+  async getMonetizationStats(): Promise<{
+    totalUsers: number
+    freeUsers: number
+    trialUsers: number
+    premiumUsers: number
+    activePremiumUsers: number
+    transactionsThisMonthTotal: number
+  }> {
+    const userRepo = AppDataSource.getRepository(User)
+    const users = await userRepo.find()
+    const now = new Date()
+    let freeUsers = 0
+    let trialUsers = 0
+    let premiumUsers = 0
+    let activePremiumUsers = 0
+    let transactionsThisMonthTotal = 0
+
+    for (const user of users) {
+      if (user.subscriptionTier === "premium") {
+        premiumUsers += 1
+        if (user.premiumExpiresAt && user.premiumExpiresAt.getTime() > now.getTime()) {
+          activePremiumUsers += 1
+        }
+      } else if (user.subscriptionTier === "trial") {
+        trialUsers += 1
+      } else {
+        freeUsers += 1
+      }
+      transactionsThisMonthTotal += user.transactionsThisMonth || 0
+    }
+
+    return {
+      totalUsers: users.length,
+      freeUsers,
+      trialUsers,
+      premiumUsers,
+      activePremiumUsers,
+      transactionsThisMonthTotal,
+    }
+  }
+
+  async getSubscriptionAdminList(limit = 100): Promise<
+    Array<{
+      userId: string
+      tier: SubscriptionTier
+      subscriptionPaused: boolean
+      pausedRemainingMs: number
+      premiumExpiresAt: string | null
+      trialExpiresAt: string | null
+      transactionsThisMonth: number
+      voiceInputsToday: number
+      lastPaymentAt: string | null
+      lastPaymentProvider: string | null
+      lastPaymentReference: string | null
+    }>
+  > {
+    const users = await AppDataSource.getRepository(User).find({
+      order: { createdAt: "DESC" },
+      take: Math.max(1, Math.min(limit, 500)),
+    })
+    return users.map((user) => ({
+      userId: user.id,
+      tier: user.subscriptionTier,
+      subscriptionPaused: !!user.subscriptionPaused,
+      pausedRemainingMs: Math.max(0, user.pausedRemainingMs || 0),
+      premiumExpiresAt: user.premiumExpiresAt
+        ? user.premiumExpiresAt.toISOString()
+        : null,
+      trialExpiresAt: user.trialExpiresAt
+        ? user.trialExpiresAt.toISOString()
+        : null,
+      transactionsThisMonth: user.transactionsThisMonth || 0,
+      voiceInputsToday: user.voiceInputsToday || 0,
+      lastPaymentAt: user.lastPaymentAt ? user.lastPaymentAt.toISOString() : null,
+      lastPaymentProvider: user.lastPaymentProvider || null,
+      lastPaymentReference: user.lastPaymentReference || null,
+    }))
   }
 
   async getUserData(userId: string) {
@@ -280,6 +701,21 @@ export class DatabaseStorage {
   }
 
   async addBalance(userId: string, balance: BalanceType) {
+    const existing = await AppDataSource.getRepository(Balance).find({
+      where: { userId },
+    })
+    const alreadyExists = existing.some(
+      (b) => b.accountId === balance.accountId && b.currency === balance.currency
+    )
+    if (!alreadyExists) {
+      const premium = await this.canUsePremiumFeature(userId)
+      if (!premium && existing.length >= config.FREE_MAX_BALANCES) {
+        const err = new Error("Free tier max balances limit reached")
+        ;(err as Error & { code?: string }).code = "SUBSCRIPTION_LIMIT_EXCEEDED"
+        throw err
+      }
+    }
+
     await this.safeUpdateBalance(
       userId,
       balance.accountId,
@@ -508,6 +944,12 @@ export class DatabaseStorage {
     transaction: Transaction
   ): Promise<string> {
     await this.ensureUser(userId)
+    const usage = await this.checkAndConsumeUsage(userId, "transaction")
+    if (!usage.allowed) {
+      const err = new Error("Free tier monthly transaction limit reached")
+      ;(err as Error & { code?: string }).code = "SUBSCRIPTION_LIMIT_EXCEEDED"
+      throw err
+    }
 
     const txRepo = AppDataSource.getRepository(TransactionEntity)
     const tx = txRepo.create({

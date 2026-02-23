@@ -2,6 +2,7 @@
  * Start and main menu message handlers
  */
 
+import { config } from "../../config"
 import { t } from "../../i18n"
 import {
   getMainMenuKeyboard,
@@ -36,9 +37,30 @@ export const handleStart: MessageHandler = async (context) => {
       getMainMenuKeyboard(lang)
     )
   } else {
+    const freeVoice = t(lang, "commands.monetization.limitVoice", {
+      limit: config.FREE_VOICE_INPUTS_PER_DAY,
+    })
+    const freeTx = t(lang, "commands.monetization.limitTransaction", {
+      limit: config.FREE_TRANSACTIONS_PER_MONTH,
+    })
+    const premiumBlock =
+      `${t(lang, "commands.monetization.featureVoice")}\n` +
+      `${t(lang, "commands.monetization.featureCommandMode")}\n` +
+      `${t(lang, "commands.monetization.featureTemplates")}\n` +
+      `${t(lang, "commands.monetization.featureExport")}\n` +
+      `${t(lang, "commands.monetization.featureStatementImport")}\n` +
+      `${t(lang, "commands.monetization.featureCustomMessages")}`
+
     await bot.sendMessage(
       chatId,
-      `${t(lang, "mainMenu.welcome")}\n\n${t(lang, "mainMenu.welcomeIntro")}`,
+      `${t(lang, "mainMenu.welcome")}\n\n` +
+        `${t(lang, "mainMenu.welcomeIntro")}\n\n` +
+        `*Free*\n` +
+        `• ${freeTx}\n` +
+        `• ${freeVoice}\n\n` +
+        `*Premium*\n` +
+        `• ${premiumBlock}\n\n` +
+        `${t(lang, "commands.monetization.buyUsage")}`,
       {
         parse_mode: "Markdown",
         ...getStartTrackingKeyboard(lang),

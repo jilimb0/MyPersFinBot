@@ -25,6 +25,16 @@
 - `ANALYTICS_DAYS_DEFAULT`
 - `REMINDER_CHECK_INTERVAL`
 - `MAX_FILE_SIZE_MB`
+- `FREE_TRANSACTIONS_PER_MONTH`
+- `FREE_VOICE_INPUTS_PER_DAY`
+- `FREE_MAX_BALANCES`
+- `TRIAL_DAYS`
+- `PREMIUM_MONTHLY_PRICE_CENTS` (e.g. `299` for $2.99)
+- `PREMIUM_YEARLY_PRICE_CENTS` (e.g. `2999` for $29.99)
+- `PREMIUM_MONTHLY_STARS` (Telegram Stars amount)
+- `PREMIUM_YEARLY_STARS` (Telegram Stars amount)
+- `LIFETIME_STARS` (Telegram Stars amount)
+- `ENABLE_TELEGRAM_STARS` (`true|false`)
 - `QUICKCHART_BASE_URL` (default: `https://quickchart.io`)
 - `QUICKCHART_TIMEOUT_MS` (ms, default: `10000`)
 - `SENTRY_DSN`
@@ -38,6 +48,7 @@
 - `HEALTH_TLS_CERT_PATH` (path to TLS certificate PEM)
 - `HEALTH_BASIC_AUTH_USER`
 - `HEALTH_BASIC_AUTH_PASS`
+- `ADMIN_API_TOKEN` (token for `/admin/*` API endpoints)
 - `NODE_ENV` (`development|production|test`)
 - `LOG_LEVEL` (`error|warn|info|debug`)
 - `LOG_BOOT_DETAIL` (`true|false`)

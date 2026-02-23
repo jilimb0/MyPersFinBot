@@ -60,6 +60,21 @@ const ConfigSchema = z.object({
   REMINDER_CHECK_INTERVAL: z.coerce.number().min(1).max(60).default(5),
 
   MAX_FILE_SIZE_MB: z.coerce.number().min(1).max(50).default(20),
+  FREE_TRANSACTIONS_PER_MONTH: z.coerce.number().min(1).max(100000).default(50),
+  FREE_VOICE_INPUTS_PER_DAY: z.coerce.number().min(1).max(100000).default(10),
+  FREE_MAX_BALANCES: z.coerce.number().min(1).max(1000).default(3),
+  TRIAL_DAYS: z.coerce.number().min(1).max(30).default(7),
+  PREMIUM_MONTHLY_PRICE_CENTS: z.coerce.number().min(1).default(299),
+  PREMIUM_YEARLY_PRICE_CENTS: z.coerce.number().min(1).default(2999),
+  PREMIUM_MONTHLY_STARS: z.coerce.number().min(1).default(149),
+  PREMIUM_YEARLY_STARS: z.coerce.number().min(1).default(1490),
+  LIFETIME_STARS: z.coerce.number().min(1).default(4990),
+  ENABLE_TELEGRAM_STARS: z
+    .string()
+    .optional()
+    .default("true")
+    .transform((v) => v === "true")
+    .pipe(z.boolean()),
   QUICKCHART_BASE_URL: z.string().url().default("https://quickchart.io"),
   QUICKCHART_TIMEOUT_MS: z.coerce.number().min(1000).max(60000).default(10000),
 
@@ -80,6 +95,7 @@ const ConfigSchema = z.object({
   HEALTH_TLS_CERT_PATH: z.string().optional(),
   HEALTH_BASIC_AUTH_USER: z.string().optional(),
   HEALTH_BASIC_AUTH_PASS: z.string().optional(),
+  ADMIN_API_TOKEN: z.string().optional(),
 
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),

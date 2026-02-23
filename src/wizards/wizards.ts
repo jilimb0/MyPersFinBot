@@ -35,6 +35,7 @@ import {
   generateCSV,
   getProgressEmoji,
 } from "../reports"
+import { sendPremiumRequiredMessage } from "../monetization/premium-gate"
 import { reminderManager } from "../services/reminder-manager"
 import {
   type Currency,
@@ -2791,7 +2792,17 @@ export class WizardManager {
           return true
         }
         case "ANALYTICS_REPORTS_MENU": {
+          const premiumEnabled = await db.canUsePremiumFeature(userId)
           if (text === t(lang, "buttons.filters")) {
+            if (!premiumEnabled) {
+              await sendPremiumRequiredMessage(
+                this.bot,
+                chatId,
+                lang,
+                t(lang, "commands.monetization.featureAdvancedAnalytics")
+              )
+              return true
+            }
             await this.goToStep(userId, "ANALYTICS_FILTERS", {})
             await this.bot.sendMessage(
               chatId,
@@ -2820,6 +2831,15 @@ export class WizardManager {
 
             return true
           } else if (text === t(lang, "buttons.exportCsv")) {
+            if (!premiumEnabled) {
+              await sendPremiumRequiredMessage(
+                this.bot,
+                chatId,
+                lang,
+                t(lang, "commands.monetization.featureExport")
+              )
+              return true
+            }
             const csvData = await generateCSV(userId)
 
             if (csvData) {
@@ -2874,6 +2894,15 @@ export class WizardManager {
             return true
           }
           if (text === t(lang, "buttons.trends")) {
+            if (!premiumEnabled) {
+              await sendPremiumRequiredMessage(
+                this.bot,
+                chatId,
+                lang,
+                t(lang, "commands.monetization.featureAdvancedAnalytics")
+              )
+              return true
+            }
             const trends = await formatTrends(userId)
             await this.bot.sendMessage(chatId, trends, {
               parse_mode: "Markdown",
@@ -2886,6 +2915,15 @@ export class WizardManager {
             })
             return true
           } else if (text === t(lang, "buttons.topCategories")) {
+            if (!premiumEnabled) {
+              await sendPremiumRequiredMessage(
+                this.bot,
+                chatId,
+                lang,
+                t(lang, "commands.monetization.featureAdvancedAnalytics")
+              )
+              return true
+            }
             const top = await formatTopExpenses(userId, 5)
             await this.bot.sendMessage(chatId, top, {
               parse_mode: "Markdown",
