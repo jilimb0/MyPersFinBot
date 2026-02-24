@@ -243,6 +243,7 @@ sudo systemctl start bot
 - Audit retention controls:
   - `ADMIN_AUDIT_RETENTION_DAYS`
   - `ADMIN_AUDIT_PRUNE_INTERVAL_HOURS`
+- Runtime: запускается отдельным сервисом `MyPersFinBack`
 
 ---
 

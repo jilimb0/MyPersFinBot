@@ -296,6 +296,14 @@ async function readJsonBody(
   return JSON.parse(raw) as Record<string, unknown>
 }
 
+function checkMobileSyncAuth(req: http.IncomingMessage): boolean {
+  const token = process.env.MOBILE_SYNC_TOKEN
+  if (!token) return true
+  const auth = req.headers.authorization || ""
+  if (!auth.startsWith("Bearer ")) return false
+  return auth.slice("Bearer ".length).trim() === token
+}
+
 async function requestHandler(
   req: http.IncomingMessage,
   res: http.ServerResponse
@@ -349,6 +357,221 @@ async function requestHandler(
       "Cache-Control": "no-store",
     })
     res.end(payload)
+    return
+  }
+
+  if (url.startsWith("/mobile/sync/")) {
+    if (!checkMobileSyncAuth(req)) {
+      res.writeHead(401, { "Content-Type": "application/json" })
+      res.end(JSON.stringify({ error: "Unauthorized mobile sync access" }))
+      return
+    }
+
+    if (url === "/mobile/sync/state" && req.method === "GET") {
+      const userId = String(parsedUrl.searchParams.get("userId") || "").trim()
+      if (!userId) {
+        res.writeHead(400, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ error: "userId is required" }))
+        return
+      }
+
+      const userData = await dbStorage.getUserData(userId)
+      const reminders = await dbStorage.getAllReminders(userId)
+      const recurring = await dbStorage.getAllRecurringTransactions(userId)
+      const subscription = await dbStorage.getSubscriptionStatus(userId)
+      const language = await dbStorage.getUserLanguage(userId)
+
+      const payload = JSON.stringify({
+        user: {
+          id: userId,
+          language,
+          defaultCurrency: userData.defaultCurrency,
+          subscriptionTier: subscription.tier,
+          trialUsed: subscription.trialUsed,
+          trialExpiresAt: subscription.trialExpiresAt
+            ? subscription.trialExpiresAt.toISOString()
+            : undefined,
+          premiumExpiresAt: subscription.premiumExpiresAt
+            ? subscription.premiumExpiresAt.toISOString()
+            : undefined,
+          transactionsThisMonth: 0,
+          transactionsMonthKey: new Date().toISOString().slice(0, 7),
+          voiceInputsToday: 0,
+          voiceDayKey: new Date().toISOString().slice(0, 10),
+        },
+        accounts: userData.balances.map((b) => ({
+          id: b.accountId,
+          name: b.accountId,
+          amount: b.amount,
+          currency: b.currency,
+        })),
+        transactions: userData.transactions,
+        budgets: userData.budgets,
+        goals: userData.goals,
+        debts: userData.debts,
+        reminders: reminders.map((r) => ({
+          id: r.id,
+          title: r.message,
+          date: r.reminderDate,
+          relatedEntityType: r.type,
+          relatedEntityId: r.entityId,
+          isDone: r.isProcessed,
+        })),
+        recurring: recurring.map((r) => ({
+          id: r.id,
+          type: r.type,
+          amount: r.amount,
+          currency: r.currency,
+          category: r.category,
+          accountId: r.accountId,
+          frequency: r.frequency,
+          nextExecutionDate: r.nextExecutionDate,
+          isActive: r.isActive,
+          description: r.description,
+        })),
+        templates: (userData.templates || []).map((t) => ({
+          id: t.id,
+          title: t.name,
+          type: t.type,
+          amount: t.amount,
+          category: t.category,
+          currency: t.currency,
+          accountId: t.accountId || "Main",
+        })),
+      })
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      })
+      res.end(payload)
+      return
+    }
+
+    if (req.method === "POST") {
+      const parsed = await readJsonBody(req)
+      const userId = String(parsed.userId || "").trim()
+      if (!userId) {
+        res.writeHead(400, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ error: "userId is required" }))
+        return
+      }
+
+      if (url === "/mobile/sync/transaction") {
+        await dbStorage.addTransaction(userId, {
+          id: String(parsed.id || randomUUID()),
+          date: parsed.date ? new Date(String(parsed.date)) : new Date(),
+          type: String(parsed.type || "EXPENSE") as never,
+          amount: Number(parsed.amount || 0),
+          currency: String(parsed.currency || "USD") as never,
+          category: String(parsed.category || "OTHER_EXPENSE") as never,
+          description: parsed.description ? String(parsed.description) : undefined,
+          fromAccountId: parsed.fromAccountId
+            ? String(parsed.fromAccountId)
+            : undefined,
+          toAccountId: parsed.toAccountId ? String(parsed.toAccountId) : undefined,
+        })
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ ok: true }))
+        return
+      }
+
+      if (url === "/mobile/sync/budget") {
+        await dbStorage.setCategoryBudget(
+          userId,
+          String(parsed.category || "OTHER_EXPENSE") as never,
+          Number(parsed.amount || 0),
+          String(parsed.currency || "USD") as never,
+          String(parsed.period || "MONTHLY") as never
+        )
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ ok: true }))
+        return
+      }
+
+      if (url === "/mobile/sync/goal") {
+        await dbStorage.addGoal(userId, {
+          id: String(parsed.id || randomUUID()),
+          name: String(parsed.name || "Goal"),
+          targetAmount: Number(parsed.targetAmount || 0),
+          currentAmount: Number(parsed.currentAmount || 0),
+          currency: String(parsed.currency || "USD") as never,
+          status: String(parsed.status || "ACTIVE") as never,
+          deadline: parsed.deadline ? new Date(String(parsed.deadline)) : undefined,
+        })
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ ok: true }))
+        return
+      }
+
+      if (url === "/mobile/sync/debt") {
+        await dbStorage.addDebt(userId, {
+          id: String(parsed.id || randomUUID()),
+          name: String(parsed.name || "Debt"),
+          counterparty: String(parsed.counterparty || "Unknown"),
+          amount: Number(parsed.amount || 0),
+          currency: String(parsed.currency || "USD") as never,
+          type: String(parsed.type || "I_OWE") as never,
+          dueDate: parsed.dueDate ? new Date(String(parsed.dueDate)) : undefined,
+          description: parsed.description ? String(parsed.description) : undefined,
+          paidAmount: Number(parsed.paidAmount || 0),
+          isPaid: Boolean(parsed.isPaid),
+        })
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ ok: true }))
+        return
+      }
+
+      if (url === "/mobile/sync/reminder") {
+        await dbStorage.createReminder({
+          userId,
+          type: String(parsed.relatedEntityType || "GOAL") as never,
+          entityId: String(parsed.relatedEntityId || "manual"),
+          reminderDate: parsed.date ? new Date(String(parsed.date)) : new Date(),
+          message: String(parsed.title || "Reminder"),
+        })
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ ok: true }))
+        return
+      }
+
+      if (url === "/mobile/sync/recurring") {
+        const startDate = new Date()
+        await dbStorage.createRecurringTransaction({
+          userId,
+          type: String(parsed.type || "EXPENSE") as never,
+          amount: Number(parsed.amount || 0),
+          currency: String(parsed.currency || "USD") as never,
+          category: String(parsed.category || "OTHER_EXPENSE") as never,
+          accountId: String(parsed.accountId || "Main"),
+          frequency: String(parsed.frequency || "MONTHLY") as never,
+          startDate,
+          nextExecutionDate: parsed.nextExecutionDate
+            ? new Date(String(parsed.nextExecutionDate))
+            : startDate,
+          description: parsed.description ? String(parsed.description) : undefined,
+        })
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ ok: true }))
+        return
+      }
+
+      if (url === "/mobile/sync/template") {
+        await dbStorage.addTemplate(userId, {
+          name: String(parsed.title || "Template"),
+          category: String(parsed.category || "OTHER_EXPENSE"),
+          amount: Number(parsed.amount || 0),
+          currency: String(parsed.currency || "USD") as never,
+          type: String(parsed.type || "EXPENSE") as never,
+          accountId: parsed.accountId ? String(parsed.accountId) : undefined,
+        })
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify({ ok: true }))
+        return
+      }
+    }
+
+    res.writeHead(404, { "Content-Type": "application/json" })
+    res.end(JSON.stringify({ error: "Not Found" }))
     return
   }
 
