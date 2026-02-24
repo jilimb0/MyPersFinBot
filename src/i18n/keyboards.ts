@@ -93,9 +93,7 @@ export function getSettingsKeyboard(
         { text: t(lang, "settings.automation") },
         { text: t(lang, "settings.advanced") },
       ],
-      [
-        { text: t(lang, "settings.uiModeBasic") },
-      ],
+      [{ text: t(lang, "settings.uiModeBasic") }],
       [
         { text: t(lang, "settings.helpInfo") },
         { text: t(lang, "mainMenu.mainMenuButton") },

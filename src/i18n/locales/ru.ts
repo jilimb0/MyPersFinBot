@@ -289,8 +289,7 @@ export const ru = {
     advanced: "🛠️ Дополнительно",
     uiModeBasic: "✨ Базовый режим",
     uiModePro: "🚀 Pro режим",
-    uiModeChangedBasic:
-      "Включен *базовый режим*. Настройки теперь упрощены.",
+    uiModeChangedBasic: "Включен *базовый режим*. Настройки теперь упрощены.",
     uiModeChangedPro:
       "Включен *Pro режим*. Расширенные настройки теперь доступны.",
     switchToProHint:
@@ -598,7 +597,7 @@ export const ru = {
       buyYearButton: "Купить год",
       buyLifetimeButton: "Купить lifetime",
       pitch:
-        "💎 *Premium открывает:*\n• Безлимитные транзакции\n• Безлимитный voice input\n• Графики и расширенную аналитику\n• Импорт/экспорт и автоматизации\n\nЦена: ${monthly}/мес или ${yearly}/год\nПопробуйте /trial на {trialDays} дней бесплатно.",
+        "💎 *Premium открывает:*\n• Безлимитные транзакции\n• Безлимитный voice input\n• Графики и расширенную аналитику\n• Импорт/экспорт и автоматизации\n\nЦена: {monthly}/мес или {yearly}/год\nПопробуйте /trial на {trialDays} дней бесплатно.",
     },
   },
   templates: {

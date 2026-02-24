@@ -570,7 +570,8 @@ export const en = {
       premiumAlreadyActive: "💎 Premium is already active until {date}.",
       trialAlreadyUsed:
         "🎁 You have already used your free trial.\nUse /premium to unlock full access again.",
-      paymentSuccess: "✅ Payment received. Premium has been activated. Thank you!",
+      paymentSuccess:
+        "✅ Payment received. Premium has been activated. Thank you!",
       limitTransaction: "🚫 Free limit reached: {limit} transactions/month.",
       limitVoice: "🚫 Free limit reached: {limit} voice inputs/day.",
       featureLocked: "🔒 {feature} is available only with Premium.",
@@ -594,7 +595,7 @@ export const en = {
       buyYearButton: "Buy year",
       buyLifetimeButton: "Buy lifetime",
       pitch:
-        "💎 *Premium unlocks:*\n• Unlimited transactions\n• Unlimited voice input\n• Charts and advanced analytics\n• Import/export and automation\n\nPrice: ${monthly}/month or ${yearly}/year\nUse /trial to start a {trialDays}-day free trial.",
+        "💎 *Premium unlocks:*\n• Unlimited transactions\n• Unlimited voice input\n• Charts and advanced analytics\n• Import/export and automation\n\nPrice: {monthly}/month or {yearly}/year\nUse /trial to start a {trialDays}-day free trial.",
     },
   },
   templates: {

@@ -574,7 +574,8 @@ export const uk = {
       trialAlreadyUsed:
         "🎁 Ви вже використали безкоштовний тріал.\nВикористайте /premium, щоб знову відкрити повний доступ.",
       paymentSuccess: "✅ Оплату отримано. Premium активовано. Дякуємо!",
-      limitTransaction: "🚫 Досягнуто ліміт Free: {limit} транзакцій на місяць.",
+      limitTransaction:
+        "🚫 Досягнуто ліміт Free: {limit} транзакцій на місяць.",
       limitVoice: "🚫 Досягнуто ліміт Free: {limit} голосових на день.",
       featureLocked: "🔒 Функція «{feature}» доступна лише в Premium.",
       featureTemplates: "Шаблони транзакцій",
@@ -597,7 +598,7 @@ export const uk = {
       buyYearButton: "Купити рік",
       buyLifetimeButton: "Купити lifetime",
       pitch:
-        "💎 *Premium відкриває:*\n• Необмежені транзакції\n• Необмежений voice input\n• Графіки та розширену аналітику\n• Імпорт/експорт та автоматизації\n\nЦіна: ${monthly}/міс або ${yearly}/рік\nСпробуйте /trial на {trialDays} днів безкоштовно.",
+        "💎 *Premium відкриває:*\n• Необмежені транзакції\n• Необмежений voice input\n• Графіки та розширену аналітику\n• Імпорт/експорт та автоматизації\n\nЦіна: {monthly}/міс або {yearly}/рік\nСпробуйте /trial на {trialDays} днів безкоштовно.",
     },
   },
   templates: {

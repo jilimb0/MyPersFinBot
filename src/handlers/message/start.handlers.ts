@@ -56,10 +56,10 @@ export const handleStart: MessageHandler = async (context) => {
       chatId,
       `${t(lang, "mainMenu.welcome")}\n\n` +
         `${t(lang, "mainMenu.welcomeIntro")}\n\n` +
-        `*Free*\n` +
+        "*Free*\n" +
         `• ${freeTx}\n` +
         `• ${freeVoice}\n\n` +
-        `*Premium*\n` +
+        "*Premium*\n" +
         `• ${premiumBlock}\n\n` +
         `${t(lang, "commands.monetization.buyUsage")}`,
       {

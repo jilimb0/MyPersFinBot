@@ -262,7 +262,9 @@ export async function handleNLPCallback(
           toAccountId: type === "INCOME" ? defaultAccount : undefined,
         })
       } catch (error) {
-        if ((error as { code?: string }).code === "SUBSCRIPTION_LIMIT_EXCEEDED") {
+        if (
+          (error as { code?: string }).code === "SUBSCRIPTION_LIMIT_EXCEEDED"
+        ) {
           await bot.editMessageText(
             `🚫 Free limit reached: ${config.FREE_TRANSACTIONS_PER_MONTH} transactions/month.\nUse /trial or /premium to continue.`,
             {

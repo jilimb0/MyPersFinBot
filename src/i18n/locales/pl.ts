@@ -860,7 +860,8 @@ export const pl = {
       paymentSuccess: "✅ Płatność otrzymana. Premium aktywowane. Dziękujemy!",
       limitTransaction:
         "🚫 Osiągnięto limit Free: {limit} transakcji miesięcznie.",
-      limitVoice: "🚫 Osiągnięto limit Free: {limit} wiadomości głosowych dziennie.",
+      limitVoice:
+        "🚫 Osiągnięto limit Free: {limit} wiadomości głosowych dziennie.",
       featureLocked: "🔒 Funkcja „{feature}” jest dostępna tylko w Premium.",
       featureTemplates: "Szablony transakcji",
       featureRecurring: "Transakcje cykliczne",
@@ -882,7 +883,7 @@ export const pl = {
       buyYearButton: "Kup rok",
       buyLifetimeButton: "Kup lifetime",
       pitch:
-        "💎 *Premium odblokowuje:*\n• Nielimitowane transakcje\n• Nielimitowane voice input\n• Wykresy i zaawansowaną analitykę\n• Import/eksport i automatyzację\n\nCena: ${monthly}/mies. lub ${yearly}/rok\nUżyj /trial, aby uruchomić test na {trialDays} dni.",
+        "💎 *Premium odblokowuje:*\n• Nielimitowane transakcje\n• Nielimitowane voice input\n• Wykresy i zaawansowaną analitykę\n• Import/eksport i automatyzację\n\nCena: {monthly}/mies. lub {yearly}/rok\nUżyj /trial, aby uruchomić test na {trialDays} dni.",
     },
   },
   templates: {

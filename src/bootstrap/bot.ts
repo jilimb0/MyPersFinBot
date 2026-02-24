@@ -11,9 +11,7 @@ import { tgObservability } from "../observability/tgwrapper-observability"
 type JsonObject = Record<string, unknown>
 type MessageHandler = (msg: Tg.Message) => void | Promise<void>
 type CallbackHandler = (query: Tg.CallbackQuery) => void | Promise<void>
-type PreCheckoutHandler = (
-  query: Tg.PreCheckoutQuery
-) => void | Promise<void>
+type PreCheckoutHandler = (query: Tg.PreCheckoutQuery) => void | Promise<void>
 type PollingErrorHandler = (error: unknown) => void | Promise<void>
 
 type ApiClientLike = {

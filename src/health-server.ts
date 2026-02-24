@@ -1,8 +1,8 @@
+import { randomUUID } from "node:crypto"
 import fs from "node:fs"
 import http from "node:http"
 import https from "node:https"
 import path from "node:path"
-import { randomUUID } from "node:crypto"
 import { config as appConfig, config } from "./config"
 import { dbStorage } from "./database/storage-db"
 import logger from "./logger"
@@ -93,7 +93,11 @@ function pruneAdminAuditLog(retentionMs = ADMIN_AUDIT_RETENTION_MS): void {
         kept.push(line)
       }
     }
-    fs.writeFileSync(filePath, `${kept.join("\n")}${kept.length ? "\n" : ""}`, "utf8")
+    fs.writeFileSync(
+      filePath,
+      `${kept.join("\n")}${kept.length ? "\n" : ""}`,
+      "utf8"
+    )
   } catch (err) {
     logger.warn("admin.action.audit_prune_failed", { err })
   }
@@ -257,7 +261,8 @@ async function resolveTelegramActorLabel(userId: string): Promise<string> {
     if (!body.ok || !body.result) return `tg:${userId}`
     const username = body.result.username?.trim()
     if (username) return `@${username} (${userId})`
-    const name = `${body.result.first_name || ""} ${body.result.last_name || ""}`.trim()
+    const name =
+      `${body.result.first_name || ""} ${body.result.last_name || ""}`.trim()
     if (name) return `${name} (${userId})`
     return `tg:${userId}`
   } catch {
@@ -464,11 +469,15 @@ async function requestHandler(
           amount: Number(parsed.amount || 0),
           currency: String(parsed.currency || "USD") as never,
           category: String(parsed.category || "OTHER_EXPENSE") as never,
-          description: parsed.description ? String(parsed.description) : undefined,
+          description: parsed.description
+            ? String(parsed.description)
+            : undefined,
           fromAccountId: parsed.fromAccountId
             ? String(parsed.fromAccountId)
             : undefined,
-          toAccountId: parsed.toAccountId ? String(parsed.toAccountId) : undefined,
+          toAccountId: parsed.toAccountId
+            ? String(parsed.toAccountId)
+            : undefined,
         })
         res.writeHead(200, { "Content-Type": "application/json" })
         res.end(JSON.stringify({ ok: true }))
@@ -496,7 +505,9 @@ async function requestHandler(
           currentAmount: Number(parsed.currentAmount || 0),
           currency: String(parsed.currency || "USD") as never,
           status: String(parsed.status || "ACTIVE") as never,
-          deadline: parsed.deadline ? new Date(String(parsed.deadline)) : undefined,
+          deadline: parsed.deadline
+            ? new Date(String(parsed.deadline))
+            : undefined,
         })
         res.writeHead(200, { "Content-Type": "application/json" })
         res.end(JSON.stringify({ ok: true }))
@@ -511,8 +522,12 @@ async function requestHandler(
           amount: Number(parsed.amount || 0),
           currency: String(parsed.currency || "USD") as never,
           type: String(parsed.type || "I_OWE") as never,
-          dueDate: parsed.dueDate ? new Date(String(parsed.dueDate)) : undefined,
-          description: parsed.description ? String(parsed.description) : undefined,
+          dueDate: parsed.dueDate
+            ? new Date(String(parsed.dueDate))
+            : undefined,
+          description: parsed.description
+            ? String(parsed.description)
+            : undefined,
           paidAmount: Number(parsed.paidAmount || 0),
           isPaid: Boolean(parsed.isPaid),
         })
@@ -526,7 +541,9 @@ async function requestHandler(
           userId,
           type: String(parsed.relatedEntityType || "GOAL") as never,
           entityId: String(parsed.relatedEntityId || "manual"),
-          reminderDate: parsed.date ? new Date(String(parsed.date)) : new Date(),
+          reminderDate: parsed.date
+            ? new Date(String(parsed.date))
+            : new Date(),
           message: String(parsed.title || "Reminder"),
         })
         res.writeHead(200, { "Content-Type": "application/json" })
@@ -548,7 +565,9 @@ async function requestHandler(
           nextExecutionDate: parsed.nextExecutionDate
             ? new Date(String(parsed.nextExecutionDate))
             : startDate,
-          description: parsed.description ? String(parsed.description) : undefined,
+          description: parsed.description
+            ? String(parsed.description)
+            : undefined,
         })
         res.writeHead(200, { "Content-Type": "application/json" })
         res.end(JSON.stringify({ ok: true }))
@@ -1320,7 +1339,13 @@ void (async ()=>{
       const parsed = await readJsonBody(req)
       const userId = String(parsed.userId || "")
       if (!userId) {
-        auditAdminAction(req, "subscription.pause", parsed, false, "userId is required")
+        auditAdminAction(
+          req,
+          "subscription.pause",
+          parsed,
+          false,
+          "userId is required"
+        )
         res.writeHead(400, { "Content-Type": "application/json" })
         res.end(JSON.stringify({ error: "userId is required" }))
         return
@@ -1336,7 +1361,13 @@ void (async ()=>{
       const parsed = await readJsonBody(req)
       const userId = String(parsed.userId || "")
       if (!userId) {
-        auditAdminAction(req, "subscription.resume", parsed, false, "userId is required")
+        auditAdminAction(
+          req,
+          "subscription.resume",
+          parsed,
+          false,
+          "userId is required"
+        )
         res.writeHead(400, { "Content-Type": "application/json" })
         res.end(JSON.stringify({ error: "userId is required" }))
         return
@@ -1352,7 +1383,13 @@ void (async ()=>{
       const parsed = await readJsonBody(req)
       const userId = String(parsed.userId || "")
       if (!userId) {
-        auditAdminAction(req, "subscription.cancel", parsed, false, "userId is required")
+        auditAdminAction(
+          req,
+          "subscription.cancel",
+          parsed,
+          false,
+          "userId is required"
+        )
         res.writeHead(400, { "Content-Type": "application/json" })
         res.end(JSON.stringify({ error: "userId is required" }))
         return
@@ -1370,7 +1407,13 @@ void (async ()=>{
       const tier = String(parsed.tier || "free") as "free" | "trial" | "premium"
       const days = Number(parsed.days || 30)
       if (!userId) {
-        auditAdminAction(req, "subscription.set", parsed, false, "userId is required")
+        auditAdminAction(
+          req,
+          "subscription.set",
+          parsed,
+          false,
+          "userId is required"
+        )
         res.writeHead(400, { "Content-Type": "application/json" })
         res.end(JSON.stringify({ error: "userId is required" }))
         return
@@ -1389,7 +1432,13 @@ void (async ()=>{
       const reference = String(parsed.reference || `manual_${Date.now()}`)
       const premiumDays = Number(parsed.premiumDays || 30)
       if (!userId) {
-        auditAdminAction(req, "payment.grant", parsed, false, "userId is required")
+        auditAdminAction(
+          req,
+          "payment.grant",
+          parsed,
+          false,
+          "userId is required"
+        )
         res.writeHead(400, { "Content-Type": "application/json" })
         res.end(JSON.stringify({ error: "userId is required" }))
         return

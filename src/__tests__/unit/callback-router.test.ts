@@ -48,11 +48,11 @@ jest.mock("../../handlers/monetization-callback-handlers", () => ({
   handleTrialConfirm: jest.fn().mockResolvedValue(undefined),
 }))
 
+import { handleSubscriptionOpen } from "../../handlers/monetization-callback-handlers"
 import {
   handleReminderDone,
   handleReminderSnooze,
 } from "../../handlers/reminder-callback-handlers"
-import { handleSubscriptionOpen } from "../../handlers/monetization-callback-handlers"
 import {
   handleTemplateCancelEdit,
   handleTemplateDelete,

@@ -245,7 +245,9 @@ export class DatabaseStorage {
 
     if (tier === "premium") {
       const days = Math.max(1, premiumDays || 30)
-      user.premiumExpiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+      user.premiumExpiresAt = new Date(
+        now.getTime() + days * 24 * 60 * 60 * 1000
+      )
       user.subscriptionPaused = false
       user.pausedRemainingMs = 0
       user.pausedTier = null
@@ -261,7 +263,10 @@ export class DatabaseStorage {
       user.pausedTier = null
     } else {
       user.premiumExpiresAt = null
-      if (user.trialExpiresAt && user.trialExpiresAt.getTime() > now.getTime()) {
+      if (
+        user.trialExpiresAt &&
+        user.trialExpiresAt.getTime() > now.getTime()
+      ) {
         user.trialExpiresAt = now
       }
       user.subscriptionPaused = false
@@ -296,7 +301,10 @@ export class DatabaseStorage {
       user.pausedTier = user.subscriptionTier === "trial" ? "trial" : "premium"
       user.subscriptionTier = "free"
       user.premiumExpiresAt = null
-      if (user.trialExpiresAt && user.trialExpiresAt.getTime() > now.getTime()) {
+      if (
+        user.trialExpiresAt &&
+        user.trialExpiresAt.getTime() > now.getTime()
+      ) {
         user.trialExpiresAt = now
       }
       await userRepo.save(user)
@@ -310,14 +318,19 @@ export class DatabaseStorage {
     const userRepo = AppDataSource.getRepository(User)
     const user = await this.ensureUser(userId)
 
-    if (!user.subscriptionPaused || !user.pausedRemainingMs || user.pausedRemainingMs <= 0) {
+    if (
+      !user.subscriptionPaused ||
+      !user.pausedRemainingMs ||
+      user.pausedRemainingMs <= 0
+    ) {
       return await this.getSubscriptionStatus(userId)
     }
 
     const now = new Date()
     // Backward-compatible fallback: old paused records may have null pausedTier.
     // If user had trial and no payment history, prefer restoring trial.
-    const inferredTier = user.trialUsed && !user.lastPaymentAt ? "trial" : "premium"
+    const inferredTier =
+      user.trialUsed && !user.lastPaymentAt ? "trial" : "premium"
     const targetTier = user.pausedTier || inferredTier
     user.subscriptionTier = targetTier
 
@@ -348,7 +361,9 @@ export class DatabaseStorage {
     const now = new Date()
 
     const baseMs = Math.max(1, premiumDays) * 24 * 60 * 60 * 1000
-    const carryMs = user.subscriptionPaused ? Math.max(0, user.pausedRemainingMs || 0) : 0
+    const carryMs = user.subscriptionPaused
+      ? Math.max(0, user.pausedRemainingMs || 0)
+      : 0
     const totalMs = baseMs + carryMs
 
     user.lastPaymentAt = now
@@ -437,7 +452,13 @@ export class DatabaseStorage {
     const limit = config.FREE_VOICE_INPUTS_PER_DAY
     if (used >= limit) {
       await userRepo.save(user)
-      return { allowed: false, reason: "voice_limit", limit, used, remaining: 0 }
+      return {
+        allowed: false,
+        reason: "voice_limit",
+        limit,
+        used,
+        remaining: 0,
+      }
     }
 
     user.voiceInputsToday += 1
@@ -478,7 +499,10 @@ export class DatabaseStorage {
     for (const user of users) {
       if (user.subscriptionTier === "premium") {
         premiumUsers += 1
-        if (user.premiumExpiresAt && user.premiumExpiresAt.getTime() > now.getTime()) {
+        if (
+          user.premiumExpiresAt &&
+          user.premiumExpiresAt.getTime() > now.getTime()
+        ) {
           activePremiumUsers += 1
         }
       } else if (user.subscriptionTier === "trial") {
@@ -533,7 +557,9 @@ export class DatabaseStorage {
         : null,
       transactionsThisMonth: user.transactionsThisMonth || 0,
       voiceInputsToday: user.voiceInputsToday || 0,
-      lastPaymentAt: user.lastPaymentAt ? user.lastPaymentAt.toISOString() : null,
+      lastPaymentAt: user.lastPaymentAt
+        ? user.lastPaymentAt.toISOString()
+        : null,
       lastPaymentProvider: user.lastPaymentProvider || null,
       lastPaymentReference: user.lastPaymentReference || null,
     }))
@@ -728,7 +754,8 @@ export class DatabaseStorage {
       where: { userId },
     })
     const alreadyExists = existing.some(
-      (b) => b.accountId === balance.accountId && b.currency === balance.currency
+      (b) =>
+        b.accountId === balance.accountId && b.currency === balance.currency
     )
     if (!alreadyExists) {
       const premium = await this.canUsePremiumFeature(userId)
@@ -1982,7 +2009,10 @@ export class DatabaseStorage {
 
   async getUserUiMode(userId: string): Promise<"basic" | "pro"> {
     const cachedSettings = await this.cacheManager.getUserSettings(userId)
-    if (cachedSettings?.uiMode === "basic" || cachedSettings?.uiMode === "pro") {
+    if (
+      cachedSettings?.uiMode === "basic" ||
+      cachedSettings?.uiMode === "pro"
+    ) {
       return cachedSettings.uiMode
     }
 

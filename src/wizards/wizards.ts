@@ -27,6 +27,7 @@ import {
   showSettingsMenu,
   showStatsMenu,
 } from "../menus-i18n"
+import { sendPremiumRequiredMessage } from "../monetization/premium-gate"
 import {
   createProgressBar,
   formatTopExpenses,
@@ -35,7 +36,6 @@ import {
   generateCSV,
   getProgressEmoji,
 } from "../reports"
-import { sendPremiumRequiredMessage } from "../monetization/premium-gate"
 import { reminderManager } from "../services/reminder-manager"
 import {
   type Currency,

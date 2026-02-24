@@ -114,7 +114,9 @@ describe("E2E admin API subscription pause/resume", () => {
     expect(secondStatus.pausedRemainingMs).toBe(0)
     expect(secondStatus.premiumExpiresAt).toBeTruthy()
 
-    const expiresAtMs = new Date(secondStatus.premiumExpiresAt as string).getTime()
+    const expiresAtMs = new Date(
+      secondStatus.premiumExpiresAt as string
+    ).getTime()
     const now = Date.now()
     const fiftyDaysMs = 50 * 24 * 60 * 60 * 1000
     expect(expiresAtMs - now).toBeGreaterThan(fiftyDaysMs)

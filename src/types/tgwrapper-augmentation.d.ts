@@ -173,8 +173,7 @@ declare module "@jilimb0/tgwrapper" {
     export type SendInvoiceOptions =
       import("@jilimb0/tgwrapper").SendInvoiceOptions
     export type LabeledPrice = import("@jilimb0/tgwrapper").LabeledPrice
-    export type PreCheckoutQuery =
-      import("@jilimb0/tgwrapper").PreCheckoutQuery
+    export type PreCheckoutQuery = import("@jilimb0/tgwrapper").PreCheckoutQuery
     export type SuccessfulPayment =
       import("@jilimb0/tgwrapper").SuccessfulPayment
     export type AnswerPreCheckoutQueryOptions =

@@ -6,6 +6,7 @@ import { MockBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
+    getUserUiMode: jest.fn(),
     getDefaultCurrency: jest.fn(),
     getTopCategories: jest.fn(),
     getBalancesList: jest.fn(),

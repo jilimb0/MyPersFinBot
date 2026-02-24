@@ -580,7 +580,8 @@ export const es = {
       limitTransaction:
         "🚫 Límite Free alcanzado: {limit} transacciones por mes.",
       limitVoice: "🚫 Límite Free alcanzado: {limit} entradas de voz por día.",
-      featureLocked: "🔒 La función «{feature}» está disponible solo en Premium.",
+      featureLocked:
+        "🔒 La función «{feature}» está disponible solo en Premium.",
       featureTemplates: "Plantillas de transacciones",
       featureRecurring: "Transacciones recurrentes",
       featureCustomMessages: "Plantillas personalizadas de recordatorios",
@@ -601,7 +602,7 @@ export const es = {
       buyYearButton: "Comprar año",
       buyLifetimeButton: "Comprar lifetime",
       pitch:
-        "💎 *Premium desbloquea:*\n• Transacciones ilimitadas\n• Voz ilimitada\n• Gráficos y analítica avanzada\n• Importación/exportación y automatización\n\nPrecio: ${monthly}/mes o ${yearly}/año\nUsa /trial para iniciar una prueba de {trialDays} días.",
+        "💎 *Premium desbloquea:*\n• Transacciones ilimitadas\n• Voz ilimitada\n• Gráficos y analítica avanzada\n• Importación/exportación y automatización\n\nPrecio: {monthly}/mes o {yearly}/año\nUsa /trial para iniciar una prueba de {trialDays} días.",
     },
   },
   templates: {

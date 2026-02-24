@@ -170,8 +170,7 @@ export function registerCallbackRouter(
       },
       {
         match: (value) => value === "sub_open",
-        handle: async () =>
-          handleSubscriptionOpen(bot, query, userId, chatId),
+        handle: async () => handleSubscriptionOpen(bot, query, userId, chatId),
       },
       {
         match: (value) => value === "sub_buy_month",

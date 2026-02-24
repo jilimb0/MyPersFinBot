@@ -57,11 +57,11 @@ export const handleBack: MessageHandler = async (context) => {
     default:
       {
         const uiMode = await context.db.getUserUiMode(userId)
-      await bot.sendMessage(
-        chatId,
-        t(lang, "mainMenu.welcomeBack"),
-        getMainMenuKeyboard(lang, uiMode)
-      )
+        await bot.sendMessage(
+          chatId,
+          t(lang, "mainMenu.welcomeBack"),
+          getMainMenuKeyboard(lang, uiMode)
+        )
       }
       break
   }

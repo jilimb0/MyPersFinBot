@@ -75,8 +75,9 @@ export async function sendStarsInvoice(
 export async function handleSuccessfulPayment(
   message: Tg.Message
 ): Promise<boolean> {
-  const payment = (message as Tg.Message & { successful_payment?: Tg.SuccessfulPayment })
-    .successful_payment
+  const payment = (
+    message as Tg.Message & { successful_payment?: Tg.SuccessfulPayment }
+  ).successful_payment
   if (!payment) return false
 
   const parsed = parseInvoicePayload(payment.invoice_payload)

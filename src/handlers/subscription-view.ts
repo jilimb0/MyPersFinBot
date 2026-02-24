@@ -2,7 +2,10 @@ import type { TgTypes as Tg } from "@jilimb0/tgwrapper"
 import type { SubscriptionStatus } from "../database/storage-db"
 import { getLocale, type Language, t } from "../i18n"
 
-function formatDateTime(lang: Language, value: Date | null | undefined): string {
+function formatDateTime(
+  lang: Language,
+  value: Date | null | undefined
+): string {
   if (!value) return "-"
   return value.toLocaleString(getLocale(lang), {
     year: "numeric",
@@ -40,11 +43,12 @@ export function buildSubscriptionView(
         ? t(lang, "commands.monetization.tierTrial")
         : t(lang, "commands.monetization.tierFree")
 
-  const expireDate = status.tier === "premium"
-    ? formatDateTime(lang, status.premiumExpiresAt)
-    : status.tier === "trial"
-      ? formatDateTime(lang, status.trialExpiresAt)
-      : "-"
+  const expireDate =
+    status.tier === "premium"
+      ? formatDateTime(lang, status.premiumExpiresAt)
+      : status.tier === "trial"
+        ? formatDateTime(lang, status.trialExpiresAt)
+        : "-"
 
   const timeLine = status.subscriptionPaused
     ? t(lang, "settings.subscriptionRemainingLine", {
@@ -59,7 +63,11 @@ export function buildSubscriptionView(
     `${t(lang, "settings.subscriptionHint")}`
 
   const keyboard: Tg.InlineKeyboardButton[][] = []
-  if (status.tier === "free" && !status.trialUsed && !status.subscriptionPaused) {
+  if (
+    status.tier === "free" &&
+    !status.trialUsed &&
+    !status.subscriptionPaused
+  ) {
     keyboard.push([
       {
         text: t(lang, "commands.monetization.trialConfirmButton"),
@@ -68,7 +76,11 @@ export function buildSubscriptionView(
     ])
   }
 
-  if (status.tier === "free" || status.tier === "trial" || status.subscriptionPaused) {
+  if (
+    status.tier === "free" ||
+    status.tier === "trial" ||
+    status.subscriptionPaused
+  ) {
     keyboard.push([
       {
         text: t(lang, "commands.monetization.buyMonthButton"),

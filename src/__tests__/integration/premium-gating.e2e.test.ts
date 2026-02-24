@@ -14,6 +14,7 @@ import { MockRouterBot } from "../helpers/mock-bot"
 
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
+    updateTelegramProfile: jest.fn().mockResolvedValue(undefined),
     canUsePremiumFeature: jest.fn().mockResolvedValue(false),
     checkAndConsumeUsage: jest.fn().mockResolvedValue({
       allowed: false,
@@ -72,16 +73,23 @@ describe("E2E premium gating", () => {
 
     const expenseHandler = bot.on.mock.calls.find((call: any) =>
       (call[1].__pattern?.source || "").includes("expense")
-    )?.[1] as ((msg: Tg.Message, match?: RegExpExecArray | null) => Promise<void>) | undefined
+    )?.[1] as
+      | ((msg: Tg.Message, match?: RegExpExecArray | null) => Promise<void>)
+      | undefined
     const templatesHandler = bot.on.mock.calls.find((call: any) =>
       (call[1].__pattern?.source || "").includes("templates")
-    )?.[1] as ((msg: Tg.Message, match?: RegExpExecArray | null) => Promise<void>) | undefined
+    )?.[1] as
+      | ((msg: Tg.Message, match?: RegExpExecArray | null) => Promise<void>)
+      | undefined
 
     if (!expenseHandler || !templatesHandler) {
       throw new Error("Command handlers not found")
     }
 
-    await expenseHandler({ chat: { id: 5002 }, text: "/expense 50 food" } as Tg.Message)
+    await expenseHandler({
+      chat: { id: 5002 },
+      text: "/expense 50 food",
+    } as Tg.Message)
     await templatesHandler({ chat: { id: 5002 } } as Tg.Message)
 
     const sentMessages = (bot.sendMessage as jest.Mock).mock.calls.map(

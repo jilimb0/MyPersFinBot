@@ -17,14 +17,14 @@ import {
   type Language,
   t,
 } from "./i18n"
+import { sendPremiumRequiredMessage } from "./monetization/premium-gate"
 import { queryMonitor } from "./monitoring"
 import { tgObservability } from "./observability/tgwrapper-observability"
 import {
   handleSuccessfulPayment,
-  sendStarsInvoice,
   type PremiumPlan,
+  sendStarsInvoice,
 } from "./services/billing-service"
-import { sendPremiumRequiredMessage } from "./monetization/premium-gate"
 import { type ChartType, generateChartImage } from "./services/chart-service"
 import { ExpenseCategory, IncomeCategory, TransactionType } from "./types"
 import {
@@ -103,7 +103,10 @@ function premiumPitch(lang: Language): string {
   })
 }
 
-function formatDateTime(lang: Language, value: Date | null | undefined): string {
+function formatDateTime(
+  lang: Language,
+  value: Date | null | undefined
+): string {
   if (!value) return "-"
   return value.toLocaleString(getLocale(lang), {
     year: "numeric",
@@ -252,7 +255,10 @@ export function registerCommands(bot: BotClient) {
     const userId = chatId.toString()
     const lang = await resolveUserLanguage(userId)
     if (!config.ENABLE_TELEGRAM_STARS) {
-      await bot.sendMessage(chatId, t(lang, "commands.monetization.paymentsDisabled"))
+      await bot.sendMessage(
+        chatId,
+        t(lang, "commands.monetization.paymentsDisabled")
+      )
       return
     }
 
@@ -299,7 +305,10 @@ export function registerCommands(bot: BotClient) {
     }
 
     if (status.trialUsed) {
-      await bot.sendMessage(chatId, t(lang, "commands.monetization.trialAlreadyUsed"))
+      await bot.sendMessage(
+        chatId,
+        t(lang, "commands.monetization.trialAlreadyUsed")
+      )
       return
     }
 
@@ -457,9 +466,13 @@ export function registerCommands(bot: BotClient) {
       })
     } catch (error) {
       if ((error as { code?: string }).code === "SUBSCRIPTION_LIMIT_EXCEEDED") {
-        await bot.sendMessage(chatId, premiumLimitMessage(lang, "transaction"), {
-          parse_mode: "Markdown",
-        })
+        await bot.sendMessage(
+          chatId,
+          premiumLimitMessage(lang, "transaction"),
+          {
+            parse_mode: "Markdown",
+          }
+        )
         return
       }
       throw error
@@ -551,9 +564,13 @@ export function registerCommands(bot: BotClient) {
       })
     } catch (error) {
       if ((error as { code?: string }).code === "SUBSCRIPTION_LIMIT_EXCEEDED") {
-        await bot.sendMessage(chatId, premiumLimitMessage(lang, "transaction"), {
-          parse_mode: "Markdown",
-        })
+        await bot.sendMessage(
+          chatId,
+          premiumLimitMessage(lang, "transaction"),
+          {
+            parse_mode: "Markdown",
+          }
+        )
         return
       }
       throw error
@@ -682,19 +699,22 @@ export function registerCommands(bot: BotClient) {
 
     const validTypes: ChartType[] = ["trends", "categories", "balance"]
     if (!validTypes.includes(typeRaw as ChartType)) {
-      await bot.sendMessage(
-        chatId,
-        t(lang, "commands.monetization.chartUsage")
-      )
+      await bot.sendMessage(chatId, t(lang, "commands.monetization.chartUsage"))
       return
     }
 
     if (!Number.isFinite(months) || months < 1 || months > 24) {
-      await bot.sendMessage(chatId, t(lang, "commands.monetization.chartMonthsRange"))
+      await bot.sendMessage(
+        chatId,
+        t(lang, "commands.monetization.chartMonthsRange")
+      )
       return
     }
 
-    await bot.sendMessage(chatId, t(lang, "commands.monetization.chartGenerating"))
+    await bot.sendMessage(
+      chatId,
+      t(lang, "commands.monetization.chartGenerating")
+    )
 
     try {
       const image = await tgObservability.trackAsync(
@@ -880,7 +900,7 @@ export function registerCommands(bot: BotClient) {
     const obs = tgObservability.getSnapshot()
     await bot.sendMessage(
       chatId,
-      `📊 Monetization stats\n\n` +
+      "📊 Monetization stats\n\n" +
         `Users: ${stats.totalUsers}\n` +
         `Free: ${stats.freeUsers}\n` +
         `Trial: ${stats.trialUsers}\n` +
@@ -939,7 +959,12 @@ export function registerCommands(bot: BotClient) {
         1,
         Math.floor((amount / config.PREMIUM_MONTHLY_PRICE_CENTS) * 30)
       )
-      const status = await db.recordPayment(targetUserId, provider, reference, days)
+      const status = await db.recordPayment(
+        targetUserId,
+        provider,
+        reference,
+        days
+      )
       await bot.sendMessage(
         chatId,
         `💳 Payment recorded for ${targetUserId}: ${amount} ${currency}\n` +

@@ -2,9 +2,9 @@ import type { BotClient, TgTypes as Tg } from "@jilimb0/tgwrapper"
 import { config } from "../config"
 import { dbStorage as db } from "../database/storage-db"
 import { getLocale, type Language, resolveLanguage, t } from "../i18n"
-import { buildSubscriptionView } from "./subscription-view"
 import { type PremiumPlan, sendStarsInvoice } from "../services/billing-service"
 import { safeAnswerCallback } from "../utils"
+import { buildSubscriptionView } from "./subscription-view"
 
 async function resolveLang(userId: string): Promise<Language> {
   try {
@@ -15,7 +15,10 @@ async function resolveLang(userId: string): Promise<Language> {
   }
 }
 
-function formatDateTime(lang: Language, value: Date | null | undefined): string {
+function formatDateTime(
+  lang: Language,
+  value: Date | null | undefined
+): string {
   if (!value) return "-"
   return value.toLocaleString(getLocale(lang), {
     year: "numeric",
