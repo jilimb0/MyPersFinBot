@@ -61,6 +61,8 @@ const createMockContext = (overrides = {}): MessageContext => ({
   lang: "en",
   text: "",
   db: {
+    getUserUiMode: jest.fn().mockResolvedValue("pro"),
+    canUsePremiumFeature: jest.fn().mockResolvedValue(true),
     getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
     setDefaultCurrency: jest.fn().mockResolvedValue(undefined),
     getAllReminders: jest.fn().mockResolvedValue([]),
@@ -300,7 +302,7 @@ describe("Settings submenu handlers", () => {
       await settingsHandlers.handleClearDataExecute(context)
 
       expect(consoleErrorSpy).toHaveBeenCalled()
-      expect(getSettingsKeyboard).toHaveBeenCalledWith("en")
+      expect(getSettingsKeyboard).toHaveBeenCalledWith("en", "pro")
       consoleErrorSpy.mockRestore()
     })
   })
@@ -465,7 +467,7 @@ describe("Settings submenu handlers", () => {
           reply_markup: expect.any(Object),
         })
       )
-      expect(getSettingsKeyboard).toHaveBeenCalledWith("en")
+      expect(getSettingsKeyboard).toHaveBeenCalledWith("en", "pro")
       expect(result).toBe(true)
     })
 

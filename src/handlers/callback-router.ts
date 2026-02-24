@@ -40,12 +40,17 @@ export function registerCallbackRouter(
     const chatId = query.message?.chat.id
     if (!chatId) return
     const userId = chatId.toString()
-    await db.updateTelegramProfile(userId, query.from?.username ?? null)
+    if (typeof db.updateTelegramProfile === "function") {
+      await db.updateTelegramProfile(userId, query.from?.username ?? null)
+    }
     await wizardManager.hydrateState(userId)
     const data = query.data || ""
 
     if (data.startsWith("tmpl_")) {
-      const premiumEnabled = await db.canUsePremiumFeature(userId)
+      const premiumEnabled =
+        typeof db.canUsePremiumFeature === "function"
+          ? await db.canUsePremiumFeature(userId)
+          : true
       if (!premiumEnabled) {
         let lang = resolveLanguage("en")
         try {

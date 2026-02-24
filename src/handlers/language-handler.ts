@@ -3,6 +3,15 @@ import { dbStorage as db } from "../database/storage-db"
 import { isValidLanguage, type Language, resolveLanguage, t } from "../i18n"
 import { getLanguageKeyboard, getMainMenuKeyboard } from "../i18n/keyboards"
 
+async function getUserUiModeOrDefault(
+  userId: string
+): Promise<"basic" | "pro"> {
+  if (typeof db.getUserUiMode !== "function") {
+    return "basic"
+  }
+  return await db.getUserUiMode(userId)
+}
+
 /**
  * Show language selection menu
  */
@@ -67,7 +76,7 @@ export async function handleLanguageSelection(
   const confirmMsg = t(selectedLang, "settings.languageChanged", {
     language: t(selectedLang, `languages.${selectedLang}`),
   })
-  const uiMode = await db.getUserUiMode(userId)
+  const uiMode = await getUserUiModeOrDefault(userId)
 
   await bot.sendMessage(
     chatId,

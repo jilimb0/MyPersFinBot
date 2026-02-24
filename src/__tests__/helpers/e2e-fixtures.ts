@@ -2,7 +2,9 @@ import { dbStorage } from "../../database/storage-db"
 
 export function setupExpenseIncomeFixtures(balanceAmount = 100) {
   ;(
-    dbStorage.getUserUiMode as jest.MockedFunction<typeof dbStorage.getUserUiMode>
+    dbStorage.getUserUiMode as jest.MockedFunction<
+      typeof dbStorage.getUserUiMode
+    >
   ).mockResolvedValue("basic")
   ;(
     dbStorage.getDefaultCurrency as jest.MockedFunction<

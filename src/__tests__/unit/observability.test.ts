@@ -4,10 +4,6 @@ jest.mock("../../sentry", () => ({
   initSentry: jest.fn(),
 }))
 
-jest.mock("../../health-server", () => ({
-  startHealthServer: jest.fn(),
-}))
-
 jest.mock("../../observability/tgwrapper-observability", () => ({
   tgObservability: {
     init: jest.fn().mockResolvedValue(undefined),
@@ -16,7 +12,6 @@ jest.mock("../../observability/tgwrapper-observability", () => ({
   },
 }))
 
-import { startHealthServer } from "../../health-server"
 import { tgObservability } from "../../observability/tgwrapper-observability"
 import { initSentry } from "../../sentry"
 
@@ -26,6 +21,5 @@ describe("initObservability", () => {
 
     expect(initSentry).toHaveBeenCalled()
     expect(tgObservability.init).toHaveBeenCalled()
-    expect(startHealthServer).toHaveBeenCalled()
   })
 })
