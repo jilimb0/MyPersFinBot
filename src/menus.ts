@@ -21,7 +21,8 @@ export async function showMainMenu(
   chatId: number
 ): Promise<void> {
   const lang = await resolveLangByChat(chatId)
-  return menusI18n.showMainMenu(bot, chatId, lang)
+  const userId = chatId.toString()
+  return menusI18n.showMainMenu(bot, chatId, lang, userId)
 }
 
 export async function showBalancesMenu(

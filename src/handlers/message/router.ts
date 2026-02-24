@@ -55,6 +55,10 @@ export class MessageRouter {
         const userId = chatId.toString()
         const text = msg.text?.trim()
 
+        if (typeof db.updateTelegramProfile === "function") {
+          await db.updateTelegramProfile(userId, msg.from?.username ?? null)
+        }
+
         if (!text) return
         await this.wizardManager.hydrateState(userId)
 

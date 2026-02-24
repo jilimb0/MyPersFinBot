@@ -231,7 +231,7 @@ describe("WizardManager - handleWizardInput", () => {
       )
 
       expect(wizard.getState(userId)).toBeUndefined()
-      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en")
+      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en", userId)
       expect(result).toBe(true)
     })
   })
@@ -531,12 +531,12 @@ describe("WizardManager - handleWizardInput", () => {
 
     it("should return to main menu by default", async () => {
       await wizard.returnToContext(chatId, userId, "unknown")
-      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en")
+      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en", userId)
     })
 
     it("should return to main menu when no returnTo", async () => {
       await wizard.returnToContext(chatId, userId)
-      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en")
+      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en", userId)
     })
 
     it("should keep existing state language", async () => {

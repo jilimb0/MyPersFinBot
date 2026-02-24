@@ -133,12 +133,12 @@ describe("WizardManager - returnToContext Coverage", () => {
 
     it("should return to main menu by default", async () => {
       await wizard.returnToContext(chatId, userId, undefined)
-      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en")
+      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en", userId)
     })
 
     it("should return to main menu for unknown context", async () => {
       await wizard.returnToContext(chatId, userId, "unknown")
-      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en")
+      expect(showMainMenu).toHaveBeenCalledWith(bot, chatId, "en", userId)
     })
 
     it("should use state language when returning to context", async () => {

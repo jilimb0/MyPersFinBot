@@ -26,15 +26,26 @@ import {
 import { createListButtons, escapeMarkdown, formatMoney } from "./utils"
 import type { WizardManager } from "./wizards/wizards"
 
+async function getUserUiModeOrDefault(
+  userId: string
+): Promise<"basic" | "pro"> {
+  if (typeof db.getUserUiMode !== "function") {
+    return "basic"
+  }
+  return await db.getUserUiMode(userId)
+}
+
 export async function showMainMenu(
   bot: BotClient,
   chatId: number,
-  lang: Language
+  lang: Language,
+  userId: string
 ): Promise<void> {
+  const uiMode = await getUserUiModeOrDefault(userId)
   await bot.sendMessage(
     chatId,
     t(lang, "mainMenu.welcomeBack"),
-    getMainMenuKeyboard(lang)
+    getMainMenuKeyboard(lang, uiMode)
   )
 }
 
@@ -212,12 +223,13 @@ export async function showSettingsMenu(
   lang: Language
 ): Promise<void> {
   const currentCurrency = await db.getDefaultCurrency(userId)
+  const uiMode = await getUserUiModeOrDefault(userId)
   bot.sendMessage(
     chatId,
     `${t(lang, "settings.title")}\n\n${t(lang, "settings.currentCurrency")} ${currentCurrency}\n\n${t(lang, "settings.manageConfig")}`,
     {
       parse_mode: "Markdown",
-      reply_markup: getSettingsKeyboard(lang),
+      reply_markup: getSettingsKeyboard(lang, uiMode),
     }
   )
 }

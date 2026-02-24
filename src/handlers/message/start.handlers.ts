@@ -2,6 +2,7 @@
  * Start and main menu message handlers
  */
 
+import { config } from "../../config"
 import { t } from "../../i18n"
 import {
   getMainMenuKeyboard,
@@ -30,15 +31,37 @@ export const handleStart: MessageHandler = async (context) => {
     userData.goals.length > 0
 
   if (hasData) {
+    const uiMode = await db.getUserUiMode(userId)
     await bot.sendMessage(
       chatId,
       t(lang, "mainMenu.welcomeBack"),
-      getMainMenuKeyboard(lang)
+      getMainMenuKeyboard(lang, uiMode)
     )
   } else {
+    const freeVoice = t(lang, "commands.monetization.limitVoice", {
+      limit: config.FREE_VOICE_INPUTS_PER_DAY,
+    })
+    const freeTx = t(lang, "commands.monetization.limitTransaction", {
+      limit: config.FREE_TRANSACTIONS_PER_MONTH,
+    })
+    const premiumBlock =
+      `${t(lang, "commands.monetization.featureVoice")}\n` +
+      `${t(lang, "commands.monetization.featureCommandMode")}\n` +
+      `${t(lang, "commands.monetization.featureTemplates")}\n` +
+      `${t(lang, "commands.monetization.featureExport")}\n` +
+      `${t(lang, "commands.monetization.featureStatementImport")}\n` +
+      `${t(lang, "commands.monetization.featureCustomMessages")}`
+
     await bot.sendMessage(
       chatId,
-      `${t(lang, "mainMenu.welcome")}\n\n${t(lang, "mainMenu.welcomeIntro")}`,
+      `${t(lang, "mainMenu.welcome")}\n\n` +
+        `${t(lang, "mainMenu.welcomeIntro")}\n\n` +
+        "*Free*\n" +
+        `• ${freeTx}\n` +
+        `• ${freeVoice}\n\n` +
+        "*Premium*\n" +
+        `• ${premiumBlock}\n\n` +
+        `${t(lang, "commands.monetization.buyUsage")}`,
       {
         parse_mode: "Markdown",
         ...getStartTrackingKeyboard(lang),
@@ -52,14 +75,15 @@ export const handleStart: MessageHandler = async (context) => {
  * Handle "Start Tracking" button
  */
 export const handleStartTracking: MessageHandler = async (context) => {
-  const { bot, chatId, lang } = context
+  const { bot, chatId, lang, userId, db } = context
+  const uiMode = await db.getUserUiMode(userId)
 
   await bot.sendMessage(
     chatId,
     `${t(lang, "mainMenu.quickStartTitle")}\n\n${t(lang, "mainMenu.quickStartGuide")}`,
     {
       parse_mode: "Markdown",
-      ...getMainMenuKeyboard(lang),
+      ...getMainMenuKeyboard(lang, uiMode),
     }
   )
   return true

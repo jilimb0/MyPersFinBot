@@ -144,6 +144,9 @@ netstat -tulpn | grep 3005
 curl -u health:your_password https://your-domain.example.com/healthz
 curl -u health:your_password https://your-domain.example.com/metrics
 
+# 2.2 Check admin UI availability (Telegram auth)
+curl -I http://127.0.0.1:3005/admin/ui
+
 # 3. Check logs for errors
 pm2 logs my-pers-fin-bot --lines 20 --err
 # No recent critical errors

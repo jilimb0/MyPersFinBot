@@ -21,6 +21,12 @@ describe("Settings Handlers - Branch Coverage", () => {
       goToStep: jest.fn(),
     }
     ;(dbStorage.getDefaultCurrency as jest.Mock).mockResolvedValue("USD")
+    ;(dbStorage.getUserUiMode as jest.Mock).mockResolvedValue("pro")
+    ;(dbStorage.getSubscriptionStatus as jest.Mock).mockResolvedValue({
+      tier: "free",
+      subscriptionPaused: false,
+    })
+    ;(dbStorage.hasSeenUiModeHint as jest.Mock).mockResolvedValue(true)
 
     context = {
       bot,

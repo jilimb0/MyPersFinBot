@@ -30,6 +30,15 @@ export async function handleStatementUpload(
     return
   }
 
+  const premiumEnabled = await db.canUsePremiumFeature(userId)
+  if (!premiumEnabled) {
+    await bot.sendMessage(
+      msg.chat.id,
+      "📥 Bank statement import is a Premium feature.\nUse /trial or /premium to unlock it."
+    )
+    return
+  }
+
   // Check file extension
   const fileName = document.file_name || ""
   const ext = fileName.split(".").pop()?.toLowerCase()

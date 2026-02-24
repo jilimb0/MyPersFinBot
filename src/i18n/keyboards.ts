@@ -4,7 +4,29 @@ import { getTranslationValue, type Language, t } from "./index"
 /**
  * Generate main menu keyboard based on user language
  */
-export function getMainMenuKeyboard(lang: Language): Tg.SendMessageOptions {
+export function getMainMenuKeyboard(
+  lang: Language,
+  mode: "basic" | "pro" = "basic"
+): Tg.SendMessageOptions {
+  if (mode === "basic") {
+    return {
+      reply_markup: {
+        keyboard: [
+          [
+            { text: t(lang, "mainMenu.expense") },
+            { text: t(lang, "mainMenu.income") },
+          ],
+          [
+            { text: t(lang, "mainMenu.balances") },
+            { text: t(lang, "mainMenu.analytics") },
+          ],
+          [{ text: t(lang, "mainMenu.settings") }],
+        ],
+        resize_keyboard: true,
+      },
+    }
+  }
+
   return {
     reply_markup: {
       keyboard: [
@@ -33,16 +55,45 @@ export function getMainMenuKeyboard(lang: Language): Tg.SendMessageOptions {
 /**
  * Generate settings keyboard
  */
-export function getSettingsKeyboard(lang: Language): Tg.ReplyKeyboardMarkup {
+export function getSettingsKeyboard(
+  lang: Language,
+  mode: "basic" | "pro" = "basic"
+): Tg.ReplyKeyboardMarkup {
+  if (mode === "basic") {
+    return {
+      keyboard: [
+        [
+          { text: t(lang, "settings.language") },
+          { text: t(lang, "settings.changeCurrency") },
+        ],
+        [
+          { text: t(lang, "settings.subscription") },
+          { text: t(lang, "settings.uiModePro") },
+        ],
+        [
+          { text: t(lang, "settings.helpInfo") },
+          { text: t(lang, "mainMenu.mainMenuButton") },
+        ],
+      ],
+      resize_keyboard: true,
+    }
+  }
+
   return {
     keyboard: [
-      [{ text: t(lang, "settings.language") }],
-      [{ text: t(lang, "settings.changeCurrency") }],
-      [{ text: t(lang, "settings.incomeSources") }],
+      [
+        { text: t(lang, "settings.language") },
+        { text: t(lang, "settings.changeCurrency") },
+      ],
+      [
+        { text: t(lang, "settings.subscription") },
+        { text: t(lang, "settings.incomeSources") },
+      ],
       [
         { text: t(lang, "settings.automation") },
         { text: t(lang, "settings.advanced") },
       ],
+      [{ text: t(lang, "settings.uiModeBasic") }],
       [
         { text: t(lang, "settings.helpInfo") },
         { text: t(lang, "mainMenu.mainMenuButton") },

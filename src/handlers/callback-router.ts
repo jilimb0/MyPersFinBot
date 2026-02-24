@@ -1,6 +1,20 @@
 import type { BotClient } from "@jilimb0/tgwrapper"
+import { dbStorage as db } from "../database/storage-db"
+import { resolveLanguage, t } from "../i18n"
+import { sendPremiumRequiredMessage } from "../monetization/premium-gate"
 import { safeAnswerCallback } from "../utils"
 import type { WizardManager } from "../wizards/wizards"
+import {
+  handleSubscriptionBuy,
+  handleSubscriptionCancelAbort,
+  handleSubscriptionCancelConfirm,
+  handleSubscriptionCancelPrompt,
+  handleSubscriptionOpen,
+  handleSubscriptionRefresh,
+  handleSubscriptionResume,
+  handleTrialCancel,
+  handleTrialConfirm,
+} from "./monetization-callback-handlers"
 import {
   handleReminderDone,
   handleReminderSnooze,
@@ -26,8 +40,36 @@ export function registerCallbackRouter(
     const chatId = query.message?.chat.id
     if (!chatId) return
     const userId = chatId.toString()
+    if (typeof db.updateTelegramProfile === "function") {
+      await db.updateTelegramProfile(userId, query.from?.username ?? null)
+    }
     await wizardManager.hydrateState(userId)
     const data = query.data || ""
+
+    if (data.startsWith("tmpl_")) {
+      const premiumEnabled =
+        typeof db.canUsePremiumFeature === "function"
+          ? await db.canUsePremiumFeature(userId)
+          : true
+      if (!premiumEnabled) {
+        let lang = resolveLanguage("en")
+        try {
+          lang = resolveLanguage(await db.getUserLanguage(userId))
+        } catch {
+          // keep default language
+        }
+        await safeAnswerCallback(bot, {
+          callback_query_id: query.id,
+        })
+        await sendPremiumRequiredMessage(
+          bot,
+          chatId,
+          lang,
+          t(lang, "commands.monetization.featureTemplates")
+        )
+        return
+      }
+    }
 
     const routes: Array<{
       match: (value: string) => boolean
@@ -122,6 +164,58 @@ export function registerCallbackRouter(
       {
         match: (value) => value.startsWith("nlp_"),
         handle: async () => handleNLPCallback(bot, query, wizardManager),
+      },
+      {
+        match: (value) => value === "trial_confirm",
+        handle: async () => handleTrialConfirm(bot, query, userId, chatId),
+      },
+      {
+        match: (value) => value === "trial_cancel",
+        handle: async () => handleTrialCancel(bot, query, userId, chatId),
+      },
+      {
+        match: (value) => value === "sub_open",
+        handle: async () => handleSubscriptionOpen(bot, query, userId, chatId),
+      },
+      {
+        match: (value) => value === "sub_buy_month",
+        handle: async () =>
+          handleSubscriptionBuy(bot, query, userId, chatId, "monthly"),
+      },
+      {
+        match: (value) => value === "sub_buy_year",
+        handle: async () =>
+          handleSubscriptionBuy(bot, query, userId, chatId, "yearly"),
+      },
+      {
+        match: (value) => value === "sub_buy_lifetime",
+        handle: async () =>
+          handleSubscriptionBuy(bot, query, userId, chatId, "lifetime"),
+      },
+      {
+        match: (value) => value === "sub_cancel_prompt",
+        handle: async () =>
+          handleSubscriptionCancelPrompt(bot, query, userId, chatId),
+      },
+      {
+        match: (value) => value === "sub_cancel_confirm",
+        handle: async () =>
+          handleSubscriptionCancelConfirm(bot, query, userId, chatId),
+      },
+      {
+        match: (value) => value === "sub_cancel_abort",
+        handle: async () =>
+          handleSubscriptionCancelAbort(bot, query, userId, chatId),
+      },
+      {
+        match: (value) => value === "sub_refresh",
+        handle: async () =>
+          handleSubscriptionRefresh(bot, query, userId, chatId),
+      },
+      {
+        match: (value) => value === "sub_resume",
+        handle: async () =>
+          handleSubscriptionResume(bot, query, userId, chatId),
       },
       {
         match: (value) => value === "tmpl_list",

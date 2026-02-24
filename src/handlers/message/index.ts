@@ -44,6 +44,9 @@ import {
   handleLanguageSettings,
   handleNotificationsMenu,
   handleRecurringMenu,
+  handleSubscriptionMenu,
+  handleUiModeBasic,
+  handleUiModePro,
   handleUploadStatement,
 } from "./settings-submenu.handlers"
 import { handleStart, handleStartTracking } from "./start.handlers"
@@ -276,6 +279,25 @@ function registerAllRoutes(router: MessageRouter): void {
     "Settings: Income Sources"
   )
 
+  // Subscription
+  router.register(
+    (text, lang) => text === t(lang, "settings.subscription"),
+    handleSubscriptionMenu,
+    "Settings: Subscription"
+  )
+
+  router.register(
+    (text, lang) => text === t(lang, "settings.uiModeBasic"),
+    handleUiModeBasic,
+    "Settings: UI mode basic"
+  )
+
+  router.register(
+    (text, lang) => text === t(lang, "settings.uiModePro"),
+    handleUiModePro,
+    "Settings: UI mode pro"
+  )
+
   // Clear data (confirmation)
   router.register(
     (text, lang) => text === t(lang, "settings.clearData"),
@@ -433,6 +455,12 @@ function registerAllRoutes(router: MessageRouter): void {
       const { bot, chatId, userId, lang, text, wizardManager } = context
       if (wizardManager.isInWizard(userId)) {
         return false
+      }
+
+      // Slash commands are handled by command router; avoid duplicate
+      // "unknown command" messages from text fallback.
+      if (text.startsWith("/")) {
+        return true
       }
 
       const normalized = normalizeText(text)

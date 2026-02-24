@@ -6,11 +6,41 @@ import * as handlers from "../../handlers"
 import { resolveLanguage, t } from "../../i18n"
 import { getSettingsKeyboard } from "../../i18n/keyboards"
 import * as menus from "../../menus-i18n"
+import { sendPremiumRequiredMessage } from "../../monetization/premium-gate"
 import { cancelRecurringTransaction, cancelReminder } from "../../queue"
 import { userContext } from "../../services/user-context"
 import type { Currency } from "../../types"
 import { showLanguageMenu } from "../language-handler"
+import { buildSubscriptionView } from "../subscription-view"
 import type { MessageHandler } from "./types"
+
+type DbWithUiMode = {
+  getUserUiMode?: (userId: string) => Promise<"basic" | "pro">
+}
+
+type DbWithPremiumGate = {
+  canUsePremiumFeature?: (userId: string) => Promise<boolean>
+}
+
+async function getUserUiModeOrDefault(
+  db: DbWithUiMode,
+  userId: string
+): Promise<"basic" | "pro"> {
+  if (typeof db.getUserUiMode !== "function") {
+    return "basic"
+  }
+  return await db.getUserUiMode(userId)
+}
+
+async function canUsePremiumFeatureOrDefault(
+  db: DbWithPremiumGate,
+  userId: string
+): Promise<boolean> {
+  if (typeof db.canUsePremiumFeature !== "function") {
+    return true
+  }
+  return await db.canUsePremiumFeature(userId)
+}
 
 /**
  * Handle Language settings
@@ -25,7 +55,14 @@ export const handleLanguageSettings: MessageHandler = async (context) => {
  * Handle Automation menu
  */
 export const handleAutomationMenu: MessageHandler = async (context) => {
-  const { chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const uiMode = await getUserUiModeOrDefault(db, userId)
+  if (uiMode === "basic") {
+    await bot.sendMessage(chatId, t(lang, "settings.switchToProHint"), {
+      reply_markup: getSettingsKeyboard(lang, "basic"),
+    })
+    return true
+  }
   await menus.showAutomationMenu(wizardManager, chatId, userId, lang)
   return true
 }
@@ -34,7 +71,14 @@ export const handleAutomationMenu: MessageHandler = async (context) => {
  * Handle Advanced menu
  */
 export const handleAdvancedMenu: MessageHandler = async (context) => {
-  const { chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const uiMode = await getUserUiModeOrDefault(db, userId)
+  if (uiMode === "basic") {
+    await bot.sendMessage(chatId, t(lang, "settings.switchToProHint"), {
+      reply_markup: getSettingsKeyboard(lang, "basic"),
+    })
+    return true
+  }
   await menus.showAdvancedMenu(wizardManager, chatId, userId, lang)
   return true
 }
@@ -71,7 +115,14 @@ export const handleHelp: MessageHandler = async (context) => {
  * Handle Income Sources menu
  */
 export const handleIncomeSourcesMenu: MessageHandler = async (context) => {
-  const { bot, chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const uiMode = await getUserUiModeOrDefault(db, userId)
+  if (uiMode === "basic") {
+    await bot.sendMessage(chatId, t(lang, "settings.switchToProHint"), {
+      reply_markup: getSettingsKeyboard(lang, "basic"),
+    })
+    return true
+  }
 
   wizardManager.setState(userId, {
     step: "INCOME_VIEW",
@@ -81,6 +132,21 @@ export const handleIncomeSourcesMenu: MessageHandler = async (context) => {
   })
 
   await menus.showIncomeSourcesMenu(bot, chatId, userId, lang)
+  return true
+}
+
+export const handleSubscriptionMenu: MessageHandler = async (context) => {
+  const { bot, chatId, userId, lang, db } = context
+  const status = await db.getSubscriptionStatus(userId)
+  const view = buildSubscriptionView(lang, status)
+
+  await bot.sendMessage(chatId, view.text, {
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: view.keyboard,
+    },
+  })
+
   return true
 }
 
@@ -154,10 +220,31 @@ export const handleClearDataExecute: MessageHandler = async (context) => {
     )
   } catch (error) {
     console.error("Error clearing user ", error)
+    const uiMode = await getUserUiModeOrDefault(context.db, userId)
     await bot.sendMessage(chatId, t(context.lang, "errors.clearingData"), {
-      reply_markup: getSettingsKeyboard(context.lang),
+      reply_markup: getSettingsKeyboard(context.lang, uiMode),
     })
   }
+  return true
+}
+
+export const handleUiModeBasic: MessageHandler = async (context) => {
+  const { bot, chatId, userId, lang, db } = context
+  await db.setUserUiMode(userId, "basic")
+  await bot.sendMessage(chatId, t(lang, "settings.uiModeChangedBasic"), {
+    parse_mode: "Markdown",
+    reply_markup: getSettingsKeyboard(lang, "basic"),
+  })
+  return true
+}
+
+export const handleUiModePro: MessageHandler = async (context) => {
+  const { bot, chatId, userId, lang, db } = context
+  await db.setUserUiMode(userId, "pro")
+  await bot.sendMessage(chatId, t(lang, "settings.uiModeChangedPro"), {
+    parse_mode: "Markdown",
+    reply_markup: getSettingsKeyboard(lang, "pro"),
+  })
   return true
 }
 
@@ -182,7 +269,17 @@ export const handleNotificationsMenu: MessageHandler = async (context) => {
  * Handle Recurring Payments menu
  */
 export const handleRecurringMenu: MessageHandler = async (context) => {
-  const { chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const premiumEnabled = await canUsePremiumFeatureOrDefault(db, userId)
+  if (!premiumEnabled) {
+    await sendPremiumRequiredMessage(
+      bot,
+      chatId,
+      lang,
+      t(lang, "commands.monetization.featureRecurring")
+    )
+    return true
+  }
   await handlers.handleRecurringMenu(wizardManager, chatId, userId, lang)
   return true
 }
@@ -191,7 +288,17 @@ export const handleRecurringMenu: MessageHandler = async (context) => {
  * Handle Custom Messages menu
  */
 export const handleCustomMessagesMenu: MessageHandler = async (context) => {
-  const { chatId, userId, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const premiumEnabled = await canUsePremiumFeatureOrDefault(db, userId)
+  if (!premiumEnabled) {
+    await sendPremiumRequiredMessage(
+      bot,
+      chatId,
+      lang,
+      t(lang, "commands.monetization.featureCustomMessages")
+    )
+    return true
+  }
   await handlers.handleCustomMessagesMenu(wizardManager, chatId, userId)
   return true
 }
@@ -200,7 +307,17 @@ export const handleCustomMessagesMenu: MessageHandler = async (context) => {
  * Handle Upload Statement
  */
 export const handleUploadStatement: MessageHandler = async (context) => {
-  const { bot, chatId, userId, lang, wizardManager } = context
+  const { bot, chatId, userId, lang, wizardManager, db } = context
+  const premiumEnabled = await canUsePremiumFeatureOrDefault(db, userId)
+  if (!premiumEnabled) {
+    await sendPremiumRequiredMessage(
+      bot,
+      chatId,
+      lang,
+      t(lang, "commands.monetization.featureStatementImport")
+    )
+    return true
+  }
 
   wizardManager.setState(userId, {
     step: "UPLOAD_STATEMENT",
@@ -329,7 +446,10 @@ export const handleCurrencyChangeConfirm: MessageHandler = async (context) => {
       chatId,
       t(lang, "settings.currencyAlreadyCurrent", { currency }),
       {
-        reply_markup: getSettingsKeyboard(lang),
+        reply_markup: getSettingsKeyboard(
+          lang,
+          await getUserUiModeOrDefault(db, userId)
+        ),
       }
     )
   }
@@ -362,7 +482,10 @@ export const handleCurrencyChangeExecute: MessageHandler = async (context) => {
         { count: balancesCount, currency: newCurrency }
       )}`,
       {
-        reply_markup: getSettingsKeyboard(lang),
+        reply_markup: getSettingsKeyboard(
+          lang,
+          await getUserUiModeOrDefault(db, userId)
+        ),
       }
     )
   } else {
@@ -370,7 +493,10 @@ export const handleCurrencyChangeExecute: MessageHandler = async (context) => {
       chatId,
       t(lang, "settings.currencySet", { currency: newCurrency }),
       {
-        reply_markup: getSettingsKeyboard(lang),
+        reply_markup: getSettingsKeyboard(
+          lang,
+          await getUserUiModeOrDefault(db, userId)
+        ),
       }
     )
   }

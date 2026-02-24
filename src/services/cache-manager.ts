@@ -55,6 +55,8 @@ const CACHE_TTL = {
 interface UserSettings {
   defaultCurrency: Currency
   language?: Language
+  uiMode?: "basic" | "pro"
+  uiModeHintShown?: boolean
   autoDeposit?: boolean
   timezone?: string
 }

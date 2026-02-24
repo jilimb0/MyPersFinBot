@@ -22,11 +22,65 @@ export class User {
   @PrimaryGeneratedColumn("uuid")
   id!: string
 
+  @Column({ type: "text", nullable: true })
+  telegramUsername?: string | null
+
   @Column({ type: "text", default: "USD" })
   defaultCurrency!: Currency
 
   @Column({ type: "text", default: "en" })
   language!: Language
+
+  @Column({ type: "text", default: "basic" })
+  uiMode!: "basic" | "pro"
+
+  @Column({ type: "boolean", default: false })
+  uiModeHintShown!: boolean
+
+  @Column({ type: "text", default: "free" })
+  subscriptionTier!: "free" | "trial" | "premium"
+
+  @Column({ type: "datetime", nullable: true })
+  premiumExpiresAt?: Date | null
+
+  @Column({ type: "datetime", nullable: true })
+  trialStartedAt?: Date | null
+
+  @Column({ type: "datetime", nullable: true })
+  trialExpiresAt?: Date | null
+
+  @Column({ type: "boolean", default: false })
+  trialUsed!: boolean
+
+  @Column({ type: "integer", default: 0 })
+  transactionsThisMonth!: number
+
+  @Column({ type: "text", nullable: true })
+  transactionsMonthKey?: string | null
+
+  @Column({ type: "integer", default: 0 })
+  voiceInputsToday!: number
+
+  @Column({ type: "text", nullable: true })
+  voiceDayKey?: string | null
+
+  @Column({ type: "datetime", nullable: true })
+  lastPaymentAt?: Date | null
+
+  @Column({ type: "text", nullable: true })
+  lastPaymentProvider?: string | null
+
+  @Column({ type: "text", nullable: true })
+  lastPaymentReference?: string | null
+
+  @Column({ type: "boolean", default: false })
+  subscriptionPaused!: boolean
+
+  @Column({ type: "integer", default: 0 })
+  pausedRemainingMs!: number
+
+  @Column({ type: "text", nullable: true })
+  pausedTier?: "trial" | "premium" | null
 
   @CreateDateColumn()
   createdAt!: Date

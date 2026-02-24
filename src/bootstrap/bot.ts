@@ -11,6 +11,7 @@ import { tgObservability } from "../observability/tgwrapper-observability"
 type JsonObject = Record<string, unknown>
 type MessageHandler = (msg: Tg.Message) => void | Promise<void>
 type CallbackHandler = (query: Tg.CallbackQuery) => void | Promise<void>
+type PreCheckoutHandler = (query: Tg.PreCheckoutQuery) => void | Promise<void>
 type PollingErrorHandler = (error: unknown) => void | Promise<void>
 
 type ApiClientLike = {
@@ -68,6 +69,7 @@ async function loadRuntimeDeps(): Promise<RuntimeDeps> {
 type TelegramUpdateLike = {
   message?: unknown
   callback_query?: unknown
+  pre_checkout_query?: unknown
 }
 
 class TgWrapperBot {
@@ -80,6 +82,7 @@ class TgWrapperBot {
   private readonly startupGraceMs = 250
   private messageHandlers: MessageHandler[] = []
   private callbackHandlers: CallbackHandler[] = []
+  private preCheckoutHandlers: PreCheckoutHandler[] = []
   private pollingErrorHandlers: PollingErrorHandler[] = []
 
   constructor(token: string) {
@@ -174,13 +177,23 @@ class TgWrapperBot {
   }
 
   on(
-    event: "message" | "callback_query" | "polling_error",
-    listener: MessageHandler | CallbackHandler | PollingErrorHandler
+    event:
+      | "message"
+      | "callback_query"
+      | "pre_checkout_query"
+      | "polling_error",
+    listener:
+      | MessageHandler
+      | CallbackHandler
+      | PreCheckoutHandler
+      | PollingErrorHandler
   ): this {
     if (event === "message") {
       this.messageHandlers.push(listener as MessageHandler)
     } else if (event === "callback_query") {
       this.callbackHandlers.push(listener as CallbackHandler)
+    } else if (event === "pre_checkout_query") {
+      this.preCheckoutHandlers.push(listener as PreCheckoutHandler)
     } else {
       this.pollingErrorHandlers.push(listener as PollingErrorHandler)
     }
@@ -267,6 +280,35 @@ class TgWrapperBot {
     return true
   }
 
+  async sendInvoice(
+    chatId: number | string,
+    options: Tg.SendInvoiceOptions
+  ): Promise<Tg.Message> {
+    return await tgObservability.instrumentTelegramCall(
+      "sendInvoice",
+      async () =>
+        (await this.getApiClient().callApiUnsafe("sendInvoice", {
+          chat_id: chatId,
+          ...((options as unknown as JsonObject) || {}),
+        })) as Tg.Message
+    )
+  }
+
+  async answerPreCheckoutQuery(
+    options: Tg.AnswerPreCheckoutQueryOptions
+  ): Promise<boolean> {
+    await tgObservability.instrumentTelegramCall(
+      "answerPreCheckoutQuery",
+      async () => {
+        await this.getApiClient().callApiUnsafe(
+          "answerPreCheckoutQuery",
+          options as unknown as JsonObject
+        )
+      }
+    )
+    return true
+  }
+
   async editMessageText(
     text: string,
     options: Tg.EditMessageTextOptions
@@ -334,6 +376,19 @@ class TgWrapperBot {
         performance.now() - started,
         { type: "callback_query" }
       )
+      return
+    }
+    if (candidate.pre_checkout_query) {
+      const query = candidate.pre_checkout_query as Tg.PreCheckoutQuery
+      await this.dispatchPreCheckout(query)
+      tgObservability.onBotUpdate("pre_checkout_query")
+      tgObservability.increment("bot.update.pre_checkout_query")
+      tgObservability.observe(
+        "bot.update.handle.ms",
+        performance.now() - started,
+        { type: "pre_checkout_query" }
+      )
+      return
     }
   }
 
@@ -345,6 +400,12 @@ class TgWrapperBot {
 
   private async dispatchCallback(query: Tg.CallbackQuery): Promise<void> {
     for (const handler of this.callbackHandlers) {
+      await handler(query)
+    }
+  }
+
+  private async dispatchPreCheckout(query: Tg.PreCheckoutQuery): Promise<void> {
+    for (const handler of this.preCheckoutHandlers) {
       await handler(query)
     }
   }

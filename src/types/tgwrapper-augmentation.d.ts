@@ -34,6 +34,58 @@ declare module "@jilimb0/tgwrapper" {
     cache_time?: number
   }
 
+  export interface LabeledPrice {
+    label: string
+    amount: number
+  }
+
+  export interface SendInvoiceOptions {
+    title: string
+    description: string
+    payload: string
+    provider_token?: string
+    currency: string
+    prices: LabeledPrice[]
+    start_parameter?: string
+    photo_url?: string
+    photo_size?: number
+    photo_width?: number
+    photo_height?: number
+    need_name?: boolean
+    need_phone_number?: boolean
+    need_email?: boolean
+    need_shipping_address?: boolean
+    is_flexible?: boolean
+    disable_notification?: boolean
+    reply_to_message_id?: number
+    allow_sending_without_reply?: boolean
+    reply_markup?: InlineKeyboardMarkup
+  }
+
+  export interface PreCheckoutQuery {
+    id: string
+    from: User
+    currency: string
+    total_amount: number
+    invoice_payload: string
+    shipping_option_id?: string
+    order_info?: Record<string, unknown>
+  }
+
+  export interface SuccessfulPayment {
+    currency: string
+    total_amount: number
+    invoice_payload: string
+    telegram_payment_charge_id: string
+    provider_payment_charge_id?: string
+  }
+
+  export interface AnswerPreCheckoutQueryOptions {
+    pre_checkout_query_id: string
+    ok: boolean
+    error_message?: string
+  }
+
   export type EditMessageTextOptions = Omit<
     TgPayloads["editMessageText"],
     "text"
@@ -53,6 +105,10 @@ declare module "@jilimb0/tgwrapper" {
 
     on(event: "message", listener: (msg: Message) => void): this
     on(event: "callback_query", listener: (query: CallbackQuery) => void): this
+    on(
+      event: "pre_checkout_query",
+      listener: (query: PreCheckoutQuery) => void
+    ): this
     on(event: "polling_error", listener: (error: unknown) => void): this
 
     sendMessage(
@@ -71,9 +127,18 @@ declare module "@jilimb0/tgwrapper" {
       }
     ): Promise<unknown>
 
+    sendInvoice(
+      chatId: number | string,
+      options: SendInvoiceOptions
+    ): Promise<Message>
+
     answerCallbackQuery(
       callbackQueryId: string,
       options?: AnswerCallbackQueryOptions
+    ): Promise<boolean>
+
+    answerPreCheckoutQuery(
+      options: AnswerPreCheckoutQueryOptions
     ): Promise<boolean>
 
     editMessageText(
@@ -105,6 +170,14 @@ declare module "@jilimb0/tgwrapper" {
       import("@jilimb0/tgwrapper").SendDocumentOptions
     export type AnswerCallbackQueryOptions =
       import("@jilimb0/tgwrapper").AnswerCallbackQueryOptions
+    export type SendInvoiceOptions =
+      import("@jilimb0/tgwrapper").SendInvoiceOptions
+    export type LabeledPrice = import("@jilimb0/tgwrapper").LabeledPrice
+    export type PreCheckoutQuery = import("@jilimb0/tgwrapper").PreCheckoutQuery
+    export type SuccessfulPayment =
+      import("@jilimb0/tgwrapper").SuccessfulPayment
+    export type AnswerPreCheckoutQueryOptions =
+      import("@jilimb0/tgwrapper").AnswerPreCheckoutQueryOptions
     export type EditMessageTextOptions =
       import("@jilimb0/tgwrapper").EditMessageTextOptions
     export type EditMessageReplyMarkupOptions =

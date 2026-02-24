@@ -27,6 +27,7 @@ import {
   showSettingsMenu,
   showStatsMenu,
 } from "../menus-i18n"
+import { sendPremiumRequiredMessage } from "../monetization/premium-gate"
 import {
   createProgressBar,
   formatTopExpenses,
@@ -251,7 +252,7 @@ export class WizardManager {
         await handlers.handleRecurringMenu(this, chatId, userId, stateLang)
         break
       default:
-        await showMainMenu(this.bot, chatId, stateLang)
+        await showMainMenu(this.bot, chatId, stateLang, userId)
     }
   }
 
@@ -278,7 +279,7 @@ export class WizardManager {
 
     if (text === t(lang, "mainMenu.mainMenuButton")) {
       this.clearState(userId)
-      await showMainMenu(this.bot, chatId, lang)
+      await showMainMenu(this.bot, chatId, lang, userId)
 
       return true
     }
@@ -295,7 +296,7 @@ export class WizardManager {
 
     if (text === t(lang, "buttons.changeAmount")) {
       if (!state) {
-        await showMainMenu(this.bot, chatId, lang)
+        await showMainMenu(this.bot, chatId, lang, userId)
         return true
       }
 
@@ -311,7 +312,7 @@ export class WizardManager {
 
     if (text === t(lang, "common.back")) {
       if (!state) {
-        await showMainMenu(this.bot, chatId, lang)
+        await showMainMenu(this.bot, chatId, lang, userId)
 
         return true
       }
@@ -2791,7 +2792,17 @@ export class WizardManager {
           return true
         }
         case "ANALYTICS_REPORTS_MENU": {
+          const premiumEnabled = await db.canUsePremiumFeature(userId)
           if (text === t(lang, "buttons.filters")) {
+            if (!premiumEnabled) {
+              await sendPremiumRequiredMessage(
+                this.bot,
+                chatId,
+                lang,
+                t(lang, "commands.monetization.featureAdvancedAnalytics")
+              )
+              return true
+            }
             await this.goToStep(userId, "ANALYTICS_FILTERS", {})
             await this.bot.sendMessage(
               chatId,
@@ -2820,6 +2831,15 @@ export class WizardManager {
 
             return true
           } else if (text === t(lang, "buttons.exportCsv")) {
+            if (!premiumEnabled) {
+              await sendPremiumRequiredMessage(
+                this.bot,
+                chatId,
+                lang,
+                t(lang, "commands.monetization.featureExport")
+              )
+              return true
+            }
             const csvData = await generateCSV(userId)
 
             if (csvData) {
@@ -2874,6 +2894,15 @@ export class WizardManager {
             return true
           }
           if (text === t(lang, "buttons.trends")) {
+            if (!premiumEnabled) {
+              await sendPremiumRequiredMessage(
+                this.bot,
+                chatId,
+                lang,
+                t(lang, "commands.monetization.featureAdvancedAnalytics")
+              )
+              return true
+            }
             const trends = await formatTrends(userId)
             await this.bot.sendMessage(chatId, trends, {
               parse_mode: "Markdown",
@@ -2886,6 +2915,15 @@ export class WizardManager {
             })
             return true
           } else if (text === t(lang, "buttons.topCategories")) {
+            if (!premiumEnabled) {
+              await sendPremiumRequiredMessage(
+                this.bot,
+                chatId,
+                lang,
+                t(lang, "commands.monetization.featureAdvancedAnalytics")
+              )
+              return true
+            }
             const top = await formatTopExpenses(userId, 5)
             await this.bot.sendMessage(chatId, top, {
               parse_mode: "Markdown",
@@ -3679,7 +3717,7 @@ export class WizardManager {
       console.error("Wizard Error:", error)
       await this.bot.sendMessage(chatId, t(lang, "wizard.common.error"))
       this.clearState(userId)
-      await showMainMenu(this.bot, chatId, lang)
+      await showMainMenu(this.bot, chatId, lang, userId)
     }
 
     return false

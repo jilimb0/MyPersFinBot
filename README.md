@@ -59,6 +59,7 @@ See `docs/DEV.md`.
 - 🏗️ [**Architecture**](docs/ARCHITECTURE.md)
 - 🚀 [**Deployment**](docs/DEPLOYMENT.md)
 - ✅ [**Testing**](docs/TESTING.md)
+- 💰 [**Monetization**](docs/MONETIZATION.md)
 - 🧪 [**Debugging**](docs/DEBUGGING.md)
 - ⚙️ [**Environment**](docs/ENV.md)
 - 📦 [**Release Checklist**](docs/RELEASE_CHECKLIST.md)
@@ -158,6 +159,8 @@ salary 4000
 | `/export` | Export data to CSV |
 | `/search <text> [options]` | Search and advanced history filters |
 | `/chart <trends|categories|balance> [months]` | Generate chart image and send to Telegram |
+| `/premium` | Show subscription status and premium offer |
+| `/trial` | Start one-time 7-day premium trial |
 
 Examples:
 
@@ -228,6 +231,19 @@ sudo cp systemd/my-pers-fin-bot.service /etc/systemd/system/
 sudo systemctl enable bot
 sudo systemctl start bot
 ```
+
+---
+
+## 🛡️ Admin UI
+
+- URL: `http://localhost:3005/admin/ui`
+- Auth: one-time code in Telegram + server session cookie
+- Admin access list: `ALLOWED_USERS` (Telegram user IDs)
+- Admin actions audit log: `logs/admin-actions.jsonl`
+- Audit retention controls:
+  - `ADMIN_AUDIT_RETENTION_DAYS`
+  - `ADMIN_AUDIT_PRUNE_INTERVAL_HOURS`
+- Runtime: запускается отдельным сервисом `MyPersFinBack`
 
 ---
 

@@ -4,6 +4,19 @@ import type { MessageContext } from "../../handlers/message/types"
 jest.mock("../../database/storage-db", () => ({
   dbStorage: {
     getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
+    getUserUiMode: jest.fn().mockResolvedValue("basic"),
+    hasSeenUiModeHint: jest.fn().mockResolvedValue(true),
+    markUiModeHintSeen: jest.fn().mockResolvedValue(undefined),
+    getSubscriptionStatus: jest.fn().mockResolvedValue({
+      tier: "free",
+      premiumExpiresAt: null,
+      trialStartedAt: null,
+      trialExpiresAt: null,
+      trialUsed: false,
+      subscriptionPaused: false,
+      pausedRemainingMs: 0,
+      pausedTier: null,
+    }),
   },
 }))
 

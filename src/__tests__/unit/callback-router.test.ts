@@ -13,6 +13,13 @@ jest.mock("../../utils", () => ({
   safeAnswerCallback: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock("../../database/storage-db", () => ({
+  dbStorage: {
+    canUsePremiumFeature: jest.fn().mockResolvedValue(true),
+    getUserLanguage: jest.fn().mockResolvedValue("en"),
+  },
+}))
+
 jest.mock("../../handlers/template-handlers", () => ({
   handleTemplateCancelEdit: jest.fn().mockResolvedValue(undefined),
   handleTemplateDelete: jest.fn().mockResolvedValue(undefined),
@@ -29,6 +36,19 @@ jest.mock("../../handlers/voice-handler", () => ({
   handleNLPCallback: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock("../../handlers/monetization-callback-handlers", () => ({
+  handleSubscriptionBuy: jest.fn().mockResolvedValue(undefined),
+  handleSubscriptionCancelAbort: jest.fn().mockResolvedValue(undefined),
+  handleSubscriptionCancelConfirm: jest.fn().mockResolvedValue(undefined),
+  handleSubscriptionCancelPrompt: jest.fn().mockResolvedValue(undefined),
+  handleSubscriptionOpen: jest.fn().mockResolvedValue(undefined),
+  handleSubscriptionRefresh: jest.fn().mockResolvedValue(undefined),
+  handleSubscriptionResume: jest.fn().mockResolvedValue(undefined),
+  handleTrialCancel: jest.fn().mockResolvedValue(undefined),
+  handleTrialConfirm: jest.fn().mockResolvedValue(undefined),
+}))
+
+import { handleSubscriptionOpen } from "../../handlers/monetization-callback-handlers"
 import {
   handleReminderDone,
   handleReminderSnooze,
@@ -312,6 +332,20 @@ describe("Callback router", () => {
     await callbackHandler(query)
 
     expect(showTemplatesList).toHaveBeenCalled()
+  })
+
+  test("handles sub_open callback", async () => {
+    const bot = new MockBot() as unknown as BotClient
+    const wizard = new WizardManager(bot)
+
+    registerCallbackRouter(bot, wizard)
+
+    const query = createQuery("sub_open")
+    const callbackHandler = (bot as any).handlers.callback_query
+
+    await callbackHandler(query)
+
+    expect(handleSubscriptionOpen).toHaveBeenCalled()
   })
 
   test("ignores callback without chatId", async () => {
