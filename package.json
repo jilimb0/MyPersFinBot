@@ -61,7 +61,7 @@
     "@jilimb0/tgwrapper": "^0.10.0",
     "@jilimb0/tgwrapper-adapter-redis": "^0.4.0",
     "@jilimb0/tgwrapper-observability": "^0.5.1",
-    "@sentry/node": "^10.39.0",
+    "@sentry/node": "^10.40.0",
     "better-sqlite3": "12.6.2",
     "bull": "^4.16.5",
     "dayjs": "^1.11.19",
